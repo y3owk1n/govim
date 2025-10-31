@@ -3,11 +3,20 @@
 
 @interface OverlayView : NSView
 @property (nonatomic, strong) NSMutableArray *hints;
-@property (nonatomic, assign) HintStyle style;
+@property (nonatomic, strong) NSFont *hintFont;
+@property (nonatomic, strong) NSColor *hintTextColor;
+@property (nonatomic, strong) NSColor *hintMatchedTextColor;
+@property (nonatomic, strong) NSColor *hintBackgroundColor;
+@property (nonatomic, strong) NSColor *hintBorderColor;
+@property (nonatomic, assign) CGFloat hintBorderRadius;
+@property (nonatomic, assign) CGFloat hintBorderWidth;
+@property (nonatomic, assign) CGFloat hintPadding;
 @property (nonatomic, assign) CGRect scrollHighlight;
 @property (nonatomic, strong) NSColor *scrollHighlightColor;
 @property (nonatomic, assign) int scrollHighlightWidth;
 @property (nonatomic, assign) BOOL showScrollHighlight;
+- (void)applyStyle:(HintStyle)style;
+- (NSColor *)colorFromHex:(NSString *)hexString defaultColor:(NSColor *)defaultColor;
 @end
 
 @implementation OverlayView
@@ -17,6 +26,14 @@
     if (self) {
         _hints = [NSMutableArray array];
         _showScrollHighlight = NO;
+        _hintFont = [NSFont boldSystemFontOfSize:14.0];
+        _hintTextColor = [NSColor blackColor];
+        _hintMatchedTextColor = [NSColor systemBlueColor];
+        _hintBackgroundColor = [[NSColor colorWithRed:1.0 green:0.84 blue:0.0 alpha:1.0] colorWithAlphaComponent:0.95];
+        _hintBorderColor = [NSColor blackColor];
+        _hintBorderRadius = 4.0;
+        _hintBorderWidth = 1.0;
+        _hintPadding = 4.0;
     }
     return self;
 }
@@ -37,6 +54,86 @@
     [self drawHints];
 }
 
+- (void)applyStyle:(HintStyle)style {
+    CGFloat fontSize = style.fontSize > 0 ? style.fontSize : 14.0;
+    NSString *fontFamily = nil;
+    if (style.fontFamily) {
+        fontFamily = [NSString stringWithUTF8String:style.fontFamily];
+        if (fontFamily.length == 0) {
+            fontFamily = nil;
+        }
+    }
+    NSFont *font = nil;
+    if (fontFamily.length > 0) {
+        font = [NSFont fontWithName:fontFamily size:fontSize];
+    }
+    if (!font) {
+        font = [NSFont fontWithName:@"Menlo-Bold" size:fontSize];
+    }
+    if (!font) {
+        font = [NSFont boldSystemFontOfSize:fontSize];
+    }
+    self.hintFont = font;
+
+    NSColor *defaultBg = [[NSColor colorWithRed:1.0 green:0.84 blue:0.0 alpha:1.0] colorWithAlphaComponent:0.95];
+    NSColor *defaultText = [NSColor blackColor];
+    NSColor *defaultBorder = [NSColor blackColor];
+
+    NSString *backgroundHex = style.backgroundColor ? [NSString stringWithUTF8String:style.backgroundColor] : nil;
+    NSString *textHex = style.textColor ? [NSString stringWithUTF8String:style.textColor] : nil;
+    NSString *borderHex = style.borderColor ? [NSString stringWithUTF8String:style.borderColor] : nil;
+
+    NSColor *backgroundColor = [self colorFromHex:backgroundHex defaultColor:defaultBg];
+    CGFloat opacity = style.opacity;
+    if (opacity < 0.0 || opacity > 1.0) {
+        opacity = 0.95;
+    }
+    self.hintBackgroundColor = [backgroundColor colorWithAlphaComponent:opacity];
+    self.hintTextColor = [self colorFromHex:textHex defaultColor:defaultText];
+    self.hintBorderColor = [self colorFromHex:borderHex defaultColor:defaultBorder];
+
+    // Derive matched prefix color by blending toward system blue
+    self.hintMatchedTextColor = [self.hintTextColor blendedColorWithFraction:0.4 ofColor:[NSColor systemBlueColor]];
+    if (!self.hintMatchedTextColor) {
+        self.hintMatchedTextColor = [NSColor systemBlueColor];
+    }
+
+    self.hintBorderRadius = style.borderRadius > 0 ? style.borderRadius : 4.0;
+    self.hintBorderWidth = style.borderWidth > 0 ? style.borderWidth : 1.0;
+    self.hintPadding = style.padding >= 0 ? style.padding : 4.0;
+}
+
+- (NSColor *)colorFromHex:(NSString *)hexString defaultColor:(NSColor *)defaultColor {
+    if (!hexString || hexString.length == 0) {
+        return defaultColor;
+    }
+
+    NSString *cleanString = [hexString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if ([cleanString hasPrefix:@"#"]) {
+        cleanString = [cleanString substringFromIndex:1];
+    }
+
+    if (cleanString.length != 6 && cleanString.length != 8) {
+        return defaultColor;
+    }
+
+    unsigned long long hexValue = 0;
+    NSScanner *scanner = [NSScanner scannerWithString:cleanString];
+    if (![scanner scanHexLongLong:&hexValue]) {
+        return defaultColor;
+    }
+
+    CGFloat alpha = 1.0;
+    if (cleanString.length == 8) {
+        alpha = ((hexValue & 0xFF000000) >> 24) / 255.0;
+    }
+    CGFloat red = ((hexValue & 0x00FF0000) >> 16) / 255.0;
+    CGFloat green = ((hexValue & 0x0000FF00) >> 8) / 255.0;
+    CGFloat blue = (hexValue & 0x000000FF) / 255.0;
+
+    return [NSColor colorWithRed:red green:green blue:blue alpha:alpha];
+}
+
 - (void)drawHints {
     for (NSDictionary *hint in self.hints) {
         NSString *label = hint[@"label"];
@@ -46,30 +143,22 @@
         NSNumber *matchedPrefixLengthNum = hint[@"matchedPrefixLength"];
         int matchedPrefixLength = matchedPrefixLengthNum ? [matchedPrefixLengthNum intValue] : 0;
         
-        // Use system font
-        NSFont *font = [NSFont boldSystemFontOfSize:14];
-        
-        // Simple colors - yellow background, black text
-        NSColor *textColor = [NSColor blackColor];
-        NSColor *matchedTextColor = [NSColor colorWithRed:0.0 green:0.5 blue:1.0 alpha:1.0]; // Blue for matched
-        NSColor *bgColor = [NSColor colorWithRed:1.0 green:0.84 blue:0.0 alpha:0.95]; // Gold
-        
         // Create attributed string with matched prefix in different color
         NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:label];
-        [attrString addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, [label length])];
-        [attrString addAttribute:NSForegroundColorAttributeName value:textColor range:NSMakeRange(0, [label length])];
+        [attrString addAttribute:NSFontAttributeName value:self.hintFont range:NSMakeRange(0, [label length])];
+        [attrString addAttribute:NSForegroundColorAttributeName value:self.hintTextColor range:NSMakeRange(0, [label length])];
         
         // Highlight matched prefix
         if (matchedPrefixLength > 0 && matchedPrefixLength <= [label length]) {
             [attrString addAttribute:NSForegroundColorAttributeName 
-                               value:matchedTextColor 
+                               value:self.hintMatchedTextColor 
                                range:NSMakeRange(0, matchedPrefixLength)];
         }
         
         NSSize textSize = [attrString size];
         
         // Calculate hint box size
-        CGFloat padding = 4;
+        CGFloat padding = self.hintPadding;
         CGFloat boxWidth = textSize.width + (padding * 2);
         CGFloat boxHeight = textSize.height + (padding * 2);
         
@@ -86,12 +175,12 @@
         );
         
         // Draw background with border
-        NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:hintRect xRadius:4 yRadius:4];
-        [bgColor setFill];
+        NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:hintRect xRadius:self.hintBorderRadius yRadius:self.hintBorderRadius];
+        [self.hintBackgroundColor setFill];
         [path fill];
         
-        [[NSColor blackColor] setStroke];
-        [path setLineWidth:1];
+        [self.hintBorderColor setStroke];
+        [path setLineWidth:self.hintBorderWidth];
         [path stroke];
         
         // Draw text (coordinates are already flipped for the box)
@@ -244,9 +333,9 @@ void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style
     
     // Clear existing hints
     [controller.overlayView.hints removeAllObjects];
-    
-    // Set style
-    controller.overlayView.style = style;
+
+    // Apply style
+    [controller.overlayView applyStyle:style];
     
     // Add new hints
     for (int i = 0; i < count; i++) {
