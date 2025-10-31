@@ -52,6 +52,13 @@ Config file: `~/Library/Application Support/govim/config.toml`
 hint_characters = "asdfghjkl"
 hint_style = "alphabet"
 
+[accessibility]
+additional_clickable_roles = []
+
+[accessibility.electron_support]
+enable = true
+additional_bundles = ["com.example.legacyapp*"]
+
 [hotkeys]
 activate_hint_mode = "Cmd+Shift+Space"
 activate_scroll_mode = "Cmd+Shift+J"
@@ -69,6 +76,9 @@ text_color = "#000000"
 ```
 
 See `configs/default-config.toml` for all available options.
+
+- `accessibility.electron_support.enable` toggles automatic enabling of Electron accessibility hooks for legacy apps.
+- `accessibility.electron_support.additional_bundles` accepts exact bundle IDs or `prefix*` wildcards for extra Electron apps that require manual accessibility.
 
 ## CLI Usage
 

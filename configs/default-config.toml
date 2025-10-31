@@ -8,6 +8,10 @@ hint_style = "alphabet"
 [accessibility]
 additional_clickable_roles = []
 
+[accessibility.electron_support]
+enable = true
+additional_bundles = []
+
 [hotkeys]
 activate_hint_mode = "Cmd+Shift+Space"
 # Activate hint mode with action selection (choose click type after typing hint)

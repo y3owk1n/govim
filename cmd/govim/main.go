@@ -215,6 +215,11 @@ func (a *App) activateHintMode(withActions bool) {
 	a.logger.Info("Activating hint mode")
 	a.exitMode() // Exit current mode first
 
+	// Enable Electron accessibility if needed before scanning
+	if a.config.Accessibility.ElectronSupport.Enable {
+		accessibility.EnsureElectronSupport(a.config.Accessibility.ElectronSupport.AdditionalBundles)
+	}
+
 	// Get clickable elements
 	defaultRoles, additionalRoles := accessibility.GetClickableRoles()
 	a.logger.Debug("Scanning for clickable elements",
@@ -555,10 +560,14 @@ func (a *App) activateScrollMode() {
 	a.exitMode() // Exit current mode first
 
 	a.logger.Info("Initializing scroll controller")
-	// Initialize scroll controller
+	// Activate scroll mode
 	if err := a.scrollController.Initialize(); err != nil {
 		a.logger.Error("Failed to initialize scroll controller", zap.Error(err))
 		return
+	}
+
+	if a.config.Accessibility.ElectronSupport.Enable {
+		accessibility.EnsureElectronSupport(a.config.Accessibility.ElectronSupport.AdditionalBundles)
 	}
 
 	a.logger.Info("Getting scroll areas")
@@ -648,6 +657,10 @@ func (a *App) exitMode() {
 	// Disable event tap when exiting any mode
 	if a.eventTap != nil {
 		a.eventTap.Disable()
+	}
+
+	if a.config.Accessibility.ElectronSupport.Enable {
+		accessibility.ResetElectronSupport()
 	}
 
 	a.currentMode = ModeIdle

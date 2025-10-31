@@ -31,7 +31,8 @@ type GeneralConfig struct {
 }
 
 type AccessibilityConfig struct {
-	AdditionalClickableRoles []string `toml:"additional_clickable_roles"`
+	AdditionalClickableRoles []string             `toml:"additional_clickable_roles"`
+	ElectronSupport          ElectronSupportConfig `toml:"electron_support"`
 }
 
 type HotkeysConfig struct {
@@ -116,6 +117,11 @@ type ExperimentalConfig struct {
 	PluginSystem            bool `toml:"plugin_system"`
 }
 
+type ElectronSupportConfig struct {
+	Enable            bool     `toml:"enable"`
+	AdditionalBundles []string `toml:"additional_bundles"`
+}
+
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
 	return &Config{
@@ -127,6 +133,10 @@ func DefaultConfig() *Config {
 		},
 		Accessibility: AccessibilityConfig{
 			AdditionalClickableRoles: []string{},
+			ElectronSupport: ElectronSupportConfig{
+				Enable:            true,
+				AdditionalBundles: []string{},
+			},
 		},
 		Hotkeys: HotkeysConfig{
 			ActivateHintMode:            "Cmd+Shift+Space",
@@ -296,6 +306,12 @@ func (c *Config) Validate() error {
 	for _, role := range c.Accessibility.AdditionalClickableRoles {
 		if strings.TrimSpace(role) == "" {
 			return fmt.Errorf("accessibility.additional_clickable_roles cannot contain empty values")
+		}
+	}
+
+	for _, bundle := range c.Accessibility.ElectronSupport.AdditionalBundles {
+		if strings.TrimSpace(bundle) == "" {
+			return fmt.Errorf("accessibility.electron_support.additional_bundles cannot contain empty values")
 		}
 	}
 

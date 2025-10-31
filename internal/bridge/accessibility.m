@@ -8,6 +8,30 @@ int checkAccessibilityPermissions() {
     return trusted ? 1 : 0;
 }
 
+// Set arbitrary application attribute (e.g. AXManualAccessibility)
+int setApplicationAttribute(int pid, const char* attribute, int value) {
+    if (!attribute) return 0;
+
+    AXUIElementRef appRef = AXUIElementCreateApplication(pid);
+    if (!appRef) {
+        return 0;
+    }
+
+    CFStringRef attrName = CFStringCreateWithCString(NULL, attribute, kCFStringEncodingUTF8);
+    if (!attrName) {
+        CFRelease(appRef);
+        return 0;
+    }
+
+    CFBooleanRef boolValue = value ? kCFBooleanTrue : kCFBooleanFalse;
+    AXError error = AXUIElementSetAttributeValue(appRef, attrName, boolValue);
+
+    CFRelease(attrName);
+    CFRelease(appRef);
+
+    return (error == kAXErrorSuccess) ? 1 : 0;
+}
+
 void** getVisibleChildren(void* element, int* count) {
     if (!element || !count) return NULL;
 

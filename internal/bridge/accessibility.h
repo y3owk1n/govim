@@ -40,6 +40,7 @@ void** getAllWindows(int* count);
 void* getFrontmostWindow();
 char* getApplicationName(void* app);
 char* getBundleIdentifier(void* app);
+int setApplicationAttribute(int pid, const char* attribute, int value);
 
 // Scroll functions
 int isScrollable(void* element);
