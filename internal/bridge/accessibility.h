@@ -49,4 +49,7 @@ int isScrollable(void* element);
 CGRect getScrollBounds(void* element);
 int scrollElement(void* element, int deltaX, int deltaY);
 
+// Mouse click fallback
+int clickElementWithMouse(void* element);
+
 #endif // ACCESSIBILITY_H

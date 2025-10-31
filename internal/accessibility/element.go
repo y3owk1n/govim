@@ -245,11 +245,17 @@ func (e *Element) Click() error {
 		return fmt.Errorf("element is nil")
 	}
 
-	result := C.performClick(e.ref)
-	if result == 0 {
-		return fmt.Errorf("click action failed")
-	}
-	return nil
+    result := C.performClick(e.ref)
+    if result == 1 {
+        return nil
+    }
+
+    // Fallback to a real mouse click at the element's center
+    if C.clickElementWithMouse(e.ref) == 1 {
+        return nil
+    }
+
+    return fmt.Errorf("click action failed")
 }
 
 // RightClick performs a right-click action on the element

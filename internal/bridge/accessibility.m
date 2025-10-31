@@ -581,3 +581,51 @@ int scrollElement(void* element, int deltaX, int deltaY) {
     
     return 0;
 }
+
+// Perform a real mouse left-click at the center of the element
+int clickElementWithMouse(void* element) {
+    if (!element) return 0;
+
+    AXUIElementRef axElement = (AXUIElementRef)element;
+
+    // Determine the center point of the element
+    CGPoint clickPoint = CGPointZero;
+
+    CFTypeRef positionRef = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXPositionAttribute, &positionRef) == kAXErrorSuccess && positionRef) {
+        AXValueGetValue((AXValueRef)positionRef, kAXValueCGPointType, &clickPoint);
+        CFRelease(positionRef);
+
+        CFTypeRef sizeRef = NULL;
+        if (AXUIElementCopyAttributeValue(axElement, kAXSizeAttribute, &sizeRef) == kAXErrorSuccess && sizeRef) {
+            CGSize size;
+            AXValueGetValue((AXValueRef)sizeRef, kAXValueCGSizeType, &size);
+            clickPoint.x += size.width / 2.0;
+            clickPoint.y += size.height / 2.0;
+            CFRelease(sizeRef);
+        }
+    }
+
+    // Create and post mouse move, down, and up events
+    CGEventRef move = CGEventCreateMouseEvent(NULL, kCGEventMouseMoved, clickPoint, kCGMouseButtonLeft);
+    if (move) {
+        CGEventPost(kCGHIDEventTap, move);
+        CFRelease(move);
+    }
+
+    CGEventRef down = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, clickPoint, kCGMouseButtonLeft);
+    CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, clickPoint, kCGMouseButtonLeft);
+
+    if (!down || !up) {
+        if (down) CFRelease(down);
+        if (up) CFRelease(up);
+        return 0;
+    }
+
+    CGEventPost(kCGHIDEventTap, down);
+    CGEventPost(kCGHIDEventTap, up);
+    CFRelease(down);
+    CFRelease(up);
+
+    return 1;
+}
