@@ -5,6 +5,7 @@ import (
 	"image"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/getlantern/systray"
@@ -45,6 +46,18 @@ type App struct {
 	lastScrollKey    string
 	selectedHint     *hints.Hint
 	enabled          bool
+}
+
+func hotkeyHasModifier(key string) bool {
+	parts := strings.Split(key, "+")
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		switch strings.ToLower(trimmed) {
+		case "cmd", "command", "shift", "alt", "option", "ctrl", "control":
+			return true
+		}
+	}
+	return false
 }
 
 // NewApp creates a new application instance
@@ -103,6 +116,9 @@ func NewApp(cfg *config.Config) (*App, error) {
 	app.eventTap = eventtap.NewEventTap(app.handleKeyPress, log)
 	if app.eventTap == nil {
 		log.Warn("Event tap creation failed - key capture won't work")
+	} else {
+		// Ensure event tap is disabled initially (only enable in active modes)
+		app.eventTap.Disable()
 	}
 
 	return app, nil
@@ -157,8 +173,14 @@ func (a *App) registerHotkeys() error {
 	}
 
 	// Exit mode hotkey
-	if _, err := a.hotkeyManager.Register(a.config.Hotkeys.ExitMode, a.exitMode); err != nil {
-		return fmt.Errorf("failed to register exit mode hotkey: %w", err)
+	exitHotkey := a.config.Hotkeys.ExitMode
+	if hotkeyHasModifier(exitHotkey) {
+		if _, err := a.hotkeyManager.Register(exitHotkey, a.exitMode); err != nil {
+			return fmt.Errorf("failed to register exit mode hotkey: %w", err)
+		}
+	} else {
+		a.logger.Info("Skipping global exit hotkey registration to avoid intercepting unmodified key",
+			zap.String("key", exitHotkey))
 	}
 
 	// Reload config hotkey
@@ -224,7 +246,7 @@ func (a *App) activateHintMode(withActions bool) {
 		a.logger.Info("Hint mode activated", zap.Int("hints", len(hintList)))
 		a.logger.Info("Type a hint label to click the element")
 	}
-	
+
 	// Enable event tap to capture keys
 	a.hintInput = ""
 	a.selectedHint = nil
@@ -268,29 +290,38 @@ func (a *App) handleHintKey(key string) {
 		return
 	}
 
-	// Accumulate input
-	a.hintInput += key
+	// Accumulate input (convert to uppercase to match hints)
+	a.hintInput += strings.ToUpper(key)
 	a.logger.Debug("Hint input", zap.String("input", a.hintInput))
-	
+
 	// Check if any hints start with this input
 	filtered := a.currentHints.FilterByPrefix(a.hintInput)
-	
+
 	if len(filtered) == 0 {
 		// No matches - reset
 		a.logger.Debug("No matching hints, resetting")
 		a.hintInput = ""
 		return
 	}
-	
+
+	// Update matched prefix for filtered hints and redraw
+	for _, hint := range filtered {
+		hint.MatchedPrefix = a.hintInput
+	}
+	a.hintOverlay.Clear()
+	if err := a.hintOverlay.DrawHints(filtered); err != nil {
+		a.logger.Error("Failed to redraw hints", zap.Error(err))
+	}
+
 	// If exactly one match and input matches the full label
 	if len(filtered) == 1 && filtered[0].Label == a.hintInput {
 		hint := filtered[0]
-		
+
 		if a.currentMode == ModeHintWithActions {
 			// Store the hint and wait for action selection
 			a.selectedHint = hint
 			a.logger.Info("Hint selected, choose action", zap.String("label", a.hintInput))
-			
+
 			// Clear all hints and show action menu at the hint location
 			a.hintOverlay.Clear()
 			a.showActionMenu(hint)
@@ -305,7 +336,7 @@ func (a *App) handleHintKey(key string) {
 			return
 		}
 	}
-	
+
 	// Otherwise, keep collecting input
 	a.logger.Debug("Partial match", zap.Int("matches", len(filtered)))
 }
@@ -313,21 +344,21 @@ func (a *App) handleHintKey(key string) {
 // showActionMenu displays the action selection menu at the hint location
 func (a *App) showActionMenu(hint *hints.Hint) {
 	cfg := a.config.Hints
-	
+
 	// Create action hints showing available actions
-	actionText := fmt.Sprintf("[%s]Left [%s]Right [%s]Double [%s]Middle", 
-		cfg.ClickActionLeft, 
-		cfg.ClickActionRight, 
-		cfg.ClickActionDouble, 
+	actionText := fmt.Sprintf("[%s]Left [%s]Right [%s]Double [%s]Middle",
+		cfg.ClickActionLeft,
+		cfg.ClickActionRight,
+		cfg.ClickActionDouble,
 		cfg.ClickActionMiddle)
-	
+
 	// Create a single hint at the element's position with the action menu
 	actionHint := &hints.Hint{
 		Label:    actionText,
 		Element:  hint.Element,
 		Position: hint.Position,
 	}
-	
+
 	// Draw the action menu
 	if err := a.hintOverlay.DrawHints([]*hints.Hint{actionHint}); err != nil {
 		a.logger.Error("Failed to draw action menu", zap.Error(err))
@@ -342,9 +373,9 @@ func (a *App) handleActionKey(key string) {
 
 	hint := a.selectedHint
 	cfg := a.config.Hints
-	
+
 	a.logger.Info("Action key pressed", zap.String("key", key))
-	
+
 	var err error
 	switch key {
 	case cfg.ClickActionLeft:
@@ -365,11 +396,11 @@ func (a *App) handleActionKey(key string) {
 		a.logger.Debug("Unknown action key, ignoring", zap.String("key", key))
 		return
 	}
-	
+
 	if err != nil {
 		a.logger.Error("Failed to perform action", zap.Error(err))
 	}
-	
+
 	a.exitMode()
 }
 
@@ -377,14 +408,14 @@ func (a *App) handleActionKey(key string) {
 func (a *App) handleScrollKey(key string) {
 	// Log every byte for debugging
 	bytes := []byte(key)
-	a.logger.Info("Scroll key pressed", 
-		zap.String("key", key), 
-		zap.Int("len", len(key)), 
+	a.logger.Info("Scroll key pressed",
+		zap.String("key", key),
+		zap.Int("len", len(key)),
 		zap.String("hex", fmt.Sprintf("%#v", key)),
 		zap.Any("bytes", bytes))
-	
+
 	var err error
-	
+
 	// Check for control characters
 	if len(key) == 1 {
 		byteVal := key[0]
@@ -394,13 +425,13 @@ func (a *App) handleScrollKey(key string) {
 			a.logger.Info("Ctrl+D detected - half page down")
 			err = a.scrollController.ScrollDownHalfPage()
 			goto done
-		case 21: // Ctrl+U  
+		case 21: // Ctrl+U
 			a.logger.Info("Ctrl+U detected - half page up")
 			err = a.scrollController.ScrollUpHalfPage()
 			goto done
 		}
 	}
-	
+
 	// Regular keys
 	switch key {
 	case "j":
@@ -442,10 +473,10 @@ func (a *App) handleScrollKey(key string) {
 		a.lastScrollKey = ""
 		return
 	}
-	
+
 	// Reset last key for most commands
 	a.lastScrollKey = ""
-	
+
 done:
 	if err != nil {
 		a.logger.Error("Scroll failed", zap.Error(err))
@@ -456,13 +487,13 @@ done:
 func (a *App) switchScrollArea(next bool) {
 	detector := a.scrollController.GetDetector()
 	var newArea *scroll.ScrollArea
-	
+
 	if next {
 		newArea = detector.CycleActiveArea()
 	} else {
 		newArea = detector.CyclePrevArea()
 	}
-	
+
 	if newArea != nil {
 		a.logger.Info("Switched scroll area", zap.Int("index", newArea.Index+1))
 		a.updateScrollHighlight(newArea)
@@ -474,7 +505,7 @@ func (a *App) switchScrollAreaByNumber(key string) {
 	number := int(key[0] - '0')
 	detector := a.scrollController.GetDetector()
 	newArea := detector.SetActiveByNumber(number)
-	
+
 	if newArea != nil {
 		a.logger.Info("Switched to scroll area", zap.Int("number", number))
 		a.updateScrollHighlight(newArea)
@@ -499,7 +530,7 @@ func (a *App) activateScrollMode() {
 		a.logger.Debug("GoVim is disabled, ignoring scroll mode activation")
 		return
 	}
-	
+
 	if a.currentMode == ModeScroll {
 		a.logger.Debug("Scroll mode already active")
 		return
@@ -545,7 +576,7 @@ func (a *App) activateScrollMode() {
 func (a *App) drawScrollAreaLabels(areas []*scroll.ScrollArea) {
 	// Clear existing overlay
 	a.hintOverlay.Clear()
-	
+
 	// Create hints for each scroll area number
 	areaHints := make([]*hints.Hint, 0, len(areas))
 	for i, area := range areas {
@@ -557,12 +588,12 @@ func (a *App) drawScrollAreaLabels(areas []*scroll.ScrollArea) {
 		}
 		areaHints = append(areaHints, hint)
 	}
-	
+
 	// Draw the number hints
 	if len(areaHints) > 0 {
 		a.hintOverlay.DrawHints(areaHints)
 	}
-	
+
 	// Draw highlight on active area
 	activeArea := a.scrollController.GetDetector().GetActiveArea()
 	if activeArea != nil {
@@ -574,7 +605,7 @@ func (a *App) drawScrollAreaLabels(areas []*scroll.ScrollArea) {
 			a.config.Scroll.HighlightWidth,
 		)
 	}
-	
+
 	a.hintOverlay.Show()
 }
 

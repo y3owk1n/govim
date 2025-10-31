@@ -11,10 +11,11 @@ import (
 
 // Hint represents a hint label for a UI element
 type Hint struct {
-	Label    string
-	Element  *accessibility.TreeNode
-	Position image.Point
-	Size     image.Point
+	Label          string
+	Element        *accessibility.TreeNode
+	Position       image.Point
+	Size           image.Point
+	MatchedPrefix  string // Characters that have been typed
 }
 
 // Generator generates hints for UI elements
@@ -75,7 +76,7 @@ func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error
 		centerY := element.Info.Position.Y + (element.Info.Size.Y / 2)
 		
 		hints[i] = &Hint{
-			Label:    labels[i],
+			Label:    strings.ToUpper(labels[i]), // Convert to uppercase
 			Element:  element,
 			Position: image.Point{X: centerX, Y: centerY},
 			Size:     element.Info.Size,

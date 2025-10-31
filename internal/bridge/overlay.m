@@ -43,20 +43,29 @@
         if (!label || [label length] == 0) continue;
         
         NSPoint position = [hint[@"position"] pointValue];
+        NSNumber *matchedPrefixLengthNum = hint[@"matchedPrefixLength"];
+        int matchedPrefixLength = matchedPrefixLengthNum ? [matchedPrefixLengthNum intValue] : 0;
         
         // Use system font
         NSFont *font = [NSFont boldSystemFontOfSize:14];
         
         // Simple colors - yellow background, black text
         NSColor *textColor = [NSColor blackColor];
+        NSColor *matchedTextColor = [NSColor colorWithRed:0.0 green:0.5 blue:1.0 alpha:1.0]; // Blue for matched
         NSColor *bgColor = [NSColor colorWithRed:1.0 green:0.84 blue:0.0 alpha:0.95]; // Gold
         
-        NSDictionary *attributes = @{
-            NSFontAttributeName: font,
-            NSForegroundColorAttributeName: textColor
-        };
+        // Create attributed string with matched prefix in different color
+        NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:label];
+        [attrString addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, [label length])];
+        [attrString addAttribute:NSForegroundColorAttributeName value:textColor range:NSMakeRange(0, [label length])];
         
-        NSAttributedString *attrString = [[NSAttributedString alloc] initWithString:label attributes:attributes];
+        // Highlight matched prefix
+        if (matchedPrefixLength > 0 && matchedPrefixLength <= [label length]) {
+            [attrString addAttribute:NSForegroundColorAttributeName 
+                               value:matchedTextColor 
+                               range:NSMakeRange(0, matchedPrefixLength)];
+        }
+        
         NSSize textSize = [attrString size];
         
         // Calculate hint box size
@@ -245,7 +254,8 @@ void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style
         
         NSDictionary *hintDict = @{
             @"label": @(hint.label),
-            @"position": [NSValue valueWithPoint:NSPointFromCGPoint(hint.position)]
+            @"position": [NSValue valueWithPoint:NSPointFromCGPoint(hint.position)],
+            @"matchedPrefixLength": @(hint.matchedPrefixLength)
         };
         
         [controller.overlayView.hints addObject:hintDict];

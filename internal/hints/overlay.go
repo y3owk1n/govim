@@ -70,6 +70,7 @@ func (o *Overlay) DrawHints(hints []*Hint) error {
 				width:  C.double(hint.Size.X),
 				height: C.double(hint.Size.Y),
 			},
+			matchedPrefixLength: C.int(len(hint.MatchedPrefix)),
 		}
 	}
 

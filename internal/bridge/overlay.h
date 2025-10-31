@@ -25,6 +25,7 @@ typedef struct {
     char* label;
     CGPoint position;
     CGSize size;
+    int matchedPrefixLength;  // Number of matched characters to highlight
 } HintData;
 
 // Function declarations
