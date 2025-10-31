@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -11,6 +12,7 @@ import (
 // Config represents the complete application configuration
 type Config struct {
 	General      GeneralConfig      `toml:"general"`
+	Accessibility AccessibilityConfig `toml:"accessibility"`
 	Hotkeys      HotkeysConfig      `toml:"hotkeys"`
 	Scroll       ScrollConfig       `toml:"scroll"`
 	Hints        HintsConfig        `toml:"hints"`
@@ -27,6 +29,10 @@ type GeneralConfig struct {
 	AnimationDurationMs      int    `toml:"animation_duration_ms"`
 	AccessibilityCheckOnStart bool   `toml:"accessibility_check_on_start"`
 	Debug                    bool   `toml:"debug"`
+}
+
+type AccessibilityConfig struct {
+	AdditionalClickableRoles []string `toml:"additional_clickable_roles"`
 }
 
 type HotkeysConfig struct {
@@ -120,6 +126,9 @@ func DefaultConfig() *Config {
 			AnimationDurationMs:      150,
 			AccessibilityCheckOnStart: true,
 			Debug:                    false,
+		},
+		Accessibility: AccessibilityConfig{
+			AdditionalClickableRoles: []string{},
 		},
 		Hotkeys: HotkeysConfig{
 			ActivateHintMode:            "Cmd+Shift+Space",
@@ -284,6 +293,12 @@ func (c *Config) Validate() error {
 	}
 	if c.Performance.MaxConcurrentQueries < 1 {
 		return fmt.Errorf("performance.max_concurrent_queries must be at least 1")
+	}
+
+	for _, role := range c.Accessibility.AdditionalClickableRoles {
+		if strings.TrimSpace(role) == "" {
+			return fmt.Errorf("accessibility.additional_clickable_roles cannot contain empty values")
+		}
 	}
 
 	return nil

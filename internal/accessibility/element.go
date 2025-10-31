@@ -9,12 +9,47 @@ import "C"
 import (
 	"fmt"
 	"image"
+	"strings"
+	"sync"
 	"unsafe"
 )
 
 // Element represents an accessibility UI element
 type Element struct {
 	ref unsafe.Pointer
+}
+
+var (
+	defaultClickableRoles = map[string]bool{
+		"AXButton":      true,
+		"AXCheckBox":    true,
+		"AXRadioButton": true,
+		"AXPopUpButton": true,
+		"AXMenuItem":    true,
+		"AXLink":        true,
+		"AXTextField":   true,
+		"AXTextArea":    true,
+		"AXStaticText":  false,
+		"AXImage":       false,
+	}
+
+	customClickableRoles   = make(map[string]struct{})
+	customClickableRolesMu sync.RWMutex
+)
+
+// SetAdditionalClickableRoles configures extra accessibility roles treated as clickable.
+func SetAdditionalClickableRoles(roles []string) {
+	customClickableRolesMu.Lock()
+	defer customClickableRolesMu.Unlock()
+
+	customClickableRoles = make(map[string]struct{}, len(roles))
+	for _, role := range roles {
+		trimmed := strings.TrimSpace(role)
+		if trimmed == "" {
+			continue
+		}
+		customClickableRoles[trimmed] = struct{}{}
+	}
 }
 
 // ElementInfo contains information about a UI element
@@ -232,21 +267,17 @@ func (e *Element) IsClickable() bool {
 		return false
 	}
 
-	// Check if role is clickable
-	clickableRoles := map[string]bool{
-		"AXButton":          true,
-		"AXCheckBox":        true,
-		"AXRadioButton":     true,
-		"AXPopUpButton":     true,
-		"AXMenuItem":        true,
-		"AXLink":            true,
-		"AXTextField":       true,
-		"AXTextArea":        true,
-		"AXStaticText":      false,
-		"AXImage":           false,
+	if allowed, ok := defaultClickableRoles[info.Role]; ok {
+		if allowed {
+			return true
+		}
 	}
 
-	return clickableRoles[info.Role]
+	customClickableRolesMu.RLock()
+	_, ok := customClickableRoles[info.Role]
+	customClickableRolesMu.RUnlock()
+
+	return ok
 }
 
 // GetAllWindows returns all windows of the focused application

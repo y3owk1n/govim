@@ -8,6 +8,10 @@ hint_characters = "asdfghjkl"
 # Hint style: "alphabet" (aa, ab, ac...) or "numeric" (1, 2, 3...)
 hint_style = "alphabet"
 
+[accessibility]
+# Extra AX roles to treat as clickable (override defaults)
+additional_clickable_roles = []
+
 [hotkeys]
 # Activate hint mode (direct click after typing hint)
 activate_hint_mode = "Cmd+Shift+Space"
