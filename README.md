@@ -54,20 +54,27 @@ hint_characters = "asdfghjkl"
 hint_style = "alphabet"
 
 [accessibility]
-additional_clickable_roles = []
+# Global roles used for all apps
+clickable_roles = ["AXButton", "AXCheckBox", "AXLink", ...]
+scrollable_roles = ["AXScrollArea"]
+
+# Per-app configurations (optional)
+# Add additional roles for specific apps
+[[accessibility.app_configs]]
+bundle_id = "com.apple.Safari"
+additional_clickable_roles = ["AXGroup", "AXImage"]
+additional_scrollable_roles = ["AXWebArea"]
 
 [accessibility.electron_support]
 enable = true
-additional_bundles = ["com.example.legacyapp*"]
+additional_bundles = ["com.google.Chrome"]
 
 [hotkeys]
 activate_hint_mode = "Cmd+Shift+Space"
 activate_scroll_mode = "Cmd+Shift+J"
-exit_mode = "Escape"
 
 [scroll]
 scroll_speed = 50
-smooth_scroll = true
 highlight_color = "#FF0000"
 
 [hints]
@@ -77,6 +84,27 @@ text_color = "#000000"
 ```
 
 See `configs/default-config.toml` for all available options.
+
+### Per-App Role Configuration
+
+GoVim supports global and per-app accessibility role configurations:
+
+- **Global roles** (`clickable_roles` and `scrollable_roles`) are used for all applications
+- **Per-app roles** allow you to add additional roles for specific applications
+- The final roles used = global roles + app-specific additional roles (merged)
+
+To find an app's bundle ID:
+```bash
+osascript -e 'id of app "AppName"'
+```
+
+Example per-app configuration:
+```toml
+[[accessibility.app_configs]]
+bundle_id = "com.microsoft.VSCode"
+additional_clickable_roles = ["AXStaticText"]
+additional_scrollable_roles = ["AXGroup"]
+```
 
 ### Electron & Chrome Support
 

@@ -568,8 +568,23 @@ func (e *Element) IsScrollable() bool {
 		return false
 	}
 
-	result := C.isScrollable(e.ref)
-	return result == 1
+	info, err := e.GetInfo()
+	if err != nil {
+		return false
+	}
+
+	// Check if the role is in the scrollable roles list
+	scrollableRolesMu.RLock()
+	_, ok := scrollableRoles[info.Role]
+	scrollableRolesMu.RUnlock()
+
+	if ok {
+		// Also verify it actually has scroll capability
+		result := C.isScrollable(e.ref)
+		return result == 1
+	}
+
+	return false
 }
 
 // GetScrollBounds returns the scroll area bounds

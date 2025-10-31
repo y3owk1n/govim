@@ -6,7 +6,8 @@ hint_characters = "asdfghjkl"
 hint_style = "alphabet"
 
 [accessibility]
-# Accessibility roles that are treated as clickable
+# Global accessibility roles that are treated as clickable
+# These roles will be used for ALL applications
 # Users can add or remove roles as needed
 clickable_roles = [
     "AXButton",
@@ -22,11 +23,35 @@ clickable_roles = [
     "AXTextArea",
 ]
 
-# Accessibility roles that are treated as scrollable
+# Global accessibility roles that are treated as scrollable
+# These roles will be used for ALL applications
 # Users can add or remove roles as needed
 scrollable_roles = [
     "AXScrollArea",
 ]
+
+# Per-app role configurations
+# These allow you to add additional clickable/scrollable roles for specific applications
+# The roles defined here are ADDED to the global roles above (not replaced)
+# To find an app's bundle ID, run: osascript -e 'id of app "AppName"'
+
+# Example: Add custom roles for Safari
+# [[accessibility.app_configs]]
+# bundle_id = "com.apple.Safari"
+# additional_clickable_roles = ["AXGroup", "AXImage"]
+# additional_scrollable_roles = ["AXWebArea"]
+
+# Example: Add custom roles for Firefox
+# [[accessibility.app_configs]]
+# bundle_id = "org.mozilla.firefox"
+# additional_clickable_roles = ["AXGroup"]
+# additional_scrollable_roles = []
+
+# Example: Add custom roles for VS Code
+# [[accessibility.app_configs]]
+# bundle_id = "com.microsoft.VSCode"
+# additional_clickable_roles = ["AXStaticText"]
+# additional_scrollable_roles = ["AXGroup"]
 
 [accessibility.electron_support]
 enable = true

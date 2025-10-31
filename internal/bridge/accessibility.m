@@ -645,12 +645,38 @@ char* getBundleIdentifier(void* app) {
 }
 
 // Check if element is scrollable
+// This checks if the element actually has scroll capability by looking for scroll bars
 int isScrollable(void* element) {
     if (!element) return 0;
     
     AXUIElementRef axElement = (AXUIElementRef)element;
     
-    // Check if element has scroll bars or is a scroll area
+    // Check if element has horizontal or vertical scroll bars
+    CFTypeRef horizontalScrollBar = NULL;
+    CFTypeRef verticalScrollBar = NULL;
+    
+    int hasScrollBar = 0;
+    
+    if (AXUIElementCopyAttributeValue(axElement, kAXHorizontalScrollBarAttribute, &horizontalScrollBar) == kAXErrorSuccess) {
+        if (horizontalScrollBar != NULL) {
+            hasScrollBar = 1;
+            CFRelease(horizontalScrollBar);
+        }
+    }
+    
+    if (!hasScrollBar && AXUIElementCopyAttributeValue(axElement, kAXVerticalScrollBarAttribute, &verticalScrollBar) == kAXErrorSuccess) {
+        if (verticalScrollBar != NULL) {
+            hasScrollBar = 1;
+            CFRelease(verticalScrollBar);
+        }
+    }
+    
+    // If we found scroll bars, it's scrollable
+    if (hasScrollBar) {
+        return 1;
+    }
+    
+    // Fallback: check if it's a scroll area role (for compatibility)
     CFTypeRef roleValue = NULL;
     if (AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute, &roleValue) == kAXErrorSuccess) {
         if (CFGetTypeID(roleValue) == CFStringGetTypeID()) {

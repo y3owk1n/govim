@@ -181,6 +181,43 @@ func (a *App) registerHotkeys() error {
 	return nil
 }
 
+// updateRolesForCurrentApp updates clickable and scrollable roles based on the current focused app
+func (a *App) updateRolesForCurrentApp() {
+	// Get the focused application
+	focusedApp := accessibility.GetFocusedApplication()
+	if focusedApp == nil {
+		a.logger.Debug("No focused application, using global roles only")
+		// Use global roles
+		accessibility.SetClickableRoles(a.config.Accessibility.ClickableRoles)
+		accessibility.SetScrollableRoles(a.config.Accessibility.ScrollableRoles)
+		return
+	}
+	defer focusedApp.Release()
+
+	// Get bundle ID
+	bundleID := focusedApp.GetBundleIdentifier()
+	if bundleID == "" {
+		a.logger.Debug("Could not get bundle ID, using global roles only")
+		// Use global roles
+		accessibility.SetClickableRoles(a.config.Accessibility.ClickableRoles)
+		accessibility.SetScrollableRoles(a.config.Accessibility.ScrollableRoles)
+		return
+	}
+
+	// Get merged roles for this app
+	clickableRoles := a.config.GetClickableRolesForApp(bundleID)
+	scrollableRoles := a.config.GetScrollableRolesForApp(bundleID)
+
+	a.logger.Debug("Updating roles for current app",
+		zap.String("bundle_id", bundleID),
+		zap.Int("clickable_count", len(clickableRoles)),
+		zap.Int("scrollable_count", len(scrollableRoles)))
+
+	// Apply the merged roles
+	accessibility.SetClickableRoles(clickableRoles)
+	accessibility.SetScrollableRoles(scrollableRoles)
+}
+
 // activateHintMode activates hint mode
 func (a *App) activateHintMode(withActions bool) {
 	if !a.enabled {
@@ -194,6 +231,9 @@ func (a *App) activateHintMode(withActions bool) {
 
 	a.logger.Info("Activating hint mode")
 	a.exitMode() // Exit current mode first
+
+	// Update roles for the current focused app
+	a.updateRolesForCurrentApp()
 
 	// Enable Electron accessibility if needed before scanning
 	if a.config.Accessibility.ElectronSupport.Enable {
@@ -646,6 +686,9 @@ func (a *App) activateScrollMode() {
 
 	a.logger.Info("Activating scroll mode")
 	a.exitMode() // Exit current mode first
+
+	// Update roles for the current focused app
+	a.updateRolesForCurrentApp()
 
 	a.logger.Info("Initializing scroll controller")
 	// Activate scroll mode

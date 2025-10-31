@@ -30,6 +30,13 @@ type AccessibilityConfig struct {
 	ClickableRoles  []string              `toml:"clickable_roles"`
 	ScrollableRoles []string              `toml:"scrollable_roles"`
 	ElectronSupport ElectronSupportConfig `toml:"electron_support"`
+	AppConfigs      []AppConfig           `toml:"app_configs"`
+}
+
+type AppConfig struct {
+	BundleID               string   `toml:"bundle_id"`
+	AdditionalClickable    []string `toml:"additional_clickable_roles"`
+	AdditionalScrollable   []string `toml:"additional_scrollable_roles"`
 }
 
 type HotkeysConfig struct {
@@ -273,7 +280,90 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	// Validate app configs
+	for i, appConfig := range c.Accessibility.AppConfigs {
+		if strings.TrimSpace(appConfig.BundleID) == "" {
+			return fmt.Errorf("accessibility.app_configs[%d].bundle_id cannot be empty", i)
+		}
+		for _, role := range appConfig.AdditionalClickable {
+			if strings.TrimSpace(role) == "" {
+				return fmt.Errorf("accessibility.app_configs[%d].additional_clickable_roles cannot contain empty values", i)
+			}
+		}
+		for _, role := range appConfig.AdditionalScrollable {
+			if strings.TrimSpace(role) == "" {
+				return fmt.Errorf("accessibility.app_configs[%d].additional_scrollable_roles cannot contain empty values", i)
+			}
+		}
+	}
+
 	return nil
+}
+
+// GetClickableRolesForApp returns the merged clickable roles for a specific app.
+// It combines global clickable roles with app-specific additional roles.
+func (c *Config) GetClickableRolesForApp(bundleID string) []string {
+	// Start with global roles
+	rolesMap := make(map[string]struct{})
+	for _, role := range c.Accessibility.ClickableRoles {
+		trimmed := strings.TrimSpace(role)
+		if trimmed != "" {
+			rolesMap[trimmed] = struct{}{}
+		}
+	}
+
+	// Add app-specific roles
+	for _, appConfig := range c.Accessibility.AppConfigs {
+		if appConfig.BundleID == bundleID {
+			for _, role := range appConfig.AdditionalClickable {
+				trimmed := strings.TrimSpace(role)
+				if trimmed != "" {
+					rolesMap[trimmed] = struct{}{}
+				}
+			}
+			break
+		}
+	}
+
+	// Convert map to slice
+	roles := make([]string, 0, len(rolesMap))
+	for role := range rolesMap {
+		roles = append(roles, role)
+	}
+	return roles
+}
+
+// GetScrollableRolesForApp returns the merged scrollable roles for a specific app.
+// It combines global scrollable roles with app-specific additional roles.
+func (c *Config) GetScrollableRolesForApp(bundleID string) []string {
+	// Start with global roles
+	rolesMap := make(map[string]struct{})
+	for _, role := range c.Accessibility.ScrollableRoles {
+		trimmed := strings.TrimSpace(role)
+		if trimmed != "" {
+			rolesMap[trimmed] = struct{}{}
+		}
+	}
+
+	// Add app-specific roles
+	for _, appConfig := range c.Accessibility.AppConfigs {
+		if appConfig.BundleID == bundleID {
+			for _, role := range appConfig.AdditionalScrollable {
+				trimmed := strings.TrimSpace(role)
+				if trimmed != "" {
+					rolesMap[trimmed] = struct{}{}
+				}
+			}
+			break
+		}
+	}
+
+	// Convert map to slice
+	roles := make([]string, 0, len(rolesMap))
+	for role := range rolesMap {
+		roles = append(roles, role)
+	}
+	return roles
 }
 
 // Save saves the configuration to the specified path
