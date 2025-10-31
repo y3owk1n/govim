@@ -26,6 +26,7 @@ type Mode int
 const (
 	ModeIdle Mode = iota
 	ModeHint
+	ModeHintWithActions
 	ModeScroll
 )
 
@@ -42,6 +43,7 @@ type App struct {
 	currentHints     *hints.HintCollection
 	hintInput        string
 	lastScrollKey    string
+	selectedHint     *hints.Hint
 	enabled          bool
 }
 
@@ -97,10 +99,10 @@ func NewApp(cfg *config.Config) (*App, error) {
 		hintInput:        "",
 	}
 
-	// Create event tap for hint mode
-	app.eventTap = eventtap.NewEventTap(app.handleHintKey, log)
+	// Create event tap for capturing keys in modes
+	app.eventTap = eventtap.NewEventTap(app.handleKeyPress, log)
 	if app.eventTap == nil {
-		log.Warn("Event tap creation failed - hint mode key capture won't work")
+		log.Warn("Event tap creation failed - key capture won't work")
 	}
 
 	return app, nil
@@ -117,7 +119,8 @@ func (a *App) Run() error {
 
 	a.logger.Info("GoVim is running. Press hotkeys to activate modes.")
 	fmt.Println("✓ GoVim is running")
-	fmt.Printf("  Hint mode: %s\n", a.config.Hotkeys.ActivateHintMode)
+	fmt.Printf("  Hint mode (direct): %s\n", a.config.Hotkeys.ActivateHintMode)
+	fmt.Printf("  Hint mode (with actions): %s\n", a.config.Hotkeys.ActivateHintModeWithActions)
 	fmt.Printf("  Scroll mode: %s\n", a.config.Hotkeys.ActivateScrollMode)
 	fmt.Printf("  Exit mode: %s\n", a.config.Hotkeys.ExitMode)
 
@@ -132,9 +135,20 @@ func (a *App) Run() error {
 
 // registerHotkeys registers all global hotkeys
 func (a *App) registerHotkeys() error {
-	// Hint mode hotkey
-	if _, err := a.hotkeyManager.Register(a.config.Hotkeys.ActivateHintMode, a.activateHintMode); err != nil {
+	// Hint mode hotkey (direct click)
+	a.logger.Info("Registering hint mode hotkey", zap.String("key", a.config.Hotkeys.ActivateHintMode))
+	if _, err := a.hotkeyManager.Register(a.config.Hotkeys.ActivateHintMode, func() {
+		a.activateHintMode(false)
+	}); err != nil {
 		return fmt.Errorf("failed to register hint mode hotkey: %w", err)
+	}
+
+	// Hint mode with actions hotkey
+	a.logger.Info("Registering hint mode with actions hotkey", zap.String("key", a.config.Hotkeys.ActivateHintModeWithActions))
+	if _, err := a.hotkeyManager.Register(a.config.Hotkeys.ActivateHintModeWithActions, func() {
+		a.activateHintMode(true)
+	}); err != nil {
+		return fmt.Errorf("failed to register hint mode with actions hotkey: %w", err)
 	}
 
 	// Scroll mode hotkey
@@ -156,12 +170,12 @@ func (a *App) registerHotkeys() error {
 }
 
 // activateHintMode activates hint mode
-func (a *App) activateHintMode() {
+func (a *App) activateHintMode(withActions bool) {
 	if !a.enabled {
 		a.logger.Debug("GoVim is disabled, ignoring hint mode activation")
 		return
 	}
-	if a.currentMode == ModeHint {
+	if a.currentMode == ModeHint || a.currentMode == ModeHintWithActions {
 		a.logger.Debug("Hint mode already active")
 		return
 	}
@@ -200,60 +214,89 @@ func (a *App) activateHintMode() {
 	}
 
 	a.hintOverlay.Show()
-	a.currentMode = ModeHint
 
-	a.logger.Info("Hint mode activated", zap.Int("hints", len(hintList)))
-	a.logger.Info("Type a hint label to click the element")
+	if withActions {
+		a.currentMode = ModeHintWithActions
+		a.logger.Info("Hint mode with actions activated", zap.Int("hints", len(hintList)))
+		a.logger.Info("Type a hint label, then choose action: f=left, d=right, s=double, a=middle")
+	} else {
+		a.currentMode = ModeHint
+		a.logger.Info("Hint mode activated", zap.Int("hints", len(hintList)))
+		a.logger.Info("Type a hint label to click the element")
+	}
 	
 	// Enable event tap to capture keys
 	a.hintInput = ""
+	a.selectedHint = nil
 	if a.eventTap != nil {
 		a.eventTap.Enable()
 	}
 }
 
-// handleHintKey handles key presses in hint mode and scroll mode
-func (a *App) handleHintKey(key string) {
-	// Handle escape in any mode
+// handleKeyPress routes key presses to the appropriate handler based on mode
+func (a *App) handleKeyPress(key string) {
+	// Only handle keys when in an active mode
+	if a.currentMode == ModeIdle {
+		return
+	}
+
+	// Handle Escape key to exit any mode
 	if key == "\x1b" || key == "escape" {
-		a.logger.Debug("Escape pressed")
+		a.logger.Debug("Escape pressed in mode", zap.String("mode", a.getModeString()))
 		a.exitMode()
 		return
 	}
 
-	// Handle scroll mode
-	if a.currentMode == ModeScroll {
+	// Route to appropriate handler
+	if a.currentMode == ModeHint || a.currentMode == ModeHintWithActions {
+		a.handleHintKey(key)
+	} else if a.currentMode == ModeScroll {
 		a.handleScrollKey(key)
+	}
+}
+
+// handleHintKey handles key presses in hint mode
+func (a *App) handleHintKey(key string) {
+	// If we have a selected hint (waiting for action), handle action selection
+	if a.selectedHint != nil {
+		a.handleActionKey(key)
 		return
 	}
 
-	// Handle hint mode
-	if a.currentMode == ModeHint && a.currentHints != nil {
-		a.logger.Debug("Hint key", zap.String("key", key))
+	// Ignore non-letter keys
+	if len(key) != 1 || !isLetter(key[0]) {
+		return
+	}
+
+	// Accumulate input
+	a.hintInput += key
+	a.logger.Debug("Hint input", zap.String("input", a.hintInput))
+	
+	// Check if any hints start with this input
+	filtered := a.currentHints.FilterByPrefix(a.hintInput)
+	
+	if len(filtered) == 0 {
+		// No matches - reset
+		a.logger.Debug("No matching hints, resetting")
+		a.hintInput = ""
+		return
+	}
+	
+	// If exactly one match and input matches the full label
+	if len(filtered) == 1 && filtered[0].Label == a.hintInput {
+		hint := filtered[0]
 		
-		// Only accept lowercase letters
-		if len(key) != 1 || key[0] < 'a' || key[0] > 'z' {
-			a.logger.Debug("Ignoring non-letter key", zap.String("key", key))
+		if a.currentMode == ModeHintWithActions {
+			// Store the hint and wait for action selection
+			a.selectedHint = hint
+			a.logger.Info("Hint selected, choose action", zap.String("label", a.hintInput))
+			
+			// Clear all hints and show action menu at the hint location
+			a.hintOverlay.Clear()
+			a.showActionMenu(hint)
 			return
-		}
-		
-		// Add to input buffer
-		a.hintInput += key
-		a.logger.Debug("Hint input", zap.String("input", a.hintInput))
-		
-		// Check if any hints start with this input
-		filtered := a.currentHints.FilterByPrefix(a.hintInput)
-		
-		if len(filtered) == 0 {
-			// No matches - reset
-			a.logger.Debug("No matching hints, resetting")
-			a.hintInput = ""
-			return
-		}
-		
-		// If exactly one match and input matches the full label, click it
-		if len(filtered) == 1 && filtered[0].Label == a.hintInput {
-			hint := filtered[0]
+		} else {
+			// Direct click mode - click immediately
 			a.logger.Info("Clicking element", zap.String("label", a.hintInput))
 			if err := hint.Element.Element.Click(); err != nil {
 				a.logger.Error("Failed to click element", zap.Error(err))
@@ -261,10 +304,73 @@ func (a *App) handleHintKey(key string) {
 			a.exitMode()
 			return
 		}
-		
-		// Otherwise, keep collecting input
-		a.logger.Debug("Partial match", zap.Int("matches", len(filtered)))
 	}
+	
+	// Otherwise, keep collecting input
+	a.logger.Debug("Partial match", zap.Int("matches", len(filtered)))
+}
+
+// showActionMenu displays the action selection menu at the hint location
+func (a *App) showActionMenu(hint *hints.Hint) {
+	cfg := a.config.Hints
+	
+	// Create action hints showing available actions
+	actionText := fmt.Sprintf("[%s]Left [%s]Right [%s]Double [%s]Middle", 
+		cfg.ClickActionLeft, 
+		cfg.ClickActionRight, 
+		cfg.ClickActionDouble, 
+		cfg.ClickActionMiddle)
+	
+	// Create a single hint at the element's position with the action menu
+	actionHint := &hints.Hint{
+		Label:    actionText,
+		Element:  hint.Element,
+		Position: hint.Position,
+	}
+	
+	// Draw the action menu
+	if err := a.hintOverlay.DrawHints([]*hints.Hint{actionHint}); err != nil {
+		a.logger.Error("Failed to draw action menu", zap.Error(err))
+	}
+}
+
+// handleActionKey handles action key presses after a hint is selected
+func (a *App) handleActionKey(key string) {
+	if a.selectedHint == nil {
+		return
+	}
+
+	hint := a.selectedHint
+	cfg := a.config.Hints
+	
+	a.logger.Info("Action key pressed", zap.String("key", key))
+	
+	var err error
+	switch key {
+	case cfg.ClickActionLeft:
+		a.logger.Info("Performing left click", zap.String("label", hint.Label))
+		err = hint.Element.Element.Click()
+	case cfg.ClickActionRight:
+		a.logger.Info("Performing right click", zap.String("label", hint.Label))
+		err = hint.Element.Element.RightClick()
+	case cfg.ClickActionDouble:
+		a.logger.Info("Performing double click", zap.String("label", hint.Label))
+		err = hint.Element.Element.DoubleClick()
+	case cfg.ClickActionMiddle:
+		a.logger.Info("Performing middle click", zap.String("label", hint.Label))
+		// Middle click not implemented yet, fallback to left click
+		a.logger.Warn("Middle click not implemented, using left click")
+		err = hint.Element.Element.Click()
+	default:
+		a.logger.Debug("Unknown action key, ignoring", zap.String("key", key))
+		return
+	}
+	
+	if err != nil {
+		a.logger.Error("Failed to perform action", zap.Error(err))
+	}
+	
+	a.exitMode()
 }
 
 // handleScrollKey handles key presses in scroll mode
@@ -485,9 +591,10 @@ func (a *App) exitMode() {
 	a.hintOverlay.Clear()
 
 	// Clean up mode-specific state
-	if a.currentMode == ModeHint {
+	if a.currentMode == ModeHint || a.currentMode == ModeHintWithActions {
 		a.currentHints = nil
 		a.hintInput = ""
+		a.selectedHint = nil
 	} else if a.currentMode == ModeScroll {
 		a.scrollController.Cleanup()
 	}
@@ -521,11 +628,18 @@ func (a *App) getModeString() string {
 		return "idle"
 	case ModeHint:
 		return "hint"
+	case ModeHintWithActions:
+		return "hint_with_actions"
 	case ModeScroll:
 		return "scroll"
 	default:
 		return "unknown"
 	}
+}
+
+// isLetter checks if a byte is a letter
+func isLetter(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
 // Cleanup cleans up resources

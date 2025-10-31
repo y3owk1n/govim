@@ -9,8 +9,11 @@ hint_characters = "asdfghjkl"
 hint_style = "alphabet"
 
 [hotkeys]
-# Activate hint mode to show clickable elements
+# Activate hint mode (direct click after typing hint)
 activate_hint_mode = "Cmd+Shift+Space"
+
+# Activate hint mode with action selection (choose click type after typing hint)
+activate_hint_mode_with_actions = "Cmd+Shift+A"
 
 # Activate scroll mode for vim-style scrolling
 activate_scroll_mode = "Cmd+Shift+J"
@@ -48,6 +51,13 @@ border_color = "#000000"
 
 # Opacity (0.0 to 1.0)
 opacity = 0.95
+
+# Click action keys (for hint mode with actions)
+# After typing a hint label, press one of these keys to perform the action
+click_action_left = "f"           # Left click
+click_action_right = "d"          # Right click  
+click_action_double = "s"         # Double left click
+click_action_middle = "a"         # Middle click
 
 [scroll]
 # Base scroll amount for j/k keys in pixels

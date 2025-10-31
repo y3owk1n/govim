@@ -30,11 +30,12 @@ type GeneralConfig struct {
 }
 
 type HotkeysConfig struct {
-	ActivateHintMode    string `toml:"activate_hint_mode"`
-	ActivateScrollMode  string `toml:"activate_scroll_mode"`
-	ExitMode            string `toml:"exit_mode"`
-	ShowCommandPalette  string `toml:"show_command_palette"`
-	ReloadConfig        string `toml:"reload_config"`
+	ActivateHintMode            string `toml:"activate_hint_mode"`
+	ActivateHintModeWithActions string `toml:"activate_hint_mode_with_actions"`
+	ActivateScrollMode          string `toml:"activate_scroll_mode"`
+	ExitMode                    string `toml:"exit_mode"`
+	ShowCommandPalette          string `toml:"show_command_palette"`
+	ReloadConfig                string `toml:"reload_config"`
 }
 
 type ScrollConfig struct {
@@ -50,15 +51,19 @@ type ScrollConfig struct {
 }
 
 type HintsConfig struct {
-	FontSize        int     `toml:"font_size"`
-	FontFamily      string  `toml:"font_family"`
-	BackgroundColor string  `toml:"background_color"`
-	TextColor       string  `toml:"text_color"`
-	BorderRadius    int     `toml:"border_radius"`
-	Padding         int     `toml:"padding"`
-	BorderWidth     int     `toml:"border_width"`
-	BorderColor     string  `toml:"border_color"`
-	Opacity         float64 `toml:"opacity"`
+	FontSize          int     `toml:"font_size"`
+	FontFamily        string  `toml:"font_family"`
+	BackgroundColor   string  `toml:"background_color"`
+	TextColor         string  `toml:"text_color"`
+	BorderRadius      int     `toml:"border_radius"`
+	Padding           int     `toml:"padding"`
+	BorderWidth       int     `toml:"border_width"`
+	BorderColor       string  `toml:"border_color"`
+	Opacity           float64 `toml:"opacity"`
+	ClickActionLeft   string  `toml:"click_action_left"`
+	ClickActionRight  string  `toml:"click_action_right"`
+	ClickActionDouble string  `toml:"click_action_double"`
+	ClickActionMiddle string  `toml:"click_action_middle"`
 }
 
 type AppearanceConfig struct {
@@ -117,11 +122,12 @@ func DefaultConfig() *Config {
 			Debug:                    false,
 		},
 		Hotkeys: HotkeysConfig{
-			ActivateHintMode:   "Cmd+Shift+Space",
-			ActivateScrollMode: "Cmd+Shift+J",
-			ExitMode:           "Escape",
-			ShowCommandPalette: "Cmd+Shift+P",
-			ReloadConfig:       "Cmd+Shift+R",
+			ActivateHintMode:            "Cmd+Shift+Space",
+			ActivateHintModeWithActions: "Cmd+Shift+A",
+			ActivateScrollMode:          "Cmd+Shift+J",
+			ExitMode:                    "Escape",
+			ShowCommandPalette:          "Cmd+Shift+P",
+			ReloadConfig:                "Cmd+Shift+R",
 		},
 		Scroll: ScrollConfig{
 			ScrollSpeed:            50,
@@ -135,15 +141,19 @@ func DefaultConfig() *Config {
 			ScrollToEdgeDelta:      5000,
 		},
 		Hints: HintsConfig{
-			FontSize:        14,
-			FontFamily:      "SF Mono",
-			BackgroundColor: "#FFD700",
-			TextColor:       "#000000",
-			BorderRadius:    4,
-			Padding:         4,
-			BorderWidth:     1,
-			BorderColor:     "#000000",
-			Opacity:         0.95,
+			FontSize:          14,
+			FontFamily:        "SF Mono",
+			BackgroundColor:   "#FFD700",
+			TextColor:         "#000000",
+			BorderRadius:      4,
+			Padding:           4,
+			BorderWidth:       1,
+			BorderColor:       "#000000",
+			Opacity:           0.95,
+			ClickActionLeft:   "f",
+			ClickActionRight:  "d",
+			ClickActionDouble: "s",
+			ClickActionMiddle: "a",
 		},
 		Appearance: AppearanceConfig{
 			OverlayOpacity:  0.95,
