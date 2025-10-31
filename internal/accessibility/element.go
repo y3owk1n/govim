@@ -9,9 +9,13 @@ import "C"
 import (
 	"fmt"
 	"image"
+	"sort"
 	"strings"
 	"sync"
 	"unsafe"
+
+	"github.com/y3owk1n/govim/internal/logger"
+	"go.uber.org/zap"
 )
 
 // Element represents an accessibility UI element
@@ -50,6 +54,31 @@ func SetAdditionalClickableRoles(roles []string) {
 		}
 		customClickableRoles[trimmed] = struct{}{}
 	}
+
+	logger.Debug("Updated additional clickable roles",
+		zap.Int("count", len(customClickableRoles)),
+		zap.Strings("roles", roles))
+}
+
+// GetClickableRoles returns the default and additional roles treated as clickable.
+func GetClickableRoles() (defaultRoles []string, additionalRoles []string) {
+	defaults := make([]string, 0, len(defaultClickableRoles))
+	for role, allowed := range defaultClickableRoles {
+		if allowed {
+			defaults = append(defaults, role)
+		}
+	}
+	sort.Strings(defaults)
+
+	customClickableRolesMu.RLock()
+	additionals := make([]string, 0, len(customClickableRoles))
+	for role := range customClickableRoles {
+		additionals = append(additionals, role)
+	}
+	customClickableRolesMu.RUnlock()
+	sort.Strings(additionals)
+
+	return defaults, additionals
 }
 
 // ElementInfo contains information about a UI element
@@ -269,6 +298,9 @@ func (e *Element) IsClickable() bool {
 
 	if allowed, ok := defaultClickableRoles[info.Role]; ok {
 		if allowed {
+			logger.Debug("Element matches default clickable role",
+				zap.String("role", info.Role),
+				zap.String("title", info.Title))
 			return true
 		}
 	}
@@ -277,7 +309,14 @@ func (e *Element) IsClickable() bool {
 	_, ok := customClickableRoles[info.Role]
 	customClickableRolesMu.RUnlock()
 
-	return ok
+	if ok {
+		logger.Debug("Element matches additional clickable role",
+			zap.String("role", info.Role),
+			zap.String("title", info.Title))
+		return true
+	}
+
+	return false
 }
 
 // GetAllWindows returns all windows of the focused application

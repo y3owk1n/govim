@@ -80,6 +80,16 @@ func NewApp(cfg *config.Config) (*App, error) {
 		}
 	}
 
+	// Apply additional clickable roles from config
+	if len(cfg.Accessibility.AdditionalClickableRoles) > 0 {
+		log.Info("Applying additional clickable roles",
+			zap.Int("count", len(cfg.Accessibility.AdditionalClickableRoles)),
+			zap.Strings("roles", cfg.Accessibility.AdditionalClickableRoles))
+	} else {
+		log.Debug("No additional clickable roles configured")
+	}
+	accessibility.SetAdditionalClickableRoles(cfg.Accessibility.AdditionalClickableRoles)
+
 	// Create hotkey manager
 	hotkeyMgr := hotkeys.NewManager(log)
 	hotkeys.SetGlobalManager(hotkeyMgr)
@@ -206,6 +216,11 @@ func (a *App) activateHintMode(withActions bool) {
 	a.exitMode() // Exit current mode first
 
 	// Get clickable elements
+	defaultRoles, additionalRoles := accessibility.GetClickableRoles()
+	a.logger.Debug("Scanning for clickable elements",
+		zap.Strings("default_roles", defaultRoles),
+		zap.Strings("additional_roles", additionalRoles))
+
 	elements, err := accessibility.GetClickableElements()
 	if err != nil {
 		a.logger.Error("Failed to get clickable elements", zap.Error(err))
@@ -649,6 +664,14 @@ func (a *App) reloadConfig() {
 	}
 
 	a.config = newConfig
+	if len(newConfig.Accessibility.AdditionalClickableRoles) > 0 {
+		a.logger.Info("Applying additional clickable roles",
+			zap.Int("count", len(newConfig.Accessibility.AdditionalClickableRoles)),
+			zap.Strings("roles", newConfig.Accessibility.AdditionalClickableRoles))
+	} else {
+		a.logger.Debug("No additional clickable roles configured")
+	}
+	accessibility.SetAdditionalClickableRoles(newConfig.Accessibility.AdditionalClickableRoles)
 	a.logger.Info("Configuration reloaded successfully")
 }
 
