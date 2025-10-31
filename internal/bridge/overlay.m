@@ -40,16 +40,16 @@
 
 - (void)drawRect:(NSRect)dirtyRect {
     [super drawRect:dirtyRect];
-    
+
     // Clear background
     [[NSColor clearColor] setFill];
     NSRectFill(dirtyRect);
-    
+
     // Draw scroll highlight if enabled
     if (self.showScrollHighlight) {
         [self drawScrollHighlight];
     }
-    
+
     // Draw hints
     [self drawHints];
 }
@@ -134,60 +134,152 @@
     return [NSColor colorWithRed:red green:green blue:blue alpha:alpha];
 }
 
+- (NSBezierPath *)createTooltipPath:(NSRect)rect
+                          arrowSize:(CGFloat)arrowSize
+                     elementCenterX:(CGFloat)elementCenterX
+                    elementCenterY:(CGFloat)elementCenterY {
+    NSBezierPath *path = [NSBezierPath bezierPath];
+
+    // Tooltip body rectangle (excluding arrow space)
+    NSRect bodyRect = NSMakeRect(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height - arrowSize);
+
+    // Arrow dimensions
+    CGFloat arrowTipX = elementCenterX;
+    CGFloat arrowTipY = elementCenterY;
+    CGFloat arrowBaseY = bodyRect.origin.y + bodyRect.size.height;
+    CGFloat arrowWidth = arrowSize * 2.5;  // Make arrow wider for better visibility
+    CGFloat arrowLeft = arrowTipX - arrowWidth / 2;
+    CGFloat arrowRight = arrowTipX + arrowWidth / 2;
+
+    // Clamp arrow to tooltip bounds
+    CGFloat tooltipLeft = bodyRect.origin.x + self.hintBorderRadius;
+    CGFloat tooltipRight = bodyRect.origin.x + bodyRect.size.width - self.hintBorderRadius;
+    arrowLeft = MAX(arrowLeft, tooltipLeft);
+    arrowRight = MIN(arrowRight, tooltipRight);
+    arrowTipX = (arrowLeft + arrowRight) / 2;  // Recenter if clamped
+
+    // Start from top-left corner
+    [path moveToPoint:NSMakePoint(bodyRect.origin.x + self.hintBorderRadius, bodyRect.origin.y)];
+
+    // Top edge
+    [path lineToPoint:NSMakePoint(bodyRect.origin.x + bodyRect.size.width - self.hintBorderRadius, bodyRect.origin.y)];
+
+    // Top-right corner
+    [path appendBezierPathWithArcFromPoint:NSMakePoint(bodyRect.origin.x + bodyRect.size.width, bodyRect.origin.y)
+                                   toPoint:NSMakePoint(bodyRect.origin.x + bodyRect.size.width, bodyRect.origin.y + self.hintBorderRadius)
+                                    radius:self.hintBorderRadius];
+
+    // Right edge
+    [path lineToPoint:NSMakePoint(bodyRect.origin.x + bodyRect.size.width, arrowBaseY - self.hintBorderRadius)];
+
+    // Bottom-right corner
+    [path appendBezierPathWithArcFromPoint:NSMakePoint(bodyRect.origin.x + bodyRect.size.width, arrowBaseY)
+                                   toPoint:NSMakePoint(bodyRect.origin.x + bodyRect.size.width - self.hintBorderRadius, arrowBaseY)
+                                    radius:self.hintBorderRadius];
+
+    // Bottom edge to arrow right side
+    [path lineToPoint:NSMakePoint(arrowRight, arrowBaseY)];
+
+    // Arrow right side to tip
+    [path lineToPoint:NSMakePoint(arrowTipX, arrowTipY)];
+
+    // Arrow left side
+    [path lineToPoint:NSMakePoint(arrowLeft, arrowBaseY)];
+
+    // Continue bottom edge to bottom-left corner
+    [path lineToPoint:NSMakePoint(bodyRect.origin.x + self.hintBorderRadius, arrowBaseY)];
+
+    // Bottom-left corner
+    [path appendBezierPathWithArcFromPoint:NSMakePoint(bodyRect.origin.x, arrowBaseY)
+                                   toPoint:NSMakePoint(bodyRect.origin.x, arrowBaseY - self.hintBorderRadius)
+                                    radius:self.hintBorderRadius];
+
+    // Left edge
+    [path lineToPoint:NSMakePoint(bodyRect.origin.x, bodyRect.origin.y + self.hintBorderRadius)];
+
+    // Top-left corner
+    [path appendBezierPathWithArcFromPoint:NSMakePoint(bodyRect.origin.x, bodyRect.origin.y)
+                                   toPoint:NSMakePoint(bodyRect.origin.x + self.hintBorderRadius, bodyRect.origin.y)
+                                    radius:self.hintBorderRadius];
+
+    [path closePath];
+    return path;
+}
+
 - (void)drawHints {
     for (NSDictionary *hint in self.hints) {
         NSString *label = hint[@"label"];
         if (!label || [label length] == 0) continue;
-        
+
         NSPoint position = [hint[@"position"] pointValue];
         NSNumber *matchedPrefixLengthNum = hint[@"matchedPrefixLength"];
         int matchedPrefixLength = matchedPrefixLengthNum ? [matchedPrefixLengthNum intValue] : 0;
-        
+
         // Create attributed string with matched prefix in different color
         NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:label];
         [attrString addAttribute:NSFontAttributeName value:self.hintFont range:NSMakeRange(0, [label length])];
         [attrString addAttribute:NSForegroundColorAttributeName value:self.hintTextColor range:NSMakeRange(0, [label length])];
-        
+
         // Highlight matched prefix
         if (matchedPrefixLength > 0 && matchedPrefixLength <= [label length]) {
-            [attrString addAttribute:NSForegroundColorAttributeName 
-                               value:self.hintMatchedTextColor 
+            [attrString addAttribute:NSForegroundColorAttributeName
+                               value:self.hintMatchedTextColor
                                range:NSMakeRange(0, matchedPrefixLength)];
         }
-        
+
         NSSize textSize = [attrString size];
-        
-        // Calculate hint box size
+
+        // Calculate hint box size (include arrow space)
         CGFloat padding = self.hintPadding;
-        CGFloat boxWidth = textSize.width + (padding * 2);
-        CGFloat boxHeight = textSize.height + (padding * 2);
-        
+        CGFloat arrowHeight = 2.0;  // Arrow height (reduced for cleaner look)
+
+        // Calculate dimensions - ensure box is at least square
+        CGFloat contentWidth = textSize.width + (padding * 2);
+        CGFloat contentHeight = textSize.height + (padding * 2);
+
+        // Make box square if content is narrow, otherwise use content width
+        CGFloat boxWidth = MAX(contentWidth, contentHeight);
+        CGFloat boxHeight = contentHeight + arrowHeight;
+
+        // Position tooltip above element with arrow pointing down to element center
+        // Element center is at (position.x + size.x/2, position.y + size.y/2)
+        CGFloat elementCenterX = position.x + (hint[@"size"] ? [hint[@"size"] sizeValue].width : 0) / 2.0;
+        CGFloat elementCenterY = position.y + (hint[@"size"] ? [hint[@"size"] sizeValue].height : 0) / 2.0;
+
+        // Position tooltip body above element (arrow points down)
+        CGFloat gap = 3.0;  // Small gap between arrow tip and element
+        CGFloat tooltipX = elementCenterX - boxWidth / 2.0;  // Center tooltip horizontally on element
+        CGFloat tooltipY = elementCenterY + arrowHeight + gap;  // Position tooltip body above element
+
         // Convert coordinates (macOS uses bottom-left origin, we need top-left)
         NSScreen *mainScreen = [NSScreen mainScreen];
         CGFloat screenHeight = [mainScreen frame].size.height;
-        CGFloat flippedY = screenHeight - position.y - boxHeight;
-        
+        CGFloat flippedY = screenHeight - tooltipY - boxHeight;
+        CGFloat flippedElementCenterY = screenHeight - elementCenterY;
+
         NSRect hintRect = NSMakeRect(
-            position.x,
+            tooltipX,
             flippedY,
             boxWidth,
             boxHeight
         );
-        
-        // Draw background with border
-        NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:hintRect xRadius:self.hintBorderRadius yRadius:self.hintBorderRadius];
+
+        // Draw tooltip background with arrow pointing to element center
+        NSBezierPath *path = [self createTooltipPath:hintRect
+                                          arrowSize:arrowHeight
+                                     elementCenterX:elementCenterX
+                                    elementCenterY:flippedElementCenterY];
         [self.hintBackgroundColor setFill];
         [path fill];
-        
+
         [self.hintBorderColor setStroke];
         [path setLineWidth:self.hintBorderWidth];
         [path stroke];
-        
-        // Draw text (coordinates are already flipped for the box)
-        NSPoint textPosition = NSMakePoint(
-            position.x + padding,
-            flippedY + padding
-        );
+
+        // Draw text (centered in tooltip body)
+        CGFloat textX = hintRect.origin.x + (boxWidth - textSize.width) / 2.0;  // Center horizontally
+        CGFloat textY = hintRect.origin.y + padding;
+        NSPoint textPosition = NSMakePoint(textX, textY);
         [attrString drawAtPoint:textPosition];
     }
 }
@@ -196,24 +288,24 @@
     if (CGRectIsEmpty(self.scrollHighlight)) {
         return;
     }
-    
+
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
     [context saveGraphicsState];
-    
+
     // Convert coordinates (macOS uses bottom-left origin)
     NSScreen *mainScreen = [NSScreen mainScreen];
     CGFloat screenHeight = [mainScreen frame].size.height;
     CGFloat flippedY = screenHeight - self.scrollHighlight.origin.y - self.scrollHighlight.size.height;
-    
+
     NSRect rect = NSMakeRect(
         self.scrollHighlight.origin.x,
         flippedY,
         self.scrollHighlight.size.width,
         self.scrollHighlight.size.height
     );
-    
+
     NSBezierPath *path = [NSBezierPath bezierPathWithRect:rect];
-    
+
     if (self.scrollHighlightColor) {
         [self.scrollHighlightColor setStroke];
     } else {
@@ -221,7 +313,7 @@
     }
     [path setLineWidth:self.scrollHighlightWidth];
     [path stroke];
-    
+
     [context restoreGraphicsState];
 }
 
@@ -229,14 +321,14 @@
     if (!hexString || [hexString length] == 0) {
         return [NSColor blackColor];
     }
-    
+
     unsigned rgbValue = 0;
     NSScanner *scanner = [NSScanner scannerWithString:hexString];
     if ([hexString hasPrefix:@"#"]) {
         [scanner setScanLocation:1]; // Skip '#'
     }
     [scanner scanHexInt:&rgbValue];
-    
+
     return [NSColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0
                            green:((rgbValue & 0xFF00) >> 8)/255.0
                             blue:(rgbValue & 0xFF)/255.0
@@ -263,19 +355,19 @@
 - (void)createWindow {
     NSScreen *mainScreen = [NSScreen mainScreen];
     NSRect screenFrame = [mainScreen frame];
-    
+
     // Create window
     self.window = [[NSWindow alloc] initWithContentRect:screenFrame
                                               styleMask:NSWindowStyleMaskBorderless
                                                 backing:NSBackingStoreBuffered
                                                   defer:NO];
-    
+
     if ([self.window respondsToSelector:@selector(setAnimationBehavior:)]) {
         [self.window setAnimationBehavior:NSWindowAnimationBehaviorNone];
     }
     [self.window setAnimations:@{}];
     [self.window setAlphaValue:1.0];
-    
+
     [self.window setLevel:NSScreenSaverWindowLevel]; // Higher level to be above everything
     [self.window setOpaque:NO];
     [self.window setBackgroundColor:[NSColor clearColor]];
@@ -286,7 +378,7 @@
                                         NSWindowCollectionBehaviorStationary |
                                         NSWindowCollectionBehaviorFullScreenAuxiliary |
                                         NSWindowCollectionBehaviorIgnoresCycle];
-    
+
     // Create overlay view
     self.overlayView = [[OverlayView alloc] initWithFrame:screenFrame];
     [self.window setContentView:self.overlayView];
@@ -303,7 +395,7 @@ OverlayWindow createOverlayWindow() {
 
 void destroyOverlayWindow(OverlayWindow window) {
     if (!window) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
     [controller.window close];
     [controller release];
@@ -311,21 +403,21 @@ void destroyOverlayWindow(OverlayWindow window) {
 
 void showOverlayWindow(OverlayWindow window) {
     if (!window) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
     [controller.window orderFrontRegardless];
 }
 
 void hideOverlayWindow(OverlayWindow window) {
     if (!window) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
     [controller.window orderOut:nil];
 }
 
 void clearOverlay(OverlayWindow window) {
     if (!window) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
     [controller.overlayView.hints removeAllObjects];
     controller.overlayView.showScrollHighlight = NO;
@@ -334,60 +426,60 @@ void clearOverlay(OverlayWindow window) {
 
 void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style) {
     if (!window || !hints) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    
+
     // Clear existing hints
     [controller.overlayView.hints removeAllObjects];
 
     // Apply style
     [controller.overlayView applyStyle:style];
-    
+
     // Add new hints
     for (int i = 0; i < count; i++) {
         HintData hint = hints[i];
-        
+
         NSDictionary *hintDict = @{
             @"label": @(hint.label),
             @"position": [NSValue valueWithPoint:NSPointFromCGPoint(hint.position)],
             @"matchedPrefixLength": @(hint.matchedPrefixLength)
         };
-        
+
         [controller.overlayView.hints addObject:hintDict];
     }
-    
+
     // Redraw
     [controller.overlayView setNeedsDisplay:YES];
 }
 
 void drawScrollHighlight(OverlayWindow window, CGRect bounds, char* color, int width) {
     if (!window) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    
+
     controller.overlayView.scrollHighlight = bounds;
     controller.overlayView.scrollHighlightWidth = width;
     controller.overlayView.showScrollHighlight = YES;
-    
+
     if (color) {
         NSString *colorStr = @(color);
         unsigned rgbValue = 0;
         NSScanner *scanner = [NSScanner scannerWithString:colorStr];
         [scanner setScanLocation:1]; // Skip '#'
         [scanner scanHexInt:&rgbValue];
-        
+
         controller.overlayView.scrollHighlightColor = [NSColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0
                                                                       green:((rgbValue & 0xFF00) >> 8)/255.0
                                                                        blue:(rgbValue & 0xFF)/255.0
                                                                       alpha:1.0];
     }
-    
+
     [controller.overlayView setNeedsDisplay:YES];
 }
 
 void setOverlayLevel(OverlayWindow window, int level) {
     if (!window) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
     [controller.window setLevel:level];
 }
