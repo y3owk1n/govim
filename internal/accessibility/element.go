@@ -370,11 +370,15 @@ func (e *Element) IsClickable() bool {
 	// For elements not in the clickable roles list, check if they have a click action
 	// This is important for web content in Electron apps where elements may have
 	// roles like AXGroup or AXStaticText but still be clickable
-	if bridge.HasClickAction(e.ref) {
-		logger.Debug("Element has click action despite non-standard role",
-			zap.String("role", info.Role),
-			zap.String("title", info.Title))
-		return true
+	// However, only check for specific roles that are commonly clickable in web content
+	// to avoid detecting too many elements
+	if info.Role == "AXGroup" || info.Role == "AXImage" {
+		if bridge.HasClickAction(e.ref) {
+			logger.Debug("Element has click action despite non-standard role",
+				zap.String("role", info.Role),
+				zap.String("title", info.Title))
+			return true
+		}
 	}
 
 	return false

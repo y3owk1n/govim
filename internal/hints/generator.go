@@ -97,31 +97,36 @@ func (g *Generator) generateAlphabetLabels(count int) []string {
 	chars := []rune(g.characters)
 	numChars := len(chars)
 
-	// Calculate how many characters we need
-	// For n chars, we can make: n + n^2 + n^3 + ... labels
-	// We want to use the minimum length that fits all hints
-	
+	// Calculate minimum length needed to avoid prefix conflicts
+	// For n chars: 1-char = n, 2-char = n², 3-char = n³
+	var length int
 	if count <= numChars {
+		length = 1
+	} else if count <= numChars*numChars {
+		length = 2
+	} else {
+		length = 3
+	}
+
+	// Generate labels of the determined length
+	if length == 1 {
 		// Single character labels
 		for i := 0; i < count; i++ {
 			labels = append(labels, string(chars[i]))
 		}
-	} else {
-		// Multi-character labels - use all 2-char combinations
-		// This avoids the prefix problem (no single chars if we have 2-char)
+	} else if length == 2 {
+		// All 2-char combinations
 		for i := 0; i < numChars && len(labels) < count; i++ {
 			for j := 0; j < numChars && len(labels) < count; j++ {
 				labels = append(labels, string(chars[i])+string(chars[j]))
 			}
 		}
-		
-		// If we need more, add 3-char combinations
-		if len(labels) < count {
-			for i := 0; i < numChars && len(labels) < count; i++ {
-				for j := 0; j < numChars && len(labels) < count; j++ {
-					for k := 0; k < numChars && len(labels) < count; k++ {
-						labels = append(labels, string(chars[i])+string(chars[j])+string(chars[k]))
-					}
+	} else {
+		// All 3-char combinations
+		for i := 0; i < numChars && len(labels) < count; i++ {
+			for j := 0; j < numChars && len(labels) < count; j++ {
+				for k := 0; k < numChars && len(labels) < count; k++ {
+					labels = append(labels, string(chars[i])+string(chars[j])+string(chars[k]))
 				}
 			}
 		}

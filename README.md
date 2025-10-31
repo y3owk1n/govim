@@ -182,6 +182,26 @@ If hints aren't appearing in Electron app content areas:
 
 3. Supported apps include: Windsurf, VS Code, Slack, GitHub Desktop, Zoom, Obsidian, Teams
 
+### Too Many Hints / Long Hint Labels
+
+When there are many clickable elements, hints will use 3 characters (e.g., "AAA", "AAS") to avoid prefix conflicts. All hints will have the same length, so you can type the full 3-character code without ambiguity.
+
+To reduce hint length:
+
+1. **Reduce max hints** to stay within 2-character range:
+   ```toml
+   [performance]
+   max_hints_displayed = 80  # With 9 chars, this keeps hints at 2 chars
+   ```
+
+2. **Add more hint characters** for more 2-char combinations:
+   ```toml
+   [general]
+   hint_characters = "asdfghjklqwertyuiop"  # 19 chars = 361 two-char combos
+   ```
+
+**Hint capacity**: 9 chars = 81 two-char hints, 12 chars = 144 two-char hints, 15 chars = 225 two-char hints.
+
 ### Chrome/Chromium Browsers
 
 To enable hints in Chrome:

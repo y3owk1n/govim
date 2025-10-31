@@ -2,6 +2,7 @@ package hints
 
 import (
 	"image"
+	"strings"
 	"testing"
 
 	"github.com/y3owk1n/govim/internal/accessibility"
@@ -262,5 +263,52 @@ func TestGenerateHintsWithMaxLimit(t *testing.T) {
 
 	if len(hints) != 2 {
 		t.Errorf("Expected 2 hints (max limit), got %d", len(hints))
+	}
+}
+
+func TestNoPrefixConflicts(t *testing.T) {
+	tests := []struct {
+		name       string
+		chars      string
+		count      int
+		shouldFail bool
+	}{
+		{"9 chars, 81 hints (2-char)", "asdfghjkl", 81, false},
+		{"9 chars, 82 hints (3-char)", "asdfghjkl", 82, false},
+		{"9 chars, 100 hints (3-char)", "asdfghjkl", 100, false},
+		{"4 chars, 16 hints (2-char)", "asdf", 16, false},
+		{"4 chars, 17 hints (3-char)", "asdf", 17, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gen := NewGenerator(tt.chars, "alphabet", 1000)
+			labels := gen.generateAlphabetLabels(tt.count)
+
+			if len(labels) != tt.count {
+				t.Fatalf("Expected %d labels, got %d", tt.count, len(labels))
+			}
+
+			// Check for prefix conflicts
+			for i, label1 := range labels {
+				for j, label2 := range labels {
+					if i != j && strings.HasPrefix(label2, label1) {
+						t.Errorf("Prefix conflict: '%s' is a prefix of '%s'", label1, label2)
+					}
+				}
+			}
+
+			// All labels should have the same length (except when count <= numChars)
+			if tt.count > len(tt.chars) {
+				expectedLen := labels[0]
+				for _, label := range labels {
+					if len(label) != len(expectedLen) {
+						t.Errorf("Inconsistent label length: got '%s' (len=%d) and '%s' (len=%d)", 
+							expectedLen, len(expectedLen), label, len(label))
+						break
+					}
+				}
+			}
+		})
 	}
 }
