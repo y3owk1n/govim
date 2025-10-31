@@ -51,21 +51,17 @@ type ScrollConfig struct {
 }
 
 type HintsConfig struct {
-	FontSize          int     `toml:"font_size"`
-	FontFamily        string  `toml:"font_family"`
-	BackgroundColor   string  `toml:"background_color"`
-	TextColor         string  `toml:"text_color"`
-	BorderRadius      int     `toml:"border_radius"`
-	Padding           int     `toml:"padding"`
-	BorderWidth       int     `toml:"border_width"`
-	BorderColor       string  `toml:"border_color"`
-	Opacity           float64 `toml:"opacity"`
-	ClickActionLeft   string  `toml:"click_action_left"`
-	ClickActionRight  string  `toml:"click_action_right"`
-	ClickActionDouble string  `toml:"click_action_double"`
-	ClickActionMiddle string  `toml:"click_action_middle"`
-	Menubar           bool    `toml:"menubar"`
-	Dock              bool    `toml:"dock"`
+	FontSize        int     `toml:"font_size"`
+	FontFamily      string  `toml:"font_family"`
+	BackgroundColor string  `toml:"background_color"`
+	TextColor       string  `toml:"text_color"`
+	BorderRadius    int     `toml:"border_radius"`
+	Padding         int     `toml:"padding"`
+	BorderWidth     int     `toml:"border_width"`
+	BorderColor     string  `toml:"border_color"`
+	Opacity         float64 `toml:"opacity"`
+	Menubar         bool    `toml:"menubar"`
+	Dock            bool    `toml:"dock"`
 }
 
 type PerformanceConfig struct {
@@ -119,21 +115,17 @@ func DefaultConfig() *Config {
 			ScrollToEdgeDelta:      5000,
 		},
 		Hints: HintsConfig{
-			FontSize:          14,
-			FontFamily:        "SF Mono",
-			BackgroundColor:   "#FFD700",
-			TextColor:         "#000000",
-			BorderRadius:      4,
-			Padding:           4,
-			BorderWidth:       1,
-			BorderColor:       "#000000",
-			Opacity:           0.95,
-			ClickActionLeft:   "f",
-			ClickActionRight:  "d",
-			ClickActionDouble: "s",
-			ClickActionMiddle: "a",
-			Menubar:           false,
-			Dock:              false,
+			FontSize:        14,
+			FontFamily:      "SF Mono",
+			BackgroundColor: "#FFD700",
+			TextColor:       "#000000",
+			BorderRadius:    4,
+			Padding:         4,
+			BorderWidth:     1,
+			BorderColor:     "#000000",
+			Opacity:         0.95,
+			Menubar:         false,
+			Dock:            false,
 		},
 		Performance: PerformanceConfig{
 			MaxHintsDisplayed:    200,

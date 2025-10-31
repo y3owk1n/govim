@@ -53,12 +53,8 @@ border_color = "#000000"
 # Opacity (0.0 to 1.0)
 opacity = 0.95
 
-# Click action keys (for hint mode with actions)
-# After typing a hint label, press one of these keys to perform the action
-click_action_left = "l"           # Left click
-click_action_right = "r"          # Right click
-click_action_double = "d"         # Double left click
-click_action_middle = "m"         # Middle click
+# Note: Action keys for hint mode with actions are hardcoded:
+#   l = left click, r = right click, d = double click, m = middle click
 
 # Include additional targets in hint mode
 # Show hints on the macOS menu bar

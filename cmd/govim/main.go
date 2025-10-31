@@ -259,7 +259,7 @@ func (a *App) activateHintMode(withActions bool) {
 	if withActions {
 		a.currentMode = ModeHintWithActions
 		a.logger.Info("Hint mode with actions activated", zap.Int("hints", len(hintList)))
-		a.logger.Info("Type a hint label, then choose action: f=left, d=right, s=double, a=middle")
+		a.logger.Info("Type a hint label, then choose action: l=left, r=right, d=double, m=middle")
 	} else {
 		a.currentMode = ModeHint
 		a.logger.Info("Hint mode activated", zap.Int("hints", len(hintList)))
@@ -362,17 +362,15 @@ func (a *App) handleHintKey(key string) {
 
 // showActionMenu displays the action selection menu at the hint location
 func (a *App) showActionMenu(hint *hints.Hint) {
-	cfg := a.config.Hints
-
-	// Create individual action hints with compact labels
+	// Hardcoded action keys (tied to UI labels)
 	actions := []struct {
 		key   string
 		label string
 	}{
-		{cfg.ClickActionLeft, "eft"},
-		{cfg.ClickActionRight, "ight"},
-		{cfg.ClickActionDouble, "ouble"},
-		{cfg.ClickActionMiddle, "iddle"},
+		{"l", "eft"},
+		{"r", "ight"},
+		{"d", "ouble"},
+		{"m", "iddle"},
 	}
 
 	// Create hints for each action, positioned horizontally with consistent gaps
@@ -408,9 +406,9 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 
 	// Create smaller style for action hints
 	actionStyle := a.config.Hints
-	actionStyle.FontSize = 11        // Smaller font
-	actionStyle.Padding = 3          // Less padding
-	actionStyle.BorderRadius = 3     // Smaller border radius
+	actionStyle.FontSize = 11    // Smaller font
+	actionStyle.Padding = 3      // Less padding
+	actionStyle.BorderRadius = 3 // Smaller border radius
 	
 	// Draw all action hints without arrows and with custom style
 	if err := a.hintOverlay.DrawHintsWithoutArrow(actionHints, actionStyle); err != nil {
@@ -425,22 +423,21 @@ func (a *App) handleActionKey(key string) {
 	}
 
 	hint := a.selectedHint
-	cfg := a.config.Hints
-
 	a.logger.Info("Action key pressed", zap.String("key", key))
 
 	var err error
+	// Hardcoded action keys (tied to UI labels)
 	switch key {
-	case cfg.ClickActionLeft:
+	case "l": // Left click
 		a.logger.Info("Performing left click", zap.String("label", hint.Label))
 		err = hint.Element.Element.Click()
-	case cfg.ClickActionRight:
+	case "r": // Right click
 		a.logger.Info("Performing right click", zap.String("label", hint.Label))
 		err = hint.Element.Element.RightClick()
-	case cfg.ClickActionDouble:
+	case "d": // Double click
 		a.logger.Info("Performing double click", zap.String("label", hint.Label))
 		err = hint.Element.Element.DoubleClick()
-	case cfg.ClickActionMiddle:
+	case "m": // Middle click
 		a.logger.Info("Performing middle click", zap.String("label", hint.Label))
 		// Middle click not implemented yet, fallback to left click
 		a.logger.Warn("Middle click not implemented, using left click")
