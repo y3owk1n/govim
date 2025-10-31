@@ -115,22 +115,100 @@ GoVim includes built-in support for Electron apps (VS Code, Windsurf, Slack, etc
 
 ## CLI Usage
 
+GoVim provides a comprehensive CLI with IPC (Inter-Process Communication) for controlling the running daemon.
+
+### Launch Commands
+
+Start the GoVim daemon:
+
 ```bash
-# Activate hint mode
-govim hint
+# Launch daemon (default)
+govim
+
+# Launch with custom config
+govim --config /path/to/config.toml
+
+# Explicit launch command (same as above)
+govim launch
+govim launch --config /path/to/config.toml
+```
+
+### Control Commands
+
+Control the running daemon (requires GoVim to be running):
+
+```bash
+# Start/resume GoVim if paused
+govim start
+
+# Pause GoVim (doesn't quit, just disables functionality)
+govim stop
+
+# Show current status
+govim status
+```
+
+### Mode Commands
+
+Activate different modes (requires GoVim to be running):
+
+```bash
+# Activate hint mode (direct click)
+govim hints
+
+# Activate hint mode with action selection
+govim hints_action
 
 # Activate scroll mode
 govim scroll
 
-# Check status
-govim status
-
-# Reload configuration
-govim reload-config
-
-# List UI elements (debugging)
-govim list-elements --app "Finder"
+# Return to idle mode
+govim idle
 ```
+
+### Examples
+
+```bash
+# Start GoVim
+govim
+
+# In another terminal, check status
+govim status
+# Output:
+#   GoVim Status:
+#     Status: running
+#     Mode: idle
+#     Config: /Users/you/Library/Application Support/govim/config.toml
+
+# Activate hints mode via CLI
+govim hints
+
+# Return to idle
+govim idle
+
+# Pause GoVim
+govim stop
+
+# Resume
+govim start
+```
+
+### Error Handling
+
+All control and mode commands will fail gracefully if GoVim is not running:
+
+```bash
+$ govim status
+Error: govim is not running
+Start it first with: govim launch
+```
+
+### IPC Architecture
+
+The CLI uses Unix domain sockets (`/tmp/govim.sock`) for communication with the daemon. This allows:
+- Fast, reliable communication
+- Multiple CLI commands while daemon runs
+- Proper error handling when daemon is not running
 
 ## Architecture
 
@@ -150,8 +228,8 @@ govim/
 │   ├── scroll/         # Scroll mode implementation
 │   ├── hotkeys/        # Hotkey management
 │   ├── config/         # Configuration parsing
-│   ├── cli/            # CLI interface
-│   ├── menubar/        # Menu bar integration
+│   ├── cli/            # CLI commands (cobra-based)
+│   ├── ipc/            # IPC server/client for CLI communication
 │   └── bridge/         # CGo/Objective-C bridges
 ├── configs/            # Default configuration
 └── scripts/            # Build and packaging scripts

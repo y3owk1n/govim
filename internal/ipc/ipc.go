@@ -1,0 +1,168 @@
+package ipc
+
+import (
+	"encoding/json"
+	"fmt"
+	"net"
+	"os"
+	"path/filepath"
+
+	"go.uber.org/zap"
+)
+
+const (
+	// SocketName is the name of the Unix socket file
+	SocketName = "govim.sock"
+)
+
+// Command represents an IPC command
+type Command struct {
+	Action string                 `json:"action"`
+	Params map[string]interface{} `json:"params,omitempty"`
+}
+
+// Response represents an IPC response
+type Response struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+// Server represents the IPC server
+type Server struct {
+	listener net.Listener
+	logger   *zap.Logger
+	handler  CommandHandler
+	socketPath string
+}
+
+// CommandHandler handles IPC commands
+type CommandHandler func(cmd Command) Response
+
+// GetSocketPath returns the path to the Unix socket
+func GetSocketPath() string {
+	tmpDir := os.TempDir()
+	return filepath.Join(tmpDir, SocketName)
+}
+
+// NewServer creates a new IPC server
+func NewServer(handler CommandHandler, logger *zap.Logger) (*Server, error) {
+	socketPath := GetSocketPath()
+	
+	// Remove existing socket if it exists
+	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to remove existing socket: %w", err)
+	}
+
+	listener, err := net.Listen("unix", socketPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create socket: %w", err)
+	}
+
+	logger.Info("IPC server created", zap.String("socket", socketPath))
+
+	return &Server{
+		listener: listener,
+		logger:   logger,
+		handler:  handler,
+		socketPath: socketPath,
+	}, nil
+}
+
+// Start starts the IPC server
+func (s *Server) Start() {
+	go func() {
+		for {
+			conn, err := s.listener.Accept()
+			if err != nil {
+				s.logger.Error("Failed to accept connection", zap.Error(err))
+				continue
+			}
+
+			go s.handleConnection(conn)
+		}
+	}()
+}
+
+// handleConnection handles a single connection
+func (s *Server) handleConnection(conn net.Conn) {
+	defer conn.Close()
+
+	decoder := json.NewDecoder(conn)
+	encoder := json.NewEncoder(conn)
+
+	var cmd Command
+	if err := decoder.Decode(&cmd); err != nil {
+		s.logger.Error("Failed to decode command", zap.Error(err))
+		encoder.Encode(Response{
+			Success: false,
+			Message: fmt.Sprintf("failed to decode command: %v", err),
+		})
+		return
+	}
+
+	s.logger.Info("Received command", zap.String("action", cmd.Action))
+
+	response := s.handler(cmd)
+	if err := encoder.Encode(response); err != nil {
+		s.logger.Error("Failed to encode response", zap.Error(err))
+	}
+}
+
+// Stop stops the IPC server
+func (s *Server) Stop() error {
+	if s.listener != nil {
+		if err := s.listener.Close(); err != nil {
+			return err
+		}
+	}
+	
+	// Clean up socket file
+	if err := os.Remove(s.socketPath); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	
+	return nil
+}
+
+// Client represents an IPC client
+type Client struct {
+	socketPath string
+}
+
+// NewClient creates a new IPC client
+func NewClient() *Client {
+	return &Client{
+		socketPath: GetSocketPath(),
+	}
+}
+
+// Send sends a command to the IPC server
+func (c *Client) Send(cmd Command) (Response, error) {
+	conn, err := net.Dial("unix", c.socketPath)
+	if err != nil {
+		return Response{}, fmt.Errorf("failed to connect to govim (is it running?): %w", err)
+	}
+	defer conn.Close()
+
+	encoder := json.NewEncoder(conn)
+	decoder := json.NewDecoder(conn)
+
+	if err := encoder.Encode(cmd); err != nil {
+		return Response{}, fmt.Errorf("failed to send command: %w", err)
+	}
+
+	var response Response
+	if err := decoder.Decode(&response); err != nil {
+		return Response{}, fmt.Errorf("failed to receive response: %w", err)
+	}
+
+	return response, nil
+}
+
+// IsServerRunning checks if the IPC server is running
+func IsServerRunning() bool {
+	client := NewClient()
+	_, err := client.Send(Command{Action: "ping"})
+	return err == nil
+}

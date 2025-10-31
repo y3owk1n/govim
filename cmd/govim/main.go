@@ -16,6 +16,7 @@ import (
 	"github.com/y3owk1n/govim/internal/eventtap"
 	"github.com/y3owk1n/govim/internal/hints"
 	"github.com/y3owk1n/govim/internal/hotkeys"
+	"github.com/y3owk1n/govim/internal/ipc"
 	"github.com/y3owk1n/govim/internal/logger"
 	"github.com/y3owk1n/govim/internal/scroll"
 	"go.uber.org/zap"
@@ -40,6 +41,7 @@ type App struct {
 	hintOverlay      *hints.Overlay
 	scrollController *scroll.Controller
 	eventTap         *eventtap.EventTap
+	ipcServer        *ipc.Server
 	currentMode      Mode
 	currentHints     *hints.HintCollection
 	hintInput        string
@@ -120,12 +122,23 @@ func NewApp(cfg *config.Config) (*App, error) {
 		app.eventTap.Disable()
 	}
 
+	// Create IPC server
+	ipcServer, err := ipc.NewServer(app.handleIPCCommand, log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create IPC server: %w", err)
+	}
+	app.ipcServer = ipcServer
+
 	return app, nil
 }
 
 // Run runs the application
 func (a *App) Run() error {
 	a.logger.Info("Starting GoVim")
+
+	// Start IPC server
+	a.ipcServer.Start()
+	a.logger.Info("IPC server started")
 
 	// Register hotkeys
 	if err := a.registerHotkeys(); err != nil {
@@ -849,7 +862,78 @@ func (a *App) Cleanup() {
 	a.hotkeyManager.UnregisterAll()
 	a.hintOverlay.Destroy()
 
+	// Stop IPC server
+	if a.ipcServer != nil {
+		if err := a.ipcServer.Stop(); err != nil {
+			a.logger.Error("Failed to stop IPC server", zap.Error(err))
+		}
+	}
+
 	logger.Sync()
+}
+
+// handleIPCCommand handles IPC commands from the CLI
+func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
+	a.logger.Info("Handling IPC command", zap.String("action", cmd.Action))
+
+	switch cmd.Action {
+	case "ping":
+		return ipc.Response{Success: true, Message: "pong"}
+
+	case "start":
+		if a.enabled {
+			return ipc.Response{Success: false, Message: "govim is already running"}
+		}
+		a.enabled = true
+		return ipc.Response{Success: true, Message: "govim started"}
+
+	case "stop":
+		if !a.enabled {
+			return ipc.Response{Success: false, Message: "govim is already stopped"}
+		}
+		a.enabled = false
+		a.exitMode()
+		return ipc.Response{Success: true, Message: "govim stopped"}
+
+	case "hints":
+		if !a.enabled {
+			return ipc.Response{Success: false, Message: "govim is not running"}
+		}
+		a.activateHintMode(false)
+		return ipc.Response{Success: true, Message: "hint mode activated"}
+
+	case "hints_action":
+		if !a.enabled {
+			return ipc.Response{Success: false, Message: "govim is not running"}
+		}
+		a.activateHintMode(true)
+		return ipc.Response{Success: true, Message: "hint mode with actions activated"}
+
+	case "scroll":
+		if !a.enabled {
+			return ipc.Response{Success: false, Message: "govim is not running"}
+		}
+		a.activateScrollMode()
+		return ipc.Response{Success: true, Message: "scroll mode activated"}
+
+	case "idle":
+		if !a.enabled {
+			return ipc.Response{Success: false, Message: "govim is not running"}
+		}
+		a.exitMode()
+		return ipc.Response{Success: true, Message: "mode set to idle"}
+
+	case "status":
+		statusData := map[string]interface{}{
+			"enabled": a.enabled,
+			"mode":    a.getModeString(),
+			"config":  config.GetConfigPath(),
+		}
+		return ipc.Response{Success: true, Data: statusData}
+
+	default:
+		return ipc.Response{Success: false, Message: fmt.Sprintf("unknown command: %s", cmd.Action)}
+	}
 }
 
 var globalApp *App
@@ -873,14 +957,39 @@ func onExit() {
 }
 
 func main() {
-	// If CLI arguments provided, run CLI mode
+	// Set the launch function for CLI
+	cli.LaunchFunc = LaunchDaemon
+
+	// Check if this is a CLI command (subcommand)
 	if len(os.Args) > 1 {
-		cli.Run(os.Args[1:])
-		return
+		arg := os.Args[1]
+		// These commands use CLI/IPC
+		if arg == "launch" || arg == "start" || arg == "stop" || arg == "hints" || 
+		   arg == "scroll" || arg == "hints_action" || arg == "idle" || arg == "status" ||
+		   arg == "help" || arg == "--help" || arg == "-h" || arg == "version" || arg == "--version" {
+			cli.Execute()
+			return
+		}
+		// If it's just --config, continue to daemon mode
 	}
 
+	// Extract config path from args if provided
+	configPath := ""
+	for i, arg := range os.Args {
+		if arg == "--config" && i+1 < len(os.Args) {
+			configPath = os.Args[i+1]
+			break
+		}
+	}
+
+	// Launch daemon directly (root command without subcommand)
+	LaunchDaemon(configPath)
+}
+
+// LaunchDaemon is called by the CLI to launch the daemon
+func LaunchDaemon(configPath string) {
 	// Load configuration
-	cfg, err := config.Load("")
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading configuration: %v\n", err)
 		os.Exit(1)
