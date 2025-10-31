@@ -227,7 +227,8 @@ func GetClickableElements() ([]*TreeNode, error) {
 	}
 
 	opts := DefaultTreeOptions()
-	opts.MaxDepth = 15
+	// Increase depth for Electron/web apps which have deeply nested content
+	opts.MaxDepth = 25
 	visibleBounds := expandRectangle(rectFromInfo(windowInfo), 200)
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		// Filter out very small elements

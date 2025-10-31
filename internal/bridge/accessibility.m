@@ -302,6 +302,33 @@ void** getChildren(void* element, int* count) {
     return result;
 }
 
+// Check if element has click action
+int hasClickAction(void* element) {
+    if (!element) return 0;
+    
+    AXUIElementRef axElement = (AXUIElementRef)element;
+    CFArrayRef actions = NULL;
+    
+    AXError error = AXUIElementCopyActionNames(axElement, &actions);
+    if (error != kAXErrorSuccess || !actions) {
+        return 0;
+    }
+    
+    CFIndex count = CFArrayGetCount(actions);
+    int hasPress = 0;
+    
+    for (CFIndex i = 0; i < count; i++) {
+        CFStringRef action = (CFStringRef)CFArrayGetValueAtIndex(actions, i);
+        if (CFStringCompare(action, kAXPressAction, 0) == kCFCompareEqualTo) {
+            hasPress = 1;
+            break;
+        }
+    }
+    
+    CFRelease(actions);
+    return hasPress;
+}
+
 // Perform click
 int performClick(void* element) {
     if (!element) return 0;

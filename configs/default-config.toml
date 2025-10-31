@@ -30,7 +30,15 @@ scrollable_roles = [
 
 [accessibility.electron_support]
 enable = true
-additional_bundles = []
+# Add Chrome and Chromium-based browsers for web app support
+# Windsurf is already included in the default list
+additional_bundles = [
+    "com.google.Chrome",
+    "com.google.Chrome.canary",
+    "com.brave.Browser",
+    "com.microsoft.edgemac",
+    "org.chromium.Chromium",
+]
 
 [hotkeys]
 activate_hint_mode = "Cmd+Shift+Space"

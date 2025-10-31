@@ -358,12 +358,20 @@ func (e *Element) IsClickable() bool {
 		return false
 	}
 
+	// First check if the role is in the clickable roles list
 	clickableRolesMu.RLock()
 	_, ok := clickableRoles[info.Role]
 	clickableRolesMu.RUnlock()
 
 	if ok {
-		logger.Debug("Element matches clickable role",
+		return true
+	}
+
+	// For elements not in the clickable roles list, check if they have a click action
+	// This is important for web content in Electron apps where elements may have
+	// roles like AXGroup or AXStaticText but still be clickable
+	if bridge.HasClickAction(e.ref) {
+		logger.Debug("Element has click action despite non-standard role",
 			zap.String("role", info.Role),
 			zap.String("title", info.Title))
 		return true
@@ -479,8 +487,15 @@ func EnsureElectronSupport(additionalBundles []string) bool {
 
 	if !ShouldEnableElectronSupport(bundleID, additionalBundles) {
 		clearElectronPID(pid)
+		logger.Debug("App does not require Electron support", 
+			zap.String("bundle_id", bundleID), 
+			zap.Int("pid", pid))
 		return false
 	}
+	
+	logger.Debug("App requires Electron support", 
+		zap.String("bundle_id", bundleID), 
+		zap.Int("pid", pid))
 
 	return ensureElectronAccessibility(pid, bundleID)
 }

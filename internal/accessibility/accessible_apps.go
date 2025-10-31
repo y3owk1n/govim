@@ -20,6 +20,7 @@ var (
 		"com.sindresorhus.helium2",
 		"com.tinyspeck.slackmacgap",
 		"com.microsoft.teams",
+		"com.exafunction.windsurf",
 	}
 )
 

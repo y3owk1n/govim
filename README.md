@@ -7,6 +7,7 @@ Keyboard-driven navigation for macOS - click and scroll without a mouse.
 - **Hint Mode** - Show labels on clickable elements, type to click
 - **Scroll Mode** - Vim-style scrolling (j/k/h/l) anywhere
 - **Universal** - Works in browsers, native apps, Electron apps
+- **Electron & Chrome Support** - Built-in support for VS Code, Windsurf, Chrome, and more
 - **Fast** - Event tap for key capture, CGEvent for scrolling
 - **Configurable** - TOML config file
 
@@ -76,6 +77,10 @@ text_color = "#000000"
 ```
 
 See `configs/default-config.toml` for all available options.
+
+### Electron & Chrome Support
+
+GoVim includes built-in support for Electron apps (VS Code, Windsurf, Slack, etc.) and Chromium browsers.
 
 - `accessibility.electron_support.enable` toggles automatic enabling of Electron accessibility hooks for legacy apps.
 - `accessibility.electron_support.additional_bundles` accepts exact bundle IDs or `prefix*` wildcards for extra Electron apps that require manual accessibility.
@@ -156,6 +161,42 @@ govim validate-config
 ### Logs
 
 Logs are stored at: `~/Library/Logs/govim/app.log`
+
+Enable debug logging in your config for troubleshooting:
+```toml
+[logging]
+log_level = "debug"
+```
+
+### Electron Apps (Windsurf, VS Code, etc.)
+
+If hints aren't appearing in Electron app content areas:
+
+1. Ensure Electron support is enabled (default):
+   ```toml
+   [accessibility.electron_support]
+   enable = true
+   ```
+
+2. Check logs for: `"App requires Electron support"` and `"Enabled AXManualAccessibility"`
+
+3. Supported apps include: Windsurf, VS Code, Slack, GitHub Desktop, Zoom, Obsidian, Teams
+
+### Chrome/Chromium Browsers
+
+To enable hints in Chrome:
+
+1. Add to your config:
+   ```toml
+   [accessibility.electron_support]
+   enable = true
+   additional_bundles = [
+       "com.google.Chrome",
+       "com.brave.Browser",
+   ]
+   ```
+
+2. Reload config: `Cmd+Shift+R`
 
 ## Development
 

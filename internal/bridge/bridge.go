@@ -30,3 +30,12 @@ func SetApplicationAttribute(pid int, attribute string, value bool) bool {
     result := C.setApplicationAttribute(C.int(pid), cAttr, cValue)
     return result == 1
 }
+
+// HasClickAction checks if an element has the AXPress action available.
+func HasClickAction(element unsafe.Pointer) bool {
+    if element == nil {
+        return false
+    }
+    result := C.hasClickAction(element)
+    return result == 1
+}
