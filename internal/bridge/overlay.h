@@ -18,6 +18,7 @@ typedef struct {
     int borderWidth;
     int padding;
     double opacity;
+    int showArrow;  // 0 = no arrow, 1 = show arrow
 } HintStyle;
 
 // Hint data

@@ -49,6 +49,21 @@ func (o *Overlay) Clear() {
 
 // DrawHints draws hints on the overlay
 func (o *Overlay) DrawHints(hints []*Hint) error {
+	return o.drawHintsInternal(hints, o.config, true)
+}
+
+// DrawHintsWithoutArrow draws hints without arrows
+func (o *Overlay) DrawHintsWithoutArrow(hints []*Hint, cfg config.HintsConfig) error {
+	return o.drawHintsInternal(hints, cfg, false)
+}
+
+// DrawHintsWithStyle draws hints on the overlay with custom style
+func (o *Overlay) DrawHintsWithStyle(hints []*Hint, cfg config.HintsConfig) error {
+	return o.drawHintsInternal(hints, cfg, true)
+}
+
+// drawHintsInternal is the internal implementation for drawing hints
+func (o *Overlay) drawHintsInternal(hints []*Hint, cfg config.HintsConfig, showArrow bool) error {
 	if len(hints) == 0 {
 		o.Clear()
 		return nil
@@ -75,21 +90,27 @@ func (o *Overlay) DrawHints(hints []*Hint) error {
 	}
 
 	// Create style
-	cFontFamily := C.CString(o.config.FontFamily)
-	cBgColor := C.CString(o.config.BackgroundColor)
-	cTextColor := C.CString(o.config.TextColor)
-	cBorderColor := C.CString(o.config.BorderColor)
+	cFontFamily := C.CString(cfg.FontFamily)
+	cBgColor := C.CString(cfg.BackgroundColor)
+	cTextColor := C.CString(cfg.TextColor)
+	cBorderColor := C.CString(cfg.BorderColor)
 
+	arrowFlag := 0
+	if showArrow {
+		arrowFlag = 1
+	}
+	
 	style := C.HintStyle{
-		fontSize:        C.int(o.config.FontSize),
+		fontSize:        C.int(cfg.FontSize),
 		fontFamily:      cFontFamily,
 		backgroundColor: cBgColor,
 		textColor:       cTextColor,
 		borderColor:     cBorderColor,
-		borderRadius:    C.int(o.config.BorderRadius),
-		borderWidth:     C.int(o.config.BorderWidth),
-		padding:         C.int(o.config.Padding),
-		opacity:         C.double(o.config.Opacity),
+		borderRadius:    C.int(cfg.BorderRadius),
+		borderWidth:     C.int(cfg.BorderWidth),
+		padding:         C.int(cfg.Padding),
+		opacity:         C.double(cfg.Opacity),
+		showArrow:       C.int(arrowFlag),
 	}
 
 	// Draw hints

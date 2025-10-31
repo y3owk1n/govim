@@ -214,6 +214,8 @@
         NSPoint position = [hint[@"position"] pointValue];
         NSNumber *matchedPrefixLengthNum = hint[@"matchedPrefixLength"];
         int matchedPrefixLength = matchedPrefixLengthNum ? [matchedPrefixLengthNum intValue] : 0;
+        NSNumber *showArrowNum = hint[@"showArrow"];
+        BOOL showArrow = showArrowNum ? [showArrowNum boolValue] : YES;
 
         // Create attributed string with matched prefix in different color
         NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:label];
@@ -229,9 +231,9 @@
 
         NSSize textSize = [attrString size];
 
-        // Calculate hint box size (include arrow space)
+        // Calculate hint box size (include arrow space if needed)
         CGFloat padding = self.hintPadding;
-        CGFloat arrowHeight = 2.0;  // Arrow height (reduced for cleaner look)
+        CGFloat arrowHeight = showArrow ? 2.0 : 0.0;  // Arrow height only if enabled
 
         // Calculate dimensions - ensure box is at least square
         CGFloat contentWidth = textSize.width + (padding * 2);
@@ -264,11 +266,21 @@
             boxHeight
         );
 
-        // Draw tooltip background with arrow pointing to element center
-        NSBezierPath *path = [self createTooltipPath:hintRect
-                                          arrowSize:arrowHeight
-                                     elementCenterX:elementCenterX
-                                    elementCenterY:flippedElementCenterY];
+        // Draw tooltip background
+        NSBezierPath *path;
+        if (showArrow) {
+            // Draw with arrow pointing to element center
+            path = [self createTooltipPath:hintRect
+                                arrowSize:arrowHeight
+                           elementCenterX:elementCenterX
+                          elementCenterY:flippedElementCenterY];
+        } else {
+            // Draw simple rounded rectangle without arrow
+            path = [NSBezierPath bezierPathWithRoundedRect:hintRect
+                                                   xRadius:self.hintBorderRadius
+                                                   yRadius:self.hintBorderRadius];
+        }
+        
         [self.hintBackgroundColor setFill];
         [path fill];
 
@@ -442,7 +454,8 @@ void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style
         NSDictionary *hintDict = @{
             @"label": @(hint.label),
             @"position": [NSValue valueWithPoint:NSPointFromCGPoint(hint.position)],
-            @"matchedPrefixLength": @(hint.matchedPrefixLength)
+            @"matchedPrefixLength": @(hint.matchedPrefixLength),
+            @"showArrow": @(style.showArrow)
         };
 
         [controller.overlayView.hints addObject:hintDict];

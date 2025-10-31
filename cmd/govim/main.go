@@ -385,22 +385,56 @@ func (a *App) handleHintKey(key string) {
 func (a *App) showActionMenu(hint *hints.Hint) {
 	cfg := a.config.Hints
 
-	// Create action hints showing available actions
-	actionText := fmt.Sprintf("[%s]Left [%s]Right [%s]Double [%s]Middle",
-		cfg.ClickActionLeft,
-		cfg.ClickActionRight,
-		cfg.ClickActionDouble,
-		cfg.ClickActionMiddle)
-
-	// Create a single hint at the element's position with the action menu
-	actionHint := &hints.Hint{
-		Label:    actionText,
-		Element:  hint.Element,
-		Position: hint.Position,
+	// Create individual action hints with compact labels
+	actions := []struct {
+		key   string
+		label string
+	}{
+		{cfg.ClickActionLeft, "eft"},
+		{cfg.ClickActionRight, "ight"},
+		{cfg.ClickActionDouble, "ouble"},
+		{cfg.ClickActionMiddle, "iddle"},
 	}
 
-	// Draw the action menu
-	if err := a.hintOverlay.DrawHints([]*hints.Hint{actionHint}); err != nil {
+	// Create hints for each action, positioned horizontally with consistent gaps
+	actionHints := make([]*hints.Hint, 0, len(actions))
+	baseX := hint.Position.X
+	baseY := hint.Position.Y
+	
+	// Estimate width per character (approximate for monospace font at size 11)
+	charWidth := 7.0
+	gapBetweenHints := 8.0 // Consistent gap between hint boxes
+	
+	currentX := float64(baseX)
+	
+	for _, action := range actions {
+		// Format: [key]label (e.g., "[l]eft")
+		actionLabel := fmt.Sprintf("[%s]%s", action.key, action.label)
+		
+		actionHint := &hints.Hint{
+			Label:    actionLabel,
+			Element:  hint.Element,
+			Position: image.Point{X: int(currentX), Y: baseY},
+		}
+		actionHints = append(actionHints, actionHint)
+		
+		// Calculate width of this hint box (text width + padding * 2)
+		textWidth := float64(len(actionLabel)) * charWidth
+		padding := 3.0 * 2 // padding on both sides
+		hintBoxWidth := textWidth + padding
+		
+		// Move to next position (current box width + gap)
+		currentX += hintBoxWidth + gapBetweenHints
+	}
+
+	// Create smaller style for action hints
+	actionStyle := a.config.Hints
+	actionStyle.FontSize = 11        // Smaller font
+	actionStyle.Padding = 3          // Less padding
+	actionStyle.BorderRadius = 3     // Smaller border radius
+	
+	// Draw all action hints without arrows and with custom style
+	if err := a.hintOverlay.DrawHintsWithoutArrow(actionHints, actionStyle); err != nil {
 		a.logger.Error("Failed to draw action menu", zap.Error(err))
 	}
 }
