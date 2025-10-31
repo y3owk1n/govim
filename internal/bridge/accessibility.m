@@ -500,36 +500,3 @@ int scrollElement(void* element, int deltaX, int deltaY) {
     
     return 0;
 }
-
-// Get current scroll position
-int getScrollPosition(void* element) {
-    if (!element) return -1;
-    
-    AXUIElementRef axElement = (AXUIElementRef)element;
-    CFTypeRef valueRef = NULL;
-    
-    if (AXUIElementCopyAttributeValue(axElement, CFSTR("AXValue"), &valueRef) == kAXErrorSuccess) {
-        if (valueRef && CFGetTypeID(valueRef) == CFNumberGetTypeID()) {
-            int value = 0;
-            CFNumberGetValue((CFNumberRef)valueRef, kCFNumberIntType, &value);
-            CFRelease(valueRef);
-            return value;
-        }
-        if (valueRef) CFRelease(valueRef);
-    }
-    
-    return -1;
-}
-
-// Set scroll position directly
-int setScrollPosition(void* element, int position) {
-    if (!element) return 0;
-    
-    AXUIElementRef axElement = (AXUIElementRef)element;
-    CFNumberRef positionRef = CFNumberCreate(NULL, kCFNumberIntType, &position);
-    
-    AXError error = AXUIElementSetAttributeValue(axElement, CFSTR("AXValue"), positionRef);
-    CFRelease(positionRef);
-    
-    return (error == kAXErrorSuccess) ? 1 : 0;
-}

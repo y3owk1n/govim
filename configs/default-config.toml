@@ -2,23 +2,23 @@
 # Copy to: ~/Library/Application Support/govim/config.toml
 
 [general]
-# Characters used for hint labels
+# Characters used for hint labels (in order of preference)
 hint_characters = "asdfghjkl"
 
-# Hint style: "alphabet" or "numeric"
+# Hint style: "alphabet" (aa, ab, ac...) or "numeric" (1, 2, 3...)
 hint_style = "alphabet"
 
 [hotkeys]
-# Activate hint mode
+# Activate hint mode to show clickable elements
 activate_hint_mode = "Cmd+Shift+Space"
 
-# Activate scroll mode
+# Activate scroll mode for vim-style scrolling
 activate_scroll_mode = "Cmd+Shift+J"
 
 # Exit current mode
 exit_mode = "Escape"
 
-# Reload configuration
+# Reload configuration (restart required for some changes)
 reload_config = "Cmd+Shift+R"
 
 [hints]
@@ -50,34 +50,31 @@ border_color = "#000000"
 opacity = 0.95
 
 [scroll]
-# Base scroll amount for j/k in pixels
+# Base scroll amount for j/k keys in pixels
 scroll_speed = 50
 
-# Smooth scrolling (handled by OS/browser)
-smooth_scroll = false
-
-# Highlight the active scroll area
+# Highlight the active scroll area with a border
 highlight_scroll_area = true
 
-# Highlight color (hex format)
+# Highlight border color (hex format)
 highlight_color = "#FF0000"
 
-# Highlight border width (pixels)
+# Highlight border width in pixels
 highlight_width = 2
 
-# Estimated page height in pixels for calculating scroll amounts
+# Estimated page height in pixels (used for calculating Ctrl+D/U scroll distance)
 page_height = 1200
 
-# Half-page scroll multiplier (e.g., 0.5 = half of page_height)
+# Half-page scroll multiplier for Ctrl+D/U (0.5 = 600px with default page_height)
 half_page_multiplier = 0.5
 
-# Full-page scroll multiplier (e.g., 0.9 = 90% of page_height)
+# Full-page scroll multiplier (not currently used)
 full_page_multiplier = 0.9
 
-# Scroll to top/bottom iterations (number of scroll events)
+# Number of scroll events to send for gg/G commands
 scroll_to_edge_iterations = 20
 
-# Scroll to top/bottom delta per iteration in pixels
+# Pixels to scroll per iteration for gg/G (total = iterations * delta)
 scroll_to_edge_delta = 5000
 
 [performance]

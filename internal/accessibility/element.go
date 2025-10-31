@@ -348,17 +348,3 @@ func (e *Element) Scroll(deltaX, deltaY int) error {
 	}
 	return nil
 }
-
-// GetScrollPosition gets the current scroll position
-func (e *Element) GetScrollPosition() int {
-	return int(C.getScrollPosition(e.ref))
-}
-
-// SetScrollPosition sets the scroll position directly
-func (e *Element) SetScrollPosition(position int) error {
-	result := C.setScrollPosition(e.ref, C.int(position))
-	if result == 0 {
-		return fmt.Errorf("failed to set scroll position")
-	}
-	return nil
-}

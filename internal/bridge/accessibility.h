@@ -44,7 +44,5 @@ char* getBundleIdentifier(void* app);
 int isScrollable(void* element);
 CGRect getScrollBounds(void* element);
 int scrollElement(void* element, int deltaX, int deltaY);
-int getScrollPosition(void* element);
-int setScrollPosition(void* element, int position);
 
 #endif // ACCESSIBILITY_H

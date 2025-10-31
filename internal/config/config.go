@@ -39,7 +39,6 @@ type HotkeysConfig struct {
 
 type ScrollConfig struct {
 	ScrollSpeed            int     `toml:"scroll_speed"`
-	SmoothScroll           bool    `toml:"smooth_scroll"`
 	HighlightScrollArea    bool    `toml:"highlight_scroll_area"`
 	HighlightColor         string  `toml:"highlight_color"`
 	HighlightWidth         int     `toml:"highlight_width"`
@@ -125,13 +124,15 @@ func DefaultConfig() *Config {
 			ReloadConfig:       "Cmd+Shift+R",
 		},
 		Scroll: ScrollConfig{
-			ScrollSpeed:         50,
-			SmoothScroll:        true,
-			HighlightScrollArea: true,
-			HighlightColor:      "#FF0000",
-			HighlightWidth:      2,
-			HalfPageMultiplier:  0.5,
-			FullPageMultiplier:  0.9,
+			ScrollSpeed:            50,
+			HighlightScrollArea:    true,
+			HighlightColor:         "#FF0000",
+			HighlightWidth:         2,
+			PageHeight:             1200,
+			HalfPageMultiplier:     0.5,
+			FullPageMultiplier:     0.9,
+			ScrollToEdgeIterations: 20,
+			ScrollToEdgeDelta:      5000,
 		},
 		Hints: HintsConfig{
 			FontSize:        14,

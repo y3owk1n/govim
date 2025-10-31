@@ -27,23 +27,19 @@ const (
 	AmountFullPage
 )
 
-// Controller controls scrolling behavior
+// Controller manages scrolling operations
 type Controller struct {
-	detector      *Detector
-	config        config.ScrollConfig
-	logger        *zap.Logger
-	smoothScroll  bool
-	scrollSpeed   int
+	detector *Detector
+	config   *config.ScrollConfig
+	logger   *zap.Logger
 }
 
 // NewController creates a new scroll controller
 func NewController(cfg config.ScrollConfig, logger *zap.Logger) *Controller {
 	return &Controller{
-		detector:     NewDetector(),
-		config:       cfg,
-		logger:       logger,
-		smoothScroll: cfg.SmoothScroll,
-		scrollSpeed:  cfg.ScrollSpeed,
+		detector: NewDetector(),
+		config:   &cfg,
+		logger:   logger,
 	}
 }
 
@@ -91,27 +87,16 @@ func (c *Controller) Scroll(dir Direction, amount ScrollAmount) error {
 
 	deltaX, deltaY := c.calculateDelta(dir, amount, area)
 
-	c.logger.Info("Scrolling",
+	c.logger.Debug("Scrolling",
 		zap.String("direction", c.directionString(dir)),
 		zap.Int("deltaX", deltaX),
-		zap.Int("deltaY", deltaY),
-		zap.Int("areaX", area.Bounds.Min.X),
-		zap.Int("areaY", area.Bounds.Min.Y),
-		zap.Bool("smoothScroll", c.smoothScroll))
+		zap.Int("deltaY", deltaY))
 
-	// Disable smooth scroll for now - it's not working properly
-	// if c.smoothScroll {
-	// 	return c.smoothScrollTo(area, deltaX, deltaY)
-	// }
-
-	c.logger.Info("Calling Element.Scroll")
-	err := area.Element.Element.Scroll(deltaX, deltaY)
-	if err != nil {
-		c.logger.Error("Scroll element failed", zap.Error(err))
-	} else {
-		c.logger.Info("Scroll element succeeded")
+	if err := area.Element.Element.Scroll(deltaX, deltaY); err != nil {
+		c.logger.Error("Scroll failed", zap.Error(err))
+		return err
 	}
-	return err
+	return nil
 }
 
 // calculateDelta calculates the scroll delta based on direction and amount
