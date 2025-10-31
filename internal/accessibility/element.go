@@ -181,17 +181,27 @@ func (e *Element) GetChildren() ([]*Element, error) {
 		return nil, fmt.Errorf("element is nil")
 	}
 
+	return e.getChildrenInternal(true)
+}
+
+func (e *Element) getChildrenInternal(visibleOnly bool) ([]*Element, error) {
 	var count C.int
-	children := C.getChildren(e.ref, &count)
-	if children == nil || count == 0 {
+	var rawChildren unsafe.Pointer
+
+	if visibleOnly {
+		rawChildren = unsafe.Pointer(C.getVisibleChildren(e.ref, &count))
+	} else {
+		rawChildren = unsafe.Pointer(C.getChildren(e.ref, &count))
+	}
+
+	if rawChildren == nil || count == 0 {
 		return []*Element{}, nil
 	}
-	defer C.free(unsafe.Pointer(children))
 
-	// Convert C array to Go slice
-	childSlice := (*[1 << 30]unsafe.Pointer)(unsafe.Pointer(children))[:count:count]
+	defer C.free(rawChildren)
+
+	childSlice := (*[1 << 30]unsafe.Pointer)(rawChildren)[:count:count]
 	result := make([]*Element, count)
-
 	for i := 0; i < int(count); i++ {
 		result[i] = &Element{ref: childSlice[i]}
 	}

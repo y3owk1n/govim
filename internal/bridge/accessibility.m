@@ -8,6 +8,36 @@ int checkAccessibilityPermissions() {
     return trusted ? 1 : 0;
 }
 
+void** getVisibleChildren(void* element, int* count) {
+    if (!element || !count) return NULL;
+
+    AXUIElementRef axElement = (AXUIElementRef)element;
+    CFTypeRef visibleChildrenValue = NULL;
+
+    if (AXUIElementCopyAttributeValue(axElement, kAXVisibleChildrenAttribute, &visibleChildrenValue) == kAXErrorSuccess && visibleChildrenValue) {
+        if (CFGetTypeID(visibleChildrenValue) == CFArrayGetTypeID()) {
+            CFArrayRef children = (CFArrayRef)visibleChildrenValue;
+            CFIndex childCount = CFArrayGetCount(children);
+            *count = (int)childCount;
+
+            void** result = (void**)malloc(childCount * sizeof(void*));
+
+            for (CFIndex i = 0; i < childCount; i++) {
+                AXUIElementRef child = (AXUIElementRef)CFArrayGetValueAtIndex(children, i);
+                CFRetain(child);
+                result[i] = (void*)child;
+            }
+
+            CFRelease(visibleChildrenValue);
+            return result;
+        }
+
+        CFRelease(visibleChildrenValue);
+    }
+
+    return getChildren(element, count);
+}
+
 // Get system-wide accessibility element
 void* getSystemWideElement() {
     AXUIElementRef systemWide = AXUIElementCreateSystemWide();

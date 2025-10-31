@@ -26,6 +26,7 @@ void freeElementInfo(ElementInfo* info);
 void* getElementAtPosition(CGPoint position);
 int getChildrenCount(void* element);
 void** getChildren(void* element, int* count);
+void** getVisibleChildren(void* element, int* count);
 int performClick(void* element);
 int performRightClick(void* element);
 int performDoubleClick(void* element);

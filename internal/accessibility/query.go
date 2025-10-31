@@ -3,6 +3,7 @@ package accessibility
 import (
 	"context"
 	"fmt"
+	"image"
 	"strings"
 	"time"
 )
@@ -19,6 +20,24 @@ type Query struct {
 	MinHeight       int
 	MaxResults      int
 	Timeout         time.Duration
+}
+
+func rectFromInfo(info *ElementInfo) image.Rectangle {
+	return image.Rect(
+		info.Position.X,
+		info.Position.Y,
+		info.Position.X+info.Size.X,
+		info.Position.Y+info.Size.Y,
+	)
+}
+
+func expandRectangle(rect image.Rectangle, padding int) image.Rectangle {
+	return image.Rect(
+		rect.Min.X-padding,
+		rect.Min.Y-padding,
+		rect.Max.X+padding,
+		rect.Max.Y+padding,
+	)
 }
 
 // QueryBuilder helps build queries
@@ -202,11 +221,27 @@ func GetClickableElements() ([]*TreeNode, error) {
 	}
 	defer window.Release()
 
+	windowInfo, err := window.GetInfo()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get window info: %w", err)
+	}
+
 	opts := DefaultTreeOptions()
 	opts.MaxDepth = 15
+	visibleBounds := expandRectangle(rectFromInfo(windowInfo), 200)
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		// Filter out very small elements
-		return info.Size.X >= 10 && info.Size.Y >= 10
+		if info.Size.X < 10 || info.Size.Y < 10 {
+			return false
+		}
+
+		// Skip elements that are completely outside the visible bounds (with padding)
+		elementRect := rectFromInfo(info)
+		if !elementRect.Overlaps(visibleBounds) {
+			return false
+		}
+
+		return true
 	}
 
 	tree, err := BuildTree(window, opts)
@@ -225,8 +260,22 @@ func GetScrollableElements() ([]*TreeNode, error) {
 	}
 	defer window.Release()
 
+	windowInfo, err := window.GetInfo()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get window info: %w", err)
+	}
+
 	opts := DefaultTreeOptions()
-	opts.MaxDepth = 5  // Reduced from 15 to avoid deep traversal in complex apps like Mail
+	opts.MaxDepth = 5  
+	visibleBounds := expandRectangle(rectFromInfo(windowInfo), 200)
+	opts.FilterFunc = func(info *ElementInfo) bool {
+		// Allow only elements overlapping the visible window bounds
+		elementRect := rectFromInfo(info)
+		if !elementRect.Overlaps(visibleBounds) {
+			return false
+		}
+		return true
+	}
 
 	tree, err := BuildTree(window, opts)
 	if err != nil {
