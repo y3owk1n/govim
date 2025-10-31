@@ -6,7 +6,27 @@ hint_characters = "asdfghjkl"
 hint_style = "alphabet"
 
 [accessibility]
-additional_clickable_roles = []
+# Accessibility roles that are treated as clickable
+# Users can add or remove roles as needed
+clickable_roles = [
+    "AXButton",
+    "AXCheckBox",
+    "AXRadioButton",
+    "AXPopUpButton",
+    "AXMenuItem",
+    "AXMenuBarItem",
+    "AXDockItem",
+    "AXApplicationDockItem",
+    "AXLink",
+    "AXTextField",
+    "AXTextArea",
+]
+
+# Accessibility roles that are treated as scrollable
+# Users can add or remove roles as needed
+scrollable_roles = [
+    "AXScrollArea",
+]
 
 [accessibility.electron_support]
 enable = true

@@ -27,8 +27,9 @@ type GeneralConfig struct {
 }
 
 type AccessibilityConfig struct {
-	AdditionalClickableRoles []string             `toml:"additional_clickable_roles"`
-	ElectronSupport          ElectronSupportConfig `toml:"electron_support"`
+	ClickableRoles  []string              `toml:"clickable_roles"`
+	ScrollableRoles []string              `toml:"scrollable_roles"`
+	ElectronSupport ElectronSupportConfig `toml:"electron_support"`
 }
 
 type HotkeysConfig struct {
@@ -91,7 +92,22 @@ func DefaultConfig() *Config {
 			AccessibilityCheckOnStart: true,
 		},
 		Accessibility: AccessibilityConfig{
-			AdditionalClickableRoles: []string{},
+			ClickableRoles: []string{
+				"AXButton",
+				"AXCheckBox",
+				"AXRadioButton",
+				"AXPopUpButton",
+				"AXMenuItem",
+				"AXMenuBarItem",
+				"AXDockItem",
+				"AXApplicationDockItem",
+				"AXLink",
+				"AXTextField",
+				"AXTextArea",
+			},
+			ScrollableRoles: []string{
+				"AXScrollArea",
+			},
 			ElectronSupport: ElectronSupportConfig{
 				Enable:            true,
 				AdditionalBundles: []string{},
@@ -237,9 +253,15 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("performance.max_concurrent_queries must be at least 1")
 	}
 
-	for _, role := range c.Accessibility.AdditionalClickableRoles {
+	for _, role := range c.Accessibility.ClickableRoles {
 		if strings.TrimSpace(role) == "" {
-			return fmt.Errorf("accessibility.additional_clickable_roles cannot contain empty values")
+			return fmt.Errorf("accessibility.clickable_roles cannot contain empty values")
+		}
+	}
+
+	for _, role := range c.Accessibility.ScrollableRoles {
+		if strings.TrimSpace(role) == "" {
+			return fmt.Errorf("accessibility.scrollable_roles cannot contain empty values")
 		}
 	}
 

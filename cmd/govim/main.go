@@ -68,15 +68,16 @@ func NewApp(cfg *config.Config) (*App, error) {
 		}
 	}
 
-	// Apply additional clickable roles from config
-	if len(cfg.Accessibility.AdditionalClickableRoles) > 0 {
-		log.Info("Applying additional clickable roles",
-			zap.Int("count", len(cfg.Accessibility.AdditionalClickableRoles)),
-			zap.Strings("roles", cfg.Accessibility.AdditionalClickableRoles))
-	} else {
-		log.Debug("No additional clickable roles configured")
-	}
-	accessibility.SetAdditionalClickableRoles(cfg.Accessibility.AdditionalClickableRoles)
+	// Apply clickable and scrollable roles from config
+	log.Info("Applying clickable roles",
+		zap.Int("count", len(cfg.Accessibility.ClickableRoles)),
+		zap.Strings("roles", cfg.Accessibility.ClickableRoles))
+	accessibility.SetClickableRoles(cfg.Accessibility.ClickableRoles)
+
+	log.Info("Applying scrollable roles",
+		zap.Int("count", len(cfg.Accessibility.ScrollableRoles)),
+		zap.Strings("roles", cfg.Accessibility.ScrollableRoles))
+	accessibility.SetScrollableRoles(cfg.Accessibility.ScrollableRoles)
 
 	// Create hotkey manager
 	hotkeyMgr := hotkeys.NewManager(log)
@@ -200,10 +201,9 @@ func (a *App) activateHintMode(withActions bool) {
 	}
 
 	// Get clickable elements
-	defaultRoles, additionalRoles := accessibility.GetClickableRoles()
+	roles := accessibility.GetClickableRoles()
 	a.logger.Debug("Scanning for clickable elements",
-		zap.Strings("default_roles", defaultRoles),
-		zap.Strings("additional_roles", additionalRoles))
+		zap.Strings("roles", roles))
 
     elements, err := accessibility.GetClickableElements()
 	if err != nil {
@@ -705,14 +705,15 @@ func (a *App) reloadConfig() {
 	}
 
 	a.config = newConfig
-	if len(newConfig.Accessibility.AdditionalClickableRoles) > 0 {
-		a.logger.Info("Applying additional clickable roles",
-			zap.Int("count", len(newConfig.Accessibility.AdditionalClickableRoles)),
-			zap.Strings("roles", newConfig.Accessibility.AdditionalClickableRoles))
-	} else {
-		a.logger.Debug("No additional clickable roles configured")
-	}
-	accessibility.SetAdditionalClickableRoles(newConfig.Accessibility.AdditionalClickableRoles)
+	a.logger.Info("Applying clickable roles",
+		zap.Int("count", len(newConfig.Accessibility.ClickableRoles)),
+		zap.Strings("roles", newConfig.Accessibility.ClickableRoles))
+	accessibility.SetClickableRoles(newConfig.Accessibility.ClickableRoles)
+
+	a.logger.Info("Applying scrollable roles",
+		zap.Int("count", len(newConfig.Accessibility.ScrollableRoles)),
+		zap.Strings("roles", newConfig.Accessibility.ScrollableRoles))
+	accessibility.SetScrollableRoles(newConfig.Accessibility.ScrollableRoles)
 	a.logger.Info("Configuration reloaded successfully")
 }
 

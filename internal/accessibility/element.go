@@ -28,67 +28,78 @@ type Element struct {
 const electronAttributeName = "AXManualAccessibility"
 
 var (
-	defaultClickableRoles = map[string]bool{
-		"AXButton":      true,
-		"AXCheckBox":    true,
-		"AXRadioButton": true,
-		"AXPopUpButton": true,
-			"AXMenuItem":    true,
-			"AXMenuBarItem": true,  // Top-level menu titles in the macOS menu bar
-			"AXDockItem":    true,  // Items in the macOS Dock
-			"AXApplicationDockItem": true, // Some systems use this for Dock items
-		"AXLink":        true,
-		"AXTextField":   true,
-		"AXTextArea":    true,
-		"AXStaticText":  false,
-		"AXImage":       false,
-	}
+	clickableRoles   = make(map[string]struct{})
+	clickableRolesMu sync.RWMutex
 
-	customClickableRoles   = make(map[string]struct{})
-	customClickableRolesMu sync.RWMutex
+	scrollableRoles   = make(map[string]struct{})
+	scrollableRolesMu sync.RWMutex
 
 	electronPIDsMu      sync.Mutex
 	electronEnabledPIDs = make(map[int]struct{})
 )
 
-// SetAdditionalClickableRoles configures extra accessibility roles treated as clickable.
-func SetAdditionalClickableRoles(roles []string) {
-	customClickableRolesMu.Lock()
-	defer customClickableRolesMu.Unlock()
+// SetClickableRoles configures which accessibility roles are treated as clickable.
+func SetClickableRoles(roles []string) {
+	clickableRolesMu.Lock()
+	defer clickableRolesMu.Unlock()
 
-	customClickableRoles = make(map[string]struct{}, len(roles))
+	clickableRoles = make(map[string]struct{}, len(roles))
 	for _, role := range roles {
 		trimmed := strings.TrimSpace(role)
 		if trimmed == "" {
 			continue
 		}
-		customClickableRoles[trimmed] = struct{}{}
+		clickableRoles[trimmed] = struct{}{}
 	}
 
-	logger.Debug("Updated additional clickable roles",
-		zap.Int("count", len(customClickableRoles)),
+	logger.Debug("Updated clickable roles",
+		zap.Int("count", len(clickableRoles)),
 		zap.Strings("roles", roles))
 }
 
-// GetClickableRoles returns the default and additional roles treated as clickable.
-func GetClickableRoles() (defaultRoles []string, additionalRoles []string) {
-	defaults := make([]string, 0, len(defaultClickableRoles))
-	for role, allowed := range defaultClickableRoles {
-		if allowed {
-			defaults = append(defaults, role)
+// SetScrollableRoles configures which accessibility roles are treated as scrollable.
+func SetScrollableRoles(roles []string) {
+	scrollableRolesMu.Lock()
+	defer scrollableRolesMu.Unlock()
+
+	scrollableRoles = make(map[string]struct{}, len(roles))
+	for _, role := range roles {
+		trimmed := strings.TrimSpace(role)
+		if trimmed == "" {
+			continue
 		}
+		scrollableRoles[trimmed] = struct{}{}
 	}
-	sort.Strings(defaults)
 
-	customClickableRolesMu.RLock()
-	additionals := make([]string, 0, len(customClickableRoles))
-	for role := range customClickableRoles {
-		additionals = append(additionals, role)
+	logger.Debug("Updated scrollable roles",
+		zap.Int("count", len(scrollableRoles)),
+		zap.Strings("roles", roles))
+}
+
+// GetClickableRoles returns the configured clickable roles.
+func GetClickableRoles() []string {
+	clickableRolesMu.RLock()
+	defer clickableRolesMu.RUnlock()
+
+	roles := make([]string, 0, len(clickableRoles))
+	for role := range clickableRoles {
+		roles = append(roles, role)
 	}
-	customClickableRolesMu.RUnlock()
-	sort.Strings(additionals)
+	sort.Strings(roles)
+	return roles
+}
 
-	return defaults, additionals
+// GetScrollableRoles returns the configured scrollable roles.
+func GetScrollableRoles() []string {
+	scrollableRolesMu.RLock()
+	defer scrollableRolesMu.RUnlock()
+
+	roles := make([]string, 0, len(scrollableRoles))
+	for role := range scrollableRoles {
+		roles = append(roles, role)
+	}
+	sort.Strings(roles)
+	return roles
 }
 
 // ElementInfo contains information about a UI element
@@ -347,21 +358,12 @@ func (e *Element) IsClickable() bool {
 		return false
 	}
 
-	if allowed, ok := defaultClickableRoles[info.Role]; ok {
-		if allowed {
-			logger.Debug("Element matches default clickable role",
-				zap.String("role", info.Role),
-				zap.String("title", info.Title))
-			return true
-		}
-	}
-
-	customClickableRolesMu.RLock()
-	_, ok := customClickableRoles[info.Role]
-	customClickableRolesMu.RUnlock()
+	clickableRolesMu.RLock()
+	_, ok := clickableRoles[info.Role]
+	clickableRolesMu.RUnlock()
 
 	if ok {
-		logger.Debug("Element matches additional clickable role",
+		logger.Debug("Element matches clickable role",
 			zap.String("role", info.Role),
 			zap.String("title", info.Title))
 		return true
