@@ -1,0 +1,36 @@
+# Binaries
+bin/
+build/
+*.app
+*.dmg
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+
+# Config (keep default)
+config.toml
+!configs/default-config.toml
+
+.direnv/

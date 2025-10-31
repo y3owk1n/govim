@@ -1,0 +1,101 @@
+# GoVim Configuration
+# Copy to: ~/Library/Application Support/govim/config.toml
+
+[general]
+# Characters used for hint labels
+hint_characters = "asdfghjkl"
+
+# Hint style: "alphabet" or "numeric"
+hint_style = "alphabet"
+
+[hotkeys]
+# Activate hint mode
+activate_hint_mode = "Cmd+Shift+Space"
+
+# Activate scroll mode
+activate_scroll_mode = "Cmd+Shift+J"
+
+# Exit current mode
+exit_mode = "Escape"
+
+# Reload configuration
+reload_config = "Cmd+Shift+R"
+
+[hints]
+# Font size for hint labels
+font_size = 14
+
+# Font family (leave empty for system default)
+font_family = ""
+
+# Background color (hex format)
+background_color = "#FFD700"
+
+# Text color (hex format)
+text_color = "#000000"
+
+# Border radius (pixels)
+border_radius = 4
+
+# Padding (pixels)
+padding = 4
+
+# Border width (pixels)
+border_width = 1
+
+# Border color (hex format)
+border_color = "#000000"
+
+# Opacity (0.0 to 1.0)
+opacity = 0.95
+
+[scroll]
+# Scroll speed (not used with CGEvent scrolling)
+scroll_speed = 50
+
+# Smooth scrolling (currently disabled)
+smooth_scroll = false
+
+# Highlight the active scroll area
+highlight_scroll_area = true
+
+# Highlight color (hex format)
+highlight_color = "#FF0000"
+
+# Highlight border width (pixels)
+highlight_width = 2
+
+# Half-page scroll multiplier
+half_page_multiplier = 0.5
+
+# Full-page scroll multiplier
+full_page_multiplier = 0.9
+
+[performance]
+# Maximum number of hints to display
+max_hints_displayed = 200
+
+# Debounce time for UI updates (milliseconds)
+debounce_ms = 50
+
+# Cache duration for UI element tree (milliseconds)
+cache_duration_ms = 100
+
+# Maximum concurrent element queries
+max_concurrent_queries = 10
+
+[logging]
+# Log level: "debug", "info", "warn", "error"
+log_level = "info"
+
+# Log file location (empty for default: ~/Library/Logs/govim/app.log)
+log_file = ""
+
+# Maximum log file size in MB
+max_log_size_mb = 10
+
+# Maximum number of old log files to keep
+max_log_backups = 3
+
+# Enable structured logging
+structured_logging = true
