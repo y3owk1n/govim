@@ -48,18 +48,6 @@ type App struct {
 	enabled          bool
 }
 
-func hotkeyHasModifier(key string) bool {
-	parts := strings.Split(key, "+")
-	for _, part := range parts {
-		trimmed := strings.TrimSpace(part)
-		switch strings.ToLower(trimmed) {
-		case "cmd", "command", "shift", "alt", "option", "ctrl", "control":
-			return true
-		}
-	}
-	return false
-}
-
 // NewApp creates a new application instance
 func NewApp(cfg *config.Config) (*App, error) {
 	// Initialize logger
@@ -148,7 +136,7 @@ func (a *App) Run() error {
 	fmt.Printf("  Hint mode (direct): %s\n", a.config.Hotkeys.ActivateHintMode)
 	fmt.Printf("  Hint mode (with actions): %s\n", a.config.Hotkeys.ActivateHintModeWithActions)
 	fmt.Printf("  Scroll mode: %s\n", a.config.Hotkeys.ActivateScrollMode)
-	fmt.Printf("  Exit mode: %s\n", a.config.Hotkeys.ExitMode)
+	fmt.Printf("  Exit mode: Escape (hardcoded)\n")
 
 	// Wait for interrupt signal
 	sigChan := make(chan os.Signal, 1)
@@ -182,16 +170,7 @@ func (a *App) registerHotkeys() error {
 		return fmt.Errorf("failed to register scroll mode hotkey: %w", err)
 	}
 
-	// Exit mode hotkey
-	exitHotkey := a.config.Hotkeys.ExitMode
-	if hotkeyHasModifier(exitHotkey) {
-		if _, err := a.hotkeyManager.Register(exitHotkey, a.exitMode); err != nil {
-			return fmt.Errorf("failed to register exit mode hotkey: %w", err)
-		}
-	} else {
-		a.logger.Info("Skipping global exit hotkey registration to avoid intercepting unmodified key",
-			zap.String("key", exitHotkey))
-	}
+	// Note: Escape key for exiting modes is hardcoded in handleKeyPress, not registered as global hotkey
 
 	// Reload config hotkey
 	if _, err := a.hotkeyManager.Register(a.config.Hotkeys.ReloadConfig, a.reloadConfig); err != nil {

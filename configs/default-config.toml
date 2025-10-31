@@ -20,11 +20,10 @@ activate_hint_mode_with_actions = "Cmd+Shift+A"
 # Activate scroll mode for vim-style scrolling
 activate_scroll_mode = "Cmd+Shift+J"
 
-# Exit current mode
-exit_mode = "Escape"
-
 # Reload configuration
 reload_config = "Cmd+Shift+R"
+
+# Note: Escape key is hardcoded to exit any active mode
 
 [hints]
 # Font size for hint labels

@@ -35,7 +35,6 @@ type HotkeysConfig struct {
 	ActivateHintMode            string `toml:"activate_hint_mode"`
 	ActivateHintModeWithActions string `toml:"activate_hint_mode_with_actions"`
 	ActivateScrollMode          string `toml:"activate_scroll_mode"`
-	ExitMode                    string `toml:"exit_mode"`
 	ReloadConfig                string `toml:"reload_config"`
 }
 
@@ -106,7 +105,6 @@ func DefaultConfig() *Config {
 			ActivateHintMode:            "Cmd+Shift+Space",
 			ActivateHintModeWithActions: "Cmd+Shift+A",
 			ActivateScrollMode:          "Cmd+Shift+J",
-			ExitMode:                    "Escape",
 			ReloadConfig:                "Cmd+Shift+R",
 		},
 		Scroll: ScrollConfig{
