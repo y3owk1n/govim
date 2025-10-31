@@ -66,6 +66,9 @@ background_color = "#FFD700"
 # Text color (hex format)
 text_color = "#000000"
 
+# Matched text color - color for characters that have been typed (hex format)
+matched_text_color = "#0066CC"
+
 # Border radius (pixels)
 border_radius = 4
 

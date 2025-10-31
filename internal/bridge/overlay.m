@@ -77,10 +77,12 @@
 
     NSColor *defaultBg = [[NSColor colorWithRed:1.0 green:0.84 blue:0.0 alpha:1.0] colorWithAlphaComponent:0.95];
     NSColor *defaultText = [NSColor blackColor];
+    NSColor *defaultMatchedText = [NSColor systemBlueColor];
     NSColor *defaultBorder = [NSColor blackColor];
 
     NSString *backgroundHex = style.backgroundColor ? [NSString stringWithUTF8String:style.backgroundColor] : nil;
     NSString *textHex = style.textColor ? [NSString stringWithUTF8String:style.textColor] : nil;
+    NSString *matchedTextHex = style.matchedTextColor ? [NSString stringWithUTF8String:style.matchedTextColor] : nil;
     NSString *borderHex = style.borderColor ? [NSString stringWithUTF8String:style.borderColor] : nil;
 
     NSColor *backgroundColor = [self colorFromHex:backgroundHex defaultColor:defaultBg];
@@ -90,13 +92,8 @@
     }
     self.hintBackgroundColor = [backgroundColor colorWithAlphaComponent:opacity];
     self.hintTextColor = [self colorFromHex:textHex defaultColor:defaultText];
+    self.hintMatchedTextColor = [self colorFromHex:matchedTextHex defaultColor:defaultMatchedText];
     self.hintBorderColor = [self colorFromHex:borderHex defaultColor:defaultBorder];
-
-    // Derive matched prefix color by blending toward system blue
-    self.hintMatchedTextColor = [self.hintTextColor blendedColorWithFraction:0.4 ofColor:[NSColor systemBlueColor]];
-    if (!self.hintMatchedTextColor) {
-        self.hintMatchedTextColor = [NSColor systemBlueColor];
-    }
 
     self.hintBorderRadius = style.borderRadius > 0 ? style.borderRadius : 4.0;
     self.hintBorderWidth = style.borderWidth > 0 ? style.borderWidth : 1.0;

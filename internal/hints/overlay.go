@@ -93,6 +93,7 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, cfg config.HintsConfig, showA
 	cFontFamily := C.CString(cfg.FontFamily)
 	cBgColor := C.CString(cfg.BackgroundColor)
 	cTextColor := C.CString(cfg.TextColor)
+	cMatchedTextColor := C.CString(cfg.MatchedTextColor)
 	cBorderColor := C.CString(cfg.BorderColor)
 
 	arrowFlag := 0
@@ -101,16 +102,17 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, cfg config.HintsConfig, showA
 	}
 	
 	style := C.HintStyle{
-		fontSize:        C.int(cfg.FontSize),
-		fontFamily:      cFontFamily,
-		backgroundColor: cBgColor,
-		textColor:       cTextColor,
-		borderColor:     cBorderColor,
-		borderRadius:    C.int(cfg.BorderRadius),
-		borderWidth:     C.int(cfg.BorderWidth),
-		padding:         C.int(cfg.Padding),
-		opacity:         C.double(cfg.Opacity),
-		showArrow:       C.int(arrowFlag),
+		fontSize:         C.int(cfg.FontSize),
+		fontFamily:       cFontFamily,
+		backgroundColor:  cBgColor,
+		textColor:        cTextColor,
+		matchedTextColor: cMatchedTextColor,
+		borderColor:      cBorderColor,
+		borderRadius:     C.int(cfg.BorderRadius),
+		borderWidth:      C.int(cfg.BorderWidth),
+		padding:          C.int(cfg.Padding),
+		opacity:          C.double(cfg.Opacity),
+		showArrow:        C.int(arrowFlag),
 	}
 
 	// Draw hints
@@ -123,6 +125,7 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, cfg config.HintsConfig, showA
 	C.free(unsafe.Pointer(cFontFamily))
 	C.free(unsafe.Pointer(cBgColor))
 	C.free(unsafe.Pointer(cTextColor))
+	C.free(unsafe.Pointer(cMatchedTextColor))
 	C.free(unsafe.Pointer(cBorderColor))
 
 	return nil

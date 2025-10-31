@@ -13,6 +13,7 @@ typedef struct {
     char* fontFamily;
     char* backgroundColor;
     char* textColor;
+    char* matchedTextColor;
     char* borderColor;
     int borderRadius;
     int borderWidth;
