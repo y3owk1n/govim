@@ -26,7 +26,6 @@ type Config struct {
 type GeneralConfig struct {
 	HintCharacters           string `toml:"hint_characters"`
 	HintStyle                string `toml:"hint_style"`
-	AnimationDurationMs      int    `toml:"animation_duration_ms"`
 	AccessibilityCheckOnStart bool   `toml:"accessibility_check_on_start"`
 	Debug                    bool   `toml:"debug"`
 }
@@ -123,7 +122,6 @@ func DefaultConfig() *Config {
 		General: GeneralConfig{
 			HintCharacters:           "asdfghjkl",
 			HintStyle:                "alphabet",
-			AnimationDurationMs:      150,
 			AccessibilityCheckOnStart: true,
 			Debug:                    false,
 		},

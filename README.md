@@ -51,7 +51,6 @@ Config file: `~/Library/Application Support/govim/config.toml`
 [general]
 hint_characters = "asdfghjkl"
 hint_style = "alphabet"
-animation_duration_ms = 150
 
 [hotkeys]
 activate_hint_mode = "Cmd+Shift+Space"

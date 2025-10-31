@@ -270,6 +270,12 @@
                                                 backing:NSBackingStoreBuffered
                                                   defer:NO];
     
+    if ([self.window respondsToSelector:@selector(setAnimationBehavior:)]) {
+        [self.window setAnimationBehavior:NSWindowAnimationBehaviorNone];
+    }
+    [self.window setAnimations:@{}];
+    [self.window setAlphaValue:1.0];
+    
     [self.window setLevel:NSScreenSaverWindowLevel]; // Higher level to be above everything
     [self.window setOpaque:NO];
     [self.window setBackgroundColor:[NSColor clearColor]];
@@ -307,7 +313,7 @@ void showOverlayWindow(OverlayWindow window) {
     if (!window) return;
     
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    [controller.window orderFront:nil];
+    [controller.window orderFrontRegardless];
 }
 
 void hideOverlayWindow(OverlayWindow window) {

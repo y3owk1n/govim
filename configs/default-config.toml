@@ -2,20 +2,14 @@
 # Copy to: ~/Library/Application Support/govim/config.toml
 
 [general]
-# Characters used for hint labels (in order of preference)
 hint_characters = "asdfghjkl"
-
-# Hint style: "alphabet" (aa, ab, ac...) or "numeric" (1, 2, 3...)
 hint_style = "alphabet"
 
 [accessibility]
-# Extra AX roles to treat as clickable (override defaults)
 additional_clickable_roles = []
 
 [hotkeys]
-# Activate hint mode (direct click after typing hint)
 activate_hint_mode = "Cmd+Shift+Space"
-
 # Activate hint mode with action selection (choose click type after typing hint)
 activate_hint_mode_with_actions = "Cmd+Shift+A"
 
