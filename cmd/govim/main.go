@@ -304,6 +304,34 @@ func (a *App) handleHintKey(key string) {
 		return
 	}
 
+	// Handle backspace/delete to remove last character
+	if key == "\x7f" || key == "delete" || key == "backspace" {
+		if len(a.hintInput) > 0 {
+			// Remove last character
+			a.hintInput = a.hintInput[:len(a.hintInput)-1]
+			a.logger.Debug("Backspace pressed, hint input", zap.String("input", a.hintInput))
+
+			// Redraw hints with updated filter
+			var filtered []*hints.Hint
+			if a.hintInput == "" {
+				// Show all hints if input is empty
+				filtered = a.currentHints.GetHints()
+			} else {
+				filtered = a.currentHints.FilterByPrefix(a.hintInput)
+			}
+
+			// Update matched prefix for filtered hints and redraw
+			for _, hint := range filtered {
+				hint.MatchedPrefix = a.hintInput
+			}
+			a.hintOverlay.Clear()
+			if err := a.hintOverlay.DrawHints(filtered); err != nil {
+				a.logger.Error("Failed to redraw hints", zap.Error(err))
+			}
+		}
+		return
+	}
+
 	// Ignore non-letter keys
 	if len(key) != 1 || !isLetter(key[0]) {
 		return
@@ -419,6 +447,38 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 // handleActionKey handles action key presses after a hint is selected
 func (a *App) handleActionKey(key string) {
 	if a.selectedHint == nil {
+		return
+	}
+
+	// Handle backspace/delete to go back to hint selection
+	if key == "\x7f" || key == "delete" || key == "backspace" {
+		a.logger.Debug("Backspace pressed in action mode, returning to hint selection")
+		
+		// Clear selected hint
+		a.selectedHint = nil
+		
+		// Remove the last character from hintInput (e.g., "ABD" -> "AB")
+		if len(a.hintInput) > 0 {
+			a.hintInput = a.hintInput[:len(a.hintInput)-1]
+			a.logger.Debug("Removed last character from hint input", zap.String("input", a.hintInput))
+		}
+		
+		// Redraw hints with updated input filter
+		var filtered []*hints.Hint
+		if a.hintInput == "" {
+			filtered = a.currentHints.GetHints()
+		} else {
+			filtered = a.currentHints.FilterByPrefix(a.hintInput)
+		}
+		
+		// Update matched prefix for filtered hints and redraw
+		for _, hint := range filtered {
+			hint.MatchedPrefix = a.hintInput
+		}
+		a.hintOverlay.Clear()
+		if err := a.hintOverlay.DrawHints(filtered); err != nil {
+			a.logger.Error("Failed to redraw hints", zap.Error(err))
+		}
 		return
 	}
 

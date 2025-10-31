@@ -15,6 +15,22 @@ CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef 
         CGKeyCode keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
         CGEventFlags flags = CGEventGetFlags(event);
 
+        // Special handling for delete/backspace key (keycode 51)
+        if (keyCode == 51) {
+            if (context->callback) {
+                context->callback("\x7f", context->userData);
+            }
+            return NULL;
+        }
+
+        // Special handling for escape key (keycode 53)
+        if (keyCode == 53) {
+            if (context->callback) {
+                context->callback("\x1b", context->userData);
+            }
+            return NULL;
+        }
+
         // Convert keycode to character
         TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
         CFDataRef layoutData = TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData);
