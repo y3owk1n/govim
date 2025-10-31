@@ -226,13 +226,33 @@ func (a *App) activateHintMode(withActions bool) {
 		zap.Strings("default_roles", defaultRoles),
 		zap.Strings("additional_roles", additionalRoles))
 
-	elements, err := accessibility.GetClickableElements()
+    elements, err := accessibility.GetClickableElements()
 	if err != nil {
 		a.logger.Error("Failed to get clickable elements", zap.Error(err))
 		return
 	}
 
 	a.logger.Info("Found clickable elements", zap.Int("count", len(elements)))
+
+    // Optionally include menu bar elements
+    if a.config.Hints.Menubar {
+        if mbElems, merr := accessibility.GetMenuBarClickableElements(); merr == nil {
+            elements = append(elements, mbElems...)
+            a.logger.Debug("Included menubar elements", zap.Int("count", len(mbElems)))
+        } else {
+            a.logger.Warn("Failed to get menubar elements", zap.Error(merr))
+        }
+    }
+
+    // Optionally include Dock elements
+    if a.config.Hints.Dock {
+        if dockElems, derr := accessibility.GetDockClickableElements(); derr == nil {
+            elements = append(elements, dockElems...)
+            a.logger.Debug("Included dock elements", zap.Int("count", len(dockElems)))
+        } else {
+            a.logger.Warn("Failed to get dock elements", zap.Error(derr))
+        }
+    }
 
 	if len(elements) == 0 {
 		a.logger.Warn("No clickable elements found")

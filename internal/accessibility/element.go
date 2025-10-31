@@ -33,7 +33,10 @@ var (
 		"AXCheckBox":    true,
 		"AXRadioButton": true,
 		"AXPopUpButton": true,
-		"AXMenuItem":    true,
+			"AXMenuItem":    true,
+			"AXMenuBarItem": true,  // Top-level menu titles in the macOS menu bar
+			"AXDockItem":    true,  // Items in the macOS Dock
+			"AXApplicationDockItem": true, // Some systems use this for Dock items
 		"AXLink":        true,
 		"AXTextField":   true,
 		"AXTextArea":    true,
@@ -131,6 +134,18 @@ func GetApplicationByPID(pid int) *Element {
 		return nil
 	}
 	return &Element{ref: ref}
+}
+
+// GetApplicationByBundleID returns an application element by bundle identifier
+func GetApplicationByBundleID(bundleID string) *Element {
+    cBundle := C.CString(bundleID)
+    defer C.free(unsafe.Pointer(cBundle))
+
+    ref := C.getApplicationByBundleId(cBundle)
+    if ref == nil {
+        return nil
+    }
+    return &Element{ref: ref}
 }
 
 // GetElementAtPosition returns the element at the specified screen position
@@ -362,6 +377,18 @@ func GetFrontmostWindow() *Element {
 		return nil
 	}
 	return &Element{ref: ref}
+}
+
+// GetMenuBar returns the menu bar element for the given application element
+func (e *Element) GetMenuBar() *Element {
+    if e.ref == nil {
+        return nil
+    }
+    ref := C.getMenuBar(e.ref)
+    if ref == nil {
+        return nil
+    }
+    return &Element{ref: ref}
 }
 
 // GetApplicationName returns the application name

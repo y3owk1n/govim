@@ -70,6 +70,8 @@ type HintsConfig struct {
 	ClickActionRight  string  `toml:"click_action_right"`
 	ClickActionDouble string  `toml:"click_action_double"`
 	ClickActionMiddle string  `toml:"click_action_middle"`
+    Menubar           bool    `toml:"menubar"`
+    Dock              bool    `toml:"dock"`
 }
 
 type AppearanceConfig struct {
@@ -171,6 +173,8 @@ func DefaultConfig() *Config {
 			ClickActionRight:  "d",
 			ClickActionDouble: "s",
 			ClickActionMiddle: "a",
+            Menubar:           false,
+            Dock:              false,
 		},
 		Appearance: AppearanceConfig{
 			OverlayOpacity:  0.95,

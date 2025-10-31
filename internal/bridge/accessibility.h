@@ -21,6 +21,8 @@ int checkAccessibilityPermissions();
 void* getSystemWideElement();
 void* getFocusedApplication();
 void* getApplicationByPID(int pid);
+void* getApplicationByBundleId(const char* bundle_id);
+void* getMenuBar(void* app);
 ElementInfo* getElementInfo(void* element);
 void freeElementInfo(ElementInfo* info);
 void* getElementAtPosition(CGPoint position);

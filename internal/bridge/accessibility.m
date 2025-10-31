@@ -89,10 +89,37 @@ void* getFocusedApplication() {
     return (void*)focusedApp;
 }
 
+// Get the menu bar element of an application
+void* getMenuBar(void* app) {
+    if (!app) return NULL;
+    AXUIElementRef axApp = (AXUIElementRef)app;
+    AXUIElementRef menubar = NULL;
+    AXError error = AXUIElementCopyAttributeValue(axApp, kAXMenuBarAttribute, (CFTypeRef*)&menubar);
+    if (error != kAXErrorSuccess) {
+        return NULL;
+    }
+    return (void*)menubar;
+}
+
 // Get application by PID
 void* getApplicationByPID(int pid) {
     AXUIElementRef app = AXUIElementCreateApplication(pid);
     return (void*)app;
+}
+
+// Get application by bundle identifier
+void* getApplicationByBundleId(const char* bundle_id) {
+    if (!bundle_id) return NULL;
+
+    NSString* bundleIdStr = [NSString stringWithUTF8String:bundle_id];
+    NSArray<NSRunningApplication*>* apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdStr];
+    if (apps.count == 0) {
+        return NULL;
+    }
+    NSRunningApplication* app = apps.firstObject;
+    pid_t pid = app.processIdentifier;
+    AXUIElementRef axApp = AXUIElementCreateApplication(pid);
+    return (void*)axApp;
 }
 
 // Helper function to convert CFStringRef to C string

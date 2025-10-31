@@ -61,6 +61,12 @@ click_action_right = "d"          # Right click
 click_action_double = "s"         # Double left click
 click_action_middle = "a"         # Middle click
 
+# Include additional targets in hint mode
+# Show hints on the macOS menu bar
+menubar = false
+# Show hints on the Dock
+dock = false
+
 [scroll]
 # Base scroll amount for j/k keys in pixels
 scroll_speed = 50

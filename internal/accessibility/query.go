@@ -314,3 +314,61 @@ func FuzzySearch(searchText string, maxResults int) ([]*TreeNode, error) {
 
 	return SearchElements(query)
 }
+
+// GetMenuBarClickableElements returns clickable elements from the focused app's menu bar
+func GetMenuBarClickableElements() ([]*TreeNode, error) {
+    app := GetFocusedApplication()
+    if app == nil {
+        return []*TreeNode{}, nil
+    }
+    defer app.Release()
+
+    menubar := app.GetMenuBar()
+    if menubar == nil {
+        return []*TreeNode{}, nil
+    }
+    defer menubar.Release()
+
+    opts := DefaultTreeOptions()
+    opts.MaxDepth = 8
+    // Filter out tiny elements
+    opts.FilterFunc = func(info *ElementInfo) bool {
+        if info.Size.X < 6 || info.Size.Y < 6 { return false }
+        return true
+    }
+
+    tree, err := BuildTree(menubar, opts)
+    if err != nil {
+        return nil, err
+    }
+    if tree == nil {
+        return []*TreeNode{}, nil
+    }
+    return tree.FindClickableElements(), nil
+}
+
+// GetDockClickableElements returns clickable elements from the Dock
+func GetDockClickableElements() ([]*TreeNode, error) {
+    dock := GetApplicationByBundleID("com.apple.dock")
+    if dock == nil {
+        return []*TreeNode{}, nil
+    }
+    defer dock.Release()
+
+    opts := DefaultTreeOptions()
+    opts.MaxDepth = 8
+    // Filter out tiny elements
+    opts.FilterFunc = func(info *ElementInfo) bool {
+        if info.Size.X < 6 || info.Size.Y < 6 { return false }
+        return true
+    }
+
+    tree, err := BuildTree(dock, opts)
+    if err != nil {
+        return nil, err
+    }
+    if tree == nil {
+        return []*TreeNode{}, nil
+    }
+    return tree.FindClickableElements(), nil
+}
