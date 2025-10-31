@@ -94,16 +94,24 @@ void enableEventTap(EventTap tap) {
     if (!tap) return;
 
     EventTapContext* context = (EventTapContext*)tap;
-    CFRunLoopAddSource(CFRunLoopGetCurrent(), context->runLoopSource, kCFRunLoopCommonModes);
-    CGEventTapEnable(context->eventTap, true);
+    
+    // Must run on main thread since we're modifying the main run loop
+    dispatch_async(dispatch_get_main_queue(), ^{
+        CFRunLoopAddSource(CFRunLoopGetMain(), context->runLoopSource, kCFRunLoopCommonModes);
+        CGEventTapEnable(context->eventTap, true);
+    });
 }
 
 void disableEventTap(EventTap tap) {
     if (!tap) return;
 
     EventTapContext* context = (EventTapContext*)tap;
-    CGEventTapEnable(context->eventTap, false);
-    CFRunLoopRemoveSource(CFRunLoopGetCurrent(), context->runLoopSource, kCFRunLoopCommonModes);
+    
+    // Must run on main thread since we're modifying the main run loop
+    dispatch_async(dispatch_get_main_queue(), ^{
+        CGEventTapEnable(context->eventTap, false);
+        CFRunLoopRemoveSource(CFRunLoopGetMain(), context->runLoopSource, kCFRunLoopCommonModes);
+    });
 }
 
 void destroyEventTap(EventTap tap) {
