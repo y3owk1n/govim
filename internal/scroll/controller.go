@@ -49,24 +49,35 @@ func NewController(cfg config.ScrollConfig, logger *zap.Logger) *Controller {
 
 // Initialize initializes the scroll controller
 func (c *Controller) Initialize() error {
+	c.logger.Info("Starting scroll area detection")
+	
+	// Detect scroll areas
 	areas, err := c.detector.DetectScrollAreas()
 	if err != nil {
+		c.logger.Error("Failed to detect scroll areas", zap.Error(err))
 		return fmt.Errorf("failed to detect scroll areas: %w", err)
 	}
 
 	c.logger.Info("Detected scroll areas", zap.Int("count", len(areas)))
 
-	// Activate the largest area by default
-	if len(areas) > 0 {
-		largest := c.detector.GetLargestArea()
-		if largest != nil {
-			largest.Active = true
-			c.logger.Info("Activated largest scroll area",
-				zap.Int("width", largest.Bounds.Dx()),
-				zap.Int("height", largest.Bounds.Dy()))
-		}
+	if len(areas) == 0 {
+		return fmt.Errorf("no scroll areas found")
 	}
 
+	c.logger.Info("Getting largest area")
+	// Activate the largest scroll area by default
+	largestArea := c.detector.GetLargestArea()
+	if largestArea != nil {
+		c.logger.Info("Setting active area")
+		c.detector.SetActiveArea(0)
+		largestArea.Active = true
+
+		c.logger.Info("Activated largest scroll area",
+			zap.Int("width", largestArea.Bounds.Dx()),
+			zap.Int("height", largestArea.Bounds.Dy()))
+	}
+
+	c.logger.Info("Scroll controller initialized successfully")
 	return nil
 }
 
@@ -107,19 +118,19 @@ func (c *Controller) Scroll(dir Direction, amount ScrollAmount) error {
 func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount, area *ScrollArea) (int, int) {
 	var deltaX, deltaY int
 	
-	// Base scroll amount (in lines for scroll wheel events)
-	baseScroll := 3 // 3 lines per scroll
+	// Use config values for all scroll amounts
+	var baseScroll int
 
 	switch amount {
 	case AmountChar:
-		// Single scroll
-		baseScroll = 3
+		// Single scroll (j/k) - use scroll_speed from config
+		baseScroll = c.config.ScrollSpeed
 	case AmountHalfPage:
-		// Half page - more lines
-		baseScroll = 10
+		// Half page (Ctrl+D/U) - use page_height * half_page_multiplier
+		baseScroll = int(float64(c.config.PageHeight) * c.config.HalfPageMultiplier)
 	case AmountFullPage:
-		// Full page - even more lines
-		baseScroll = 20
+		// Full page - use page_height * full_page_multiplier
+		baseScroll = int(float64(c.config.PageHeight) * c.config.FullPageMultiplier)
 	}
 
 	// Note: For CGEvent scroll wheel, positive = up/left, negative = down/right
@@ -181,6 +192,11 @@ func (c *Controller) Cleanup() {
 	c.detector.Clear()
 }
 
+// GetDetector returns the scroll detector
+func (c *Controller) GetDetector() *Detector {
+	return c.detector
+}
+
 // directionString converts direction to string
 func (c *Controller) directionString(dir Direction) string {
 	switch dir {
@@ -219,14 +235,44 @@ func (c *Controller) ScrollRight() error {
 	return c.Scroll(DirectionRight, AmountChar)
 }
 
-// ScrollUpHalfPage scrolls up by half page
+// ScrollUpHalfPage scrolls up by half page (Ctrl+U in Vim)
 func (c *Controller) ScrollUpHalfPage() error {
 	return c.Scroll(DirectionUp, AmountHalfPage)
 }
 
-// ScrollDownHalfPage scrolls down by half page
+// ScrollDownHalfPage scrolls down by half page (Ctrl+D in Vim)
 func (c *Controller) ScrollDownHalfPage() error {
 	return c.Scroll(DirectionDown, AmountHalfPage)
+}
+
+// ScrollToTop scrolls to the top (gg in Vim)
+func (c *Controller) ScrollToTop() error {
+	area := c.detector.GetActiveArea()
+	if area == nil {
+		return fmt.Errorf("no active scroll area")
+	}
+
+	// Use config values for scroll to edge
+	c.logger.Info("Scrolling to top")
+	for i := 0; i < c.config.ScrollToEdgeIterations; i++ {
+		area.Element.Element.Scroll(0, c.config.ScrollToEdgeDelta)
+	}
+	return nil
+}
+
+// ScrollToBottom scrolls to the bottom (G in Vim)
+func (c *Controller) ScrollToBottom() error {
+	area := c.detector.GetActiveArea()
+	if area == nil {
+		return fmt.Errorf("no active scroll area")
+	}
+
+	// Use config values for scroll to edge
+	c.logger.Info("Scrolling to bottom")
+	for i := 0; i < c.config.ScrollToEdgeIterations; i++ {
+		area.Element.Element.Scroll(0, -c.config.ScrollToEdgeDelta)
+	}
+	return nil
 }
 
 // ScrollUpFullPage scrolls up by full page

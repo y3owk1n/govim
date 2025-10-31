@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"os"
 	"os/signal"
 	"syscall"
@@ -40,6 +41,7 @@ type App struct {
 	currentMode      Mode
 	currentHints     *hints.HintCollection
 	hintInput        string
+	lastScrollKey    string
 	enabled          bool
 }
 
@@ -267,30 +269,122 @@ func (a *App) handleHintKey(key string) {
 
 // handleScrollKey handles key presses in scroll mode
 func (a *App) handleScrollKey(key string) {
-	a.logger.Info("Scroll key pressed", zap.String("key", key))
+	// Log every byte for debugging
+	bytes := []byte(key)
+	a.logger.Info("Scroll key pressed", 
+		zap.String("key", key), 
+		zap.Int("len", len(key)), 
+		zap.String("hex", fmt.Sprintf("%#v", key)),
+		zap.Any("bytes", bytes))
 	
 	var err error
+	
+	// Check for control characters
+	if len(key) == 1 {
+		byteVal := key[0]
+		a.logger.Info("Checking control char", zap.Uint8("byte", byteVal))
+		switch byteVal {
+		case 4: // Ctrl+D
+			a.logger.Info("Ctrl+D detected - half page down")
+			err = a.scrollController.ScrollDownHalfPage()
+			goto done
+		case 21: // Ctrl+U  
+			a.logger.Info("Ctrl+U detected - half page up")
+			err = a.scrollController.ScrollUpHalfPage()
+			goto done
+		}
+	}
+	
+	// Regular keys
 	switch key {
 	case "j":
-		a.logger.Info("Scrolling down")
 		err = a.scrollController.ScrollDown()
 	case "k":
-		a.logger.Info("Scrolling up")
 		err = a.scrollController.ScrollUp()
 	case "h":
-		a.logger.Info("Scrolling left")
 		err = a.scrollController.ScrollLeft()
 	case "l":
-		a.logger.Info("Scrolling right")
 		err = a.scrollController.ScrollRight()
+	// Remove plain d/u - only use Ctrl+D/U
+	// case "d": // Removed - use Ctrl+D instead
+	// case "u": // Removed - use Ctrl+U instead
+	case "g": // gg for top (need to press twice)
+		if a.lastScrollKey == "g" {
+			a.logger.Info("gg detected - scroll to top")
+			err = a.scrollController.ScrollToTop()
+			a.lastScrollKey = ""
+			goto done
+		} else {
+			a.logger.Info("First g pressed, press again for top")
+			a.lastScrollKey = "g"
+			return
+		}
+	case "G": // Shift+G for bottom
+		a.logger.Info("G key detected - scroll to bottom")
+		err = a.scrollController.ScrollToBottom()
+		a.lastScrollKey = ""
+	case "\t": // Tab (next scroll area)
+		a.switchScrollArea(true)
+		a.lastScrollKey = ""
+		return
+	case "1", "2", "3", "4", "5", "6", "7", "8", "9": // Number keys
+		a.switchScrollAreaByNumber(key)
+		a.lastScrollKey = ""
+		return
 	default:
 		a.logger.Debug("Ignoring non-scroll key", zap.String("key", key))
+		a.lastScrollKey = ""
 		return
 	}
 	
+	// Reset last key for most commands
+	a.lastScrollKey = ""
+	
+done:
 	if err != nil {
 		a.logger.Error("Scroll failed", zap.Error(err))
 	}
+}
+
+// switchScrollArea switches to next/prev scroll area
+func (a *App) switchScrollArea(next bool) {
+	detector := a.scrollController.GetDetector()
+	var newArea *scroll.ScrollArea
+	
+	if next {
+		newArea = detector.CycleActiveArea()
+	} else {
+		newArea = detector.CyclePrevArea()
+	}
+	
+	if newArea != nil {
+		a.logger.Info("Switched scroll area", zap.Int("index", newArea.Index+1))
+		a.updateScrollHighlight(newArea)
+	}
+}
+
+// switchScrollAreaByNumber switches to a specific scroll area by number
+func (a *App) switchScrollAreaByNumber(key string) {
+	number := int(key[0] - '0')
+	detector := a.scrollController.GetDetector()
+	newArea := detector.SetActiveByNumber(number)
+	
+	if newArea != nil {
+		a.logger.Info("Switched to scroll area", zap.Int("number", number))
+		a.updateScrollHighlight(newArea)
+	}
+}
+
+// updateScrollHighlight updates the scroll area highlight
+func (a *App) updateScrollHighlight(area *scroll.ScrollArea) {
+	bounds := area.Bounds
+	a.hintOverlay.DrawScrollHighlight(
+		bounds.Min.X, bounds.Min.Y,
+		bounds.Dx(), bounds.Dy(),
+		a.config.Scroll.HighlightColor,
+		a.config.Scroll.HighlightWidth,
+	)
+	a.hintOverlay.Show()
 }
 
 // activateScrollMode activates scroll mode
@@ -308,44 +402,74 @@ func (a *App) activateScrollMode() {
 	a.logger.Info("Activating scroll mode")
 	a.exitMode() // Exit current mode first
 
+	a.logger.Info("Initializing scroll controller")
 	// Initialize scroll controller
 	if err := a.scrollController.Initialize(); err != nil {
 		a.logger.Error("Failed to initialize scroll controller", zap.Error(err))
 		return
 	}
 
-	// Get active scroll area
-	area := a.scrollController.GetActiveArea()
-	if area == nil {
+	a.logger.Info("Getting scroll areas")
+	// Get all scroll areas
+	areas := a.scrollController.GetAllAreas()
+	if len(areas) == 0 {
 		a.logger.Warn("No scrollable areas found")
 		return
 	}
 
-	// Draw scroll highlight
-	bounds := area.Bounds
-	a.hintOverlay.DrawScrollHighlight(
-		bounds.Min.X, bounds.Min.Y,
-		bounds.Dx(), bounds.Dy(),
-		a.config.Scroll.HighlightColor,
-		a.config.Scroll.HighlightWidth,
-	)
-	a.hintOverlay.Show()
+	a.logger.Info("Drawing scroll area labels", zap.Int("count", len(areas)))
+	// Draw scroll highlights with numbers for all areas
+	a.drawScrollAreaLabels(areas)
 
+	a.logger.Info("Setting mode to scroll")
 	a.currentMode = ModeScroll
-	a.logger.Info("Scroll mode activated")
-	a.logger.Info("Use J/K to scroll down/up, H/L for left/right, Escape to exit")
+	a.logger.Info("Scroll mode activated", zap.Int("areas", len(areas)))
+	a.logger.Info("Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom")
+	a.logger.Info("Tab to switch areas, or press 1-9 to jump to area")
 
+	a.logger.Info("Enabling event tap")
 	// Enable event tap to capture scroll keys
 	if a.eventTap != nil {
 		a.eventTap.Enable()
 	}
+	a.logger.Info("Scroll mode activation complete")
 }
 
-// registerScrollKeys registers scroll mode keys using event tap
-func (a *App) registerScrollKeys() {
-	// Don't use global hotkeys for scroll keys - they conflict with typing
-	// Instead, we'll use the event tap to capture them
-	a.logger.Debug("Scroll keys will be captured via event tap")
+// drawScrollAreaLabels draws number labels on all scroll areas
+func (a *App) drawScrollAreaLabels(areas []*scroll.ScrollArea) {
+	// Clear existing overlay
+	a.hintOverlay.Clear()
+	
+	// Create hints for each scroll area number
+	areaHints := make([]*hints.Hint, 0, len(areas))
+	for i, area := range areas {
+		// Position number at top-left of scroll area
+		hint := &hints.Hint{
+			Label:    fmt.Sprintf("%d", i+1),
+			Position: image.Point{X: area.Bounds.Min.X + 10, Y: area.Bounds.Min.Y + 10},
+			Size:     image.Point{X: 30, Y: 30},
+		}
+		areaHints = append(areaHints, hint)
+	}
+	
+	// Draw the number hints
+	if len(areaHints) > 0 {
+		a.hintOverlay.DrawHints(areaHints)
+	}
+	
+	// Draw highlight on active area
+	activeArea := a.scrollController.GetDetector().GetActiveArea()
+	if activeArea != nil {
+		bounds := activeArea.Bounds
+		a.hintOverlay.DrawScrollHighlight(
+			bounds.Min.X, bounds.Min.Y,
+			bounds.Dx(), bounds.Dy(),
+			a.config.Scroll.HighlightColor,
+			a.config.Scroll.HighlightWidth,
+		)
+	}
+	
+	a.hintOverlay.Show()
 }
 
 // exitMode exits the current mode

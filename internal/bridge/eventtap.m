@@ -13,6 +13,7 @@ CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef 
     
     if (type == kCGEventKeyDown) {
         CGKeyCode keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+        CGEventFlags flags = CGEventGetFlags(event);
         
         // Convert keycode to character
         TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
@@ -25,10 +26,19 @@ CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef 
             UniCharCount actualStringLength = 0;
             UniChar unicodeString[maxStringLength];
             
+            // Get modifier flags
+            UInt32 modifierKeyState = 0;
+            if (flags & kCGEventFlagMaskShift) {
+                modifierKeyState |= shiftKey >> 8;
+            }
+            if (flags & kCGEventFlagMaskControl) {
+                modifierKeyState |= controlKey >> 8;
+            }
+            
             UCKeyTranslate(keyboardLayout,
                           keyCode,
                           kUCKeyActionDown,
-                          0, // no modifiers
+                          modifierKeyState,
                           LMGetKbdType(),
                           kUCKeyTranslateNoDeadKeysMask,
                           &deadKeyState,

@@ -478,20 +478,20 @@ int scrollElement(void* element, int deltaX, int deltaY) {
         }
     }
     
-    // Create scroll wheel event
+    // Create scroll wheel event using pixel units for more reliable scrolling
     CGEventRef scrollEvent = CGEventCreateScrollWheelEvent(
         NULL,
-        kCGScrollEventUnitLine,
+        kCGScrollEventUnitPixel,  // Use pixels instead of lines
         2, // number of wheels (vertical and horizontal)
         deltaY,
         deltaX
     );
     
     if (scrollEvent) {
-        // Set the event location to the scroll area
+        // Set the event location to the scroll area center
         CGEventSetLocation(scrollEvent, scrollPoint);
         
-        // Post the event
+        // Post the event to the HID event tap
         CGEventPost(kCGHIDEventTap, scrollEvent);
         CFRelease(scrollEvent);
         
@@ -499,4 +499,37 @@ int scrollElement(void* element, int deltaX, int deltaY) {
     }
     
     return 0;
+}
+
+// Get current scroll position
+int getScrollPosition(void* element) {
+    if (!element) return -1;
+    
+    AXUIElementRef axElement = (AXUIElementRef)element;
+    CFTypeRef valueRef = NULL;
+    
+    if (AXUIElementCopyAttributeValue(axElement, CFSTR("AXValue"), &valueRef) == kAXErrorSuccess) {
+        if (valueRef && CFGetTypeID(valueRef) == CFNumberGetTypeID()) {
+            int value = 0;
+            CFNumberGetValue((CFNumberRef)valueRef, kCFNumberIntType, &value);
+            CFRelease(valueRef);
+            return value;
+        }
+        if (valueRef) CFRelease(valueRef);
+    }
+    
+    return -1;
+}
+
+// Set scroll position directly
+int setScrollPosition(void* element, int position) {
+    if (!element) return 0;
+    
+    AXUIElementRef axElement = (AXUIElementRef)element;
+    CFNumberRef positionRef = CFNumberCreate(NULL, kCFNumberIntType, &position);
+    
+    AXError error = AXUIElementSetAttributeValue(axElement, CFSTR("AXValue"), positionRef);
+    CFRelease(positionRef);
+    
+    return (error == kAXErrorSuccess) ? 1 : 0;
 }

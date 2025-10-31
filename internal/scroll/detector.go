@@ -11,18 +11,21 @@ import (
 type ScrollArea struct {
 	Element *accessibility.TreeNode
 	Bounds  image.Rectangle
+	Index   int
 	Active  bool
 }
 
 // Detector detects scrollable areas
 type Detector struct {
-	areas []*ScrollArea
+	areas       []*ScrollArea
+	activeIndex int
 }
 
 // NewDetector creates a new scroll detector
 func NewDetector() *Detector {
 	return &Detector{
-		areas: []*ScrollArea{},
+		areas:       []*ScrollArea{},
+		activeIndex: 0,
 	}
 }
 
@@ -135,7 +138,50 @@ func (d *Detector) CycleActiveArea() *ScrollArea {
 
 	nextIndex := (currentIndex + 1) % len(d.areas)
 	d.areas[nextIndex].Active = true
+	d.areas[nextIndex].Index = nextIndex
 	return d.areas[nextIndex]
+}
+
+// CyclePrevArea cycles to the previous scroll area
+func (d *Detector) CyclePrevArea() *ScrollArea {
+	if len(d.areas) == 0 {
+		return nil
+	}
+
+	currentIndex := -1
+	for i, area := range d.areas {
+		if area.Active {
+			currentIndex = i
+			area.Active = false
+			break
+		}
+	}
+
+	prevIndex := currentIndex - 1
+	if prevIndex < 0 {
+		prevIndex = len(d.areas) - 1
+	}
+	d.areas[prevIndex].Active = true
+	d.areas[prevIndex].Index = prevIndex
+	return d.areas[prevIndex]
+}
+
+// SetActiveByNumber sets the active area by number (1-indexed)
+func (d *Detector) SetActiveByNumber(number int) *ScrollArea {
+	index := number - 1
+	if index < 0 || index >= len(d.areas) {
+		return nil
+	}
+
+	// Deactivate all
+	for _, area := range d.areas {
+		area.Active = false
+	}
+
+	// Activate selected
+	d.areas[index].Active = true
+	d.areas[index].Index = index
+	return d.areas[index]
 }
 
 // Clear clears all detected areas

@@ -226,7 +226,7 @@ func GetScrollableElements() ([]*TreeNode, error) {
 	defer window.Release()
 
 	opts := DefaultTreeOptions()
-	opts.MaxDepth = 15
+	opts.MaxDepth = 5  // Reduced from 15 to avoid deep traversal in complex apps like Mail
 
 	tree, err := BuildTree(window, opts)
 	if err != nil {

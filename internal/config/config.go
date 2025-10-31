@@ -38,13 +38,16 @@ type HotkeysConfig struct {
 }
 
 type ScrollConfig struct {
-	ScrollSpeed          int     `toml:"scroll_speed"`
-	SmoothScroll         bool    `toml:"smooth_scroll"`
-	HighlightScrollArea  bool    `toml:"highlight_scroll_area"`
-	HighlightColor       string  `toml:"highlight_color"`
-	HighlightWidth       int     `toml:"highlight_width"`
-	HalfPageMultiplier   float64 `toml:"half_page_multiplier"`
-	FullPageMultiplier   float64 `toml:"full_page_multiplier"`
+	ScrollSpeed            int     `toml:"scroll_speed"`
+	SmoothScroll           bool    `toml:"smooth_scroll"`
+	HighlightScrollArea    bool    `toml:"highlight_scroll_area"`
+	HighlightColor         string  `toml:"highlight_color"`
+	HighlightWidth         int     `toml:"highlight_width"`
+	PageHeight             int     `toml:"page_height"`
+	HalfPageMultiplier     float64 `toml:"half_page_multiplier"`
+	FullPageMultiplier     float64 `toml:"full_page_multiplier"`
+	ScrollToEdgeIterations int     `toml:"scroll_to_edge_iterations"`
+	ScrollToEdgeDelta      int     `toml:"scroll_to_edge_delta"`
 }
 
 type HintsConfig struct {

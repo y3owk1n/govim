@@ -50,10 +50,10 @@ border_color = "#000000"
 opacity = 0.95
 
 [scroll]
-# Scroll speed (not used with CGEvent scrolling)
+# Base scroll amount for j/k in pixels
 scroll_speed = 50
 
-# Smooth scrolling (currently disabled)
+# Smooth scrolling (handled by OS/browser)
 smooth_scroll = false
 
 # Highlight the active scroll area
@@ -65,11 +65,20 @@ highlight_color = "#FF0000"
 # Highlight border width (pixels)
 highlight_width = 2
 
-# Half-page scroll multiplier
+# Estimated page height in pixels for calculating scroll amounts
+page_height = 1200
+
+# Half-page scroll multiplier (e.g., 0.5 = half of page_height)
 half_page_multiplier = 0.5
 
-# Full-page scroll multiplier
+# Full-page scroll multiplier (e.g., 0.9 = 90% of page_height)
 full_page_multiplier = 0.9
+
+# Scroll to top/bottom iterations (number of scroll events)
+scroll_to_edge_iterations = 20
+
+# Scroll to top/bottom delta per iteration in pixels
+scroll_to_edge_delta = 5000
 
 [performance]
 # Maximum number of hints to display
