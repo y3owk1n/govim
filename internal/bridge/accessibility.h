@@ -32,6 +32,7 @@ void** getVisibleChildren(void* element, int* count);
 int performClick(void* element);
 int performRightClick(void* element);
 int performDoubleClick(void* element);
+int performMiddleClick(void* element);
 int setFocus(void* element);
 char* getElementAttribute(void* element, const char* attribute);
 void freeString(char* str);

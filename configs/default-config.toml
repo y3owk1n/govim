@@ -53,7 +53,7 @@ border_color = "#000000"
 # Opacity (0.0 to 1.0)
 opacity = 0.95
 
-# Note: Action keys for hint mode with actions are hardcoded:
+# Action keys for hint mode with actions (hardcoded):
 #   l = left click, r = right click, d = double click, m = middle click
 
 # Include additional targets in hint mode

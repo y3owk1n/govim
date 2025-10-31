@@ -284,6 +284,19 @@ func (e *Element) DoubleClick() error {
 	return nil
 }
 
+// MiddleClick performs a middle-click action on the element
+func (e *Element) MiddleClick() error {
+	if e.ref == nil {
+		return fmt.Errorf("element is nil")
+	}
+
+	result := C.performMiddleClick(e.ref)
+	if result == 0 {
+		return fmt.Errorf("middle-click action failed")
+	}
+	return nil
+}
+
 // SetFocus sets focus to the element
 func (e *Element) SetFocus() error {
 	if e.ref == nil {

@@ -336,6 +336,64 @@ int performDoubleClick(void* element) {
     return result;
 }
 
+// Perform middle click
+int performMiddleClick(void* element) {
+    if (!element) return 0;
+    
+    AXUIElementRef axElement = (AXUIElementRef)element;
+    
+    // Get the element's position
+    CFTypeRef positionValue = NULL;
+    AXError error = AXUIElementCopyAttributeValue(axElement, kAXPositionAttribute, &positionValue);
+    
+    if (error != kAXErrorSuccess || !positionValue) {
+        return 0;
+    }
+    
+    CGPoint position;
+    if (!AXValueGetValue(positionValue, kAXValueCGPointType, &position)) {
+        CFRelease(positionValue);
+        return 0;
+    }
+    CFRelease(positionValue);
+    
+    // Get the element's size to click in the center
+    CFTypeRef sizeValue = NULL;
+    error = AXUIElementCopyAttributeValue(axElement, kAXSizeAttribute, &sizeValue);
+    
+    if (error == kAXErrorSuccess && sizeValue) {
+        CGSize size;
+        if (AXValueGetValue(sizeValue, kAXValueCGSizeType, &size)) {
+            position.x += size.width / 2;
+            position.y += size.height / 2;
+        }
+        CFRelease(sizeValue);
+    }
+    
+    // Create middle mouse button down event
+    CGEventRef mouseDown = CGEventCreateMouseEvent(NULL, kCGEventOtherMouseDown, position, kCGMouseButtonCenter);
+    if (!mouseDown) {
+        return 0;
+    }
+    
+    // Create middle mouse button up event
+    CGEventRef mouseUp = CGEventCreateMouseEvent(NULL, kCGEventOtherMouseUp, position, kCGMouseButtonCenter);
+    if (!mouseUp) {
+        CFRelease(mouseDown);
+        return 0;
+    }
+    
+    // Post the events
+    CGEventPost(kCGHIDEventTap, mouseDown);
+    usleep(10000); // 10ms delay between down and up
+    CGEventPost(kCGHIDEventTap, mouseUp);
+    
+    CFRelease(mouseDown);
+    CFRelease(mouseUp);
+    
+    return 1;
+}
+
 // Set focus
 int setFocus(void* element) {
     if (!element) return 0;

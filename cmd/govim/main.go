@@ -439,9 +439,7 @@ func (a *App) handleActionKey(key string) {
 		err = hint.Element.Element.DoubleClick()
 	case "m": // Middle click
 		a.logger.Info("Performing middle click", zap.String("label", hint.Label))
-		// Middle click not implemented yet, fallback to left click
-		a.logger.Warn("Middle click not implemented, using left click")
-		err = hint.Element.Element.Click()
+		err = hint.Element.Element.MiddleClick()
 	default:
 		a.logger.Debug("Unknown action key, ignoring", zap.String("key", key))
 		return
