@@ -23,7 +23,7 @@ activate_scroll_mode = "Cmd+Shift+J"
 # Exit current mode
 exit_mode = "Escape"
 
-# Reload configuration (restart required for some changes)
+# Reload configuration
 reload_config = "Cmd+Shift+R"
 
 [hints]
@@ -114,12 +114,6 @@ log_level = "info"
 
 # Log file location (empty for default: ~/Library/Logs/govim/app.log)
 log_file = ""
-
-# Maximum log file size in MB
-max_log_size_mb = 10
-
-# Maximum number of old log files to keep
-max_log_backups = 3
 
 # Enable structured logging
 structured_logging = true

@@ -11,23 +11,19 @@ import (
 
 // Config represents the complete application configuration
 type Config struct {
-	General      GeneralConfig      `toml:"general"`
+	General       GeneralConfig       `toml:"general"`
 	Accessibility AccessibilityConfig `toml:"accessibility"`
-	Hotkeys      HotkeysConfig      `toml:"hotkeys"`
-	Scroll       ScrollConfig       `toml:"scroll"`
-	Hints        HintsConfig        `toml:"hints"`
-	Appearance   AppearanceConfig   `toml:"appearance"`
-	Performance  PerformanceConfig  `toml:"performance"`
-	Logging      LoggingConfig      `toml:"logging"`
-	Apps         AppsConfig         `toml:"apps"`
-	Experimental ExperimentalConfig `toml:"experimental"`
+	Hotkeys       HotkeysConfig       `toml:"hotkeys"`
+	Scroll        ScrollConfig        `toml:"scroll"`
+	Hints         HintsConfig         `toml:"hints"`
+	Performance   PerformanceConfig   `toml:"performance"`
+	Logging       LoggingConfig       `toml:"logging"`
 }
 
 type GeneralConfig struct {
-	HintCharacters           string `toml:"hint_characters"`
-	HintStyle                string `toml:"hint_style"`
+	HintCharacters            string `toml:"hint_characters"`
+	HintStyle                 string `toml:"hint_style"`
 	AccessibilityCheckOnStart bool   `toml:"accessibility_check_on_start"`
-	Debug                    bool   `toml:"debug"`
 }
 
 type AccessibilityConfig struct {
@@ -40,7 +36,6 @@ type HotkeysConfig struct {
 	ActivateHintModeWithActions string `toml:"activate_hint_mode_with_actions"`
 	ActivateScrollMode          string `toml:"activate_scroll_mode"`
 	ExitMode                    string `toml:"exit_mode"`
-	ShowCommandPalette          string `toml:"show_command_palette"`
 	ReloadConfig                string `toml:"reload_config"`
 }
 
@@ -70,53 +65,21 @@ type HintsConfig struct {
 	ClickActionRight  string  `toml:"click_action_right"`
 	ClickActionDouble string  `toml:"click_action_double"`
 	ClickActionMiddle string  `toml:"click_action_middle"`
-    Menubar           bool    `toml:"menubar"`
-    Dock              bool    `toml:"dock"`
-}
-
-type AppearanceConfig struct {
-	OverlayOpacity   float64 `toml:"overlay_opacity"`
-	DarkModeSupport  bool    `toml:"dark_mode_support"`
-	UseSystemAccent  bool    `toml:"use_system_accent"`
+	Menubar           bool    `toml:"menubar"`
+	Dock              bool    `toml:"dock"`
 }
 
 type PerformanceConfig struct {
-	MaxHintsDisplayed      int `toml:"max_hints_displayed"`
-	DebounceMs             int `toml:"debounce_ms"`
-	UseMetalAcceleration   bool `toml:"use_metal_acceleration"`
-	CacheDurationMs        int `toml:"cache_duration_ms"`
-	MaxConcurrentQueries   int `toml:"max_concurrent_queries"`
+	MaxHintsDisplayed    int `toml:"max_hints_displayed"`
+	DebounceMs           int `toml:"debounce_ms"`
+	CacheDurationMs      int `toml:"cache_duration_ms"`
+	MaxConcurrentQueries int `toml:"max_concurrent_queries"`
 }
 
 type LoggingConfig struct {
-	LogLevel           string `toml:"log_level"`
-	LogFile            string `toml:"log_file"`
-	MaxLogSizeMB       int    `toml:"max_log_size_mb"`
-	MaxLogBackups      int    `toml:"max_log_backups"`
-	StructuredLogging  bool   `toml:"structured_logging"`
-}
-
-type AppsConfig struct {
-	Exclude     []AppExclude     `toml:"exclude"`
-	CustomHints []AppCustomHints `toml:"custom_hints"`
-}
-
-type AppExclude struct {
-	BundleID string `toml:"bundle_id"`
-	Reason   string `toml:"reason"`
-}
-
-type AppCustomHints struct {
-	BundleID       string `toml:"bundle_id"`
-	UseWebElements bool   `toml:"use_web_elements"`
-	HintDelayMs    int    `toml:"hint_delay_ms"`
-}
-
-type ExperimentalConfig struct {
-	EnableExperimental      bool `toml:"enable_experimental"`
-	AlternativeHintAlgorithm bool `toml:"alternative_hint_algorithm"`
-	GestureSupport          bool `toml:"gesture_support"`
-	PluginSystem            bool `toml:"plugin_system"`
+	LogLevel          string `toml:"log_level"`
+	LogFile           string `toml:"log_file"`
+	StructuredLogging bool   `toml:"structured_logging"`
 }
 
 type ElectronSupportConfig struct {
@@ -128,10 +91,9 @@ type ElectronSupportConfig struct {
 func DefaultConfig() *Config {
 	return &Config{
 		General: GeneralConfig{
-			HintCharacters:           "asdfghjkl",
-			HintStyle:                "alphabet",
+			HintCharacters:            "asdfghjkl",
+			HintStyle:                 "alphabet",
 			AccessibilityCheckOnStart: true,
-			Debug:                    false,
 		},
 		Accessibility: AccessibilityConfig{
 			AdditionalClickableRoles: []string{},
@@ -145,7 +107,6 @@ func DefaultConfig() *Config {
 			ActivateHintModeWithActions: "Cmd+Shift+A",
 			ActivateScrollMode:          "Cmd+Shift+J",
 			ExitMode:                    "Escape",
-			ShowCommandPalette:          "Cmd+Shift+P",
 			ReloadConfig:                "Cmd+Shift+R",
 		},
 		Scroll: ScrollConfig{
@@ -173,37 +134,19 @@ func DefaultConfig() *Config {
 			ClickActionRight:  "d",
 			ClickActionDouble: "s",
 			ClickActionMiddle: "a",
-            Menubar:           false,
-            Dock:              false,
-		},
-		Appearance: AppearanceConfig{
-			OverlayOpacity:  0.95,
-			DarkModeSupport: true,
-			UseSystemAccent: false,
+			Menubar:           false,
+			Dock:              false,
 		},
 		Performance: PerformanceConfig{
 			MaxHintsDisplayed:    200,
 			DebounceMs:           50,
-			UseMetalAcceleration: true,
 			CacheDurationMs:      100,
 			MaxConcurrentQueries: 10,
 		},
 		Logging: LoggingConfig{
 			LogLevel:          "info",
 			LogFile:           "",
-			MaxLogSizeMB:      10,
-			MaxLogBackups:     3,
 			StructuredLogging: true,
-		},
-		Apps: AppsConfig{
-			Exclude:     []AppExclude{},
-			CustomHints: []AppCustomHints{},
-		},
-		Experimental: ExperimentalConfig{
-			EnableExperimental:      false,
-			AlternativeHintAlgorithm: false,
-			GestureSupport:          false,
-			PluginSystem:            false,
 		},
 	}
 }
@@ -294,9 +237,6 @@ func (c *Config) Validate() error {
 	// Validate opacity values
 	if c.Hints.Opacity < 0 || c.Hints.Opacity > 1 {
 		return fmt.Errorf("hints.opacity must be between 0 and 1")
-	}
-	if c.Appearance.OverlayOpacity < 0 || c.Appearance.OverlayOpacity > 1 {
-		return fmt.Errorf("appearance.overlay_opacity must be between 0 and 1")
 	}
 
 	// Validate performance settings

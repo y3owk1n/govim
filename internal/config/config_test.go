@@ -82,8 +82,8 @@ func TestLoadAndSave(t *testing.T) {
 
 	// Create and save config
 	cfg := DefaultConfig()
-	cfg.General.Debug = true
 	cfg.Hints.FontSize = 16
+	cfg.Scroll.ScrollSpeed = 100
 
 	if err := cfg.Save(configPath); err != nil {
 		t.Fatalf("Failed to save config: %v", err)
@@ -96,11 +96,11 @@ func TestLoadAndSave(t *testing.T) {
 	}
 
 	// Verify values
-	if !loaded.General.Debug {
-		t.Error("Expected Debug to be true")
-	}
 	if loaded.Hints.FontSize != 16 {
 		t.Errorf("Expected FontSize to be 16, got %d", loaded.Hints.FontSize)
+	}
+	if loaded.Scroll.ScrollSpeed != 100 {
+		t.Errorf("Expected ScrollSpeed to be 100, got %d", loaded.Scroll.ScrollSpeed)
 	}
 }
 
