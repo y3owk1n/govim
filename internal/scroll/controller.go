@@ -133,19 +133,23 @@ func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount, area *Sc
 	return deltaX, deltaY
 }
 
+const (
+	// SmoothScrollSteps is the number of steps for smooth scrolling
+	SmoothScrollSteps = 10
+	// SmoothScrollStepDuration is the duration between smooth scroll steps
+	SmoothScrollStepDuration = 20 * time.Millisecond
+)
+
 // smoothScrollTo performs smooth scrolling
 func (c *Controller) smoothScrollTo(area *ScrollArea, deltaX, deltaY int) error {
-	steps := 10
-	stepDuration := time.Millisecond * 20
+	stepX := deltaX / SmoothScrollSteps
+	stepY := deltaY / SmoothScrollSteps
 
-	stepX := deltaX / steps
-	stepY := deltaY / steps
-
-	for i := 0; i < steps; i++ {
+	for i := 0; i < SmoothScrollSteps; i++ {
 		if err := area.Element.Element.Scroll(stepX, stepY); err != nil {
 			return err
 		}
-		time.Sleep(stepDuration)
+		time.Sleep(SmoothScrollStepDuration)
 	}
 
 	return nil

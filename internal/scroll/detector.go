@@ -29,6 +29,13 @@ func NewDetector() *Detector {
 	}
 }
 
+const (
+	// MinScrollAreaWidth is the minimum width for a valid scroll area
+	MinScrollAreaWidth = 50
+	// MinScrollAreaHeight is the minimum height for a valid scroll area
+	MinScrollAreaHeight = 50
+)
+
 // DetectScrollAreas detects all scrollable areas in the frontmost window
 func (d *Detector) DetectScrollAreas() ([]*ScrollArea, error) {
 	elements, err := accessibility.GetScrollableElements()
@@ -37,17 +44,18 @@ func (d *Detector) DetectScrollAreas() ([]*ScrollArea, error) {
 	}
 
 	areas := make([]*ScrollArea, 0, len(elements))
-	for _, element := range elements {
+	for i, element := range elements {
 		bounds := element.Element.GetScrollBounds()
 		
 		// Skip very small scroll areas
-		if bounds.Dx() < 50 || bounds.Dy() < 50 {
+		if bounds.Dx() < MinScrollAreaWidth || bounds.Dy() < MinScrollAreaHeight {
 			continue
 		}
 
 		area := &ScrollArea{
 			Element: element,
 			Bounds:  bounds,
+			Index:   i,
 			Active:  false,
 		}
 		areas = append(areas, area)
