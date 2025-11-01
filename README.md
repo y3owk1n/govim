@@ -16,6 +16,9 @@
 
 </div>
 
+> [!NOTE]
+> This is a personal project maintained on a best-effort basis. PRs are more likely to be reviewed than feature requests or issues, unless I am facing the same problem.
+
 ## ✨ Features
 
 - 🎯 **Hint Mode** - Click any UI element using keyboard shortcuts
@@ -55,12 +58,20 @@ System Settings → Privacy & Security → Accessibility
 
 ## 🎮 Usage
 
-### Hint Mode
+### Hint Mode (Direct Click)
 
 1. Press `Cmd+Shift+Space` (default)
 2. Clickable elements show hint labels
 3. Type the label to click (e.g., "aa", "ab")
 4. Press `Esc` to exit
+
+### Hint Mode (Action)
+
+1. Press `Cmd+Shift+A` (default)
+2. Clickable elements show hint labels
+3. Type the label to click (e.g., "aa", "ab")
+4. Choose the action to perform (e.g., "left click", "right click", "double click", "middle click")
+5. Press `Esc` to exit
 
 ### Scroll Mode
 
@@ -136,10 +147,6 @@ For app-specific settings, find the bundle ID using:
 osascript -e 'id of app "App Name"'
 ```
 
-## 🤝 Contributing
-
-See `configs/default-config.toml` for all available options.
-
 ### Per-App Role Configuration
 
 GoVim supports global and per-app accessibility role configurations:
@@ -154,13 +161,12 @@ To find an app's bundle ID:
 osascript -e 'id of app "AppName"'
 ```
 
-Example per-app configuration:
+For example, in `Mail.app`, lots of element are `AXStaticText` and they should be clickable. In this case, we don't want to add to the global one, as it will causes lots of unclickable hints, especially in browser space.
 
 ```toml
 [[accessibility.app_configs]]
-bundle_id = "com.microsoft.VSCode"
+bundle_id = "com.apple.mail"
 additional_clickable_roles = ["AXStaticText"]
-additional_scrollable_roles = ["AXGroup"]
 ```
 
 ### Electron & Chrome Support
@@ -218,35 +224,6 @@ govim hints_action
 
 # Activate scroll mode
 govim scroll
-```
-
-#### Electron Apps Support
-
-GoVim includes special support for Electron-based applications like VS Code and Chrome, with:
-
-- Optimized element detection
-- Improved scrolling behavior
-- Better hint placement
-
-## 🤝 Contributing
-
-Contributions welcome! Here's how:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run `just test` and `just lint` to verify
-5. Submit a pull request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
-Made with ❤️ by <a href="https://github.com/y3owk1n">y3owk1n</a>
-</div>
 ```
 
 ### Examples
@@ -319,14 +296,6 @@ govim/
 ├── configs/            # Default configuration
 └── scripts/            # Build and packaging scripts
 ```
-
-## Performance
-
-- Hint generation: <100ms for typical windows
-- UI element detection: <50ms
-- Hotkey response: <10ms
-- Idle CPU usage: <1%
-- Memory usage: <50MB typical
 
 ## Troubleshooting
 
@@ -434,7 +403,7 @@ just test-race      # Race detection
 
 ## License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
@@ -444,3 +413,20 @@ Inspired by:
 - [Vimac](https://github.com/dexterleng/vimac)
 - [Shortcat](https://shortcat.app/)
 - [Vimium](https://github.com/philc/vimium)
+
+## 🤝 Contributing
+
+Contributions welcome! Here's how:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run `just test` and `just lint` to verify
+5. Submit a pull request
+
+---
+
+<div align="center">
+Made with ❤️ by <a href="https://github.com/y3owk1n">y3owk1n</a>
+</div>
+```
