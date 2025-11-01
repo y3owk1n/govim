@@ -284,10 +284,34 @@ additional_clickable_roles = ["AXStaticText"]
 
 ### Electron & Chrome Support
 
+> [!NOTE]
+> Electron, firefox and chrome support is a mess, and I'm not even sure if I am doing it correctly or not.
+> Feel free to help out if you know better about this...
+
 GoVim includes built-in support for Electron apps (VS Code, Windsurf, Slack, etc.) and Chromium browsers.
 
 - `accessibility.electron_support.enable` toggles automatic enabling of Electron accessibility hooks for legacy apps.
 - `accessibility.electron_support.additional_bundles` accepts exact bundle IDs or `prefix*` wildcards for extra Electron apps that require manual accessibility.
+
+Built-in enabled apps:
+
+- `org.mozilla.firefox` - Firefox
+- `com.microsoft.VSCode` - VS Code
+- `com.exafunction.windsurf` - Windsurf
+- `com.todesktop.230313mzl4w4u92` - Cursor
+- `com.tinyspeck.slackmacgap` - Slack
+- `com.spotify.client` - Spotify
+- `md.obsidian` - Obsidian
+- For other apps, you can add them to `accessibility.electron_support.additional_bundles` in your config, or just submit a PR to add into the source
+
+Note that you don't have to add chromium bundles here. To support it, you need to:
+
+1. Go to `chrome://accessibility`
+2. Turn on `Native accessibility API support`
+3. Turn on `Web accessibility`
+
+> [!NOTE]
+> Not sure if there's a better way to do this... feel free to help out!
 
 ## CLI Usage
 

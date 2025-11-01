@@ -2,27 +2,15 @@ package accessibility
 
 import "strings"
 
-var (
-	// KnownElectronPrefixes lists bundle identifier prefixes commonly backed by Electron.
-	KnownElectronPrefixes = []string{
-		"com.microsoft.vscode",
-		"com.microsoft.vscodeinsiders",
-		"com.slack.",
-		"com.github.",
-		"com.todesktop.",
-		"com.zoom.",
-		"md.obsidian",
-	}
-
-	// KnownElectronExact matches bundle identifiers observed to require manual accessibility.
-	KnownElectronExact = []string{
-		"com.sindresorhus.helium",
-		"com.sindresorhus.helium2",
-		"com.tinyspeck.slackmacgap",
-		"com.microsoft.teams",
-		"com.exafunction.windsurf",
-	}
-)
+var KnownElectronBundles = []string{
+	"org.mozilla.firefox", // NOTE: why is this here? It's not an electron app, but the same logic to enable `AXEnhancedUserInterface`. Put it here first until we have a better manager for this.
+	"com.microsoft.VSCode",
+	"com.exafunction.windsurf",
+	"com.todesktop.230313mzl4w4u92",
+	"com.tinyspeck.slackmacgap",
+	"com.spotify.client",
+	"md.obsidian",
+}
 
 // ShouldEnableElectronSupport determines if the provided bundle identifier
 // should have Electron accessibility manually toggled based on defaults and
@@ -47,19 +35,8 @@ func IsLikelyElectronBundle(bundleID string) bool {
 		return false
 	}
 
-	for _, exact := range KnownElectronExact {
+	for _, exact := range KnownElectronBundles {
 		if strings.EqualFold(strings.TrimSpace(exact), lower) {
-			return true
-		}
-	}
-
-	for _, prefix := range KnownElectronPrefixes {
-		p := strings.ToLower(strings.TrimSpace(prefix))
-		if p == "" {
-			continue
-		}
-		p = strings.TrimSuffix(p, "*")
-		if strings.HasPrefix(lower, p) {
 			return true
 		}
 	}

@@ -8,26 +8,14 @@ func TestIsLikelyElectronBundle(t *testing.T) {
 		bundleID string
 		want     bool
 	}{
-		// Exact matches
+		{"Firefox", "org.mozilla.firefox", true},
 		{"Windsurf", "com.exafunction.windsurf", true},
-		{"Teams", "com.microsoft.teams", true},
-		{"Helium", "com.sindresorhus.helium", true},
-		{"Slack", "com.tinyspeck.slackmacgap", true},
-
-		// Prefix matches
-		{"VS Code", "com.microsoft.VSCode", true},
-		{"VS Code Insiders", "com.microsoft.VSCodeInsiders", true},
-		{"Slack Desktop", "com.slack.Slack", true},
-		{"GitHub Desktop", "com.github.GitHubClient", true},
-		{"Zoom", "com.zoom.us.Zoom", true},
-		{"Obsidian", "md.obsidian", true},
-		{"ToDesktop App", "com.todesktop.myapp", true},
+		{"Visual Studio Code", "com.microsoft.VSCode", true},
 
 		// Non-Electron apps
 		{"Safari", "com.apple.Safari", false},
 		{"Finder", "com.apple.finder", false},
 		{"Chrome", "com.google.Chrome", false},
-		{"Firefox", "org.mozilla.firefox", false},
 
 		// Edge cases
 		{"Empty", "", false},
