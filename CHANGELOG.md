@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.2](https://github.com/y3owk1n/govim/compare/v1.0.1...v1.0.2) (2025-11-01)
+
+
+### Bug Fixes
+
+* allow to unset global hotkeys ([#10](https://github.com/y3owk1n/govim/issues/10)) ([a0fc0bf](https://github.com/y3owk1n/govim/commit/a0fc0bfec23673e07b9981fdf2b55a2a9c3ce4ab))
+* ensure correct config exposes to `status` command ([#8](https://github.com/y3owk1n/govim/issues/8)) ([f2e3f1e](https://github.com/y3owk1n/govim/commit/f2e3f1ead92dc412bddabb0082bd0f851a3eeb4e))
+* remove reload config ([#11](https://github.com/y3owk1n/govim/issues/11)) ([a493743](https://github.com/y3owk1n/govim/commit/a4937433777f40aee7ced39653aa168a4f738020))
+* remove root run and requires `launch` command to start daemon ([#12](https://github.com/y3owk1n/govim/issues/12)) ([efbf00a](https://github.com/y3owk1n/govim/commit/efbf00a88388cd66618ec8fe79f69ce117728902))
+
 ## [1.0.1](https://github.com/y3owk1n/govim/compare/v1.0.0...v1.0.1) (2025-11-01)
 
 
