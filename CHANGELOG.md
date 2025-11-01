@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/y3owk1n/govim/compare/v1.0.2...v1.0.3) (2025-11-01)
+
+
+### Bug Fixes
+
+* real electron support (mess) ([#15](https://github.com/y3owk1n/govim/issues/15)) ([6c43bc1](https://github.com/y3owk1n/govim/commit/6c43bc17278f9ba23c3728a3af55b8e7567d5842))
+
 ## [1.0.2](https://github.com/y3owk1n/govim/compare/v1.0.1...v1.0.2) (2025-11-01)
 
 
