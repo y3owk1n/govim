@@ -1,0 +1,59 @@
+on:
+  pull_request:
+    branches: ["*"]
+    tags-ignore:
+      - "release-please--*" # Exclude tags containing "staging"
+name: CI
+permissions:
+  contents: read
+jobs:
+  lint:
+    name: lint
+    strategy:
+      matrix:
+        go: ["1.25.2"]
+        os: [macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.6
+  go-checks:
+    name: ${{ matrix.check }}
+    strategy:
+      matrix:
+        go: ["1.25.2"]
+        os: [macos-latest]
+        check: [formatting, vet, test]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Check code formatting (Unix)
+        shell: bash
+        run: |
+          fmt_out=$(go fmt ./...)
+          if [ -n "$fmt_out" ]; then
+            echo "The following files are not formatted:"
+            echo "$fmt_out"
+            exit 1
+          fi
+      - name: Run vet
+        if: ${{ matrix.check == 'vet' }}
+        run: go vet ./...
+      - name: Run test
+        if: ${{ matrix.check == 'test' }}
+        run: go test ./... -v
