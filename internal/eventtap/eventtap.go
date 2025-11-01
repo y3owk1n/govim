@@ -9,6 +9,7 @@ extern void eventTapCallbackBridge(char* key, void* userData);
 */
 import "C"
 import (
+	"sync"
 	"unsafe"
 
 	"go.uber.org/zap"
@@ -37,8 +38,10 @@ func NewEventTap(callback Callback, logger *zap.Logger) *EventTap {
 		return nil
 	}
 
-	// Store in global map for callbacks
+	// Store in global variable for callbacks with mutex protection
+	globalEventTapMu.Lock()
 	globalEventTap = et
+	globalEventTapMu.Unlock()
 
 	return et
 }
@@ -64,6 +67,13 @@ func (et *EventTap) Destroy() {
 	if et.handle != nil {
 		C.destroyEventTap(et.handle)
 		et.handle = nil
+		
+		// Clear global reference if this is the global event tap
+		globalEventTapMu.Lock()
+		if globalEventTap == et {
+			globalEventTap = nil
+		}
+		globalEventTapMu.Unlock()
 	}
 }
 
@@ -76,13 +86,20 @@ func (et *EventTap) handleCallback(key string) {
 	}
 }
 
-// Global event tap instance for C callbacks
-var globalEventTap *EventTap
+// Global event tap instance for C callbacks with thread safety
+var (
+	globalEventTap   *EventTap
+	globalEventTapMu sync.RWMutex
+)
 
 //export eventTapCallbackBridge
 func eventTapCallbackBridge(key *C.char, userData unsafe.Pointer) {
-	if globalEventTap != nil && key != nil {
+	globalEventTapMu.RLock()
+	et := globalEventTap
+	globalEventTapMu.RUnlock()
+	
+	if et != nil && key != nil {
 		goKey := C.GoString(key)
-		globalEventTap.handleCallback(goKey)
+		et.handleCallback(goKey)
 	}
 }

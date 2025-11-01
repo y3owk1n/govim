@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -261,6 +262,65 @@ func (c *Config) Validate() error {
 	if c.Performance.MaxConcurrentQueries < 1 {
 		return fmt.Errorf("performance.max_concurrent_queries must be at least 1")
 	}
+	
+	// Validate hotkeys
+	if err := validateHotkey(c.Hotkeys.ActivateHintMode, "hotkeys.activate_hint_mode"); err != nil {
+		return err
+	}
+	if err := validateHotkey(c.Hotkeys.ActivateHintModeWithActions, "hotkeys.activate_hint_mode_with_actions"); err != nil {
+		return err
+	}
+	if err := validateHotkey(c.Hotkeys.ActivateScrollMode, "hotkeys.activate_scroll_mode"); err != nil {
+		return err
+	}
+	if err := validateHotkey(c.Hotkeys.ReloadConfig, "hotkeys.reload_config"); err != nil {
+		return err
+	}
+	
+	// Validate colors
+	if err := validateColor(c.Hints.BackgroundColor, "hints.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.TextColor, "hints.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MatchedTextColor, "hints.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.BorderColor, "hints.border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Scroll.HighlightColor, "scroll.highlight_color"); err != nil {
+		return err
+	}
+	
+	// Validate scroll settings
+	if c.Scroll.ScrollSpeed < 1 {
+		return fmt.Errorf("scroll.scroll_speed must be at least 1")
+	}
+	if c.Scroll.PageHeight < 100 {
+		return fmt.Errorf("scroll.page_height must be at least 100")
+	}
+	if c.Scroll.HalfPageMultiplier <= 0 || c.Scroll.HalfPageMultiplier > 1 {
+		return fmt.Errorf("scroll.half_page_multiplier must be between 0 and 1")
+	}
+	if c.Scroll.FullPageMultiplier <= 0 || c.Scroll.FullPageMultiplier > 1 {
+		return fmt.Errorf("scroll.full_page_multiplier must be between 0 and 1")
+	}
+	
+	// Validate hints settings
+	if c.Hints.FontSize < 6 || c.Hints.FontSize > 72 {
+		return fmt.Errorf("hints.font_size must be between 6 and 72")
+	}
+	if c.Hints.BorderRadius < 0 {
+		return fmt.Errorf("hints.border_radius must be non-negative")
+	}
+	if c.Hints.Padding < 0 {
+		return fmt.Errorf("hints.padding must be non-negative")
+	}
+	if c.Hints.BorderWidth < 0 {
+		return fmt.Errorf("hints.border_width must be non-negative")
+	}
 
 	for _, role := range c.Accessibility.ClickableRoles {
 		if strings.TrimSpace(role) == "" {
@@ -387,5 +447,63 @@ func (c *Config) Save(path string) error {
 		return fmt.Errorf("failed to encode config: %w", err)
 	}
 
+	return nil
+}
+
+// validateHotkey validates a hotkey string format
+func validateHotkey(hotkey, fieldName string) error {
+	if strings.TrimSpace(hotkey) == "" {
+		return fmt.Errorf("%s cannot be empty", fieldName)
+	}
+	
+	// Hotkey format: [Modifier+]*Key
+	// Valid modifiers: Cmd, Ctrl, Alt, Shift, Option
+	// Examples: "Cmd+Shift+Space", "Ctrl+D", "F1"
+	
+	parts := strings.Split(hotkey, "+")
+	if len(parts) == 0 {
+		return fmt.Errorf("%s has invalid format: %s", fieldName, hotkey)
+	}
+	
+	validModifiers := map[string]bool{
+		"Cmd":    true,
+		"Ctrl":   true,
+		"Alt":    true,
+		"Shift":  true,
+		"Option": true,
+	}
+	
+	// Check all parts except the last (which is the key)
+	for i := 0; i < len(parts)-1; i++ {
+		modifier := strings.TrimSpace(parts[i])
+		if !validModifiers[modifier] {
+			return fmt.Errorf("%s has invalid modifier '%s' in: %s (valid: Cmd, Ctrl, Alt, Shift, Option)", 
+				fieldName, modifier, hotkey)
+		}
+	}
+	
+	// Last part should be the key (non-empty)
+	key := strings.TrimSpace(parts[len(parts)-1])
+	if key == "" {
+		return fmt.Errorf("%s has empty key in: %s", fieldName, hotkey)
+	}
+	
+	return nil
+}
+
+// validateColor validates a color string (hex format)
+func validateColor(color, fieldName string) error {
+	if strings.TrimSpace(color) == "" {
+		return fmt.Errorf("%s cannot be empty", fieldName)
+	}
+	
+	// Match hex color format: #RGB, #RRGGBB, #RRGGBBAA
+	hexColorRegex := regexp.MustCompile(`^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$`)
+	
+	if !hexColorRegex.MatchString(color) {
+		return fmt.Errorf("%s has invalid hex color format: %s (expected #RGB, #RRGGBB, or #RRGGBBAA)", 
+			fieldName, color)
+	}
+	
 	return nil
 }

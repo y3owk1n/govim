@@ -1,11 +1,13 @@
 package ipc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -13,6 +15,12 @@ import (
 const (
 	// SocketName is the name of the Unix socket file
 	SocketName = "govim.sock"
+	
+	// DefaultTimeout is the default timeout for IPC operations
+	DefaultTimeout = 5 * time.Second
+	
+	// ConnectionTimeout is the timeout for establishing a connection
+	ConnectionTimeout = 2 * time.Second
 )
 
 // Command represents an IPC command
@@ -142,23 +150,50 @@ func NewClient() *Client {
 	}
 }
 
-// Send sends a command to the IPC server
+// Send sends a command to the IPC server with timeout
 func (c *Client) Send(cmd Command) (Response, error) {
-	conn, err := net.Dial("unix", c.socketPath)
+	return c.SendWithTimeout(cmd, DefaultTimeout)
+}
+
+// SendWithTimeout sends a command to the IPC server with a custom timeout
+func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, error) {
+	// Create a dialer with timeout
+	dialer := net.Dialer{
+		Timeout: ConnectionTimeout,
+	}
+	
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	
+	conn, err := dialer.DialContext(ctx, "unix", c.socketPath)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return Response{}, fmt.Errorf("connection timeout: govim may be unresponsive")
+		}
 		return Response{}, fmt.Errorf("failed to connect to govim (is it running?): %w", err)
 	}
 	defer conn.Close()
+
+	// Set deadline for the entire operation
+	if err := conn.SetDeadline(time.Now().Add(timeout)); err != nil {
+		return Response{}, fmt.Errorf("failed to set connection deadline: %w", err)
+	}
 
 	encoder := json.NewEncoder(conn)
 	decoder := json.NewDecoder(conn)
 
 	if err := encoder.Encode(cmd); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return Response{}, fmt.Errorf("send timeout: govim may be unresponsive")
+		}
 		return Response{}, fmt.Errorf("failed to send command: %w", err)
 	}
 
 	var response Response
 	if err := decoder.Decode(&response); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return Response{}, fmt.Errorf("receive timeout: govim may be unresponsive")
+		}
 		return Response{}, fmt.Errorf("failed to receive response: %w", err)
 	}
 

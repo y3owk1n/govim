@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/govim/internal/accessibility"
@@ -152,15 +153,39 @@ func (a *App) Run() error {
 	fmt.Printf("  Scroll mode: %s\n", a.config.Hotkeys.ActivateScrollMode)
 	fmt.Printf("  Exit mode: Escape (hardcoded)\n")
 
-	// Wait for interrupt signal
+	// Wait for interrupt signal with force-quit support
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	<-sigChan
-
-	a.logger.Info("Shutting down GoVim")
 	
-	// Quit systray to exit the event loop
-	systray.Quit()
+	// First signal: graceful shutdown
+	<-sigChan
+	a.logger.Info("Received shutdown signal, starting graceful shutdown...")
+	fmt.Println("\n⚠️  Shutting down gracefully... (press Ctrl+C again to force quit)")
+	
+	// Start cleanup in goroutine
+	done := make(chan struct{})
+	go func() {
+		// Quit systray to exit the event loop
+		systray.Quit()
+		close(done)
+	}()
+	
+	// Wait for cleanup or second signal
+	select {
+	case <-done:
+		a.logger.Info("Graceful shutdown completed")
+		return nil
+	case <-sigChan:
+		// Second signal: force quit
+		a.logger.Warn("Received second signal, forcing shutdown")
+		fmt.Println("⚠️  Force quitting...")
+		os.Exit(1)
+	case <-time.After(10 * time.Second):
+		// Timeout: force quit
+		a.logger.Error("Shutdown timeout exceeded, forcing shutdown")
+		fmt.Println("⚠️  Shutdown timeout, force quitting...")
+		os.Exit(1)
+	}
 	
 	return nil
 }
@@ -873,7 +898,16 @@ func (a *App) Cleanup() {
 		}
 	}
 
-	logger.Sync()
+	// Cleanup event tap
+	if a.eventTap != nil {
+		a.eventTap.Destroy()
+	}
+
+	// Close logger (syncs and closes log file)
+	if err := logger.Close(); err != nil {
+		// Can't log this since logger is being closed
+		fmt.Fprintf(os.Stderr, "Warning: failed to close logger: %v\n", err)
+	}
 }
 
 // handleIPCCommand handles IPC commands from the CLI

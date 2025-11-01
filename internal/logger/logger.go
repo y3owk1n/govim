@@ -4,15 +4,29 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-var globalLogger *zap.Logger
+var (
+	globalLogger *zap.Logger
+	logFile      *os.File
+	logFileMu    sync.Mutex
+)
 
 // Init initializes the global logger
-func Init(logLevel, logFile string, structured bool) error {
+func Init(logLevel, logFilePath string, structured bool) error {
+	logFileMu.Lock()
+	defer logFileMu.Unlock()
+	
+	// Close existing log file if any
+	if logFile != nil {
+		logFile.Close()
+		logFile = nil
+	}
+	
 	// Determine log level
 	level := zapcore.InfoLevel
 	switch logLevel {
@@ -27,16 +41,16 @@ func Init(logLevel, logFile string, structured bool) error {
 	}
 
 	// Determine log file path
-	if logFile == "" {
+	if logFilePath == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return fmt.Errorf("failed to get home directory: %w", err)
 		}
-		logFile = filepath.Join(homeDir, "Library", "Logs", "govim", "app.log")
+		logFilePath = filepath.Join(homeDir, "Library", "Logs", "govim", "app.log")
 	}
 
 	// Create log directory
-	logDir := filepath.Dir(logFile)
+	logDir := filepath.Dir(logFilePath)
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return fmt.Errorf("failed to create log directory: %w", err)
 	}
@@ -52,10 +66,13 @@ func Init(logLevel, logFile string, structured bool) error {
 	encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
 	// Create file writer
-	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %w", err)
 	}
+	
+	// Store file reference for cleanup
+	logFile = file
 
 	// Create console writer
 	consoleEncoder := zapcore.NewConsoleEncoder(encoderConfig)
@@ -85,8 +102,34 @@ func Get() *zap.Logger {
 // Sync flushes any buffered log entries
 func Sync() error {
 	if globalLogger != nil {
-		return globalLogger.Sync()
+		if err := globalLogger.Sync(); err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+// Close closes the log file and syncs the logger
+func Close() error {
+	logFileMu.Lock()
+	defer logFileMu.Unlock()
+	
+	// Sync logger first
+	if globalLogger != nil {
+		if err := globalLogger.Sync(); err != nil {
+			// Ignore sync errors on stdout/stderr (common on macOS)
+			// but log them for debugging
+		}
+	}
+	
+	// Close log file
+	if logFile != nil {
+		if err := logFile.Close(); err != nil {
+			return fmt.Errorf("failed to close log file: %w", err)
+		}
+		logFile = nil
+	}
+	
 	return nil
 }
 
