@@ -269,30 +269,30 @@ func TestGenerate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			generator := NewGenerator(tt.characters, tt.style, tt.maxHints)
 			hints, err := generator.Generate(tt.elements)
-			
+
 			if err != nil {
 				t.Fatalf("Generate() error = %v", err)
 			}
-			
+
 			if len(hints) != tt.wantCount {
 				t.Errorf("Generate() returned %d hints, want %d", len(hints), tt.wantCount)
 			}
-			
+
 			// Check labels
 			for i, hint := range hints {
 				if i < len(tt.wantLabels) && hint.Label != tt.wantLabels[i] {
 					t.Errorf("Generate() hint[%d].Label = %s, want %s", i, hint.Label, tt.wantLabels[i])
 				}
 			}
-			
+
 			// Check positions are centered
 			for i, hint := range hints {
 				element := tt.elements[i]
 				expectedX := element.Info.Position.X + (element.Info.Size.X / 2)
 				expectedY := element.Info.Position.Y + (element.Info.Size.Y / 2)
-				
+
 				if hint.Position.X != expectedX || hint.Position.Y != expectedY {
-					t.Errorf("Generate() hint[%d].Position = (%d,%d), want (%d,%d)", 
+					t.Errorf("Generate() hint[%d].Position = (%d,%d), want (%d,%d)",
 						i, hint.Position.X, hint.Position.Y, expectedX, expectedY)
 				}
 			}

@@ -119,7 +119,7 @@ func TestLoadNonExistentFile(t *testing.T) {
 func TestConfigWithAppSpecificSettings(t *testing.T) {
 	// Create a config with app-specific settings
 	cfg := DefaultConfig()
-	
+
 	// Add app-specific configurations
 	cfg.Accessibility.AppConfigs = []AppConfig{
 		{
@@ -133,18 +133,18 @@ func TestConfigWithAppSpecificSettings(t *testing.T) {
 			AdditionalScrollable: []string{"CustomScroll2", "CustomPanel2"},
 		},
 	}
-	
+
 	// Test getting clickable roles for specific app
 	clickableRoles := cfg.GetClickableRolesForApp("com.example.app1")
-	
+
 	// Should include both default and app-specific roles
 	defaultCount := len(cfg.Accessibility.ClickableRoles)
 	expectedCount := defaultCount + 2 // Default + 2 custom roles
-	
+
 	if len(clickableRoles) != expectedCount {
 		t.Errorf("Expected %d clickable roles, got %d", expectedCount, len(clickableRoles))
 	}
-	
+
 	// Check if app-specific roles are included
 	found := false
 	for _, role := range clickableRoles {
@@ -153,18 +153,18 @@ func TestConfigWithAppSpecificSettings(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if !found {
 		t.Errorf("App-specific role 'CustomButton1' not found in clickable roles")
 	}
-	
+
 	// Test getting scrollable roles for specific app
 	scrollableRoles := cfg.GetScrollableRolesForApp("com.example.app2")
-	
+
 	// Should include both default and app-specific roles
 	defaultScrollCount := len(cfg.Accessibility.ScrollableRoles)
 	expectedScrollCount := defaultScrollCount + 2 // Default + 2 custom roles
-	
+
 	if len(scrollableRoles) != expectedScrollCount {
 		t.Errorf("Expected %d scrollable roles, got %d", expectedScrollCount, len(scrollableRoles))
 	}
