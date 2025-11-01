@@ -755,15 +755,15 @@ func (a *App) activateScrollMode() {
 	// Update roles for the current focused app
 	a.updateRolesForCurrentApp()
 
+	if a.config.Accessibility.ElectronSupport.Enable {
+		accessibility.EnsureElectronSupport(a.config.Accessibility.ElectronSupport.AdditionalBundles)
+	}
+
 	a.logger.Info("Initializing scroll controller")
 	// Activate scroll mode
 	if err := a.scrollController.Initialize(); err != nil {
 		a.logger.Error("Failed to initialize scroll controller", zap.Error(err))
 		return
-	}
-
-	if a.config.Accessibility.ElectronSupport.Enable {
-		accessibility.EnsureElectronSupport(a.config.Accessibility.ElectronSupport.AdditionalBundles)
 	}
 
 	a.logger.Info("Getting scroll areas")
@@ -858,14 +858,12 @@ func (a *App) exitMode() {
 		a.eventTap.Disable()
 	}
 
-	if a.config.Accessibility.ElectronSupport.Enable {
-		accessibility.ResetElectronSupport()
-	}
+	// if a.config.Accessibility.ElectronSupport.Enable {
+	// 	accessibility.ResetElectronSupport()
+	// }
 
 	a.currentMode = ModeIdle
 }
-
-// ...existing code...
 
 // getModeString returns the current mode as a string
 func (a *App) getModeString() string {

@@ -7,6 +7,7 @@ package accessibility
 
 */
 import "C"
+
 import (
 	"fmt"
 	"image"
@@ -25,7 +26,10 @@ type Element struct {
 	ref unsafe.Pointer
 }
 
-const electronAttributeName = "AXManualAccessibility"
+const (
+	electronAttributeName = "AXManualAccessibility"
+	enhancedAttributeName = "AXEnhancedUserInterface"
+)
 
 var (
 	clickableRoles   = make(map[string]struct{})
@@ -513,16 +517,26 @@ func ensureElectronAccessibility(pid int, bundleID string) bool {
 		return true
 	}
 
-	if !bridge.SetApplicationAttribute(pid, electronAttributeName, true) {
-		logger.Warn("Failed to enable Electron accessibility", zap.Int("pid", pid), zap.String("bundle_id", bundleID))
+	successSetElectron := bridge.SetApplicationAttribute(pid, electronAttributeName, true)
+
+	if successSetElectron {
+		logger.Debug("Enabled AXManualAccessibility", zap.Int("pid", pid), zap.String("bundle_id", bundleID))
+	}
+
+	successSetEnhanced := bridge.SetApplicationAttribute(pid, enhancedAttributeName, true)
+
+	if successSetEnhanced {
+		logger.Debug("Enabled AXEnhancedUserInterface", zap.Int("pid", pid), zap.String("bundle_id", bundleID))
+	}
+
+	if !successSetEnhanced && !successSetElectron {
+		logger.Warn("Failed to enable AXManualAccessibility or AXEnhancedUserInterface", zap.Int("pid", pid), zap.String("bundle_id", bundleID))
 		return false
 	}
 
 	electronPIDsMu.Lock()
 	electronEnabledPIDs[pid] = struct{}{}
 	electronPIDsMu.Unlock()
-
-	logger.Debug("Enabled AXManualAccessibility", zap.Int("pid", pid), zap.String("bundle_id", bundleID))
 	return true
 }
 
