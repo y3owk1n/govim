@@ -1,90 +1,142 @@
-# GoVim
+# GoVim 🚀
 
-Keyboard-driven navigation for macOS - click and scroll without a mouse.
+<div align="center">
 
-## Features
+[![License](https://img.shields.io/github/license/y3owk1n/govim)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+![Go Version](https://img.shields.io/github/go-mod/go-version/y3owk1n/govim)
+[![Latest Release](https://img.shields.io/github/v/release/y3owk1n/govim)](https://github.com/y3owk1n/govim/releases)
 
-- **Hint Mode** - Show labels on clickable elements, type to click
-- **Scroll Mode** - Vim-style scrolling (j/k/h/l) anywhere
-- **Universal** - Works in browsers, native apps, Electron apps
-- **Electron & Chrome Support** - Built-in support for VS Code, Windsurf, Chrome, and more
-- **Fast** - Event tap for key capture, CGEvent for scrolling
-- **Configurable** - TOML config file
+**Keyboard-driven navigation for macOS - Navigate and click without touching your mouse 🖱️**
 
-## Quick Start
+[Installation](#installation) •
+[Features](#features) •
+[Usage](#usage) •
+[Configuration](#configuration)
+
+</div>
+
+## ✨ Features
+
+- 🎯 **Hint Mode** - Click any UI element using keyboard shortcuts
+- 📜 **Scroll Mode** - Vim-style scrolling in any application
+- 🌐 **Universal** - Works with native macOS apps and Electron apps
+- ⚡ **Performance** - Built with native macOS APIs for instant response
+- 🛠️ **Customizable** - Configure hints, hotkeys, and behaviors via TOML
+- 🎨 **Minimal UI** - Non-intrusive hints that don't get in your way
+
+## 🚀 Installation
+
+### Homebrew (Recommended)
 
 ```bash
+brew tap y3owk1n/tap
+brew install y3owk1n/tap/govim
+```
+
+### Manual Build
+
+```bash
+# Clone the repository
+git clone https://github.com/y3owk1n/govim.git
+cd govim
+
 # Build
 just build
-
-# Check version
-./bin/govim --version
 
 # Run
 ./bin/govim
 ```
 
-**Required**: Grant Accessibility permissions in System Settings → Privacy & Security → Accessibility
+### Required Permissions
 
-## Usage
+⚠️ Grant Accessibility permissions in:
+System Settings → Privacy & Security → Accessibility
+
+## 🎮 Usage
 
 ### Hint Mode
 
-1. Press `Cmd+Shift+Space`
-2. Type the label shown on the element (e.g., "aa", "ab")
-3. Element is clicked automatically
-4. Press `Escape` to exit
+1. Press `Cmd+Shift+Space` (default)
+2. Clickable elements show hint labels
+3. Type the label to click (e.g., "aa", "ab")
+4. Press `Esc` to exit
 
 ### Scroll Mode
 
-1. Press `Cmd+Shift+J`
-2. Use `j`/`k` to scroll down/up, `h`/`l` for left/right
-3. Press `Escape` to exit
+1. Press `Cmd+Shift+J` (default)
+2. Use Vim-style navigation:
+   - `j` / `k` - Scroll down/up
+   - `h` / `l` - Scroll left/right
+   - `c-d` / `c-u` - Page down/up
+   - `gg` / `G` - Top/bottom
+3. Press `Esc` to exit
 
 ### Menu Bar
 
-Click the ⌨️ icon to quit GoVim.
+The ⌨️ icon in your menu bar provides:
 
-## Configuration
+- Quit option
 
-Config file: `~/Library/Application Support/govim/config.toml`
+## ⚙️ Configuration
+
+Config file location can be any of the following:
+
+- Macos Convention: `~/Library/Application Support/govim/config.toml`
+- XDG: `~/.config/govim/config.toml`
+
+or any other location specified via the `--config` flag.
 
 ### Example Configuration
 
 ```toml
 [general]
-hint_characters = "asdfghjkl"
-hint_style = "alphabet"
+hint_characters = "asdfghjkl"  # Characters used for hints
+hint_style = "alphabet"        # "alphabet" or "numeric"
 
 [accessibility]
-# Global roles used for all apps
-clickable_roles = ["AXButton", "AXCheckBox", "AXLink", ...]
+# Clickable elements
+clickable_roles = [
+    "AXButton",
+    "AXCheckBox",
+    "AXMenuItem",
+    "AXRadioButton",
+    "AXLink"
+]
 scrollable_roles = ["AXScrollArea"]
-
-# Per-app configurations (optional)
-# Add additional roles for specific apps
-[[accessibility.app_configs]]
-bundle_id = "com.apple.Safari"
-additional_clickable_roles = ["AXGroup", "AXImage"]
-additional_scrollable_roles = ["AXWebArea"]
-
-[accessibility.electron_support]
-enable = true
-additional_bundles = ["com.google.Chrome"]
 
 [hotkeys]
 activate_hint_mode = "Cmd+Shift+Space"
 activate_scroll_mode = "Cmd+Shift+J"
 
-[scroll]
-scroll_speed = 50
-highlight_color = "#FF0000"
-
 [hints]
 font_size = 14
 background_color = "#FFD700"
 text_color = "#000000"
+opacity = 0.9
+
+[scroll]
+scroll_speed = 50
 ```
+
+See [`configs/default-config.toml`](configs/default-config.toml) for all available options.
+
+### Application Support
+
+GoVim works with:
+
+- Native macOS applications
+- Electron-based apps (VS Code, Chrome, etc.)
+- Web browsers
+- System UI elements
+
+For app-specific settings, find the bundle ID using:
+
+```bash
+osascript -e 'id of app "App Name"'
+```
+
+## 🤝 Contributing
 
 See `configs/default-config.toml` for all available options.
 
@@ -97,11 +149,13 @@ GoVim supports global and per-app accessibility role configurations:
 - The final roles used = global roles + app-specific additional roles (merged)
 
 To find an app's bundle ID:
+
 ```bash
 osascript -e 'id of app "AppName"'
 ```
 
 Example per-app configuration:
+
 ```toml
 [[accessibility.app_configs]]
 bundle_id = "com.microsoft.VSCode"
@@ -159,14 +213,40 @@ Activate different modes (requires GoVim to be running):
 # Activate hint mode (direct click)
 govim hints
 
-# Activate hint mode with action selection
+# Activate hint mode (with action)
 govim hints_action
 
 # Activate scroll mode
 govim scroll
+```
 
-# Return to idle mode
-govim idle
+#### Electron Apps Support
+
+GoVim includes special support for Electron-based applications like VS Code and Chrome, with:
+
+- Optimized element detection
+- Improved scrolling behavior
+- Better hint placement
+
+## 🤝 Contributing
+
+Contributions welcome! Here's how:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run `just test` and `just lint` to verify
+5. Submit a pull request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+Made with ❤️ by <a href="https://github.com/y3owk1n">y3owk1n</a>
+</div>
 ```
 
 ### Examples
@@ -209,6 +289,7 @@ Start it first with: govim launch
 ### IPC Architecture
 
 The CLI uses Unix domain sockets (`/tmp/govim.sock`) for communication with the daemon. This allows:
+
 - Fast, reliable communication
 - Multiple CLI commands while daemon runs
 - Proper error handling when daemon is not running
@@ -216,6 +297,7 @@ The CLI uses Unix domain sockets (`/tmp/govim.sock`) for communication with the 
 ## Architecture
 
 GoVim is built with:
+
 - **Go**: Core application logic
 - **CGo/Objective-C**: macOS Accessibility API integration
 - **Native macOS APIs**: For overlay rendering and hotkey management
@@ -251,27 +333,17 @@ govim/
 ### Accessibility Permissions
 
 If GoVim isn't working, ensure it has Accessibility permissions:
+
 1. Open System Settings
 2. Go to Privacy & Security → Accessibility
 3. Enable GoVim
-
-### Configuration Issues
-
-Reload configuration without restarting:
-```bash
-govim reload-config
-```
-
-Check configuration syntax:
-```bash
-govim validate-config
-```
 
 ### Logs
 
 Logs are stored at: `~/Library/Logs/govim/app.log`
 
 Enable debug logging in your config for troubleshooting:
+
 ```toml
 [logging]
 log_level = "debug"
@@ -282,6 +354,7 @@ log_level = "debug"
 If hints aren't appearing in Electron app content areas:
 
 1. Ensure Electron support is enabled (default):
+
    ```toml
    [accessibility.electron_support]
    enable = true
@@ -298,12 +371,14 @@ When there are many clickable elements, hints will use 3 characters (e.g., "AAA"
 To reduce hint length:
 
 1. **Reduce max hints** to stay within 2-character range:
+
    ```toml
    [performance]
    max_hints_displayed = 80  # With 9 chars, this keeps hints at 2 chars
    ```
 
 2. **Add more hint characters** for more 2-char combinations:
+
    ```toml
    [general]
    hint_characters = "asdfghjklqwertyuiop"  # 19 chars = 361 two-char combos
@@ -316,6 +391,7 @@ To reduce hint length:
 To enable hints in Chrome:
 
 1. Add to your config:
+
    ```toml
    [accessibility.electron_support]
    enable = true
@@ -363,6 +439,7 @@ MIT License - see LICENSE file for details
 ## Acknowledgments
 
 Inspired by:
+
 - [Homerow](https://www.homerow.app/)
 - [Vimac](https://github.com/dexterleng/vimac)
 - [Shortcat](https://shortcat.app/)
