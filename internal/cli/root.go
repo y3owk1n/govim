@@ -27,8 +27,7 @@ var rootCmd = &cobra.Command{
 vim-like navigation capabilities across all applications using accessibility APIs.`,
 	Version: Version,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Root command launches the program
-		launchProgram(configPath)
+		cmd.Help()
 	},
 }
 

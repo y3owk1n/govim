@@ -1020,30 +1020,8 @@ func main() {
 	// Set the launch function for CLI
 	cli.LaunchFunc = LaunchDaemon
 
-	// Check if this is a CLI command (subcommand)
-	if len(os.Args) > 1 {
-		arg := os.Args[1]
-		// These commands use CLI/IPC
-		if arg == "launch" || arg == "start" || arg == "stop" || arg == "hints" ||
-			arg == "scroll" || arg == "hints_action" || arg == "idle" || arg == "status" ||
-			arg == "help" || arg == "--help" || arg == "-h" || arg == "--version" || arg == "-v" {
-			cli.Execute()
-			return
-		}
-		// If it's just --config, continue to daemon mode
-	}
-
-	// Extract config path from args if provided
-	configPath := ""
-	for i, arg := range os.Args {
-		if arg == "--config" && i+1 < len(os.Args) {
-			configPath = os.Args[i+1]
-			break
-		}
-	}
-
-	// Launch daemon directly (root command without subcommand)
-	LaunchDaemon(configPath)
+	// Let cobra handle all command parsing
+	cli.Execute()
 }
 
 // LaunchDaemon is called by the CLI to launch the daemon

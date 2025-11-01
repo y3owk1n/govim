@@ -48,7 +48,31 @@ cd govim
 just build
 
 # Run
-./bin/govim
+./bin/govim launch
+```
+
+### CLI Commands
+
+```bash
+# Launch the daemon
+govim launch
+
+# Launch the daemon with custom config
+govim launch --config /path/to/config.toml
+
+# Show help and available commands
+govim help
+
+# Generate shell completions (bash/zsh/fish/powershell)
+govim completion [bash|zsh|fish|powershell]
+
+# Show version information
+govim version
+
+# Control the daemon
+govim start   # Start navigation features
+govim stop    # Stop navigation features
+govim status  # Show current status
 ```
 
 ### Required Permissions
@@ -369,7 +393,6 @@ To enable hints in Chrome:
        "com.brave.Browser",
    ]
    ```
-
 
 ## Development
 
