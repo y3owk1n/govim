@@ -231,9 +231,6 @@ func (a *App) registerHotkeys() error {
 	}
 
 	// Note: Escape key for exiting modes is hardcoded in handleKeyPress, not registered as global hotkey
-
-	// ...existing code...
-
 	return nil
 }
 
