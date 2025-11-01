@@ -523,4 +523,3 @@ Contributions welcome! Here's how:
 <div align="center">
 Made with ❤️ by <a href="https://github.com/y3owk1n">y3owk1n</a>
 </div>
-```
