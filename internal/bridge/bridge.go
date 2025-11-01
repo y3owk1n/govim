@@ -19,23 +19,23 @@ import "unsafe"
 
 // SetApplicationAttribute toggles an accessibility attribute on the application with the provided PID.
 func SetApplicationAttribute(pid int, attribute string, value bool) bool {
-    cAttr := C.CString(attribute)
-    defer C.free(unsafe.Pointer(cAttr))
+	cAttr := C.CString(attribute)
+	defer C.free(unsafe.Pointer(cAttr))
 
-    var cValue C.int
-    if value {
-        cValue = 1
-    }
+	var cValue C.int
+	if value {
+		cValue = 1
+	}
 
-    result := C.setApplicationAttribute(C.int(pid), cAttr, cValue)
-    return result == 1
+	result := C.setApplicationAttribute(C.int(pid), cAttr, cValue)
+	return result == 1
 }
 
 // HasClickAction checks if an element has the AXPress action available.
 func HasClickAction(element unsafe.Pointer) bool {
-    if element == nil {
-        return false
-    }
-    result := C.hasClickAction(element)
-    return result == 1
+	if element == nil {
+		return false
+	}
+	result := C.hasClickAction(element)
+	return result == 1
 }

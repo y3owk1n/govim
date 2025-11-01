@@ -1,0 +1,72 @@
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+name: release-please
+
+jobs:
+  release-please:
+    strategy:
+      matrix:
+        go: ["1.25.2"]
+        os: [macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Create a release using the release-please action.
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          release-type: go
+
+      # Checkout the repository.
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.head_ref }}
+
+      # Set up Go.
+      - uses: actions/setup-go@v5
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          go-version: ${{ matrix.go }}
+
+      # Build artifacts for multiple platforms.
+      - name: Build nvs artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          mkdir -p bin
+          # Build for darwin-arm64
+          env GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X github.com/y3owk1n/govim/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/govim-darwin-arm64 cmd/govim/main.go
+
+          # Build for darwin-amd64
+          env GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X github.com/y3owk1n/govim/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/govim-darwin-amd64 cmd/govim/main.go
+
+      # Generate SHA256 checksum files for each artifact
+      - name: Generate Checksums
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          cd build
+          for file in nvs-*; do
+              shasum -a 256 "$file" | awk '{print $1}' > "$file.sha256"
+          done
+          ls -l
+
+      # Upload release artifacts and their respective checksum files
+      - name: Upload Release Artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+        run: |
+          for file in build/nvs-*; do
+              if [[ "$file" != *.sha256 ]]; then
+                  gh release upload "${{ steps.release.outputs.tag_name }}" "$file"
+                  gh release upload "${{ steps.release.outputs.tag_name }}" "$file.sha256"
+              fi
+          done

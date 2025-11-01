@@ -15,10 +15,10 @@ import (
 const (
 	// SocketName is the name of the Unix socket file
 	SocketName = "govim.sock"
-	
+
 	// DefaultTimeout is the default timeout for IPC operations
 	DefaultTimeout = 5 * time.Second
-	
+
 	// ConnectionTimeout is the timeout for establishing a connection
 	ConnectionTimeout = 2 * time.Second
 )
@@ -31,16 +31,16 @@ type Command struct {
 
 // Response represents an IPC response
 type Response struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
+	Success bool        `json:"success"`
+	Message string      `json:"message,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
 // Server represents the IPC server
 type Server struct {
-	listener net.Listener
-	logger   *zap.Logger
-	handler  CommandHandler
+	listener   net.Listener
+	logger     *zap.Logger
+	handler    CommandHandler
 	socketPath string
 }
 
@@ -56,7 +56,7 @@ func GetSocketPath() string {
 // NewServer creates a new IPC server
 func NewServer(handler CommandHandler, logger *zap.Logger) (*Server, error) {
 	socketPath := GetSocketPath()
-	
+
 	// Remove existing socket if it exists
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("failed to remove existing socket: %w", err)
@@ -70,9 +70,9 @@ func NewServer(handler CommandHandler, logger *zap.Logger) (*Server, error) {
 	logger.Info("IPC server created", zap.String("socket", socketPath))
 
 	return &Server{
-		listener: listener,
-		logger:   logger,
-		handler:  handler,
+		listener:   listener,
+		logger:     logger,
+		handler:    handler,
 		socketPath: socketPath,
 	}, nil
 }
@@ -99,7 +99,11 @@ func (s *Server) Start() {
 
 // handleConnection handles a single connection
 func (s *Server) handleConnection(conn net.Conn) {
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			s.logger.Error("Failed to close connection", zap.Error(err))
+		}
+	}()
 
 	decoder := json.NewDecoder(conn)
 	encoder := json.NewEncoder(conn)
@@ -107,10 +111,12 @@ func (s *Server) handleConnection(conn net.Conn) {
 	var cmd Command
 	if err := decoder.Decode(&cmd); err != nil {
 		s.logger.Error("Failed to decode command", zap.Error(err))
-		encoder.Encode(Response{
+		if encErr := encoder.Encode(Response{
 			Success: false,
 			Message: fmt.Sprintf("failed to decode command: %v", err),
-		})
+		}); encErr != nil {
+			s.logger.Error("Failed to encode error response", zap.Error(encErr))
+		}
 		return
 	}
 
@@ -129,12 +135,12 @@ func (s *Server) Stop() error {
 			return err
 		}
 	}
-	
+
 	// Clean up socket file
 	if err := os.Remove(s.socketPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -161,10 +167,10 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 	dialer := net.Dialer{
 		Timeout: ConnectionTimeout,
 	}
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	
+
 	conn, err := dialer.DialContext(ctx, "unix", c.socketPath)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
@@ -172,7 +178,13 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 		}
 		return Response{}, fmt.Errorf("failed to connect to govim (is it running?): %w", err)
 	}
-	defer conn.Close()
+
+	var closeErr error
+	defer func() {
+		if err := conn.Close(); err != nil && closeErr == nil {
+			closeErr = fmt.Errorf("failed to close connection: %w", err)
+		}
+	}()
 
 	// Set deadline for the entire operation
 	if err := conn.SetDeadline(time.Now().Add(timeout)); err != nil {
@@ -186,7 +198,11 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 		if ctx.Err() == context.DeadlineExceeded {
 			return Response{}, fmt.Errorf("send timeout: govim may be unresponsive")
 		}
-		return Response{}, fmt.Errorf("failed to send command: %w", err)
+		err = fmt.Errorf("failed to send command: %w", err)
+		if closeErr != nil {
+			err = fmt.Errorf("%v (close error: %v)", err, closeErr)
+		}
+		return Response{}, err
 	}
 
 	var response Response
@@ -194,9 +210,16 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 		if ctx.Err() == context.DeadlineExceeded {
 			return Response{}, fmt.Errorf("receive timeout: govim may be unresponsive")
 		}
-		return Response{}, fmt.Errorf("failed to receive response: %w", err)
+		err = fmt.Errorf("failed to receive response: %w", err)
+		if closeErr != nil {
+			err = fmt.Errorf("%v (close error: %v)", err, closeErr)
+		}
+		return Response{}, err
 	}
 
+	if closeErr != nil {
+		return response, closeErr
+	}
 	return response, nil
 }
 

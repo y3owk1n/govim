@@ -11,11 +11,11 @@ import (
 
 // Hint represents a hint label for a UI element
 type Hint struct {
-	Label          string
-	Element        *accessibility.TreeNode
-	Position       image.Point
-	Size           image.Point
-	MatchedPrefix  string // Characters that have been typed
+	Label         string
+	Element       *accessibility.TreeNode
+	Position      image.Point
+	Size          image.Point
+	MatchedPrefix string // Characters that have been typed
 }
 
 // Generator generates hints for UI elements
@@ -78,7 +78,7 @@ func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error
 		// Position hint at the center of the element (like Vimac does)
 		centerX := element.Info.Position.X + (element.Info.Size.X / 2)
 		centerY := element.Info.Position.Y + (element.Info.Size.Y / 2)
-		
+
 		hints[i] = &Hint{
 			Label:    strings.ToUpper(labels[i]), // Convert to uppercase
 			Element:  element,
@@ -113,19 +113,20 @@ func (g *Generator) generateAlphabetLabels(count int) []string {
 	}
 
 	// Generate labels of the determined length
-	if length == 1 {
+	switch length {
+	case 1:
 		// Single character labels
 		for i := 0; i < count; i++ {
 			labels = append(labels, string(chars[i]))
 		}
-	} else if length == 2 {
+	case 2:
 		// All 2-char combinations
 		for i := 0; i < numChars && len(labels) < count; i++ {
 			for j := 0; j < numChars && len(labels) < count; j++ {
 				labels = append(labels, string(chars[i])+string(chars[j]))
 			}
 		}
-	} else {
+	case 3:
 		// All 3-char combinations
 		for i := 0; i < numChars && len(labels) < count; i++ {
 			for j := 0; j < numChars && len(labels) < count; j++ {
@@ -138,7 +139,6 @@ func (g *Generator) generateAlphabetLabels(count int) []string {
 
 	return labels[:count]
 }
-
 
 // generateNumericLabels generates numeric labels (1, 2, 3, ...)
 func (g *Generator) generateNumericLabels(count int) []string {

@@ -149,14 +149,14 @@ func GetApplicationByPID(pid int) *Element {
 
 // GetApplicationByBundleID returns an application element by bundle identifier
 func GetApplicationByBundleID(bundleID string) *Element {
-    cBundle := C.CString(bundleID)
-    defer C.free(unsafe.Pointer(cBundle))
+	cBundle := C.CString(bundleID)
+	defer C.free(unsafe.Pointer(cBundle))
 
-    ref := C.getApplicationByBundleId(cBundle)
-    if ref == nil {
-        return nil
-    }
-    return &Element{ref: ref}
+	ref := C.getApplicationByBundleId(cBundle)
+	if ref == nil {
+		return nil
+	}
+	return &Element{ref: ref}
 }
 
 // GetElementAtPosition returns the element at the specified screen position
@@ -256,17 +256,17 @@ func (e *Element) Click() error {
 		return fmt.Errorf("element is nil")
 	}
 
-    result := C.performClick(e.ref)
-    if result == 1 {
-        return nil
-    }
+	result := C.performClick(e.ref)
+	if result == 1 {
+		return nil
+	}
 
-    // Fallback to a real mouse click at the element's center
-    if C.clickElementWithMouse(e.ref) == 1 {
-        return nil
-    }
+	// Fallback to a real mouse click at the element's center
+	if C.clickElementWithMouse(e.ref) == 1 {
+		return nil
+	}
 
-    return fmt.Errorf("click action failed")
+	return fmt.Errorf("click action failed")
 }
 
 // RightClick performs a right-click action on the element
@@ -414,14 +414,14 @@ func GetFrontmostWindow() *Element {
 
 // GetMenuBar returns the menu bar element for the given application element
 func (e *Element) GetMenuBar() *Element {
-    if e.ref == nil {
-        return nil
-    }
-    ref := C.getMenuBar(e.ref)
-    if ref == nil {
-        return nil
-    }
-    return &Element{ref: ref}
+	if e.ref == nil {
+		return nil
+	}
+	ref := C.getMenuBar(e.ref)
+	if ref == nil {
+		return nil
+	}
+	return &Element{ref: ref}
 }
 
 // GetApplicationName returns the application name
@@ -491,14 +491,14 @@ func EnsureElectronSupport(additionalBundles []string) bool {
 
 	if !ShouldEnableElectronSupport(bundleID, additionalBundles) {
 		clearElectronPID(pid)
-		logger.Debug("App does not require Electron support", 
-			zap.String("bundle_id", bundleID), 
+		logger.Debug("App does not require Electron support",
+			zap.String("bundle_id", bundleID),
 			zap.Int("pid", pid))
 		return false
 	}
-	
-	logger.Debug("App requires Electron support", 
-		zap.String("bundle_id", bundleID), 
+
+	logger.Debug("App requires Electron support",
+		zap.String("bundle_id", bundleID),
 		zap.Int("pid", pid))
 
 	return ensureElectronAccessibility(pid, bundleID)

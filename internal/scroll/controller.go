@@ -64,7 +64,9 @@ func (c *Controller) Initialize() error {
 	largestArea := c.detector.GetLargestArea()
 	if largestArea != nil {
 		c.logger.Info("Setting active area")
-		c.detector.SetActiveArea(0)
+		if err := c.detector.SetActiveArea(0); err != nil {
+			return fmt.Errorf("failed to set active area: %w", err)
+		}
 		largestArea.Active = true
 
 		c.logger.Info("Activated largest scroll area",
@@ -221,7 +223,9 @@ func (c *Controller) ScrollToTop() error {
 	// Use config values for scroll to edge
 	c.logger.Info("Scrolling to top")
 	for i := 0; i < c.config.ScrollToEdgeIterations; i++ {
-		area.Element.Element.Scroll(0, c.config.ScrollToEdgeDelta)
+		if err := area.Element.Element.Scroll(0, c.config.ScrollToEdgeDelta); err != nil {
+			return fmt.Errorf("failed to scroll: %w", err)
+		}
 	}
 	return nil
 }
@@ -236,7 +240,9 @@ func (c *Controller) ScrollToBottom() error {
 	// Use config values for scroll to edge
 	c.logger.Info("Scrolling to bottom")
 	for i := 0; i < c.config.ScrollToEdgeIterations; i++ {
-		area.Element.Element.Scroll(0, -c.config.ScrollToEdgeDelta)
+		if err := area.Element.Element.Scroll(0, -c.config.ScrollToEdgeDelta); err != nil {
+			return fmt.Errorf("failed to scroll: %w", err)
+		}
 	}
 	return nil
 }

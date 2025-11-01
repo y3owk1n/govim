@@ -72,7 +72,7 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, cfg config.HintsConfig, showA
 	// Convert hints to C array - collect all C strings to free later
 	cHints := make([]C.HintData, len(hints))
 	cLabels := make([]*C.char, len(hints))
-	
+
 	for i, hint := range hints {
 		cLabels[i] = C.CString(hint.Label)
 		cHints[i] = C.HintData{
@@ -100,7 +100,7 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, cfg config.HintsConfig, showA
 	if showArrow {
 		arrowFlag = 1
 	}
-	
+
 	style := C.HintStyle{
 		fontSize:         C.int(cfg.FontSize),
 		fontFamily:       cFontFamily,

@@ -46,7 +46,7 @@ func (d *Detector) DetectScrollAreas() ([]*ScrollArea, error) {
 	areas := make([]*ScrollArea, 0, len(elements))
 	for i, element := range elements {
 		bounds := element.Element.GetScrollBounds()
-		
+
 		// Skip very small scroll areas
 		if bounds.Dx() < MinScrollAreaWidth || bounds.Dy() < MinScrollAreaHeight {
 			continue
@@ -119,13 +119,13 @@ func (d *Detector) GetLargestArea() *ScrollArea {
 // GetAreaAtPosition returns the scroll area at the given position
 func (d *Detector) GetAreaAtPosition(x, y int) *ScrollArea {
 	point := image.Point{X: x, Y: y}
-	
+
 	for _, area := range d.areas {
 		if point.In(area.Bounds) {
 			return area
 		}
 	}
-	
+
 	return nil
 }
 

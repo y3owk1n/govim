@@ -156,12 +156,12 @@ func (a *App) Run() error {
 	// Wait for interrupt signal with force-quit support
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	
+
 	// First signal: graceful shutdown
 	<-sigChan
 	a.logger.Info("Received shutdown signal, starting graceful shutdown...")
 	fmt.Println("\n⚠️  Shutting down gracefully... (press Ctrl+C again to force quit)")
-	
+
 	// Start cleanup in goroutine
 	done := make(chan struct{})
 	go func() {
@@ -169,7 +169,7 @@ func (a *App) Run() error {
 		systray.Quit()
 		close(done)
 	}()
-	
+
 	// Wait for cleanup or second signal
 	select {
 	case <-done:
@@ -186,7 +186,7 @@ func (a *App) Run() error {
 		fmt.Println("⚠️  Shutdown timeout, force quitting...")
 		os.Exit(1)
 	}
-	
+
 	return nil
 }
 
@@ -287,7 +287,7 @@ func (a *App) activateHintMode(withActions bool) {
 	a.logger.Debug("Scanning for clickable elements",
 		zap.Strings("roles", roles))
 
-    elements, err := accessibility.GetClickableElements()
+	elements, err := accessibility.GetClickableElements()
 	if err != nil {
 		a.logger.Error("Failed to get clickable elements", zap.Error(err))
 		return
@@ -295,25 +295,25 @@ func (a *App) activateHintMode(withActions bool) {
 
 	a.logger.Info("Found clickable elements", zap.Int("count", len(elements)))
 
-    // Optionally include menu bar elements
-    if a.config.Hints.Menubar {
-        if mbElems, merr := accessibility.GetMenuBarClickableElements(); merr == nil {
-            elements = append(elements, mbElems...)
-            a.logger.Debug("Included menubar elements", zap.Int("count", len(mbElems)))
-        } else {
-            a.logger.Warn("Failed to get menubar elements", zap.Error(merr))
-        }
-    }
+	// Optionally include menu bar elements
+	if a.config.Hints.Menubar {
+		if mbElems, merr := accessibility.GetMenuBarClickableElements(); merr == nil {
+			elements = append(elements, mbElems...)
+			a.logger.Debug("Included menubar elements", zap.Int("count", len(mbElems)))
+		} else {
+			a.logger.Warn("Failed to get menubar elements", zap.Error(merr))
+		}
+	}
 
-    // Optionally include Dock elements
-    if a.config.Hints.Dock {
-        if dockElems, derr := accessibility.GetDockClickableElements(); derr == nil {
-            elements = append(elements, dockElems...)
-            a.logger.Debug("Included dock elements", zap.Int("count", len(dockElems)))
-        } else {
-            a.logger.Warn("Failed to get dock elements", zap.Error(derr))
-        }
-    }
+	// Optionally include Dock elements
+	if a.config.Hints.Dock {
+		if dockElems, derr := accessibility.GetDockClickableElements(); derr == nil {
+			elements = append(elements, dockElems...)
+			a.logger.Debug("Included dock elements", zap.Int("count", len(dockElems)))
+		} else {
+			a.logger.Warn("Failed to get dock elements", zap.Error(derr))
+		}
+	}
 
 	if len(elements) == 0 {
 		a.logger.Warn("No clickable elements found")
@@ -371,9 +371,10 @@ func (a *App) handleKeyPress(key string) {
 	}
 
 	// Route to appropriate handler
-	if a.currentMode == ModeHint || a.currentMode == ModeHintWithActions {
+	switch a.currentMode {
+	case ModeHint, ModeHintWithActions:
 		a.handleHintKey(key)
-	} else if a.currentMode == ModeScroll {
+	case ModeScroll:
 		a.handleScrollKey(key)
 	}
 }
@@ -487,29 +488,29 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 	actionHints := make([]*hints.Hint, 0, len(actions))
 	baseX := hint.Position.X
 	baseY := hint.Position.Y
-	
+
 	// Estimate width per character (approximate for monospace font at size 11)
 	charWidth := 7.0
 	gapBetweenHints := 8.0 // Consistent gap between hint boxes
-	
+
 	currentX := float64(baseX)
-	
+
 	for _, action := range actions {
 		// Format: [key]label (e.g., "[l]eft")
 		actionLabel := fmt.Sprintf("[%s]%s", action.key, action.label)
-		
+
 		actionHint := &hints.Hint{
 			Label:    actionLabel,
 			Element:  hint.Element,
 			Position: image.Point{X: int(currentX), Y: baseY},
 		}
 		actionHints = append(actionHints, actionHint)
-		
+
 		// Calculate width of this hint box (text width + padding * 2)
 		textWidth := float64(len(actionLabel)) * charWidth
 		padding := 3.0 * 2 // padding on both sides
 		hintBoxWidth := textWidth + padding
-		
+
 		// Move to next position (current box width + gap)
 		currentX += hintBoxWidth + gapBetweenHints
 	}
@@ -519,7 +520,7 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 	actionStyle.FontSize = 11    // Smaller font
 	actionStyle.Padding = 3      // Less padding
 	actionStyle.BorderRadius = 3 // Smaller border radius
-	
+
 	// Draw all action hints without arrows and with custom style
 	if err := a.hintOverlay.DrawHintsWithoutArrow(actionHints, actionStyle); err != nil {
 		a.logger.Error("Failed to draw action menu", zap.Error(err))
@@ -535,16 +536,16 @@ func (a *App) handleActionKey(key string) {
 	// Handle backspace/delete to go back to hint selection
 	if key == "\x7f" || key == "delete" || key == "backspace" {
 		a.logger.Debug("Backspace pressed in action mode, returning to hint selection")
-		
+
 		// Clear selected hint
 		a.selectedHint = nil
-		
+
 		// Remove the last character from hintInput (e.g., "ABD" -> "AB")
 		if len(a.hintInput) > 0 {
 			a.hintInput = a.hintInput[:len(a.hintInput)-1]
 			a.logger.Debug("Removed last character from hint input", zap.String("input", a.hintInput))
 		}
-		
+
 		// Redraw hints with updated input filter
 		var filtered []*hints.Hint
 		if a.hintInput == "" {
@@ -552,7 +553,7 @@ func (a *App) handleActionKey(key string) {
 		} else {
 			filtered = a.currentHints.FilterByPrefix(a.hintInput)
 		}
-		
+
 		// Update matched prefix for filtered hints and redraw
 		for _, hint := range filtered {
 			hint.MatchedPrefix = a.hintInput
@@ -697,7 +698,7 @@ func (a *App) switchScrollAreaByNumber(key string) {
 		a.logger.Debug("Invalid number key", zap.String("key", key))
 		return
 	}
-	
+
 	number := int(key[0] - '0')
 	detector := a.scrollController.GetDetector()
 	newArea := detector.SetActiveByNumber(number)
@@ -796,7 +797,9 @@ func (a *App) drawScrollAreaLabels(areas []*scroll.ScrollArea) {
 
 	// Draw the number hints
 	if len(areaHints) > 0 {
-		a.hintOverlay.DrawHints(areaHints)
+		if err := a.hintOverlay.DrawHints(areaHints); err != nil {
+			a.logger.Error("Failed to draw hints", zap.Error(err))
+		}
 	}
 
 	// Draw highlight on active area
@@ -827,11 +830,12 @@ func (a *App) exitMode() {
 	a.hintOverlay.Clear()
 
 	// Clean up mode-specific state
-	if a.currentMode == ModeHint || a.currentMode == ModeHintWithActions {
+	switch a.currentMode {
+	case ModeHint, ModeHintWithActions:
 		a.currentHints = nil
 		a.hintInput = ""
 		a.selectedHint = nil
-	} else if a.currentMode == ModeScroll {
+	case ModeScroll:
 		a.scrollController.Cleanup()
 	}
 
@@ -1010,9 +1014,9 @@ func main() {
 	if len(os.Args) > 1 {
 		arg := os.Args[1]
 		// These commands use CLI/IPC
-		if arg == "launch" || arg == "start" || arg == "stop" || arg == "hints" || 
-		   arg == "scroll" || arg == "hints_action" || arg == "idle" || arg == "status" ||
-		   arg == "help" || arg == "--help" || arg == "-h" || arg == "--version" || arg == "-v" {
+		if arg == "launch" || arg == "start" || arg == "stop" || arg == "hints" ||
+			arg == "scroll" || arg == "hints_action" || arg == "idle" || arg == "status" ||
+			arg == "help" || arg == "--help" || arg == "-h" || arg == "--version" || arg == "-v" {
 			cli.Execute()
 			return
 		}
