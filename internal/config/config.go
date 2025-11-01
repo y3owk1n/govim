@@ -123,10 +123,10 @@ func DefaultConfig() *Config {
 			},
 		},
 		Hotkeys: HotkeysConfig{
-			ActivateHintMode:            "Cmd+Shift+Space",
-			ActivateHintModeWithActions: "Cmd+Shift+A",
-			ActivateScrollMode:          "Cmd+Shift+J",
-			ReloadConfig:                "Cmd+Shift+R",
+			ActivateHintMode:            "",
+			ActivateHintModeWithActions: "",
+			ActivateScrollMode:          "",
+			ReloadConfig:                "",
 		},
 		Scroll: ScrollConfig{
 			ScrollSpeed:            50,
@@ -461,7 +461,7 @@ func (c *Config) Save(path string) error {
 // validateHotkey validates a hotkey string format
 func validateHotkey(hotkey, fieldName string) error {
 	if strings.TrimSpace(hotkey) == "" {
-		return fmt.Errorf("%s cannot be empty", fieldName)
+		return nil // Allow empty hotkey to disable the action
 	}
 
 	// Hotkey format: [Modifier+]*Key
