@@ -38,7 +38,7 @@ jobs:
           go-version: ${{ matrix.go }}
 
       # Build artifacts for multiple platforms.
-      - name: Build nvs artifacts
+      - name: Build govim artifacts
         if: ${{ steps.release.outputs.release_created }}
         run: |
           mkdir -p bin
@@ -52,8 +52,8 @@ jobs:
       - name: Generate Checksums
         if: ${{ steps.release.outputs.release_created }}
         run: |
-          cd build
-          for file in nvs-*; do
+          cd bin
+          for file in govim-*; do
               shasum -a 256 "$file" | awk '{print $1}' > "$file.sha256"
           done
           ls -l
@@ -64,7 +64,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
         run: |
-          for file in build/nvs-*; do
+          for file in bin/govim-*; do
               if [[ "$file" != *.sha256 ]]; then
                   gh release upload "${{ steps.release.outputs.tag_name }}" "$file"
                   gh release upload "${{ steps.release.outputs.tag_name }}" "$file.sha256"
