@@ -2,7 +2,6 @@ package scroll
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/y3owk1n/govim/internal/config"
 	"go.uber.org/zap"
@@ -46,7 +45,7 @@ func NewController(cfg config.ScrollConfig, logger *zap.Logger) *Controller {
 // Initialize initializes the scroll controller
 func (c *Controller) Initialize() error {
 	c.logger.Info("Starting scroll area detection")
-	
+
 	// Detect scroll areas
 	areas, err := c.detector.DetectScrollAreas()
 	if err != nil {
@@ -102,7 +101,7 @@ func (c *Controller) Scroll(dir Direction, amount ScrollAmount) error {
 // calculateDelta calculates the scroll delta based on direction and amount
 func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount, area *ScrollArea) (int, int) {
 	var deltaX, deltaY int
-	
+
 	// Use config values for all scroll amounts
 	var baseScroll int
 
@@ -131,28 +130,6 @@ func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount, area *Sc
 	}
 
 	return deltaX, deltaY
-}
-
-const (
-	// SmoothScrollSteps is the number of steps for smooth scrolling
-	SmoothScrollSteps = 10
-	// SmoothScrollStepDuration is the duration between smooth scroll steps
-	SmoothScrollStepDuration = 20 * time.Millisecond
-)
-
-// smoothScrollTo performs smooth scrolling
-func (c *Controller) smoothScrollTo(area *ScrollArea, deltaX, deltaY int) error {
-	stepX := deltaX / SmoothScrollSteps
-	stepY := deltaY / SmoothScrollSteps
-
-	for i := 0; i < SmoothScrollSteps; i++ {
-		if err := area.Element.Element.Scroll(stepX, stepY); err != nil {
-			return err
-		}
-		time.Sleep(SmoothScrollStepDuration)
-	}
-
-	return nil
 }
 
 // GetActiveArea returns the active scroll area
