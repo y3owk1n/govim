@@ -19,7 +19,7 @@ func TestGenerateAlphabetLabels(t *testing.T) {
 		{0, []string{}},
 		{1, []string{"a"}},
 		{4, []string{"a", "s", "d", "f"}},
-		{5, []string{"aa", "as", "ad", "af", "sa"}}, // All 2-char when count > numChars
+		{5, []string{"aa", "as", "ad", "af", "sa"}},                   // All 2-char when count > numChars
 		{8, []string{"aa", "as", "ad", "af", "sa", "ss", "sd", "sf"}}, // All 2-char
 	}
 
@@ -363,7 +363,7 @@ func TestGenerateAlphabetLabels_EdgeCases(t *testing.T) {
 		count     int
 		wantError bool
 	}{
-		{"Empty chars", "", 5, false}, // Should use fallback
+		{"Empty chars", "", 5, false},  // Should use fallback
 		{"Single char", "a", 1, false}, // Single char, single label
 		{"Many chars", "asdfghjkl", 100, false},
 		{"Zero count", "asdf", 0, false},
@@ -374,7 +374,7 @@ func TestGenerateAlphabetLabels_EdgeCases(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gen := NewGenerator(tt.chars, "alphabet", 1000)
 			labels := gen.generateAlphabetLabels(tt.count)
-			
+
 			if tt.count <= 0 {
 				// Zero or negative counts should return empty slice
 				if len(labels) != 0 {
@@ -382,21 +382,21 @@ func TestGenerateAlphabetLabels_EdgeCases(t *testing.T) {
 				}
 				return
 			}
-			
+
 			if len(labels) != tt.count {
 				t.Errorf("Expected %d labels, got %d", tt.count, len(labels))
 			}
-			
+
 			// Debug output
 			t.Logf("Generated labels: %v", labels)
-			
+
 			// Verify no empty strings
 			for i, label := range labels {
 				if label == "" {
 					t.Errorf("Label %d is empty", i)
 				}
 			}
-			
+
 			// Verify no prefix conflicts (only for multi-character labels)
 			if len(labels) > 1 && len(labels[0]) > 1 {
 				for i, label1 := range labels {
@@ -448,7 +448,7 @@ func TestNoPrefixConflicts(t *testing.T) {
 				expectedLen := labels[0]
 				for _, label := range labels {
 					if len(label) != len(expectedLen) {
-						t.Errorf("Inconsistent label length: got '%s' (len=%d) and '%s' (len=%d)", 
+						t.Errorf("Inconsistent label length: got '%s' (len=%d) and '%s' (len=%d)",
 							expectedLen, len(expectedLen), label, len(label))
 						break
 					}

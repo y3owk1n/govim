@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"go.uber.org/zap"
@@ -20,13 +21,15 @@ var (
 func Init(logLevel, logFilePath string, structured bool) error {
 	logFileMu.Lock()
 	defer logFileMu.Unlock()
-	
+
 	// Close existing log file if any
 	if logFile != nil {
-		logFile.Close()
+		if err := logFile.Close(); err != nil {
+			return fmt.Errorf("failed to close existing log file: %w", err)
+		}
 		logFile = nil
 	}
-	
+
 	// Determine log level
 	level := zapcore.InfoLevel
 	switch logLevel {
@@ -70,7 +73,7 @@ func Init(logLevel, logFilePath string, structured bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %w", err)
 	}
-	
+
 	// Store file reference for cleanup
 	logFile = file
 
@@ -113,15 +116,19 @@ func Sync() error {
 func Close() error {
 	logFileMu.Lock()
 	defer logFileMu.Unlock()
-	
+
 	// Sync logger first
 	if globalLogger != nil {
 		if err := globalLogger.Sync(); err != nil {
 			// Ignore sync errors on stdout/stderr (common on macOS)
 			// but log them for debugging
+			if !strings.Contains(err.Error(), "sync /dev/stdout") &&
+				!strings.Contains(err.Error(), "sync /dev/stderr") {
+				fmt.Fprintf(os.Stderr, "Warning: failed to sync logger: %v\n", err)
+			}
 		}
 	}
-	
+
 	// Close log file
 	if logFile != nil {
 		if err := logFile.Close(); err != nil {
@@ -129,7 +136,7 @@ func Close() error {
 		}
 		logFile = nil
 	}
-	
+
 	return nil
 }
 

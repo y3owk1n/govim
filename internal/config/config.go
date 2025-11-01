@@ -35,9 +35,9 @@ type AccessibilityConfig struct {
 }
 
 type AppConfig struct {
-	BundleID               string   `toml:"bundle_id"`
-	AdditionalClickable    []string `toml:"additional_clickable_roles"`
-	AdditionalScrollable   []string `toml:"additional_scrollable_roles"`
+	BundleID             string   `toml:"bundle_id"`
+	AdditionalClickable  []string `toml:"additional_clickable_roles"`
+	AdditionalScrollable []string `toml:"additional_scrollable_roles"`
 }
 
 type HotkeysConfig struct {
@@ -265,7 +265,7 @@ func (c *Config) Validate() error {
 	if c.Performance.MaxConcurrentQueries < 1 {
 		return fmt.Errorf("performance.max_concurrent_queries must be at least 1")
 	}
-	
+
 	// Validate hotkeys
 	if err := validateHotkey(c.Hotkeys.ActivateHintMode, "hotkeys.activate_hint_mode"); err != nil {
 		return err
@@ -279,7 +279,7 @@ func (c *Config) Validate() error {
 	if err := validateHotkey(c.Hotkeys.ReloadConfig, "hotkeys.reload_config"); err != nil {
 		return err
 	}
-	
+
 	// Validate colors
 	if err := validateColor(c.Hints.BackgroundColor, "hints.background_color"); err != nil {
 		return err
@@ -296,7 +296,7 @@ func (c *Config) Validate() error {
 	if err := validateColor(c.Scroll.HighlightColor, "scroll.highlight_color"); err != nil {
 		return err
 	}
-	
+
 	// Validate scroll settings
 	if c.Scroll.ScrollSpeed < 1 {
 		return fmt.Errorf("scroll.scroll_speed must be at least 1")
@@ -310,7 +310,7 @@ func (c *Config) Validate() error {
 	if c.Scroll.FullPageMultiplier <= 0 || c.Scroll.FullPageMultiplier > 1 {
 		return fmt.Errorf("scroll.full_page_multiplier must be between 0 and 1")
 	}
-	
+
 	// Validate hints settings
 	if c.Hints.FontSize < 6 || c.Hints.FontSize > 72 {
 		return fmt.Errorf("hints.font_size must be between 6 and 72")
@@ -438,11 +438,16 @@ func (c *Config) Save(path string) error {
 	}
 
 	// Create file
+	var closeErr error
 	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && closeErr == nil {
+			closeErr = fmt.Errorf("failed to close config file: %w", cerr)
+		}
+	}()
 
 	// Encode to TOML
 	encoder := toml.NewEncoder(f)
@@ -450,7 +455,7 @@ func (c *Config) Save(path string) error {
 		return fmt.Errorf("failed to encode config: %w", err)
 	}
 
-	return nil
+	return closeErr
 }
 
 // validateHotkey validates a hotkey string format
@@ -458,16 +463,16 @@ func validateHotkey(hotkey, fieldName string) error {
 	if strings.TrimSpace(hotkey) == "" {
 		return fmt.Errorf("%s cannot be empty", fieldName)
 	}
-	
+
 	// Hotkey format: [Modifier+]*Key
 	// Valid modifiers: Cmd, Ctrl, Alt, Shift, Option
 	// Examples: "Cmd+Shift+Space", "Ctrl+D", "F1"
-	
+
 	parts := strings.Split(hotkey, "+")
 	if len(parts) == 0 {
 		return fmt.Errorf("%s has invalid format: %s", fieldName, hotkey)
 	}
-	
+
 	validModifiers := map[string]bool{
 		"Cmd":    true,
 		"Ctrl":   true,
@@ -475,22 +480,22 @@ func validateHotkey(hotkey, fieldName string) error {
 		"Shift":  true,
 		"Option": true,
 	}
-	
+
 	// Check all parts except the last (which is the key)
 	for i := 0; i < len(parts)-1; i++ {
 		modifier := strings.TrimSpace(parts[i])
 		if !validModifiers[modifier] {
-			return fmt.Errorf("%s has invalid modifier '%s' in: %s (valid: Cmd, Ctrl, Alt, Shift, Option)", 
+			return fmt.Errorf("%s has invalid modifier '%s' in: %s (valid: Cmd, Ctrl, Alt, Shift, Option)",
 				fieldName, modifier, hotkey)
 		}
 	}
-	
+
 	// Last part should be the key (non-empty)
 	key := strings.TrimSpace(parts[len(parts)-1])
 	if key == "" {
 		return fmt.Errorf("%s has empty key in: %s", fieldName, hotkey)
 	}
-	
+
 	return nil
 }
 
@@ -499,14 +504,14 @@ func validateColor(color, fieldName string) error {
 	if strings.TrimSpace(color) == "" {
 		return fmt.Errorf("%s cannot be empty", fieldName)
 	}
-	
+
 	// Match hex color format: #RGB, #RRGGBB, #RRGGBBAA
 	hexColorRegex := regexp.MustCompile(`^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$`)
-	
+
 	if !hexColorRegex.MatchString(color) {
-		return fmt.Errorf("%s has invalid hex color format: %s (expected #RGB, #RRGGBB, or #RRGGBBAA)", 
+		return fmt.Errorf("%s has invalid hex color format: %s (expected #RGB, #RRGGBB, or #RRGGBBAA)",
 			fieldName, color)
 	}
-	
+
 	return nil
 }

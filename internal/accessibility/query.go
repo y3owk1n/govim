@@ -10,16 +10,16 @@ import (
 
 // Query represents a query for UI elements
 type Query struct {
-	Role            string
-	Title           string
-	TitleContains   string
-	Enabled         *bool
-	Clickable       *bool
-	Scrollable      *bool
-	MinWidth        int
-	MinHeight       int
-	MaxResults      int
-	Timeout         time.Duration
+	Role          string
+	Title         string
+	TitleContains string
+	Enabled       *bool
+	Clickable     *bool
+	Scrollable    *bool
+	MinWidth      int
+	MinHeight     int
+	MaxResults    int
+	Timeout       time.Duration
 }
 
 func rectFromInfo(info *ElementInfo) image.Rectangle {
@@ -238,11 +238,7 @@ func GetClickableElements() ([]*TreeNode, error) {
 
 		// Skip elements that are completely outside the visible bounds (with padding)
 		elementRect := rectFromInfo(info)
-		if !elementRect.Overlaps(visibleBounds) {
-			return false
-		}
-
-		return true
+		return elementRect.Overlaps(visibleBounds)
 	}
 
 	tree, err := BuildTree(window, opts)
@@ -267,15 +263,12 @@ func GetScrollableElements() ([]*TreeNode, error) {
 	}
 
 	opts := DefaultTreeOptions()
-	opts.MaxDepth = 5  
+	opts.MaxDepth = 5
 	visibleBounds := expandRectangle(rectFromInfo(windowInfo), 200)
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		// Allow only elements overlapping the visible window bounds
 		elementRect := rectFromInfo(info)
-		if !elementRect.Overlaps(visibleBounds) {
-			return false
-		}
-		return true
+		return elementRect.Overlaps(visibleBounds)
 	}
 
 	tree, err := BuildTree(window, opts)
@@ -318,58 +311,62 @@ func FuzzySearch(searchText string, maxResults int) ([]*TreeNode, error) {
 
 // GetMenuBarClickableElements returns clickable elements from the focused app's menu bar
 func GetMenuBarClickableElements() ([]*TreeNode, error) {
-    app := GetFocusedApplication()
-    if app == nil {
-        return []*TreeNode{}, nil
-    }
-    defer app.Release()
+	app := GetFocusedApplication()
+	if app == nil {
+		return []*TreeNode{}, nil
+	}
+	defer app.Release()
 
-    menubar := app.GetMenuBar()
-    if menubar == nil {
-        return []*TreeNode{}, nil
-    }
-    defer menubar.Release()
+	menubar := app.GetMenuBar()
+	if menubar == nil {
+		return []*TreeNode{}, nil
+	}
+	defer menubar.Release()
 
-    opts := DefaultTreeOptions()
-    opts.MaxDepth = 8
-    // Filter out tiny elements
-    opts.FilterFunc = func(info *ElementInfo) bool {
-        if info.Size.X < 6 || info.Size.Y < 6 { return false }
-        return true
-    }
+	opts := DefaultTreeOptions()
+	opts.MaxDepth = 8
+	// Filter out tiny elements
+	opts.FilterFunc = func(info *ElementInfo) bool {
+		if info.Size.X < 6 || info.Size.Y < 6 {
+			return false
+		}
+		return true
+	}
 
-    tree, err := BuildTree(menubar, opts)
-    if err != nil {
-        return nil, err
-    }
-    if tree == nil {
-        return []*TreeNode{}, nil
-    }
-    return tree.FindClickableElements(), nil
+	tree, err := BuildTree(menubar, opts)
+	if err != nil {
+		return nil, err
+	}
+	if tree == nil {
+		return []*TreeNode{}, nil
+	}
+	return tree.FindClickableElements(), nil
 }
 
 // GetDockClickableElements returns clickable elements from the Dock
 func GetDockClickableElements() ([]*TreeNode, error) {
-    dock := GetApplicationByBundleID("com.apple.dock")
-    if dock == nil {
-        return []*TreeNode{}, nil
-    }
-    defer dock.Release()
+	dock := GetApplicationByBundleID("com.apple.dock")
+	if dock == nil {
+		return []*TreeNode{}, nil
+	}
+	defer dock.Release()
 
-    opts := DefaultTreeOptions()
-    opts.MaxDepth = 8
-    // Filter out tiny elements
-    opts.FilterFunc = func(info *ElementInfo) bool {
-        if info.Size.X < 6 || info.Size.Y < 6 { return false }
-        return true
-    }
+	opts := DefaultTreeOptions()
+	opts.MaxDepth = 8
+	// Filter out tiny elements
+	opts.FilterFunc = func(info *ElementInfo) bool {
+		if info.Size.X < 6 || info.Size.Y < 6 {
+			return false
+		}
+		return true
+	}
 
-    tree, err := BuildTree(dock, opts)
-    if err != nil {
-        return nil, err
-    }
-    if tree == nil {
-        return []*TreeNode{}, nil
-    }
-    return tree.FindClickableElements(), nil
+	tree, err := BuildTree(dock, opts)
+	if err != nil {
+		return nil, err
+	}
+	if tree == nil {
+		return []*TreeNode{}, nil
+	}
+	return tree.FindClickableElements(), nil
 }

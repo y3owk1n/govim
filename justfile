@@ -1,11 +1,12 @@
 # GoVim Build System
-
 # Version information (can be overridden)
+
 VERSION := `git describe --tags --always --dirty 2>/dev/null || echo "dev"`
 GIT_COMMIT := `git rev-parse --short HEAD 2>/dev/null || echo "unknown"`
 BUILD_DATE := `date -u +"%Y-%m-%dT%H:%M:%SZ"`
 
 # Ldflags for version injection
+
 LDFLAGS := "-s -w -X github.com/y3owk1n/govim/internal/cli.Version=" + VERSION + " -X github.com/y3owk1n/govim/internal/cli.GitCommit=" + GIT_COMMIT + " -X github.com/y3owk1n/govim/internal/cli.BuildDate=" + BUILD_DATE
 
 # Default build
@@ -14,25 +15,24 @@ default: build
 # Build the application (development)
 build:
     @echo "Building GoVim..."
-    @echo "Version: {{VERSION}}"
-    go build -ldflags="{{LDFLAGS}}" -o bin/govim cmd/govim/main.go
+    @echo "Version: {{ VERSION }}"
+    go build -ldflags="{{ LDFLAGS }}" -o bin/govim cmd/govim/main.go
     @echo "✓ Build complete: bin/govim"
 
 # Build with optimizations for release
 release:
     @echo "Building release version..."
-    @echo "Version: {{VERSION}}"
-    @echo "Commit: {{GIT_COMMIT}}"
-    @echo "Date: {{BUILD_DATE}}"
-    go build -ldflags="{{LDFLAGS}}" -trimpath -o bin/govim cmd/govim/main.go
+    @echo "Version: {{ VERSION }}"
+    @echo "Commit: {{ GIT_COMMIT }}"
+    @echo "Date: {{ BUILD_DATE }}"
+    go build -ldflags="{{ LDFLAGS }}" -trimpath -o bin/govim cmd/govim/main.go
     @echo "✓ Release build complete: bin/govim"
 
 # Build with custom version
 build-version VERSION_OVERRIDE:
     @echo "Building GoVim with custom version..."
-    go build -ldflags="-s -w -X github.com/y3owk1n/govim/internal/cli.Version={{VERSION_OVERRIDE}} -X github.com/y3owk1n/govim/internal/cli.GitCommit={{GIT_COMMIT}} -X github.com/y3owk1n/govim/internal/cli.BuildDate={{BUILD_DATE}}" -trimpath -o bin/govim cmd/govim/main.go
-    @echo "✓ Build complete: bin/govim (version: {{VERSION_OVERRIDE}})"
-
+    go build -ldflags="-s -w -X github.com/y3owk1n/govim/internal/cli.Version={{ VERSION_OVERRIDE }} -X github.com/y3owk1n/govim/internal/cli.GitCommit={{ GIT_COMMIT }} -X github.com/y3owk1n/govim/internal/cli.BuildDate={{ BUILD_DATE }}" -trimpath -o bin/govim cmd/govim/main.go
+    @echo "✓ Build complete: bin/govim (version: {{ VERSION_OVERRIDE }})"
 
 # Run tests
 test:
@@ -90,7 +90,6 @@ generate:
     @echo "Generating code..."
     go generate ./...
     @echo "✓ Generate complete"
-
 
 # Download dependencies
 deps:

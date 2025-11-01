@@ -12,7 +12,7 @@ var (
 	configPath string
 	// LaunchFunc is set by main to handle daemon launch
 	LaunchFunc func(configPath string)
-	
+
 	// Version information (set via ldflags at build time)
 	Version   = "dev"
 	GitCommit = "unknown"
@@ -42,7 +42,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "config file path")
-	
+
 	// Customize version output
 	rootCmd.SetVersionTemplate(fmt.Sprintf("GoVim version %s\nGit commit: %s\nBuild date: %s\n", Version, GitCommit, BuildDate))
 }
@@ -54,7 +54,7 @@ func launchProgram(cfgPath string) {
 		fmt.Println("GoVim is already running")
 		os.Exit(0)
 	}
-	
+
 	// Call the launch function set by main
 	if LaunchFunc != nil {
 		LaunchFunc(cfgPath)

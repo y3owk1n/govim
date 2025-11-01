@@ -13,7 +13,7 @@ func TestIsLikelyElectronBundle(t *testing.T) {
 		{"Teams", "com.microsoft.teams", true},
 		{"Helium", "com.sindresorhus.helium", true},
 		{"Slack", "com.tinyspeck.slackmacgap", true},
-		
+
 		// Prefix matches
 		{"VS Code", "com.microsoft.VSCode", true},
 		{"VS Code Insiders", "com.microsoft.VSCodeInsiders", true},
@@ -22,13 +22,13 @@ func TestIsLikelyElectronBundle(t *testing.T) {
 		{"Zoom", "com.zoom.us.Zoom", true},
 		{"Obsidian", "md.obsidian", true},
 		{"ToDesktop App", "com.todesktop.myapp", true},
-		
+
 		// Non-Electron apps
 		{"Safari", "com.apple.Safari", false},
 		{"Finder", "com.apple.finder", false},
 		{"Chrome", "com.google.Chrome", false},
 		{"Firefox", "org.mozilla.firefox", false},
-		
+
 		// Edge cases
 		{"Empty", "", false},
 		{"Whitespace", "   ", false},

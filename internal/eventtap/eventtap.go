@@ -67,7 +67,7 @@ func (et *EventTap) Destroy() {
 	if et.handle != nil {
 		C.destroyEventTap(et.handle)
 		et.handle = nil
-		
+
 		// Clear global reference if this is the global event tap
 		globalEventTapMu.Lock()
 		if globalEventTap == et {
@@ -80,7 +80,7 @@ func (et *EventTap) Destroy() {
 // handleCallback handles a key press callback from C
 func (et *EventTap) handleCallback(key string) {
 	et.logger.Debug("Key pressed", zap.String("key", key))
-	
+
 	if et.callback != nil {
 		et.callback(key)
 	}
@@ -97,7 +97,7 @@ func eventTapCallbackBridge(key *C.char, userData unsafe.Pointer) {
 	globalEventTapMu.RLock()
 	et := globalEventTap
 	globalEventTapMu.RUnlock()
-	
+
 	if et != nil && key != nil {
 		goKey := C.GoString(key)
 		et.handleCallback(goKey)

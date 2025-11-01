@@ -12,7 +12,7 @@ func TestCLI_BasicImport(t *testing.T) {
 			t.Errorf("CLI package import caused panic: %v", r)
 		}
 	}()
-	
+
 	// Just test that we can get here without panicking
 	// The actual functionality testing should be done in unit tests
 	// for individual components

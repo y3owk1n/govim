@@ -256,9 +256,9 @@ func (n *TreeNode) GetTotalNodes() int {
 
 // Cache for UI element trees
 type TreeCache struct {
-	cache      map[string]*CachedTree
-	mu         sync.RWMutex
-	maxAge     time.Duration
+	cache         map[string]*CachedTree
+	mu            sync.RWMutex
+	maxAge        time.Duration
 	cleanupTicker *time.Ticker
 }
 
