@@ -1004,7 +1004,7 @@ func main() {
 		// These commands use CLI/IPC
 		if arg == "launch" || arg == "start" || arg == "stop" || arg == "hints" || 
 		   arg == "scroll" || arg == "hints_action" || arg == "idle" || arg == "status" ||
-		   arg == "help" || arg == "--help" || arg == "-h" || arg == "version" || arg == "--version" {
+		   arg == "help" || arg == "--help" || arg == "-h" || arg == "--version" || arg == "-v" {
 			cli.Execute()
 			return
 		}

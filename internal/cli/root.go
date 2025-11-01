@@ -12,6 +12,11 @@ var (
 	configPath string
 	// LaunchFunc is set by main to handle daemon launch
 	LaunchFunc func(configPath string)
+	
+	// Version information (set via ldflags at build time)
+	Version   = "dev"
+	GitCommit = "unknown"
+	BuildDate = "unknown"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -20,6 +25,7 @@ var rootCmd = &cobra.Command{
 	Short: "GoVim - Keyboard-driven navigation for macOS",
 	Long: `GoVim is a keyboard-driven navigation tool for macOS that provides
 vim-like navigation capabilities across all applications using accessibility APIs.`,
+	Version: Version,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Root command launches the program
 		launchProgram(configPath)
@@ -36,6 +42,9 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "config file path")
+	
+	// Customize version output
+	rootCmd.SetVersionTemplate(fmt.Sprintf("GoVim version %s\nGit commit: %s\nBuild date: %s\n", Version, GitCommit, BuildDate))
 }
 
 // launchProgram launches the main govim program

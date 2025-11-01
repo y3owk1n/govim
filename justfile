@@ -1,19 +1,37 @@
 # GoVim Build System
 
+# Version information (can be overridden)
+VERSION := `git describe --tags --always --dirty 2>/dev/null || echo "dev"`
+GIT_COMMIT := `git rev-parse --short HEAD 2>/dev/null || echo "unknown"`
+BUILD_DATE := `date -u +"%Y-%m-%dT%H:%M:%SZ"`
+
+# Ldflags for version injection
+LDFLAGS := "-s -w -X github.com/y3owk1n/govim/internal/cli.Version=" + VERSION + " -X github.com/y3owk1n/govim/internal/cli.GitCommit=" + GIT_COMMIT + " -X github.com/y3owk1n/govim/internal/cli.BuildDate=" + BUILD_DATE
+
 # Default build
 default: build
 
-# Build the application
+# Build the application (development)
 build:
     @echo "Building GoVim..."
-    go build -o bin/govim cmd/govim/main.go
+    @echo "Version: {{VERSION}}"
+    go build -ldflags="{{LDFLAGS}}" -o bin/govim cmd/govim/main.go
     @echo "✓ Build complete: bin/govim"
 
 # Build with optimizations for release
 release:
     @echo "Building release version..."
-    go build -ldflags="-s -w" -o bin/govim cmd/govim/main.go
+    @echo "Version: {{VERSION}}"
+    @echo "Commit: {{GIT_COMMIT}}"
+    @echo "Date: {{BUILD_DATE}}"
+    go build -ldflags="{{LDFLAGS}}" -trimpath -o bin/govim cmd/govim/main.go
     @echo "✓ Release build complete: bin/govim"
+
+# Build with custom version
+build-version VERSION_OVERRIDE:
+    @echo "Building GoVim with custom version..."
+    go build -ldflags="-s -w -X github.com/y3owk1n/govim/internal/cli.Version={{VERSION_OVERRIDE}} -X github.com/y3owk1n/govim/internal/cli.GitCommit={{GIT_COMMIT}} -X github.com/y3owk1n/govim/internal/cli.BuildDate={{BUILD_DATE}}" -trimpath -o bin/govim cmd/govim/main.go
+    @echo "✓ Build complete: bin/govim (version: {{VERSION_OVERRIDE}})"
 
 
 # Run tests
@@ -91,18 +109,21 @@ verify:
 help:
     @echo "GoVim Build Commands:"
     @echo ""
-    @echo "  just build       - Build the application"
-    @echo "  just release     - Build optimized release version"
-    @echo "  just bundle      - Create macOS .app bundle"
-    @echo "  just test        - Run tests"
-    @echo "  just test-race   - Run tests with race detection"
-    @echo "  just bench       - Run benchmarks"
-    @echo "  just install     - Install to /usr/local/bin"
-    @echo "  just clean       - Clean build artifacts"
-    @echo "  just run         - Run the application"
-    @echo "  just run-debug   - Run with debug logging"
-    @echo "  just fmt         - Format code"
-    @echo "  just lint        - Lint code"
-    @echo "  just dist        - Create distribution package"
-    @echo "  just deps        - Download dependencies"
-    @echo "  just verify      - Verify dependencies"
+    @echo "  just build                    - Build the application with version info"
+    @echo "  just release                  - Build optimized release version"
+    @echo "  just build-version VERSION    - Build with custom version string"
+    @echo "  just test                     - Run tests"
+    @echo "  just test-race                - Run tests with race detection"
+    @echo "  just bench                    - Run benchmarks"
+    @echo "  just install                  - Install to /usr/local/bin"
+    @echo "  just clean                    - Clean build artifacts"
+    @echo "  just run                      - Run the application"
+    @echo "  just run-debug                - Run with debug logging"
+    @echo "  just fmt                      - Format code"
+    @echo "  just lint                     - Lint code"
+    @echo "  just deps                     - Download dependencies"
+    @echo "  just verify                   - Verify dependencies"
+    @echo ""
+    @echo "Examples:"
+    @echo "  just build-version v1.0.0     - Build with version v1.0.0"
+    @echo "  just build-version local-dev  - Build with custom version tag"

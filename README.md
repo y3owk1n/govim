@@ -17,6 +17,9 @@ Keyboard-driven navigation for macOS - click and scroll without a mouse.
 # Build
 just build
 
+# Check version
+./bin/govim --version
+
 # Run
 ./bin/govim
 ```
@@ -329,10 +332,21 @@ To enable hints in Chrome:
 ### Building
 
 ```bash
-just build      # Development build
-just release    # Optimized release build
-just test       # Run tests
-just lint       # Run linter
+just build                  # Development build (auto-detects version from git)
+just release                # Optimized release build
+just build-version v1.0.0   # Build with custom version
+just test                   # Run tests
+just lint                   # Run linter
+```
+
+Version information is automatically injected at build time from git tags. For custom versions:
+
+```bash
+# Build with specific version
+just build-version v1.0.0
+
+# Manual build with ldflags
+go build -ldflags="-s -w -X github.com/y3owk1n/govim/internal/cli.Version=v1.0.0" -o bin/govim cmd/govim/main.go
 ```
 
 ### Testing
