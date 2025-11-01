@@ -30,11 +30,127 @@
 
 ## 🚀 Installation
 
-### Homebrew (Recommended)
+### Homebrew
 
 ```bash
 brew tap y3owk1n/tap
 brew install y3owk1n/tap/govim
+```
+
+### Nix Darwin
+
+Add the following file to your overlay:
+
+```nix
+{
+  stdenv,
+  buildGoModule,
+  fetchFromGitHub,
+  installShellFiles,
+  writableTmpDirAsHomeHook,
+  lib,
+  nix-update-script,
+}:
+buildGoModule (finalAttrs: {
+  pname = "govim";
+  version = "1.0.2";
+
+  src = fetchFromGitHub {
+    owner = "y3owk1n";
+    repo = "govim";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-0iuZsYxND490TWueNxsGNE/0k7g3xVOUNOQD/xkIFs0=";
+  };
+
+  vendorHash = "sha256-x5NB18fP8ERIB5qeMAMyMnSoDEF2+g+NoJKrC+kIj+k=";
+
+  ldflags = [
+    "-s"
+    "-w"
+    "-X github.com/y3owk1n/govim/internal/cli.Version=${finalAttrs.version}"
+  ];
+
+  # Completions
+  nativeBuildInputs = [
+    installShellFiles
+    writableTmpDirAsHomeHook
+  ];
+  postInstall = lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) ''
+    installShellCompletion --cmd govim \
+      --bash <($out/bin/govim completion bash) \
+      --fish <($out/bin/govim completion fish) \
+      --zsh <($out/bin/govim completion zsh)
+  '';
+
+  passthru = {
+    updateScript = nix-update-script { };
+  };
+})
+```
+
+Then, you can add the following to as a custom module package:
+
+```nix
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+
+let
+  cfg = config.govim;
+
+  configFile = pkgs.writeScript "govim.toml" cfg.config;
+in
+
+{
+  options = {
+    govim = with lib.types; {
+      enable = lib.mkEnableOption "Govim keyboard navigation";
+
+      package = lib.mkPackageOption pkgs "govim" { };
+
+      config = lib.mkOption {
+        type = types.lines;
+        default = ''
+          # Your config here
+        '';
+        description = "Config to use for {file} `govim.toml`.";
+      };
+    };
+  };
+
+  config = (
+    lib.mkIf (cfg.enable) {
+      environment.systemPackages = [ cfg.package ];
+
+      launchd.user.agents.govim = {
+        command =
+          "${cfg.package}/bin/govim launch"
+          + (lib.optionalString (cfg.config != "") " --config ${configFile}");
+        serviceConfig = {
+          KeepAlive = false;
+          RunAtLoad = true;
+        };
+      };
+    }
+  );
+}
+```
+
+Then somewhere in your nix config, you can add the following to enable the module:
+
+```nix
+{
+  imports = [
+    ./path-to-govim-module.nix
+  ];
+
+  govim = {
+    enable = true;
+  };
+}
 ```
 
 ### Manual Build
@@ -47,38 +163,18 @@ cd govim
 # Build
 just build
 
+# Move the binary to a location in your $PATH
+mv ./bin/govim /usr/local/bin/govim # Or anywhere else
+
 # Run
-./bin/govim launch
-```
+govim launch # or without path `./bin/govim launch`
 
-### CLI Commands
-
-```bash
-# Launch the daemon
-govim launch
-
-# Launch the daemon with custom config
-govim launch --config /path/to/config.toml
-
-# Show help and available commands
-govim help
-
-# Generate shell completions (bash/zsh/fish/powershell)
-govim completion [bash|zsh|fish|powershell]
-
-# Show version information
-govim version
-
-# Control the daemon
-govim start   # Start navigation features
-govim stop    # Stop navigation features
-govim status  # Show current status
 ```
 
 ### Required Permissions
 
 ⚠️ Grant Accessibility permissions in:
-System Settings → Privacy & Security → Accessibility
+`System Settings` → `Privacy & Security` → `Accessibility`
 
 ## 🎮 Usage
 
@@ -156,19 +252,12 @@ scroll_speed = 50
 
 See [`configs/default-config.toml`](configs/default-config.toml) for all available options.
 
-### Application Support
+### Include hints on the macOS menu bar and Dock
 
-GoVim works with:
-
-- Native macOS applications
-- Electron-based apps (VS Code, Chrome, etc.)
-- Web browsers
-- System UI elements
-
-For app-specific settings, find the bundle ID using:
-
-```bash
-osascript -e 'id of app "App Name"'
+```toml
+[hints]
+menubar = true
+dock = true
 ```
 
 ### Per-App Role Configuration
@@ -209,13 +298,6 @@ GoVim provides a comprehensive CLI with IPC (Inter-Process Communication) for co
 Start the GoVim daemon:
 
 ```bash
-# Launch daemon (default)
-govim
-
-# Launch with custom config
-govim --config /path/to/config.toml
-
-# Explicit launch command (same as above)
 govim launch
 govim launch --config /path/to/config.toml
 ```
@@ -254,7 +336,7 @@ govim scroll
 
 ```bash
 # Start GoVim
-govim
+govim launch
 
 # In another terminal, check status
 govim status
@@ -275,16 +357,6 @@ govim stop
 
 # Resume
 govim start
-```
-
-### Error Handling
-
-All control and mode commands will fail gracefully if GoVim is not running:
-
-```bash
-$ govim status
-Error: govim is not running
-Start it first with: govim launch
 ```
 
 ### IPC Architecture
