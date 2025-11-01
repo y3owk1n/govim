@@ -232,13 +232,7 @@ func (a *App) registerHotkeys() error {
 
 	// Note: Escape key for exiting modes is hardcoded in handleKeyPress, not registered as global hotkey
 
-	// Reload config hotkey
-	if key := strings.TrimSpace(a.config.Hotkeys.ReloadConfig); key != "" {
-		a.logger.Info("Registering reload config hotkey", zap.String("key", key))
-		if _, err := a.hotkeyManager.Register(key, a.reloadConfig); err != nil {
-			a.logger.Warn("Failed to register reload config hotkey", zap.Error(err))
-		}
-	}
+	// ...existing code...
 
 	return nil
 }
@@ -871,28 +865,7 @@ func (a *App) exitMode() {
 	a.currentMode = ModeIdle
 }
 
-// reloadConfig reloads the configuration
-func (a *App) reloadConfig() {
-	a.logger.Info("Reloading configuration")
-
-	newConfig, err := config.Load("")
-	if err != nil {
-		a.logger.Error("Failed to reload configuration", zap.Error(err))
-		return
-	}
-
-	a.config = newConfig
-	a.logger.Info("Applying clickable roles",
-		zap.Int("count", len(newConfig.Accessibility.ClickableRoles)),
-		zap.Strings("roles", newConfig.Accessibility.ClickableRoles))
-	accessibility.SetClickableRoles(newConfig.Accessibility.ClickableRoles)
-
-	a.logger.Info("Applying scrollable roles",
-		zap.Int("count", len(newConfig.Accessibility.ScrollableRoles)),
-		zap.Strings("roles", newConfig.Accessibility.ScrollableRoles))
-	accessibility.SetScrollableRoles(newConfig.Accessibility.ScrollableRoles)
-	a.logger.Info("Configuration reloaded successfully")
-}
+// ...existing code...
 
 // getModeString returns the current mode as a string
 func (a *App) getModeString() string {

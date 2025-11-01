@@ -80,8 +80,6 @@ activate_hint_mode_with_actions = "Cmd+Shift+A"
 # Activate scroll mode for vim-style scrolling
 activate_scroll_mode = "Cmd+Shift+J"
 
-# Reload configuration
-reload_config = "Cmd+Shift+R"
 
 # Note: Escape key is hardcoded to exit any active mode
 
@@ -155,7 +153,7 @@ scroll_to_edge_delta = 5000
 
 [performance]
 # Maximum number of hints to display
-max_hints_displayed = 200
+max_hints_displayed = 500
 
 # Debounce time for UI updates (milliseconds)
 debounce_ms = 50
