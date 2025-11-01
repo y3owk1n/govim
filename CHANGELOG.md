@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/y3owk1n/govim/compare/v1.0.0...v1.0.1) (2025-11-01)
+
+
+### Bug Fixes
+
+* ensure action to run with `cgo` enabled ([#6](https://github.com/y3owk1n/govim/issues/6)) ([0963c66](https://github.com/y3owk1n/govim/commit/0963c66e5ce204048f91c06ffedf20fec572f37f))
+* ensure checking from ./bin instead of ./build ([#4](https://github.com/y3owk1n/govim/issues/4)) ([8ee6942](https://github.com/y3owk1n/govim/commit/8ee6942ab960d81a0b3f3409443cbd076162d3e8))
+
 ## 1.0.0 (2025-11-01)
 
 
