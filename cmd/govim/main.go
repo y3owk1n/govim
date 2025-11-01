@@ -158,6 +158,10 @@ func (a *App) Run() error {
 	<-sigChan
 
 	a.logger.Info("Shutting down GoVim")
+	
+	// Quit systray to exit the event loop
+	systray.Quit()
+	
 	return nil
 }
 

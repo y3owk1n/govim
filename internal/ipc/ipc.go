@@ -75,6 +75,11 @@ func (s *Server) Start() {
 		for {
 			conn, err := s.listener.Accept()
 			if err != nil {
+				// If listener is closed, exit gracefully
+				if opErr, ok := err.(*net.OpError); ok && opErr.Err.Error() == "use of closed network connection" {
+					s.logger.Info("IPC server listener closed, stopping accept loop")
+					return
+				}
 				s.logger.Error("Failed to accept connection", zap.Error(err))
 				continue
 			}
