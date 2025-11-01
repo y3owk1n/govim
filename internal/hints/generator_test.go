@@ -19,8 +19,8 @@ func TestGenerateAlphabetLabels(t *testing.T) {
 		{0, []string{}},
 		{1, []string{"a"}},
 		{4, []string{"a", "s", "d", "f"}},
-		{5, []string{"a", "s", "d", "f", "aa"}},
-		{8, []string{"a", "s", "d", "f", "aa", "as", "ad", "af"}},
+		{5, []string{"aa", "as", "ad", "af", "sa"}}, // All 2-char when count > numChars
+		{8, []string{"aa", "as", "ad", "af", "sa", "ss", "sd", "sf"}}, // All 2-char
 	}
 
 	for _, tt := range tests {
@@ -41,16 +41,27 @@ func TestGenerateAlphabetLabels(t *testing.T) {
 func TestGenerateNumericLabels(t *testing.T) {
 	gen := NewGenerator("", "numeric", 100)
 
-	labels := gen.generateNumericLabels(5)
-	expected := []string{"1", "2", "3", "4", "5"}
-
-	if len(labels) != len(expected) {
-		t.Errorf("Expected %d labels, got %d", len(expected), len(labels))
+	tests := []struct {
+		count    int
+		expected []string
+	}{
+		{0, []string{}},
+		{1, []string{"1"}},
+		{5, []string{"1", "2", "3", "4", "5"}},
+		{10, []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}},
 	}
 
-	for i, label := range labels {
-		if label != expected[i] {
-			t.Errorf("Label %d: expected %s, got %s", i, expected[i], label)
+	for _, tt := range tests {
+		labels := gen.generateNumericLabels(tt.count)
+		if len(labels) != len(tt.expected) {
+			t.Errorf("Expected %d labels, got %d", len(tt.expected), len(labels))
+			continue
+		}
+
+		for i, label := range labels {
+			if label != tt.expected[i] {
+				t.Errorf("Label %d: expected %s, got %s", i, tt.expected[i], label)
+			}
 		}
 	}
 }
@@ -247,6 +258,84 @@ func TestGenerateHints(t *testing.T) {
 	}
 }
 
+func TestGenerateHints_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		elements    []*accessibility.TreeNode
+		maxHints    int
+		expectError bool
+		expectedLen int
+	}{
+		{
+			name:        "Empty elements",
+			elements:    []*accessibility.TreeNode{},
+			maxHints:    10,
+			expectError: false,
+			expectedLen: 0,
+		},
+		{
+			name:        "Nil elements",
+			elements:    nil,
+			maxHints:    10,
+			expectError: false,
+			expectedLen: 0,
+		},
+		{
+			name: "Single element",
+			elements: []*accessibility.TreeNode{
+				createMockElement(10, 10),
+			},
+			maxHints:    10,
+			expectError: false,
+			expectedLen: 1,
+		},
+		{
+			name: "Max hints limit",
+			elements: []*accessibility.TreeNode{
+				createMockElement(10, 10),
+				createMockElement(20, 20),
+				createMockElement(30, 30),
+			},
+			maxHints:    2,
+			expectError: false,
+			expectedLen: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gen := NewGenerator("asdf", "alphabet", tt.maxHints)
+			hints, err := gen.Generate(tt.elements)
+
+			if tt.expectError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if len(hints) != tt.expectedLen {
+				t.Errorf("Expected %d hints, got %d", tt.expectedLen, len(hints))
+			}
+
+			// Verify hints have proper properties
+			for i, hint := range hints {
+				if hint.Label == "" {
+					t.Errorf("Hint %d has empty label", i)
+				}
+				if hint.Element == nil && tt.elements != nil {
+					t.Errorf("Hint %d has nil element", i)
+				}
+			}
+		})
+	}
+}
+
 func TestGenerateHintsWithMaxLimit(t *testing.T) {
 	gen := NewGenerator("asdf", "alphabet", 2)
 
@@ -263,6 +352,62 @@ func TestGenerateHintsWithMaxLimit(t *testing.T) {
 
 	if len(hints) != 2 {
 		t.Errorf("Expected 2 hints (max limit), got %d", len(hints))
+	}
+}
+
+func TestGenerateAlphabetLabels_EdgeCases(t *testing.T) {
+	// Test with different character sets
+	tests := []struct {
+		name      string
+		chars     string
+		count     int
+		wantError bool
+	}{
+		{"Empty chars", "", 5, false}, // Should use fallback
+		{"Single char", "a", 1, false}, // Single char, single label
+		{"Many chars", "asdfghjkl", 100, false},
+		{"Zero count", "asdf", 0, false},
+		{"Negative count", "asdf", -1, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gen := NewGenerator(tt.chars, "alphabet", 1000)
+			labels := gen.generateAlphabetLabels(tt.count)
+			
+			if tt.count <= 0 {
+				// Zero or negative counts should return empty slice
+				if len(labels) != 0 {
+					t.Errorf("Expected empty labels for count %d, got %d labels", tt.count, len(labels))
+				}
+				return
+			}
+			
+			if len(labels) != tt.count {
+				t.Errorf("Expected %d labels, got %d", tt.count, len(labels))
+			}
+			
+			// Debug output
+			t.Logf("Generated labels: %v", labels)
+			
+			// Verify no empty strings
+			for i, label := range labels {
+				if label == "" {
+					t.Errorf("Label %d is empty", i)
+				}
+			}
+			
+			// Verify no prefix conflicts (only for multi-character labels)
+			if len(labels) > 1 && len(labels[0]) > 1 {
+				for i, label1 := range labels {
+					for j, label2 := range labels {
+						if i != j && strings.HasPrefix(label2, label1) {
+							t.Errorf("Prefix conflict: '%s' is a prefix of '%s'", label1, label2)
+						}
+					}
+				}
+			}
+		})
 	}
 }
 

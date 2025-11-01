@@ -93,7 +93,7 @@ func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error
 // generateAlphabetLabels generates alphabet-based hint labels
 // Uses a strategy that avoids prefixes (no "a" if "aa" exists)
 func (g *Generator) generateAlphabetLabels(count int) []string {
-	if count == 0 {
+	if count <= 0 {
 		return []string{}
 	}
 
