@@ -149,12 +149,19 @@ func (a *App) Run() error {
 		return fmt.Errorf("failed to register hotkeys: %w", err)
 	}
 
-	a.logger.Info("GoVim is running. Press hotkeys to activate modes.")
+	a.logger.Info("GoVim is running")
 	fmt.Println("✓ GoVim is running")
-	fmt.Printf("  Hint mode (direct): %s\n", a.config.Hotkeys.ActivateHintMode)
-	fmt.Printf("  Hint mode (with actions): %s\n", a.config.Hotkeys.ActivateHintModeWithActions)
-	fmt.Printf("  Scroll mode: %s\n", a.config.Hotkeys.ActivateScrollMode)
-	fmt.Printf("  Exit mode: Escape (hardcoded)\n")
+
+	// Print configured hotkeys
+	if key := strings.TrimSpace(a.config.Hotkeys.ActivateHintMode); key != "" {
+		fmt.Printf("  Hint mode (direct): %s\n", key)
+	}
+	if key := strings.TrimSpace(a.config.Hotkeys.ActivateHintModeWithActions); key != "" {
+		fmt.Printf("  Hint mode (with actions): %s\n", key)
+	}
+	if key := strings.TrimSpace(a.config.Hotkeys.ActivateScrollMode); key != "" {
+		fmt.Printf("  Scroll mode: %s\n", key)
+	}
 
 	// Wait for interrupt signal with force-quit support
 	sigChan := make(chan os.Signal, 1)
@@ -196,31 +203,41 @@ func (a *App) Run() error {
 // registerHotkeys registers all global hotkeys
 func (a *App) registerHotkeys() error {
 	// Hint mode hotkey (direct click)
-	a.logger.Info("Registering hint mode hotkey", zap.String("key", a.config.Hotkeys.ActivateHintMode))
-	if _, err := a.hotkeyManager.Register(a.config.Hotkeys.ActivateHintMode, func() {
-		a.activateHintMode(false)
-	}); err != nil {
-		return fmt.Errorf("failed to register hint mode hotkey: %w", err)
+	if key := strings.TrimSpace(a.config.Hotkeys.ActivateHintMode); key != "" {
+		a.logger.Info("Registering hint mode hotkey", zap.String("key", key))
+		if _, err := a.hotkeyManager.Register(key, func() {
+			a.activateHintMode(false)
+		}); err != nil {
+			return fmt.Errorf("failed to register hint mode hotkey: %w", err)
+		}
 	}
 
 	// Hint mode with actions hotkey
-	a.logger.Info("Registering hint mode with actions hotkey", zap.String("key", a.config.Hotkeys.ActivateHintModeWithActions))
-	if _, err := a.hotkeyManager.Register(a.config.Hotkeys.ActivateHintModeWithActions, func() {
-		a.activateHintMode(true)
-	}); err != nil {
-		return fmt.Errorf("failed to register hint mode with actions hotkey: %w", err)
+	if key := strings.TrimSpace(a.config.Hotkeys.ActivateHintModeWithActions); key != "" {
+		a.logger.Info("Registering hint mode with actions hotkey", zap.String("key", key))
+		if _, err := a.hotkeyManager.Register(key, func() {
+			a.activateHintMode(true)
+		}); err != nil {
+			return fmt.Errorf("failed to register hint mode with actions hotkey: %w", err)
+		}
 	}
 
 	// Scroll mode hotkey
-	if _, err := a.hotkeyManager.Register(a.config.Hotkeys.ActivateScrollMode, a.activateScrollMode); err != nil {
-		return fmt.Errorf("failed to register scroll mode hotkey: %w", err)
+	if key := strings.TrimSpace(a.config.Hotkeys.ActivateScrollMode); key != "" {
+		a.logger.Info("Registering scroll mode hotkey", zap.String("key", key))
+		if _, err := a.hotkeyManager.Register(key, a.activateScrollMode); err != nil {
+			return fmt.Errorf("failed to register scroll mode hotkey: %w", err)
+		}
 	}
 
 	// Note: Escape key for exiting modes is hardcoded in handleKeyPress, not registered as global hotkey
 
 	// Reload config hotkey
-	if _, err := a.hotkeyManager.Register(a.config.Hotkeys.ReloadConfig, a.reloadConfig); err != nil {
-		a.logger.Warn("Failed to register reload config hotkey", zap.Error(err))
+	if key := strings.TrimSpace(a.config.Hotkeys.ReloadConfig); key != "" {
+		a.logger.Info("Registering reload config hotkey", zap.String("key", key))
+		if _, err := a.hotkeyManager.Register(key, a.reloadConfig); err != nil {
+			a.logger.Warn("Failed to register reload config hotkey", zap.Error(err))
+		}
 	}
 
 	return nil
