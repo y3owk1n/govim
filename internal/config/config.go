@@ -41,9 +41,9 @@ type AppConfig struct {
 }
 
 type HotkeysConfig struct {
-		ActivateHintMode            string `toml:"activate_hint_mode"`
-		ActivateHintModeWithActions string `toml:"activate_hint_mode_with_actions"`
-		ActivateScrollMode          string `toml:"activate_scroll_mode"`
+	ActivateHintMode            string `toml:"activate_hint_mode"`
+	ActivateHintModeWithActions string `toml:"activate_hint_mode_with_actions"`
+	ActivateScrollMode          string `toml:"activate_scroll_mode"`
 }
 
 type ScrollConfig struct {
