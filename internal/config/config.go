@@ -235,6 +235,9 @@ func (c *Config) Validate() error {
 	}
 
 	// Validate hint characters
+	if strings.TrimSpace(c.General.HintCharacters) == "" {
+		return fmt.Errorf("hint_characters cannot be empty")
+	}
 	if c.General.HintStyle == "alphabet" && len(c.General.HintCharacters) < 2 {
 		return fmt.Errorf("hint_characters must contain at least 2 characters")
 	}

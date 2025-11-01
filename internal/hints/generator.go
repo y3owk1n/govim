@@ -27,6 +27,10 @@ type Generator struct {
 
 // NewGenerator creates a new hint generator
 func NewGenerator(characters, style string, maxHints int) *Generator {
+	// Ensure we have at least some characters
+	if characters == "" {
+		characters = "asdfghjkl" // fallback to default
+	}
 	return &Generator{
 		characters: characters,
 		style:      style,
@@ -135,23 +139,6 @@ func (g *Generator) generateAlphabetLabels(count int) []string {
 	return labels[:count]
 }
 
-// numberToAlphabet is no longer used but kept for reference
-func (g *Generator) numberToAlphabet(num int, chars []rune, base int) string {
-	if num < base {
-		return string(chars[num])
-	}
-
-	result := ""
-	for num >= 0 {
-		result = string(chars[num%base]) + result
-		num = num/base - 1
-		if num < 0 {
-			break
-		}
-	}
-
-	return result
-}
 
 // generateNumericLabels generates numeric labels (1, 2, 3, ...)
 func (g *Generator) generateNumericLabels(count int) []string {
