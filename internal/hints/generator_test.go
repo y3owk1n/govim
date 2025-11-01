@@ -192,6 +192,114 @@ func TestHintIsVisible(t *testing.T) {
 	}
 }
 
+func TestGenerate(t *testing.T) {
+	// Create test elements
+	elements := []*accessibility.TreeNode{
+		{
+			Info: &accessibility.ElementInfo{
+				Position: image.Point{X: 10, Y: 10},
+				Size:     image.Point{X: 20, Y: 20},
+				Role:     "button",
+			},
+		},
+		{
+			Info: &accessibility.ElementInfo{
+				Position: image.Point{X: 50, Y: 10},
+				Size:     image.Point{X: 20, Y: 20},
+				Role:     "link",
+			},
+		},
+		{
+			Info: &accessibility.ElementInfo{
+				Position: image.Point{X: 10, Y: 50},
+				Size:     image.Point{X: 20, Y: 20},
+				Role:     "checkbox",
+			},
+		},
+	}
+
+	tests := []struct {
+		name       string
+		characters string
+		style      string
+		maxHints   int
+		elements   []*accessibility.TreeNode
+		wantCount  int
+		wantLabels []string
+	}{
+		{
+			name:       "alphabet style",
+			characters: "asdf",
+			style:      "alphabet",
+			maxHints:   10,
+			elements:   elements,
+			wantCount:  3,
+			wantLabels: []string{"A", "S", "D"},
+		},
+		{
+			name:       "numeric style",
+			characters: "asdf",
+			style:      "numeric",
+			maxHints:   10,
+			elements:   elements,
+			wantCount:  3,
+			wantLabels: []string{"1", "2", "3"},
+		},
+		{
+			name:       "limited hints",
+			characters: "asdf",
+			style:      "alphabet",
+			maxHints:   2,
+			elements:   elements,
+			wantCount:  2,
+			wantLabels: []string{"A", "S"},
+		},
+		{
+			name:       "empty elements",
+			characters: "asdf",
+			style:      "alphabet",
+			maxHints:   10,
+			elements:   []*accessibility.TreeNode{},
+			wantCount:  0,
+			wantLabels: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			generator := NewGenerator(tt.characters, tt.style, tt.maxHints)
+			hints, err := generator.Generate(tt.elements)
+
+			if err != nil {
+				t.Fatalf("Generate() error = %v", err)
+			}
+
+			if len(hints) != tt.wantCount {
+				t.Errorf("Generate() returned %d hints, want %d", len(hints), tt.wantCount)
+			}
+
+			// Check labels
+			for i, hint := range hints {
+				if i < len(tt.wantLabels) && hint.Label != tt.wantLabels[i] {
+					t.Errorf("Generate() hint[%d].Label = %s, want %s", i, hint.Label, tt.wantLabels[i])
+				}
+			}
+
+			// Check positions are centered
+			for i, hint := range hints {
+				element := tt.elements[i]
+				expectedX := element.Info.Position.X + (element.Info.Size.X / 2)
+				expectedY := element.Info.Position.Y + (element.Info.Size.Y / 2)
+
+				if hint.Position.X != expectedX || hint.Position.Y != expectedY {
+					t.Errorf("Generate() hint[%d].Position = (%d,%d), want (%d,%d)",
+						i, hint.Position.X, hint.Position.Y, expectedX, expectedY)
+				}
+			}
+		})
+	}
+}
+
 func TestHintCollection(t *testing.T) {
 	hints := []*Hint{
 		{Label: "a"},

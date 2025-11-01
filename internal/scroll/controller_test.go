@@ -32,3 +32,27 @@ func TestController_BasicOperations(t *testing.T) {
 	// This is a basic smoke test
 	_ = controller
 }
+
+func TestScrollDirections(t *testing.T) {
+	// Test that direction constants are defined correctly
+	directions := []Direction{DirectionUp, DirectionDown, DirectionLeft, DirectionRight}
+	expectedValues := []int{0, 1, 2, 3}
+
+	for i, dir := range directions {
+		if int(dir) != expectedValues[i] {
+			t.Errorf("Direction constant %d has unexpected value %d", i, dir)
+		}
+	}
+}
+
+func TestScrollAmounts(t *testing.T) {
+	// Test that amount constants are defined correctly
+	amounts := []ScrollAmount{AmountChar, AmountHalfPage, AmountFullPage}
+	expectedValues := []int{0, 1, 2}
+
+	for i, amount := range amounts {
+		if int(amount) != expectedValues[i] {
+			t.Errorf("ScrollAmount constant %d has unexpected value %d", i, amount)
+		}
+	}
+}
