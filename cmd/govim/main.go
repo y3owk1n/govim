@@ -5,6 +5,7 @@ import (
 	"image"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -35,7 +36,9 @@ const (
 
 // App represents the main application
 type App struct {
-	config           *config.Config
+	config *config.Config
+	// ConfigPath holds the path the daemon was started with (if any)
+	ConfigPath       string
 	logger           *zap.Logger
 	hotkeyManager    *hotkeys.Manager
 	hintGenerator    *hints.Generator
@@ -974,10 +977,27 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 		return ipc.Response{Success: true, Message: "mode set to idle"}
 
 	case "status":
-		statusData := map[string]interface{}{
+		cfgPath := a.ConfigPath
+		if cfgPath == "" {
+			// Fallback to the standard config path if daemon wasn't started
+			// with an explicit --config
+			cfgPath = config.GetConfigPath()
+		}
+
+		// Expand ~ to home dir and resolve relative paths to absolute
+		if strings.HasPrefix(cfgPath, "~") {
+			if home, err := os.UserHomeDir(); err == nil {
+				cfgPath = filepath.Join(home, cfgPath[1:])
+			}
+		}
+		if abs, err := filepath.Abs(cfgPath); err == nil {
+			cfgPath = abs
+		}
+
+		statusData := map[string]any{
 			"enabled": a.enabled,
 			"mode":    a.getModeString(),
-			"config":  config.GetConfigPath(),
+			"config":  cfgPath,
 		}
 		return ipc.Response{Success: true, Data: statusData}
 
@@ -1051,6 +1071,9 @@ func LaunchDaemon(configPath string) {
 		fmt.Fprintf(os.Stderr, "Error creating app: %v\n", err)
 		os.Exit(1)
 	}
+	// Record the config path the daemon was started with so status can report
+	// the same path (if provided via --config)
+	app.ConfigPath = configPath
 	globalApp = app
 
 	// Start app in goroutine
