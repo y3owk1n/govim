@@ -26,8 +26,8 @@ var rootCmd = &cobra.Command{
 	Long: `GoVim is a keyboard-driven navigation tool for macOS that provides
 vim-like navigation capabilities across all applications using accessibility APIs.`,
 	Version: Version,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 
