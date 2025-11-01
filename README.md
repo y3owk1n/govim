@@ -370,7 +370,6 @@ To enable hints in Chrome:
    ]
    ```
 
-2. Reload config: `Cmd+Shift+R`
 
 ## Development
 

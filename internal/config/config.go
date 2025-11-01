@@ -41,10 +41,9 @@ type AppConfig struct {
 }
 
 type HotkeysConfig struct {
-	ActivateHintMode            string `toml:"activate_hint_mode"`
-	ActivateHintModeWithActions string `toml:"activate_hint_mode_with_actions"`
-	ActivateScrollMode          string `toml:"activate_scroll_mode"`
-	ReloadConfig                string `toml:"reload_config"`
+		ActivateHintMode            string `toml:"activate_hint_mode"`
+		ActivateHintModeWithActions string `toml:"activate_hint_mode_with_actions"`
+		ActivateScrollMode          string `toml:"activate_scroll_mode"`
 }
 
 type ScrollConfig struct {
@@ -126,7 +125,6 @@ func DefaultConfig() *Config {
 			ActivateHintMode:            "",
 			ActivateHintModeWithActions: "",
 			ActivateScrollMode:          "",
-			ReloadConfig:                "",
 		},
 		Scroll: ScrollConfig{
 			ScrollSpeed:            50,
@@ -274,9 +272,6 @@ func (c *Config) Validate() error {
 		return err
 	}
 	if err := validateHotkey(c.Hotkeys.ActivateScrollMode, "hotkeys.activate_scroll_mode"); err != nil {
-		return err
-	}
-	if err := validateHotkey(c.Hotkeys.ReloadConfig, "hotkeys.reload_config"); err != nil {
 		return err
 	}
 
