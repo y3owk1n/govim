@@ -692,6 +692,12 @@ func (a *App) switchScrollArea(next bool) {
 
 // switchScrollAreaByNumber switches to a specific scroll area by number
 func (a *App) switchScrollAreaByNumber(key string) {
+	// Validate key is a digit
+	if len(key) != 1 || key[0] < '0' || key[0] > '9' {
+		a.logger.Debug("Invalid number key", zap.String("key", key))
+		return
+	}
+	
 	number := int(key[0] - '0')
 	detector := a.scrollController.GetDetector()
 	newArea := detector.SetActiveByNumber(number)
@@ -699,6 +705,8 @@ func (a *App) switchScrollAreaByNumber(key string) {
 	if newArea != nil {
 		a.logger.Info("Switched to scroll area", zap.Int("number", number))
 		a.updateScrollHighlight(newArea)
+	} else {
+		a.logger.Debug("No scroll area at number", zap.Int("number", number))
 	}
 }
 
