@@ -9,17 +9,10 @@
 # - Colors: `#RGB`, `#RRGGBB`, or `#RRGGBBAA`.
 # - Hotkeys: `Modifier+...+Key` with modifiers `Cmd`, `Ctrl`, `Alt`, `Shift`, `Option`.
 #   Examples: `Cmd+Shift+Space`, `Ctrl+D`. Set to "" to disable.
-# - When `hint_style = "numeric"`, `hint_characters` are ignored.
-
 [general]
 # Characters used to build hint labels for alphabet style.
 # - At least 2 characters; choose distinct, easy-to-type ones.
 hint_characters = "asdfghjkl"
-
-# Hint label style: "alphabet" or "numeric".
-# - "alphabet": uses `hint_characters` to build AA/AS/...
-# - "numeric": labels are numbers 1..N; ignores `hint_characters`.
-hint_style = "alphabet"
 
 # Check Accessibility permission on startup; exits with guidance if missing.
 accessibility_check_on_start = true

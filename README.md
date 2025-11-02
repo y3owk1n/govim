@@ -223,7 +223,6 @@ or any other location specified via the `--config` flag.
 ```toml
 [general]
 hint_characters = "asdfghjkl"  # Characters used for hints
-hint_style = "alphabet"        # "alphabet" or "numeric"
 
 [accessibility]
 # Clickable elements
