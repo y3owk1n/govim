@@ -10,7 +10,7 @@ import (
 )
 
 func TestGenerateAlphabetLabels(t *testing.T) {
-	gen := NewGenerator("asdf", "alphabet", 100)
+	gen := NewGenerator("asdf", 100)
 
 	tests := []struct {
 		count    int
@@ -25,34 +25,6 @@ func TestGenerateAlphabetLabels(t *testing.T) {
 
 	for _, tt := range tests {
 		labels := gen.generateAlphabetLabels(tt.count)
-		if len(labels) != len(tt.expected) {
-			t.Errorf("Expected %d labels, got %d", len(tt.expected), len(labels))
-			continue
-		}
-
-		for i, label := range labels {
-			if label != tt.expected[i] {
-				t.Errorf("Label %d: expected %s, got %s", i, tt.expected[i], label)
-			}
-		}
-	}
-}
-
-func TestGenerateNumericLabels(t *testing.T) {
-	gen := NewGenerator("", "numeric", 100)
-
-	tests := []struct {
-		count    int
-		expected []string
-	}{
-		{0, []string{}},
-		{1, []string{"1"}},
-		{5, []string{"1", "2", "3", "4", "5"}},
-		{10, []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}},
-	}
-
-	for _, tt := range tests {
-		labels := gen.generateNumericLabels(tt.count)
 		if len(labels) != len(tt.expected) {
 			t.Errorf("Expected %d labels, got %d", len(tt.expected), len(labels))
 			continue
@@ -221,7 +193,6 @@ func TestGenerate(t *testing.T) {
 	tests := []struct {
 		name       string
 		characters string
-		style      string
 		maxHints   int
 		elements   []*accessibility.TreeNode
 		wantCount  int
@@ -230,25 +201,15 @@ func TestGenerate(t *testing.T) {
 		{
 			name:       "alphabet style",
 			characters: "asdf",
-			style:      "alphabet",
 			maxHints:   10,
 			elements:   elements,
 			wantCount:  3,
 			wantLabels: []string{"A", "S", "D"},
 		},
-		{
-			name:       "numeric style",
-			characters: "asdf",
-			style:      "numeric",
-			maxHints:   10,
-			elements:   elements,
-			wantCount:  3,
-			wantLabels: []string{"1", "2", "3"},
-		},
+
 		{
 			name:       "limited hints",
 			characters: "asdf",
-			style:      "alphabet",
 			maxHints:   2,
 			elements:   elements,
 			wantCount:  2,
@@ -257,7 +218,6 @@ func TestGenerate(t *testing.T) {
 		{
 			name:       "empty elements",
 			characters: "asdf",
-			style:      "alphabet",
 			maxHints:   10,
 			elements:   []*accessibility.TreeNode{},
 			wantCount:  0,
@@ -267,7 +227,7 @@ func TestGenerate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			generator := NewGenerator(tt.characters, tt.style, tt.maxHints)
+			generator := NewGenerator(tt.characters, tt.maxHints)
 			hints, err := generator.Generate(tt.elements)
 
 			if err != nil {
@@ -343,7 +303,7 @@ func createMockElement(x, y int) *accessibility.TreeNode {
 }
 
 func TestGenerateHints(t *testing.T) {
-	gen := NewGenerator("asdf", "alphabet", 100)
+	gen := NewGenerator("asdf", 100)
 
 	elements := []*accessibility.TreeNode{
 		createMockElement(10, 10),
@@ -412,7 +372,7 @@ func TestGenerateHints_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gen := NewGenerator("asdf", "alphabet", tt.maxHints)
+			gen := NewGenerator("asdf", tt.maxHints)
 			hints, err := gen.Generate(tt.elements)
 
 			if tt.expectError {
@@ -445,7 +405,7 @@ func TestGenerateHints_EdgeCases(t *testing.T) {
 }
 
 func TestGenerateHintsWithMaxLimit(t *testing.T) {
-	gen := NewGenerator("asdf", "alphabet", 2)
+	gen := NewGenerator("asdf", 2)
 
 	elements := []*accessibility.TreeNode{
 		createMockElement(10, 10),
@@ -480,7 +440,7 @@ func TestGenerateAlphabetLabels_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gen := NewGenerator(tt.chars, "alphabet", 1000)
+			gen := NewGenerator(tt.chars, 1000)
 			labels := gen.generateAlphabetLabels(tt.count)
 
 			if tt.count <= 0 {
@@ -535,7 +495,7 @@ func TestNoPrefixConflicts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gen := NewGenerator(tt.chars, "alphabet", 1000)
+			gen := NewGenerator(tt.chars, 1000)
 			labels := gen.generateAlphabetLabels(tt.count)
 
 			if len(labels) != tt.count {

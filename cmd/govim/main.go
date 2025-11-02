@@ -92,7 +92,6 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Create hint generator
 	hintGen := hints.NewGenerator(
 		cfg.General.HintCharacters,
-		cfg.General.HintStyle,
 		cfg.Performance.MaxHintsDisplayed,
 	)
 

@@ -13,10 +13,6 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("Expected hint_characters to be 'asdfghjkl', got '%s'", cfg.General.HintCharacters)
 	}
 
-	if cfg.General.HintStyle != "alphabet" {
-		t.Errorf("Expected hint_style to be 'alphabet', got '%s'", cfg.General.HintStyle)
-	}
-
 	if cfg.Logging.LogLevel != "info" {
 		t.Errorf("Expected log_level to be 'info', got '%s'", cfg.Logging.LogLevel)
 	}
@@ -32,13 +28,6 @@ func TestValidate(t *testing.T) {
 			name:    "valid default config",
 			modify:  func(c *Config) {},
 			wantErr: false,
-		},
-		{
-			name: "invalid hint style",
-			modify: func(c *Config) {
-				c.General.HintStyle = "invalid"
-			},
-			wantErr: true,
 		},
 		{
 			name: "invalid log level",

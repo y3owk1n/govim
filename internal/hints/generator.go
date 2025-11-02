@@ -1,7 +1,6 @@
 package hints
 
 import (
-	"fmt"
 	"image"
 	"sort"
 	"strings"
@@ -21,19 +20,17 @@ type Hint struct {
 // Generator generates hints for UI elements
 type Generator struct {
 	characters string
-	style      string
 	maxHints   int
 }
 
 // NewGenerator creates a new hint generator
-func NewGenerator(characters, style string, maxHints int) *Generator {
+func NewGenerator(characters string, maxHints int) *Generator {
 	// Ensure we have at least some characters
 	if characters == "" {
 		characters = "asdfghjkl" // fallback to default
 	}
 	return &Generator{
 		characters: characters,
-		style:      style,
 		maxHints:   maxHints,
 	}
 }
@@ -64,13 +61,8 @@ func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error
 		sortedElements = sortedElements[:g.maxHints]
 	}
 
-	// Generate labels
-	var labels []string
-	if g.style == "alphabet" {
-		labels = g.generateAlphabetLabels(len(sortedElements))
-	} else {
-		labels = g.generateNumericLabels(len(sortedElements))
-	}
+	// Generate labels (alphabet-only)
+	labels := g.generateAlphabetLabels(len(sortedElements))
 
 	// Generate hints
 	hints := make([]*Hint, len(sortedElements))
@@ -138,15 +130,6 @@ func (g *Generator) generateAlphabetLabels(count int) []string {
 	}
 
 	return labels[:count]
-}
-
-// generateNumericLabels generates numeric labels (1, 2, 3, ...)
-func (g *Generator) generateNumericLabels(count int) []string {
-	labels := make([]string, count)
-	for i := 0; i < count; i++ {
-		labels[i] = fmt.Sprintf("%d", i+1)
-	}
-	return labels
 }
 
 // FindHintByLabel finds a hint by its label
