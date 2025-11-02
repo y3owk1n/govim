@@ -22,8 +22,9 @@ type Config struct {
 }
 
 type GeneralConfig struct {
-	HintCharacters            string `toml:"hint_characters"`
-	AccessibilityCheckOnStart bool   `toml:"accessibility_check_on_start"`
+	HintCharacters            string   `toml:"hint_characters"`
+	AccessibilityCheckOnStart bool     `toml:"accessibility_check_on_start"`
+	ExcludedApps              []string `toml:"excluded_apps"`
 }
 
 type AccessibilityConfig struct {
@@ -102,6 +103,7 @@ func DefaultConfig() *Config {
 		General: GeneralConfig{
 			HintCharacters:            "asdfghjkl",
 			AccessibilityCheckOnStart: true,
+			ExcludedApps:              []string{},
 		},
 		Accessibility: AccessibilityConfig{
 			ClickableRoles: []string{
@@ -443,6 +445,24 @@ func (c *Config) GetScrollableRolesForApp(bundleID string) []string {
 		roles = append(roles, role)
 	}
 	return roles
+}
+
+// IsAppExcluded checks if the given bundle ID is in the excluded apps list
+func (c *Config) IsAppExcluded(bundleID string) bool {
+	if bundleID == "" {
+		return false
+	}
+
+	// Normalize bundle ID for case-insensitive comparison
+	bundleID = strings.ToLower(strings.TrimSpace(bundleID))
+
+	for _, excludedApp := range c.General.ExcludedApps {
+		excludedApp = strings.ToLower(strings.TrimSpace(excludedApp))
+		if excludedApp == bundleID {
+			return true
+		}
+	}
+	return false
 }
 
 // Save saves the configuration to the specified path

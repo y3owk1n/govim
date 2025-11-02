@@ -17,6 +17,19 @@ hint_characters = "asdfghjkl"
 # Check Accessibility permission on startup; exits with guidance if missing.
 accessibility_check_on_start = true
 
+# Applications to exclude from GoVim functionality
+# GoVim will do nothing when these applications are focused
+# Use bundle IDs to identify applications. To find an app's bundle ID:
+# osascript -e 'id of app "AppName"'
+# Examples:
+# excluded_apps = [
+#     "com.apple.Terminal",      # Terminal
+#     "com.googlecode.iterm2",   # iTerm2
+#     "com.microsoft.VSCode",    # VS Code
+#     "com.apple.dt.Xcode",      # Xcode
+# ]
+excluded_apps = []
+
 [accessibility]
 # Global accessibility roles that are treated as clickable
 # These roles will be used for ALL applications

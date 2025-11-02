@@ -171,3 +171,149 @@ func TestGetConfigPath(t *testing.T) {
 		t.Errorf("Expected path %s, got %s", expectedPath, path)
 	}
 }
+
+func TestIsAppExcluded(t *testing.T) {
+	tests := []struct {
+		name         string
+		excludedApps []string
+		bundleID     string
+		expected     bool
+	}{
+		{
+			name:         "empty exclusion list",
+			excludedApps: []string{},
+			bundleID:     "com.example.app",
+			expected:     false,
+		},
+		{
+			name:         "app not in exclusion list",
+			excludedApps: []string{"com.apple.Terminal", "com.googlecode.iterm2"},
+			bundleID:     "com.example.app",
+			expected:     false,
+		},
+		{
+			name:         "app in exclusion list - exact match",
+			excludedApps: []string{"com.apple.Terminal", "com.example.app", "com.googlecode.iterm2"},
+			bundleID:     "com.example.app",
+			expected:     true,
+		},
+		{
+			name:         "app in exclusion list - case insensitive",
+			excludedApps: []string{"com.apple.Terminal", "COM.EXAMPLE.APP", "com.googlecode.iterm2"},
+			bundleID:     "com.example.app",
+			expected:     true,
+		},
+		{
+			name:         "app in exclusion list - with whitespace",
+			excludedApps: []string{"com.apple.Terminal", " com.example.app ", "com.googlecode.iterm2"},
+			bundleID:     "com.example.app",
+			expected:     true,
+		},
+		{
+			name:         "bundle ID with whitespace",
+			excludedApps: []string{"com.apple.Terminal", "com.example.app", "com.googlecode.iterm2"},
+			bundleID:     " com.example.app ",
+			expected:     true,
+		},
+		{
+			name:         "both with whitespace and different case",
+			excludedApps: []string{"com.apple.Terminal", " COM.EXAMPLE.APP ", "com.googlecode.iterm2"},
+			bundleID:     " com.example.app ",
+			expected:     true,
+		},
+		{
+			name:         "empty bundle ID",
+			excludedApps: []string{"com.apple.Terminal", "com.example.app"},
+			bundleID:     "",
+			expected:     false,
+		},
+		{
+			name:         "nil exclusion list",
+			excludedApps: nil,
+			bundleID:     "com.example.app",
+			expected:     false,
+		},
+		{
+			name:         "partial match should not exclude",
+			excludedApps: []string{"com.example"},
+			bundleID:     "com.example.app",
+			expected:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := DefaultConfig()
+			cfg.General.ExcludedApps = tt.excludedApps
+
+			result := cfg.IsAppExcluded(tt.bundleID)
+			if result != tt.expected {
+				t.Errorf("IsAppExcluded() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDefaultConfigExcludedApps(t *testing.T) {
+	cfg := DefaultConfig()
+
+	// Default config should have empty excluded apps list
+	if cfg.General.ExcludedApps == nil {
+		t.Error("Expected ExcludedApps to be initialized, got nil")
+	}
+
+	if len(cfg.General.ExcludedApps) != 0 {
+		t.Errorf("Expected empty ExcludedApps list by default, got %d items", len(cfg.General.ExcludedApps))
+	}
+}
+
+func TestLoadAndSaveWithExcludedApps(t *testing.T) {
+	// Create temporary directory
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.toml")
+
+	// Create config with excluded apps
+	cfg := DefaultConfig()
+	cfg.General.ExcludedApps = []string{
+		"com.apple.Terminal",
+		"com.googlecode.iterm2",
+		"com.microsoft.rdc.macos",
+	}
+
+	if err := cfg.Save(configPath); err != nil {
+		t.Fatalf("Failed to save config: %v", err)
+	}
+
+	// Load config
+	loaded, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Verify excluded apps were saved and loaded correctly
+	if len(loaded.General.ExcludedApps) != 3 {
+		t.Errorf("Expected 3 excluded apps, got %d", len(loaded.General.ExcludedApps))
+	}
+
+	expectedApps := []string{
+		"com.apple.Terminal",
+		"com.googlecode.iterm2",
+		"com.microsoft.rdc.macos",
+	}
+
+	for i, expected := range expectedApps {
+		if i >= len(loaded.General.ExcludedApps) || loaded.General.ExcludedApps[i] != expected {
+			t.Errorf("Expected excluded app at index %d to be '%s', got '%s'",
+				i, expected, loaded.General.ExcludedApps[i])
+		}
+	}
+
+	// Test that exclusion works correctly
+	if !loaded.IsAppExcluded("com.apple.Terminal") {
+		t.Error("Expected com.apple.Terminal to be excluded")
+	}
+
+	if loaded.IsAppExcluded("com.example.notexcluded") {
+		t.Error("Expected com.example.notexcluded to not be excluded")
+	}
+}

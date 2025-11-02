@@ -281,6 +281,35 @@ bundle_id = "com.apple.mail"
 additional_clickable_roles = ["AXStaticText"]
 ```
 
+### App Exclusion
+
+GoVim supports excluding specific applications where it should do nothing (no hint mode or scroll mode activation). This is useful for applications where GoVim might interfere or isn't needed.
+
+To find an app's bundle ID:
+
+```bash
+osascript -e 'id of app "AppName"'
+```
+
+Example configuration:
+
+```toml
+[general]
+excluded_apps = [
+    "com.apple.Terminal",           # Terminal
+    "com.googlecode.iterm2",        # iTerm2
+    "com.microsoft.rdc.macos",      # Microsoft Remote Desktop
+    "com.vmware.fusion"             # VMware Fusion
+]
+```
+
+When GoVim detects that the currently focused application is in the `excluded_apps` list, it will:
+- Ignore hint mode activation attempts
+- Ignore scroll mode activation attempts
+- Log the exclusion for debugging purposes
+
+The exclusion check is case-insensitive and handles whitespace automatically.
+
 ### Electron & Chrome Support
 
 > [!NOTE]
