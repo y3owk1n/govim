@@ -3,14 +3,15 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
 
-	if cfg.General.HintCharacters != "asdfghjkl" {
-		t.Errorf("Expected hint_characters to be 'asdfghjkl', got '%s'", cfg.General.HintCharacters)
+	if cfg.Hints.HintCharacters != "asdfghjkl" {
+		t.Errorf("Expected hint_characters to be 'asdfghjkl', got '%s'", cfg.Hints.HintCharacters)
 	}
 
 	if cfg.Logging.LogLevel != "info" {
@@ -46,7 +47,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "too few hint characters",
 			modify: func(c *Config) {
-				c.General.HintCharacters = "a"
+				c.Hints.HintCharacters = "a"
 			},
 			wantErr: true,
 		},
@@ -100,7 +101,7 @@ func TestLoadNonExistentFile(t *testing.T) {
 		t.Fatalf("Expected no error for non-existent file, got: %v", err)
 	}
 
-	if cfg.General.HintCharacters != "asdfghjkl" {
+	if cfg.Hints.HintCharacters != "asdfghjkl" {
 		t.Error("Expected default config when file doesn't exist")
 	}
 }
@@ -135,13 +136,7 @@ func TestConfigWithAppSpecificSettings(t *testing.T) {
 	}
 
 	// Check if app-specific roles are included
-	found := false
-	for _, role := range clickableRoles {
-		if role == "CustomButton1" {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(clickableRoles, "CustomButton1")
 
 	if !found {
 		t.Errorf("App-specific role 'CustomButton1' not found in clickable roles")

@@ -66,7 +66,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	log := logger.Get()
 
 	// Check accessibility permissions
-	if cfg.General.AccessibilityCheckOnStart {
+	if cfg.Accessibility.AccessibilityCheckOnStart {
 		if !accessibility.CheckAccessibilityPermissions() {
 			log.Warn("Accessibility permissions not granted. Please grant permissions in System Settings.")
 			fmt.Println("⚠️  GoVim requires Accessibility permissions to function.")
@@ -93,7 +93,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 
 	// Create hint generator
 	hintGen := hints.NewGenerator(
-		cfg.General.HintCharacters,
+		cfg.Hints.HintCharacters,
 		cfg.Performance.MaxHintsDisplayed,
 	)
 
@@ -404,7 +404,7 @@ func (a *App) activateHintMode(withActions bool) {
 	a.logger.Info("Found clickable elements", zap.Int("count", len(elements)))
 
 	// Optionally include menu bar elements
-	if a.config.Hints.Menubar {
+	if a.config.General.IncludeMenubarHints {
 		if mbElems, merr := accessibility.GetMenuBarClickableElements(); merr == nil {
 			elements = append(elements, mbElems...)
 			a.logger.Debug("Included menubar elements", zap.Int("count", len(mbElems)))
@@ -414,7 +414,7 @@ func (a *App) activateHintMode(withActions bool) {
 	}
 
 	// Optionally include Dock elements
-	if a.config.Hints.Dock {
+	if a.config.General.IncludeDockHints {
 		if dockElems, derr := accessibility.GetDockClickableElements(); derr == nil {
 			elements = append(elements, dockElems...)
 			a.logger.Debug("Included dock elements", zap.Int("count", len(dockElems)))
