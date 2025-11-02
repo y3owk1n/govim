@@ -71,6 +71,12 @@ type HintsConfig struct {
 	Opacity          float64 `toml:"opacity"`
 	Menubar          bool    `toml:"menubar"`
 	Dock             bool    `toml:"dock"`
+	// Action overlay specific colors and opacity
+	ActionBackgroundColor  string  `toml:"action_background_color"`
+	ActionTextColor        string  `toml:"action_text_color"`
+	ActionMatchedTextColor string  `toml:"action_matched_text_color"`
+	ActionBorderColor      string  `toml:"action_border_color"`
+	ActionOpacity          float64 `toml:"action_opacity"`
 }
 
 type PerformanceConfig struct {
@@ -150,6 +156,12 @@ func DefaultConfig() *Config {
 			Opacity:          0.95,
 			Menubar:          false,
 			Dock:             false,
+			// Defaults for action overlay colors to visually differentiate
+			ActionBackgroundColor:  "#66CCFF",
+			ActionTextColor:        "#000000",
+			ActionMatchedTextColor: "#003366",
+			ActionBorderColor:      "#000000",
+			ActionOpacity:          0.95,
 		},
 		Performance: PerformanceConfig{
 			MaxHintsDisplayed:    200,
@@ -255,6 +267,9 @@ func (c *Config) Validate() error {
 	if c.Hints.Opacity < 0 || c.Hints.Opacity > 1 {
 		return fmt.Errorf("hints.opacity must be between 0 and 1")
 	}
+	if c.Hints.ActionOpacity < 0 || c.Hints.ActionOpacity > 1 {
+		return fmt.Errorf("hints.action_opacity must be between 0 and 1")
+	}
 
 	// Validate performance settings
 	if c.Performance.MaxHintsDisplayed < 1 {
@@ -286,6 +301,19 @@ func (c *Config) Validate() error {
 		return err
 	}
 	if err := validateColor(c.Hints.BorderColor, "hints.border_color"); err != nil {
+		return err
+	}
+	// Validate action overlay colors
+	if err := validateColor(c.Hints.ActionBackgroundColor, "hints.action_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.ActionTextColor, "hints.action_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.ActionMatchedTextColor, "hints.action_matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.ActionBorderColor, "hints.action_border_color"); err != nil {
 		return err
 	}
 	if err := validateColor(c.Scroll.HighlightColor, "scroll.highlight_color"); err != nil {
