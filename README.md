@@ -53,13 +53,13 @@ Add the following file to your overlay:
 }:
 buildGoModule (finalAttrs: {
   pname = "govim";
-  version = "1.0.2";
+  version = "1.1.0";
 
   src = fetchFromGitHub {
     owner = "y3owk1n";
     repo = "govim";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-0iuZsYxND490TWueNxsGNE/0k7g3xVOUNOQD/xkIFs0=";
+    hash = "sha256-UN0Y49X8fD+2gSJrnv8qGzthKPrpBv51sxA7BEUViWc=";
   };
 
   vendorHash = "sha256-x5NB18fP8ERIB5qeMAMyMnSoDEF2+g+NoJKrC+kIj+k=";
@@ -304,6 +304,7 @@ excluded_apps = [
 ```
 
 When GoVim detects that the currently focused application is in the `excluded_apps` list, it will:
+
 - Ignore hint mode activation attempts
 - Ignore scroll mode activation attempts
 - Log the exclusion for debugging purposes
@@ -502,21 +503,6 @@ To reduce hint length:
    ```
 
 **Hint capacity**: 9 chars = 81 two-char hints, 12 chars = 144 two-char hints, 15 chars = 225 two-char hints.
-
-### Chrome/Chromium Browsers
-
-To enable hints in Chrome:
-
-1. Add to your config:
-
-   ```toml
-   [accessibility.electron_support]
-   enable = true
-   additional_bundles = [
-       "com.google.Chrome",
-       "com.brave.Browser",
-   ]
-   ```
 
 ## Development
 
