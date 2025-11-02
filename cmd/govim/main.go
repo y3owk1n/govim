@@ -348,9 +348,23 @@ func (a *App) activateHintMode(withActions bool) {
 	a.currentHints = hints.NewHintCollection(hintList)
 
 	// Draw hints
-	if err := a.hintOverlay.DrawHints(hintList); err != nil {
-		a.logger.Error("Failed to draw hints", zap.Error(err))
-		return
+	// Use distinct colors when entering hint mode with actions
+	if withActions {
+		style := a.config.Hints
+		style.BackgroundColor = a.config.Hints.ActionBackgroundColor
+		style.TextColor = a.config.Hints.ActionTextColor
+		style.MatchedTextColor = a.config.Hints.ActionMatchedTextColor
+		style.BorderColor = a.config.Hints.ActionBorderColor
+		style.Opacity = a.config.Hints.ActionOpacity
+		if err := a.hintOverlay.DrawHintsWithStyle(hintList, style); err != nil {
+			a.logger.Error("Failed to draw hints", zap.Error(err))
+			return
+		}
+	} else {
+		if err := a.hintOverlay.DrawHints(hintList); err != nil {
+			a.logger.Error("Failed to draw hints", zap.Error(err))
+			return
+		}
 	}
 
 	a.hintOverlay.Show()
@@ -456,8 +470,20 @@ func (a *App) handleHintKey(key string) {
 		hint.MatchedPrefix = a.hintInput
 	}
 	a.hintOverlay.Clear()
-	if err := a.hintOverlay.DrawHints(filtered); err != nil {
-		a.logger.Error("Failed to redraw hints", zap.Error(err))
+	if a.currentMode == ModeHintWithActions {
+		style := a.config.Hints
+		style.BackgroundColor = a.config.Hints.ActionBackgroundColor
+		style.TextColor = a.config.Hints.ActionTextColor
+		style.MatchedTextColor = a.config.Hints.ActionMatchedTextColor
+		style.BorderColor = a.config.Hints.ActionBorderColor
+		style.Opacity = a.config.Hints.ActionOpacity
+		if err := a.hintOverlay.DrawHintsWithStyle(filtered, style); err != nil {
+			a.logger.Error("Failed to redraw hints", zap.Error(err))
+		}
+	} else {
+		if err := a.hintOverlay.DrawHints(filtered); err != nil {
+			a.logger.Error("Failed to redraw hints", zap.Error(err))
+		}
 	}
 
 	// If exactly one match and input matches the full label
@@ -534,6 +560,13 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 
 	// Create smaller style for action hints
 	actionStyle := a.config.Hints
+	// Apply distinct colors for action overlay from config
+	actionStyle.BackgroundColor = a.config.Hints.ActionBackgroundColor
+	actionStyle.TextColor = a.config.Hints.ActionTextColor
+	actionStyle.MatchedTextColor = a.config.Hints.ActionMatchedTextColor
+	actionStyle.BorderColor = a.config.Hints.ActionBorderColor
+	actionStyle.Opacity = a.config.Hints.ActionOpacity
+	// Use smaller sizing for action hints
 	actionStyle.FontSize = 11    // Smaller font
 	actionStyle.Padding = 3      // Less padding
 	actionStyle.BorderRadius = 3 // Smaller border radius

@@ -92,6 +92,22 @@ border_color = "#000000"
 # Opacity (0.0 to 1.0)
 opacity = 0.95
 
+# Action overlay colors (used when selecting click type)
+# Background color (hex format)
+action_background_color = "#66CCFF"
+
+# Text color (hex format)
+action_text_color = "#000000"
+
+# Matched text color (hex format)
+action_matched_text_color = "#003366"
+
+# Border color (hex format)
+action_border_color = "#000000"
+
+# Opacity (0.0 to 1.0)
+action_opacity = 0.95
+
 # Action keys for hint mode with actions (hardcoded):
 #   l = left click, r = right click, d = double click, m = middle click
 
