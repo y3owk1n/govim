@@ -150,6 +150,7 @@ func GetDockClickableElements() ([]*TreeNode, error) {
 	defer dock.Release()
 
 	opts := DefaultTreeOptions()
+	opts.IncludeOutOfBounds = true
 	opts.MaxDepth = 8
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		if info.Size.X < 6 || info.Size.Y < 6 {
