@@ -220,43 +220,14 @@ or any other location specified via the `--config` flag.
 
 ### Example Configuration
 
-```toml
-[general]
-hint_characters = "asdfghjkl"  # Characters used for hints
-
-[accessibility]
-# Clickable elements
-clickable_roles = [
-    "AXButton",
-    "AXCheckBox",
-    "AXMenuItem",
-    "AXRadioButton",
-    "AXLink"
-]
-scrollable_roles = ["AXScrollArea"]
-
-[hotkeys]
-activate_hint_mode = "Cmd+Shift+Space"
-activate_scroll_mode = "Cmd+Shift+J"
-
-[hints]
-font_size = 14
-background_color = "#FFD700"
-text_color = "#000000"
-opacity = 0.9
-
-[scroll]
-scroll_speed = 50
-```
-
 See [`configs/default-config.toml`](configs/default-config.toml) for all available options.
 
 ### Include hints on the macOS menu bar and Dock
 
 ```toml
-[hints]
-menubar = true
-dock = true
+[general]
+include_menubar_hints = true
+include_dock_hints = true # includes mission control
 ```
 
 ### Per-App Role Configuration
@@ -276,6 +247,8 @@ osascript -e 'id of app "AppName"'
 For example, in `Mail.app`, lots of element are `AXStaticText` and they should be clickable. In this case, we don't want to add to the global one, as it will causes lots of unclickable hints, especially in browser space.
 
 ```toml
+[accessibility]
+
 [[accessibility.app_configs]]
 bundle_id = "com.apple.mail"
 additional_clickable_roles = ["AXStaticText"]
@@ -498,7 +471,7 @@ To reduce hint length:
 2. **Add more hint characters** for more 2-char combinations:
 
    ```toml
-   [general]
+   [hints]
    hint_characters = "asdfghjklqwertyuiop"  # 19 chars = 361 two-char combos
    ```
 

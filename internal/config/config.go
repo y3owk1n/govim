@@ -22,16 +22,17 @@ type Config struct {
 }
 
 type GeneralConfig struct {
-	HintCharacters            string   `toml:"hint_characters"`
-	AccessibilityCheckOnStart bool     `toml:"accessibility_check_on_start"`
-	ExcludedApps              []string `toml:"excluded_apps"`
+	ExcludedApps        []string `toml:"excluded_apps"`
+	IncludeMenubarHints bool     `toml:"include_menubar_hints"`
+	IncludeDockHints    bool     `toml:"include_dock_hints"`
 }
 
 type AccessibilityConfig struct {
-	ClickableRoles  []string              `toml:"clickable_roles"`
-	ScrollableRoles []string              `toml:"scrollable_roles"`
-	ElectronSupport ElectronSupportConfig `toml:"electron_support"`
-	AppConfigs      []AppConfig           `toml:"app_configs"`
+	AccessibilityCheckOnStart bool                  `toml:"accessibility_check_on_start"`
+	ClickableRoles            []string              `toml:"clickable_roles"`
+	ScrollableRoles           []string              `toml:"scrollable_roles"`
+	ElectronSupport           ElectronSupportConfig `toml:"electron_support"`
+	AppConfigs                []AppConfig           `toml:"app_configs"`
 }
 
 type AppConfig struct {
@@ -59,6 +60,7 @@ type ScrollConfig struct {
 }
 
 type HintsConfig struct {
+	HintCharacters   string  `toml:"hint_characters"`
 	FontSize         int     `toml:"font_size"`
 	FontFamily       string  `toml:"font_family"`
 	BackgroundColor  string  `toml:"background_color"`
@@ -69,8 +71,6 @@ type HintsConfig struct {
 	BorderWidth      int     `toml:"border_width"`
 	BorderColor      string  `toml:"border_color"`
 	Opacity          float64 `toml:"opacity"`
-	Menubar          bool    `toml:"menubar"`
-	Dock             bool    `toml:"dock"`
 	// Action overlay specific colors and opacity
 	ActionBackgroundColor  string  `toml:"action_background_color"`
 	ActionTextColor        string  `toml:"action_text_color"`
@@ -101,11 +101,12 @@ type ElectronSupportConfig struct {
 func DefaultConfig() *Config {
 	return &Config{
 		General: GeneralConfig{
-			HintCharacters:            "asdfghjkl",
-			AccessibilityCheckOnStart: true,
-			ExcludedApps:              []string{},
+			ExcludedApps:        []string{},
+			IncludeMenubarHints: false,
+			IncludeDockHints:    false,
 		},
 		Accessibility: AccessibilityConfig{
+			AccessibilityCheckOnStart: true,
 			ClickableRoles: []string{
 				"AXButton",
 				"AXCheckBox",
@@ -144,6 +145,7 @@ func DefaultConfig() *Config {
 			ScrollToEdgeDelta:      5000,
 		},
 		Hints: HintsConfig{
+			HintCharacters:   "asdfghjkl",
 			FontSize:         14,
 			FontFamily:       "SF Mono",
 			BackgroundColor:  "#FFD700",
@@ -154,8 +156,6 @@ func DefaultConfig() *Config {
 			BorderWidth:      1,
 			BorderColor:      "#000000",
 			Opacity:          0.95,
-			Menubar:          false,
-			Dock:             false,
 			// Defaults for action overlay colors to visually differentiate
 			ActionBackgroundColor:  "#66CCFF",
 			ActionTextColor:        "#000000",
@@ -240,10 +240,10 @@ func GetConfigPath() string {
 // Validate validates the configuration
 func (c *Config) Validate() error {
 	// Validate hint characters
-	if strings.TrimSpace(c.General.HintCharacters) == "" {
+	if strings.TrimSpace(c.Hints.HintCharacters) == "" {
 		return fmt.Errorf("hint_characters cannot be empty")
 	}
-	if len(c.General.HintCharacters) < 2 {
+	if len(c.Hints.HintCharacters) < 2 {
 		return fmt.Errorf("hint_characters must contain at least 2 characters")
 	}
 

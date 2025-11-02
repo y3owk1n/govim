@@ -10,13 +10,6 @@
 # - Hotkeys: `Modifier+...+Key` with modifiers `Cmd`, `Ctrl`, `Alt`, `Shift`, `Option`.
 #   Examples: `Cmd+Shift+Space`, `Ctrl+D`. Set to "" to disable.
 [general]
-# Characters used to build hint labels for alphabet style.
-# - At least 2 characters; choose distinct, easy-to-type ones.
-hint_characters = "asdfghjkl"
-
-# Check Accessibility permission on startup; exits with guidance if missing.
-accessibility_check_on_start = true
-
 # Applications to exclude from GoVim functionality
 # GoVim will do nothing when these applications are focused and pass through everything back to the os
 # Use bundle IDs to identify applications. To find an app's bundle ID:
@@ -30,7 +23,17 @@ accessibility_check_on_start = true
 # ]
 excluded_apps = []
 
+# Include additional targets in hint mode
+# Show hints on the macOS menu bar
+include_menubar_hints = true
+# Show hints on the Dock (includes mission control)
+include_dock_hints = true
+# Tip: enable both to interact with menu bar and Dock via hints.
+
 [accessibility]
+# Check Accessibility permission on startup; exits with guidance if missing.
+accessibility_check_on_start = true
+
 # Global accessibility roles that are treated as clickable
 # These roles will be used for ALL applications
 # Users can add or remove roles as needed
@@ -96,6 +99,10 @@ activate_scroll_mode = "Cmd+Shift+J"
 # - Set any hotkey to "" to disable that action.
 
 [hints]
+# Characters used to build hint labels for alphabet style.
+# - At least 2 characters; choose distinct, easy-to-type ones.
+hint_characters = "asdfghjkl"
+
 # Font size for hint labels
 # Valid range: 6–72
 font_size = 12
@@ -149,13 +156,6 @@ action_opacity = 0.95
 
 # Action keys for hint mode with actions (hardcoded):
 #   l = left click, r = right click, d = double click, m = middle click
-
-# Include additional targets in hint mode
-# Show hints on the macOS menu bar
-menubar = false
-# Show hints on the Dock
-dock = false
-# Tip: enable both to interact with menu bar and Dock via hints.
 
 [scroll]
 # Base scroll amount for j/k keys in pixels
