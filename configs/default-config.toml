@@ -25,9 +25,9 @@ excluded_apps = []
 
 # Include additional targets in hint mode
 # Show hints on the macOS menu bar
-include_menubar_hints = true
+include_menubar_hints = false
 # Show hints on the Dock (includes mission control)
-include_dock_hints = true
+include_dock_hints = false
 # Tip: enable both to interact with menu bar and Dock via hints.
 
 [accessibility]
