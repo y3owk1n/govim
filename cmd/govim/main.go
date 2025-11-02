@@ -287,6 +287,18 @@ func (a *App) activateHintMode(withActions bool) {
 		return
 	}
 
+	// Check if current app is excluded
+	focusedApp := accessibility.GetFocusedApplication()
+	if focusedApp != nil {
+		defer focusedApp.Release()
+		bundleID := focusedApp.GetBundleIdentifier()
+		if a.config.IsAppExcluded(bundleID) {
+			a.logger.Debug("Current app is excluded, ignoring hint mode activation",
+				zap.String("bundle_id", bundleID))
+			return
+		}
+	}
+
 	a.logger.Info("Activating hint mode")
 	a.exitMode() // Exit current mode first
 
@@ -782,6 +794,18 @@ func (a *App) activateScrollMode() {
 	if a.currentMode == ModeScroll {
 		a.logger.Debug("Scroll mode already active")
 		return
+	}
+
+	// Check if current app is excluded
+	focusedApp := accessibility.GetFocusedApplication()
+	if focusedApp != nil {
+		defer focusedApp.Release()
+		bundleID := focusedApp.GetBundleIdentifier()
+		if a.config.IsAppExcluded(bundleID) {
+			a.logger.Debug("Current app is excluded, ignoring scroll mode activation",
+				zap.String("bundle_id", bundleID))
+			return
+		}
 	}
 
 	a.logger.Info("Activating scroll mode")
