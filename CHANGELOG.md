@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.0](https://github.com/y3owk1n/govim/compare/v1.0.3...v1.1.0) (2025-11-02)
+
+
+### Features
+
+* add app exclusions ([#25](https://github.com/y3owk1n/govim/issues/25)) ([03a1c9d](https://github.com/y3owk1n/govim/commit/03a1c9de70086a220b28cdf8fd3eda8324dc898c))
+
+
+### Bug Fixes
+
+* auto deregister hotkeys when focused app is excluded ([#26](https://github.com/y3owk1n/govim/issues/26)) ([b5811ef](https://github.com/y3owk1n/govim/commit/b5811ef03354f9e6a1eddf87f29f842700f56113))
+* ensure we can activate other modes when in a mode ([#21](https://github.com/y3owk1n/govim/issues/21)) ([5f8e29e](https://github.com/y3owk1n/govim/commit/5f8e29eef9eb63be18891f7434e84a707380102d))
+* make action hints style configurable to be visually difference ([#22](https://github.com/y3owk1n/govim/issues/22)) ([8510d03](https://github.com/y3owk1n/govim/commit/8510d030828bd8e2fc7bd6377f8b7717339043f6))
+* remove clickable role injection ([#19](https://github.com/y3owk1n/govim/issues/19)) ([707eb8d](https://github.com/y3owk1n/govim/commit/707eb8d184249554b3e02a5c006f51fb70bd57e3))
+* remove numeric hint, feels useless ([#24](https://github.com/y3owk1n/govim/issues/24)) ([8db6945](https://github.com/y3owk1n/govim/commit/8db694565e762a8a6b29e17e921f989732255bda))
+
 ## [1.0.3](https://github.com/y3owk1n/govim/compare/v1.0.2...v1.0.3) (2025-11-01)
 
 
