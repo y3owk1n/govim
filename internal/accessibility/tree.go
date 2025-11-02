@@ -43,15 +43,10 @@ func BuildTree(root *Element, opts TreeOptions) (*TreeNode, error) {
 	}
 
 	// Calculate window bounds for spatial filtering
-	windowBounds := image.Rect(
-		info.Position.X,
-		info.Position.Y,
-		info.Position.X+info.Size.X,
-		info.Position.Y+info.Size.Y,
-	)
+	windowBounds := rectFromInfo(info)
 
 	// Add padding to catch elements slightly outside
-	windowBounds = expandRectangle(windowBounds, 50)
+	windowBounds = expandRectangle(windowBounds, 0)
 
 	node := &TreeNode{
 		Element: root,
@@ -109,12 +104,7 @@ func buildTreeRecursive(parent *TreeNode, depth int, opts TreeOptions, windowBou
 		// Skip elements that are completely outside the window bounds
 		// UNLESS IncludeOutOfBounds is true
 		if !opts.IncludeOutOfBounds {
-			elementRect := image.Rect(
-				info.Position.X,
-				info.Position.Y,
-				info.Position.X+info.Size.X,
-				info.Position.Y+info.Size.Y,
-			)
+			elementRect := rectFromInfo(info)
 			if !elementRect.Overlaps(windowBounds) {
 				continue
 			}
