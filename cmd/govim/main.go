@@ -52,6 +52,8 @@ type App struct {
 	lastScrollKey    string
 	selectedHint     *hints.Hint
 	enabled          bool
+	// Track whether global hotkeys are currently registered
+	hotkeysRegistered bool
 }
 
 // NewApp creates a new application instance
@@ -105,15 +107,16 @@ func NewApp(cfg *config.Config) (*App, error) {
 	scrollCtrl := scroll.NewController(cfg.Scroll, log)
 
 	app := &App{
-		config:           cfg,
-		logger:           log,
-		hotkeyManager:    hotkeyMgr,
-		hintGenerator:    hintGen,
-		hintOverlay:      hintOverlay,
-		scrollController: scrollCtrl,
-		currentMode:      ModeIdle,
-		enabled:          true,
-		hintInput:        "",
+		config:            cfg,
+		logger:            log,
+		hotkeyManager:     hotkeyMgr,
+		hintGenerator:     hintGen,
+		hintOverlay:       hintOverlay,
+		scrollController:  scrollCtrl,
+		currentMode:       ModeIdle,
+		enabled:           true,
+		hintInput:         "",
+		hotkeysRegistered: false,
 	}
 
 	// Create event tap for capturing keys in modes
@@ -149,10 +152,8 @@ func (a *App) Run() error {
 	a.ipcServer.Start()
 	a.logger.Info("IPC server started")
 
-	// Register hotkeys
-	if err := a.registerHotkeys(); err != nil {
-		return fmt.Errorf("failed to register hotkeys: %w", err)
-	}
+	// Initialize hotkeys based on current focused app and exclusion
+	a.refreshHotkeysForCurrentApp()
 
 	a.logger.Info("GoVim is running")
 	fmt.Println("✓ GoVim is running")
@@ -167,6 +168,9 @@ func (a *App) Run() error {
 	if key := strings.TrimSpace(a.config.Hotkeys.ActivateScrollMode); key != "" {
 		fmt.Printf("  Scroll mode: %s\n", key)
 	}
+
+	// Start a background watcher to update hotkey registration when focus or enabled state changes
+	go a.watchFocusedAppForHotkeys()
 
 	// Wait for interrupt signal with force-quit support
 	sigChan := make(chan os.Signal, 1)
@@ -239,6 +243,66 @@ func (a *App) registerHotkeys() error {
 	return nil
 }
 
+// refreshHotkeysForCurrentApp registers or unregisters global hotkeys based on
+// whether GoVim is enabled and whether the currently focused app is excluded.
+func (a *App) refreshHotkeysForCurrentApp() {
+	// If disabled, ensure no hotkeys are registered
+	if !a.enabled {
+		if a.hotkeysRegistered {
+			a.logger.Debug("GoVim disabled; unregistering hotkeys")
+			a.hotkeyManager.UnregisterAll()
+			a.hotkeysRegistered = false
+		}
+		return
+	}
+
+	bundleID := a.getFocusedBundleID()
+
+	// If app is excluded, unregister; otherwise ensure registered
+	if a.config.IsAppExcluded(bundleID) {
+		if a.hotkeysRegistered {
+			a.logger.Info("Focused app excluded; unregistering global hotkeys",
+				zap.String("bundle_id", bundleID))
+			a.hotkeyManager.UnregisterAll()
+			a.hotkeysRegistered = false
+		}
+		return
+	}
+
+	if !a.hotkeysRegistered {
+		if err := a.registerHotkeys(); err != nil {
+			a.logger.Error("Failed to register hotkeys", zap.Error(err))
+			return
+		}
+		a.hotkeysRegistered = true
+	}
+}
+
+// watchFocusedAppForHotkeys periodically checks the focused application and
+// updates global hotkey registration so excluded apps receive the keybindings.
+func (a *App) watchFocusedAppForHotkeys() {
+	var lastBundleID string
+	lastEnabled := a.enabled
+	for {
+		// Check current focused bundle
+		focused := accessibility.GetFocusedApplication()
+		var bundleID string
+		if focused != nil {
+			bundleID = focused.GetBundleIdentifier()
+			focused.Release()
+		}
+
+		// If focus or enabled state changed, refresh hotkeys
+		if bundleID != lastBundleID || lastEnabled != a.enabled {
+			a.refreshHotkeysForCurrentApp()
+			lastBundleID = bundleID
+			lastEnabled = a.enabled
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
 // updateRolesForCurrentApp updates clickable and scrollable roles based on the current focused app
 func (a *App) updateRolesForCurrentApp() {
 	// Get the focused application
@@ -276,6 +340,29 @@ func (a *App) updateRolesForCurrentApp() {
 	accessibility.SetScrollableRoles(scrollableRoles)
 }
 
+// getFocusedBundleID returns the bundle identifier of the currently focused
+// application, or an empty string if it cannot be determined.
+func (a *App) getFocusedBundleID() string {
+	app := accessibility.GetFocusedApplication()
+	if app == nil {
+		return ""
+	}
+	defer app.Release()
+	return app.GetBundleIdentifier()
+}
+
+// isFocusedAppExcluded returns true if the currently focused application's bundle
+// ID is in the excluded apps list. Logs context for debugging.
+func (a *App) isFocusedAppExcluded() bool {
+	bundleID := a.getFocusedBundleID()
+	if bundleID != "" && a.config.IsAppExcluded(bundleID) {
+		a.logger.Debug("Current app is excluded; ignoring mode activation",
+			zap.String("bundle_id", bundleID))
+		return true
+	}
+	return false
+}
+
 // activateHintMode activates hint mode
 func (a *App) activateHintMode(withActions bool) {
 	if !a.enabled {
@@ -287,16 +374,9 @@ func (a *App) activateHintMode(withActions bool) {
 		return
 	}
 
-	// Check if current app is excluded
-	focusedApp := accessibility.GetFocusedApplication()
-	if focusedApp != nil {
-		defer focusedApp.Release()
-		bundleID := focusedApp.GetBundleIdentifier()
-		if a.config.IsAppExcluded(bundleID) {
-			a.logger.Debug("Current app is excluded, ignoring hint mode activation",
-				zap.String("bundle_id", bundleID))
-			return
-		}
+	// Centralized exclusion guard
+	if a.isFocusedAppExcluded() {
+		return
 	}
 
 	a.logger.Info("Activating hint mode")
@@ -796,16 +876,9 @@ func (a *App) activateScrollMode() {
 		return
 	}
 
-	// Check if current app is excluded
-	focusedApp := accessibility.GetFocusedApplication()
-	if focusedApp != nil {
-		defer focusedApp.Release()
-		bundleID := focusedApp.GetBundleIdentifier()
-		if a.config.IsAppExcluded(bundleID) {
-			a.logger.Debug("Current app is excluded, ignoring scroll mode activation",
-				zap.String("bundle_id", bundleID))
-			return
-		}
+	// Centralized exclusion guard
+	if a.isFocusedAppExcluded() {
+		return
 	}
 
 	a.logger.Info("Activating scroll mode")

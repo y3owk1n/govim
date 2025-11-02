@@ -18,7 +18,7 @@ hint_characters = "asdfghjkl"
 accessibility_check_on_start = true
 
 # Applications to exclude from GoVim functionality
-# GoVim will do nothing when these applications are focused
+# GoVim will do nothing when these applications are focused and pass through everything back to the os
 # Use bundle IDs to identify applications. To find an app's bundle ID:
 # osascript -e 'id of app "AppName"'
 # Examples:
