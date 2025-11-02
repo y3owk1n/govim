@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.1](https://github.com/y3owk1n/govim/compare/v1.1.0...v1.1.1) (2025-11-02)
+
+
+### Bug Fixes
+
+* ensure dock getting hints and does not crash the program ([#28](https://github.com/y3owk1n/govim/issues/28)) ([b572f58](https://github.com/y3owk1n/govim/commit/b572f58d04a11b47b686da58f99113e5b5c5ea51))
+* improve large list traversal with progressive checks ([#30](https://github.com/y3owk1n/govim/issues/30)) ([5c3a0e3](https://github.com/y3owk1n/govim/commit/5c3a0e3aff9a02e5f7d78a7bf3bcc6f5006de7a7))
+* move around config keys to places that make more sense ([#31](https://github.com/y3owk1n/govim/issues/31)) ([a929ec6](https://github.com/y3owk1n/govim/commit/a929ec6a52b0d6cee2762a536c5b6486104a8b49))
+* standardize rect query and do not consider padding for bounds ([#32](https://github.com/y3owk1n/govim/issues/32)) ([fff37f5](https://github.com/y3owk1n/govim/commit/fff37f512e499d122f0df9c6f405325187f5afb6))
+
 ## [1.1.0](https://github.com/y3owk1n/govim/compare/v1.0.3...v1.1.0) (2025-11-02)
 
 
