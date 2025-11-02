@@ -49,24 +49,17 @@ func GetClickableElements() ([]*TreeNode, error) {
 	}
 	defer window.Release()
 
-	windowInfo, err := window.GetInfo()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get window info: %w", err)
-	}
-
 	opts := DefaultTreeOptions()
 	// Increase depth for Electron/web apps which have deeply nested content
 	opts.MaxDepth = 25
-	visibleBounds := expandRectangle(rectFromInfo(windowInfo), 200)
+	// visibleBounds := expandRectangle(rectFromInfo(windowInfo), 0)
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		// Filter out very small elements
 		if info.Size.X < 10 || info.Size.Y < 10 {
 			return false
 		}
 
-		// Skip elements that are completely outside the visible bounds (with padding)
-		elementRect := rectFromInfo(info)
-		return elementRect.Overlaps(visibleBounds)
+		return true
 	}
 
 	tree, err := BuildTree(window, opts)
