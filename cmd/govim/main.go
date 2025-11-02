@@ -122,6 +122,12 @@ func NewApp(cfg *config.Config) (*App, error) {
 	if app.eventTap == nil {
 		log.Warn("Event tap creation failed - key capture won't work")
 	} else {
+		// Configure hotkeys that should pass through to the global hotkey system
+		app.eventTap.SetHotkeys(
+			cfg.Hotkeys.ActivateHintMode,
+			cfg.Hotkeys.ActivateHintModeWithActions,
+			cfg.Hotkeys.ActivateScrollMode,
+		)
 		// Ensure event tap is disabled initially (only enable in active modes)
 		app.eventTap.Disable()
 	}

@@ -50,8 +50,33 @@ func NewEventTap(callback Callback, logger *zap.Logger) *EventTap {
 func (et *EventTap) Enable() {
 	if et.handle != nil {
 		C.enableEventTap(et.handle)
-		et.logger.Debug("Event tap enabled")
 	}
+}
+
+// SetHotkeys configures which hotkey combinations should pass through to the system
+func (et *EventTap) SetHotkeys(hintModeHotkey, hintModeWithActionsHotkey, scrollModeHotkey string) {
+	if et.handle == nil {
+		return
+	}
+
+	var hintModeCStr, hintModeWithActionsCStr, scrollModeCStr *C.char
+
+	if hintModeHotkey != "" {
+		hintModeCStr = C.CString(hintModeHotkey)
+		defer C.free(unsafe.Pointer(hintModeCStr))
+	}
+
+	if hintModeWithActionsHotkey != "" {
+		hintModeWithActionsCStr = C.CString(hintModeWithActionsHotkey)
+		defer C.free(unsafe.Pointer(hintModeWithActionsCStr))
+	}
+
+	if scrollModeHotkey != "" {
+		scrollModeCStr = C.CString(scrollModeHotkey)
+		defer C.free(unsafe.Pointer(scrollModeCStr))
+	}
+
+	C.setEventTapHotkeys(et.handle, hintModeCStr, hintModeWithActionsCStr, scrollModeCStr)
 }
 
 // Disable disables the event tap
