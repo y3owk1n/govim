@@ -603,7 +603,7 @@ void* getFrontmostWindow() {
     // Try to get the focused application first
     AXUIElementRef focusedApp = (AXUIElementRef)getFocusedApplication();
     AXUIElementRef appRef = focusedApp;
-    bool createdAppRef = false;
+    bool shouldReleaseAppRef = false;
 
     if (!appRef) {
         // If focused application couldn't be obtained via AX, fall back to NSWorkspace
@@ -612,25 +612,27 @@ void* getFrontmostWindow() {
         pid_t pid = front.processIdentifier;
         appRef = AXUIElementCreateApplication(pid);
         if (!appRef) return NULL;
-        createdAppRef = true;
+        shouldReleaseAppRef = true;
     }
 
     AXUIElementRef window = NULL;
     AXError error = AXUIElementCopyAttributeValue(appRef, kAXFocusedWindowAttribute, (CFTypeRef*)&window);
 
-    // Release the app reference we obtained from getFocusedApplication() or created above
-    if (appRef) CFRelease(appRef);
+    if (shouldReleaseAppRef && appRef) {
+        CFRelease(appRef);
+    }
 
     if (error == kAXErrorSuccess && window) {
+        if (focusedApp) {
+            CFRelease(focusedApp);
+        }
         return (void*)window;
     }
 
     // As a further fallback, try to get the application's windows list and return the main/first window
     if (focusedApp) {
-        // focusedApp was already released above; get its PID via AXUIElementGetPid if possible
-        // (we need to recreate appRef from PID)
         pid_t pid;
-        if (AXUIElementGetPid((AXUIElementRef)focusedApp, &pid) == kAXErrorSuccess) {
+        if (AXUIElementGetPid(focusedApp, &pid) == kAXErrorSuccess) {
             AXUIElementRef appFromPid = AXUIElementCreateApplication(pid);
             if (appFromPid) {
                 CFTypeRef windowsValue = NULL;
@@ -641,6 +643,7 @@ void* getFrontmostWindow() {
                         CFRetain(firstWindow);
                         CFRelease(windowsValue);
                         CFRelease(appFromPid);
+                        CFRelease(focusedApp);
                         return (void*)firstWindow;
                     }
                 }
@@ -648,6 +651,7 @@ void* getFrontmostWindow() {
                 CFRelease(appFromPid);
             }
         }
+        CFRelease(focusedApp);
     }
 
     return NULL;

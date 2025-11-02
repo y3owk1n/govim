@@ -23,6 +23,24 @@ func expandRectangle(rect image.Rectangle, padding int) image.Rectangle {
 	)
 }
 
+// NOTE: This is a debugging function that prints the entire accessibility tree structure.
+// Print the entire tree structure for debugging
+func PrintTree(node *TreeNode, depth int) {
+	if node == nil || node.Info == nil {
+		return
+	}
+	indent := ""
+	for i := 0; i < depth; i++ {
+		indent += "  "
+	}
+	fmt.Printf("%sRole: %s, Title: %s, Size: %dx%d\n",
+		indent, node.Info.Role, node.Info.Title, node.Info.Size.X, node.Info.Size.Y)
+
+	for _, child := range node.Children {
+		PrintTree(child, depth+1)
+	}
+}
+
 // GetClickableElements returns all clickable elements in the frontmost window
 func GetClickableElements() ([]*TreeNode, error) {
 	window := GetFrontmostWindow()
@@ -133,7 +151,6 @@ func GetDockClickableElements() ([]*TreeNode, error) {
 
 	opts := DefaultTreeOptions()
 	opts.MaxDepth = 8
-	// Filter out tiny elements
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		if info.Size.X < 6 || info.Size.Y < 6 {
 			return false

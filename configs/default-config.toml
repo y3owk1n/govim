@@ -42,7 +42,6 @@ clickable_roles = [
     "AXMenuItem",
     "AXMenuBarItem",
     "AXDockItem",
-    "AXApplicationDockItem",
     "AXLink",
     "AXTextField",
     "AXTextArea",

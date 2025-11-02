@@ -358,16 +358,28 @@ func (e *Element) IsClickable() bool {
 		return false
 	}
 
-	if !info.IsEnabled {
-		return false
-	}
-
-	// First check if the role is in the clickable roles list
+	// Check if the role is in the clickable roles list
 	clickableRolesMu.RLock()
 	_, ok := clickableRoles[info.Role]
 	clickableRolesMu.RUnlock()
 
-	return ok
+	if !ok {
+		return false
+	}
+
+	// Some elements (like Dock items, menu bar items) may not report as "enabled"
+	// but are still clickable
+	exemptRoles := map[string]bool{
+		"AXDockItem":    true,
+		"AXMenuBarItem": true,
+	}
+
+	if exemptRoles[info.Role] {
+		return true
+	}
+
+	// For other roles, check if enabled
+	return info.IsEnabled
 }
 
 // GetAllWindows returns all windows of the focused application
