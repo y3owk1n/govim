@@ -1,12 +1,28 @@
-# GoVim Configuration
-# Copy to:
+# GoVim Configuration — Mini Docs
+#
+# Copy locations:
 #   - macOS: ~/Library/Application Support/govim/config.toml
-#   - XDG: ~/.config/govim/config.toml
-#   - Custom location: specify with --config flag
+#   - XDG:   ~/.config/govim/config.toml
+# Or pass a custom path via the CLI: `govim launch --config /path/to/config.toml`
+#
+# Conventions
+# - Colors: `#RGB`, `#RRGGBB`, or `#RRGGBBAA`.
+# - Hotkeys: `Modifier+...+Key` with modifiers `Cmd`, `Ctrl`, `Alt`, `Shift`, `Option`.
+#   Examples: `Cmd+Shift+Space`, `Ctrl+D`. Set to "" to disable.
+# - When `hint_style = "numeric"`, `hint_characters` are ignored.
 
 [general]
+# Characters used to build hint labels for alphabet style.
+# - At least 2 characters; choose distinct, easy-to-type ones.
 hint_characters = "asdfghjkl"
+
+# Hint label style: "alphabet" or "numeric".
+# - "alphabet": uses `hint_characters` to build AA/AS/...
+# - "numeric": labels are numbers 1..N; ignores `hint_characters`.
 hint_style = "alphabet"
+
+# Check Accessibility permission on startup; exits with guidance if missing.
+accessibility_check_on_start = true
 
 [accessibility]
 # Global accessibility roles that are treated as clickable
@@ -42,9 +58,17 @@ scrollable_roles = [
 # [[accessibility.app_configs]]
 # bundle_id = "com.apple.mail"
 # additional_clickable_roles = ["AXStaticText"]
+# # You can also add scrollable roles scoped to the app:
+# # additional_scrollable_roles = ["AXScrollArea"]
 
 [accessibility.electron_support]
+## Electron & Chromium support
+# Enables manual accessibility toggles for Electron-like apps.
+# Built-in: VS Code, Windsurf, Slack, Cursor, Spotify, Obsidian, Firefox.
 enable = true
+
+# Extra bundle IDs requiring Electron-style accessibility.
+# Examples: ["com.example.app"]
 additional_bundles = []
 
 [hotkeys]
@@ -61,8 +85,14 @@ activate_scroll_mode = "Cmd+Shift+J"
 
 # Note: Escape key is hardcoded to exit any active mode
 
+# Hotkey format notes:
+# - Use `Cmd`, `Ctrl`, `Alt`, `Shift`, or `Option` as modifiers.
+# - Keys can be letters, function keys, or names like `Space`.
+# - Set any hotkey to "" to disable that action.
+
 [hints]
 # Font size for hint labels
+# Valid range: 6–72
 font_size = 12
 
 # Font family (leave empty for system default)
@@ -78,18 +108,22 @@ text_color = "#000000"
 matched_text_color = "#0066CC"
 
 # Border radius (pixels)
+# Non-negative integer
 border_radius = 4
 
 # Padding (pixels)
+# Non-negative integer
 padding = 4
 
 # Border width (pixels)
+# Non-negative integer
 border_width = 1
 
 # Border color (hex format)
 border_color = "#000000"
 
 # Opacity (0.0 to 1.0)
+# Controls hint translucency; 1.0 is fully opaque
 opacity = 0.95
 
 # Action overlay colors (used when selecting click type)
@@ -116,12 +150,15 @@ action_opacity = 0.95
 menubar = false
 # Show hints on the Dock
 dock = false
+# Tip: enable both to interact with menu bar and Dock via hints.
 
 [scroll]
 # Base scroll amount for j/k keys in pixels
+# Minimum: 1. Increase for faster per-press scrolling.
 scroll_speed = 50
 
 # Highlight the active scroll area with a border
+# When true, draws a border around the detected scroll container.
 highlight_scroll_area = true
 
 # Highlight border color (hex format)
@@ -131,39 +168,52 @@ highlight_color = "#FF0000"
 highlight_width = 2
 
 # Estimated page height in pixels (used for calculating Ctrl+D/U scroll distance)
+# Increase if your app windows are taller; decrease for short panes.
 page_height = 1200
 
 # Half-page scroll multiplier for Ctrl+D/U (0.5 = 600px with default page_height)
+# Valid range: (0, 1]
 half_page_multiplier = 0.5
 
 # Full-page scroll multiplier (not currently used)
+# Valid range: (0, 1]
 full_page_multiplier = 0.9
 
 # Number of scroll events to send for gg/G commands
+# Higher values create longer smooth scrolls to edges.
 scroll_to_edge_iterations = 20
 
 # Pixels to scroll per iteration for gg/G (total = iterations * delta)
+# Increase for faster edge scrolling; tune with iterations above.
 scroll_to_edge_delta = 5000
 
 [performance]
 # Maximum number of hints to display
+# Minimum: 1. Higher values increase CPU and memory usage.
 max_hints_displayed = 500
 
 # Debounce time for UI updates (milliseconds)
+# Lower feels snappier; higher reduces CPU during rapid changes.
 debounce_ms = 50
 
 # Cache duration for UI element tree (milliseconds)
+# Trade-off between freshness and performance.
 cache_duration_ms = 100
 
 # Maximum concurrent element queries
+# Minimum: 1. Controls parallelism when scanning accessibility elements.
 max_concurrent_queries = 10
 
 [logging]
 # Log level: "debug", "info", "warn", "error"
+# Use "debug" for troubleshooting; default is "info".
 log_level = "info"
 
 # Log file location (empty for default: ~/Library/Logs/govim/app.log)
+# Set a custom path to redirect logs elsewhere; directories are created as needed.
 log_file = ""
 
 # Enable structured logging
 structured_logging = true
+# When true, file logs use a structured (JSON) encoder; console remains readable.
+# When false, console uses a development-friendly formatter.
