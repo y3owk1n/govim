@@ -593,7 +593,7 @@ func (a *App) handleHintKey(key string) {
 		} else {
 			// Direct click mode - click immediately
 			a.logger.Info("Clicking element", zap.String("label", a.hintInput))
-			if err := hint.Element.Element.Click(); err != nil {
+			if err := hint.Element.Element.LeftClick(); err != nil {
 				a.logger.Error("Failed to click element", zap.Error(err))
 			}
 			a.exitMode()
@@ -714,7 +714,7 @@ func (a *App) handleActionKey(key string) {
 	switch key {
 	case "l": // Left click
 		a.logger.Info("Performing left click", zap.String("label", hint.Label))
-		err = hint.Element.Element.Click()
+		err = hint.Element.Element.LeftClick()
 	case "r": // Right click
 		a.logger.Info("Performing right click", zap.String("label", hint.Label))
 		err = hint.Element.Element.RightClick()

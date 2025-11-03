@@ -267,23 +267,18 @@ func (e *Element) GetChildrenCount() int {
 	return int(C.getChildrenCount(e.ref))
 }
 
-// Click performs a click action on the element
-func (e *Element) Click() error {
+// LeftClick performs a click action on the element
+func (e *Element) LeftClick() error {
 	if e.ref == nil {
 		return fmt.Errorf("element is nil")
 	}
 
-	result := C.performClick(e.ref)
+	result := C.performLeftClick(e.ref)
 	if result == 1 {
 		return nil
 	}
 
-	// Fallback to a real mouse click at the element's center
-	if C.clickElementWithMouse(e.ref) == 1 {
-		return nil
-	}
-
-	return fmt.Errorf("click action failed")
+	return fmt.Errorf("left-click action failed")
 }
 
 // RightClick performs a right-click action on the element

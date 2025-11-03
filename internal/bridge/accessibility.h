@@ -18,23 +18,35 @@ typedef struct {
 
 // Function declarations
 int checkAccessibilityPermissions();
+
 void* getSystemWideElement();
 void* getFocusedApplication();
 void* getApplicationByPID(int pid);
 void* getApplicationByBundleId(const char* bundle_id);
 void* getMenuBar(void* app);
+
 ElementInfo* getElementInfo(void* element);
 void freeElementInfo(ElementInfo* info);
+
 void* getElementAtPosition(CGPoint position);
+
 int getChildrenCount(void* element);
 void** getChildren(void* element, int* count);
 void** getVisibleChildren(void* element, int* count, int checkOcclusion);
-int performClick(void* element);
+
+int getElementCenter(void* element, CGPoint* outPoint);
+
+void moveMouse(CGPoint position);
+
+// Click functions - perform click actions on accessibility elements and restore cursor position
+int performLeftClick(void* element);
 int performRightClick(void* element);
 int performDoubleClick(void* element);
 int performMiddleClick(void* element);
+
 int hasClickAction(void* element);
 int setFocus(void* element);
+
 char* getElementAttribute(void* element, const char* attribute);
 void freeString(char* str);
 void releaseElement(void* element);
@@ -50,8 +62,5 @@ int setApplicationAttribute(int pid, const char* attribute, int value);
 int isScrollable(void* element);
 CGRect getScrollBounds(void* element);
 int scrollElement(void* element, int deltaX, int deltaY);
-
-// Mouse click fallback
-int clickElementWithMouse(void* element);
 
 #endif // ACCESSIBILITY_H
