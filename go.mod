@@ -1,6 +1,6 @@
 module github.com/y3owk1n/govim
 
-go 1.21
+go 1.25.2
 
 require (
 	github.com/BurntSushi/toml v1.3.2
