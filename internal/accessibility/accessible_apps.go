@@ -3,10 +3,20 @@ package accessibility
 import "strings"
 
 var KnownElectronBundles = []string{
-	"org.mozilla.firefox", // NOTE: why is this here? It's not an electron app, but the same logic to enable `AXEnhancedUserInterface`. Put it here first until we have a better manager for this.
+	// browsers
+	// NOTE: why is this here? It's not an electron app, but the same logic to enable `AXEnhancedUserInterface`. Put it here first until we have a better manager for this.
+	// Chromium-based browsers
+	"net.imput.helium",
+	"com.google.Chrome",
+	"com.brave.Browser",
+	"company.thebrowser.Browser",
+	// Firefox-based browsers
+	"org.mozilla.firefox",
+	"app.zen-browser.zen",
+	// electrons
 	"com.microsoft.VSCode",
 	"com.exafunction.windsurf",
-	"com.todesktop.230313mzl4w4u92",
+	"com.todesktop.230313mzl4w4u92", // cursor
 	"com.tinyspeck.slackmacgap",
 	"com.spotify.client",
 	"md.obsidian",

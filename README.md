@@ -28,6 +28,7 @@ This project thrives on community contributions. I'm happy to merge pull request
 ### Configuration-First Approach
 
 **No GUI settings panel.** GoVim embraces configuration files over UI settings because:
+
 - ✅ Config files are faster and more powerful, plus easier for dotfile management
 - ✅ Easy to version control and share
 - ✅ No maintenance burden for UI code
@@ -36,6 +37,7 @@ This project thrives on community contributions. I'm happy to merge pull request
 This is an intentional design choice to keep the project lean, maintainable, and focused on what matters: keyboard-driven productivity.
 
 **Key Advantages:**
+
 - 🆓 **Always free** - No paywalls, no subscriptions, no "upgrade to pro"
 - 🛠️ **Power-user friendly** - Text-based config is version-controllable and shareable
 - 🤝 **Community-owned** - Your contributions shape the project's direction
@@ -67,7 +69,6 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Homerow supports `continuous clicks`, is that something important?
 - Maybe a new action (move_mouse), that just move the mouse to the point after clicking the hint, maybe useful for trying to hover something?
 - Maybe forces to certain input source? I normally just use English, but maybe it's useful for others
-- Chromium support sucks, I seldom use Chromium, but not really sure what is the best way to properly support it
 - Electron apps does not show hints on the first activation. Maybe there's some manual work need to be done after setting up electron support?
 - Cant actually make scroll works in Electron apps, what is the best approach? There are tons of random `AXGroup` where some is scrollable and some is not...
 - Sort of working in Mision Control, but it still shows hints from the frontmost app. How can we know that we are in mission control and ignore the frontmost app?
@@ -219,6 +220,7 @@ govim launch
 ### ⚠️ Required Permissions
 
 Grant Accessibility permissions:
+
 1. Open **System Settings**
 2. Navigate to **Privacy & Security** → **Accessibility**
 3. Enable **GoVim**
@@ -264,6 +266,7 @@ govim launch
 **Default hotkey:** `Cmd+Shift+J`
 
 Vim-style navigation keys:
+
 - `j` / `k` - Scroll down/up
 - `h` / `l` - Scroll left/right
 - `Ctrl+d` / `Ctrl+u` - Page down/up
@@ -274,6 +277,7 @@ Vim-style navigation keys:
 ### Menu Bar
 
 The ⌨️ icon in your menu bar provides quick access to:
+
 - Quit GoVim
 
 ## ⚙️ Configuration
@@ -281,6 +285,7 @@ The ⌨️ icon in your menu bar provides quick access to:
 ### Config File Location
 
 GoVim looks for configuration in:
+
 - **macOS Convention:** `~/Library/Application Support/govim/config.toml`
 - **XDG Standard:** `~/.config/govim/config.toml`
 - **Custom Path:** Use `--config` flag: `govim launch --config /path/to/config.toml`
@@ -314,6 +319,7 @@ excluded_apps = [
 ```
 
 **Find an app's bundle ID:**
+
 ```bash
 osascript -e 'id of app "AppName"'
 ```
@@ -353,6 +359,7 @@ hint_characters = "asdfghjklqwertyuiop"  # 19 chars = 361 two-char combinations
 ```
 
 **Hint capacity reference:**
+
 - 9 characters = 81 two-char hints
 - 12 characters = 144 two-char hints
 - 15 characters = 225 two-char hints
@@ -362,13 +369,29 @@ hint_characters = "asdfghjklqwertyuiop"  # 19 chars = 361 two-char combinations
 GoVim includes built-in support for Electron apps and Chromium browsers.
 
 **Supported Electron apps** (automatic):
+
 - VS Code
 - Windsurf
 - Cursor
 - Slack
 - Spotify
 - Obsidian
+
+**Supported Chromium browsers** (automatic):
+
+- Chrome
+- Brave
+- Helium
+- Arc
+
+**Supported Firefox browsers** (automatic):
+
 - Firefox
+- Zen
+
+> [!NOTE]
+> You can still add your browsers to `additional_bundles` if they aren't detected automatically.
+> Right now, chromium, firefox and electron apps are all under the same key, in future we might split them out.
 
 **Configuration:**
 
@@ -382,14 +405,6 @@ additional_bundles = [
     "com.company.prefix*"       # Wildcard for multiple apps
 ]
 ```
-
-**Chrome/Chromium setup:**
-1. Navigate to `chrome://accessibility`
-2. Enable **Native accessibility API support**
-3. Enable **Web accessibility**
-
-> [!NOTE]
-> Chromium apps don't need to be added to `additional_bundles`. The accessibility settings in Chrome are sufficient.
 
 ## 🖥️ CLI Usage
 
@@ -448,6 +463,7 @@ govim start
 ### IPC Architecture
 
 The CLI uses Unix domain sockets (`/tmp/govim.sock`) for:
+
 - Fast, reliable communication between CLI and daemon
 - Multiple concurrent CLI commands
 - Proper error handling when daemon isn't running
@@ -466,6 +482,7 @@ The CLI uses Unix domain sockets (`/tmp/govim.sock`) for:
 If hints don't appear in Electron app content (VS Code, Windsurf, etc.):
 
 1. Verify Electron support is enabled (it's on by default):
+
    ```toml
    [accessibility.electron_support]
    enable = true
@@ -476,6 +493,7 @@ If hints don't appear in Electron app content (VS Code, Windsurf, etc.):
    - `"Enabled AXManualAccessibility"`
 
 3. If your app isn't in the built-in list, add it manually:
+
    ```toml
    [accessibility.electron_support]
    additional_bundles = ["com.your.app"]
@@ -486,6 +504,7 @@ If hints don't appear in Electron app content (VS Code, Windsurf, etc.):
 **Log location:** `~/Library/Logs/govim/app.log`
 
 **Enable debug logging:**
+
 ```toml
 [logging]
 log_level = "debug"
@@ -508,6 +527,7 @@ govim launch
 ## 🏗️ Architecture
 
 GoVim is built with:
+
 - **Go** - Core application logic, configuration, and CLI
 - **CGo/Objective-C** - macOS Accessibility API integration
 - **Native macOS APIs** - Overlay rendering and hotkey management
@@ -552,6 +572,7 @@ just lint                   # Run linter
 Version information is automatically injected at build time from git tags.
 
 **Manual build with custom version:**
+
 ```bash
 go build -ldflags="-s -w -X github.com/y3owk1n/govim/internal/cli.Version=v1.0.0" \
   -o bin/govim cmd/govim/main.go
@@ -592,6 +613,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 GoVim is inspired by these excellent projects:
+
 - [Homerow](https://www.homerow.app/) - Modern keyboard navigation for macOS
 - [Vimac](https://github.com/dexterleng/vimac) - Vim-style keyboard navigation
 - [Shortcat](https://shortcat.app/) - Keyboard productivity tool
