@@ -3,6 +3,8 @@ package accessibility
 import (
 	"fmt"
 	"image"
+
+	"github.com/y3owk1n/govim/internal/logger"
 )
 
 func rectFromInfo(info *ElementInfo) image.Rectangle {
@@ -49,10 +51,27 @@ func GetClickableElements() ([]*TreeNode, error) {
 	}
 	defer window.Release()
 
+	windowInfo, err := window.GetInfo()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get window info: %w", err)
+	}
+
+	// Check if this is an Electron app
+	var isElectron bool
+	if app := GetApplicationByPID(windowInfo.PID); app != nil {
+		bundleID := app.GetBundleIdentifier()
+		isElectron = ShouldEnableElectronSupport(bundleID, nil)
+		app.Release()
+	}
+
 	opts := DefaultTreeOptions()
-	// Increase depth for Electron/web apps which have deeply nested content
-	opts.MaxDepth = 25
-	// visibleBounds := expandRectangle(rectFromInfo(windowInfo), 0)
+	if isElectron {
+		// For Electron apps, go deeper to find web content
+		opts.MaxDepth = 25
+		logger.Debug("Detected Electron app, using deeper tree traversal for scroll areas")
+	} else {
+		opts.MaxDepth = 10
+	}
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		// Filter out very small elements
 		if info.Size.X < 10 || info.Size.Y < 10 {
@@ -83,13 +102,21 @@ func GetScrollableElements() ([]*TreeNode, error) {
 		return nil, fmt.Errorf("failed to get window info: %w", err)
 	}
 
+	// Check if this is an Electron app
+	var isElectron bool
+	if app := GetApplicationByPID(windowInfo.PID); app != nil {
+		bundleID := app.GetBundleIdentifier()
+		isElectron = ShouldEnableElectronSupport(bundleID, nil)
+		app.Release()
+	}
+
 	opts := DefaultTreeOptions()
-	opts.MaxDepth = 5
-	visibleBounds := expandRectangle(rectFromInfo(windowInfo), 200)
-	opts.FilterFunc = func(info *ElementInfo) bool {
-		// Allow only elements overlapping the visible window bounds
-		elementRect := rectFromInfo(info)
-		return elementRect.Overlaps(visibleBounds)
+	if isElectron {
+		// For Electron apps, go deeper to find web content
+		opts.MaxDepth = 15
+		logger.Debug("Detected Electron app, using deeper tree traversal for scroll areas")
+	} else {
+		opts.MaxDepth = 5
 	}
 
 	tree, err := BuildTree(window, opts)
