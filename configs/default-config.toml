@@ -45,9 +45,6 @@ clickable_roles = [
     "AXLink",
     "AXTextField",
     "AXTextArea",
-    "AXMenuItem", # for menubar hints - TODO: this should be injected when enabled, but now we need to put it here
-    "AXMenuBarItem", # for menubar hints - TODO: this should be injected when enabled, but now we need to put it here
-    "AXDockItem", # for dock hints - TODO: this should be injected when enabled, but now we need to put it here
 ]
 
 # Global accessibility roles that are treated as scrollable
