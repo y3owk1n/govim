@@ -406,6 +406,17 @@ func (c *Config) GetClickableRolesForApp(bundleID string) []string {
 		}
 	}
 
+	// Add menubar roles if enabled
+	if c.General.IncludeMenubarHints {
+		rolesMap["AXMenuBarItem"] = struct{}{}
+		rolesMap["AXMenuItem"] = struct{}{}
+	}
+
+	// Add dock roles if enabled
+	if c.General.IncludeDockHints {
+		rolesMap["AXDockItem"] = struct{}{}
+	}
+
 	// Convert map to slice
 	roles := make([]string, 0, len(rolesMap))
 	for role := range rolesMap {
