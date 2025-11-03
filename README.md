@@ -56,6 +56,28 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - 🎨 **Minimal UI** - Non-intrusive hints that stay out of your way
 - 💬 **IPC Control** - Control the daemon via CLI commands
 
+### Consideration (NOT roadmap)
+
+- Better UI representation for action menu (maybe auto edge detection like tooltip in browser, that will place itself around the element based on the space available around it)
+- Still a bit slow when activating in windows that have huge lists, such as Mail.app without `unread` filter
+- Maybe ditch Accessibility based actions and fully focus on pure mouse click simulation? Noticed that accessibility actions are not very reliable :(
+- Find a way to auto deduplicate hints that are targeting the same point
+- Scroll areas are hardcoded from 1-9, do we ever need more than that and make it dynamic upon query? We can still use <Tab> to cycle next tho
+- Homerow supports `continuous clicks`, is that something important?
+- Maybe a new action (move_mouse), that just move the mouse to the point after clicking the hint, maybe useful for trying to hover something?
+- Maybe forces to certain input source? I normally just use English, but maybe it's useful for others
+- Chromium support sucks, I seldom use Chromium, but not really sure what is the best way to properly support it
+- Electron apps does not show hints on the first activation. Maybe there's some manual work need to be done after setting up electron support?
+- Cant actually make scroll works in Electron apps, what is the best approach? There are tons of random `AXGroup` where some is scrollable and some is not...
+- Sort of working in Mision Control, but it still shows hints from the frontmost app. How can we know that we are in mission control and ignore the frontmost app?
+- Firefox seems fine but still the first activation shows very minimal hint after setting it up, same as electron apps
+- Research if there's a good way to implemet visual hint mode where we can select text? Doing this with accessibility seems a little hard and vague
+- Current `isClickable` heuristic implementation doesn't looks good enough to cover most cases, think of a way that we can determine if the target is actually clickable with a reliable way
+- Add more actions to the menubar like `status`, `stop`, `start`, `current version`
+- Test suites, but am lazy for it
+- Implements launch agent with `start-service` and `stop-service`? Though I am fine just doing it in my nix config directly
+- Macos bundle with `GoVim.app` for easier installation? But we'll need a nice app icon for it tho...
+
 ## 🚀 Installation
 
 ### Homebrew (Recommended)
