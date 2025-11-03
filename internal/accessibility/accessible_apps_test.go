@@ -11,11 +11,11 @@ func TestIsLikelyElectronBundle(t *testing.T) {
 		{"Firefox", "org.mozilla.firefox", true},
 		{"Windsurf", "com.exafunction.windsurf", true},
 		{"Visual Studio Code", "com.microsoft.VSCode", true},
+		{"Chrome", "com.google.Chrome", true},
 
 		// Non-Electron apps
 		{"Safari", "com.apple.Safari", false},
 		{"Finder", "com.apple.finder", false},
-		{"Chrome", "com.google.Chrome", false},
 
 		// Edge cases
 		{"Empty", "", false},
