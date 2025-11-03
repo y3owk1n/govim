@@ -212,21 +212,34 @@ func (e *Element) GetInfo() (*ElementInfo, error) {
 	return info, nil
 }
 
-// GetChildren returns all child elements
+// GetChildren returns all child elements with optional occlusion checking
 func (e *Element) GetChildren() ([]*Element, error) {
 	if e.ref == nil {
 		return nil, fmt.Errorf("element is nil")
 	}
 
-	return e.getChildrenInternal(true)
+	return e.getChildrenInternal(true, false) // visible only, but no occlusion check by default
 }
 
-func (e *Element) getChildrenInternal(visibleOnly bool) ([]*Element, error) {
+// GetChildrenWithOcclusionCheck returns child elements with strict occlusion filtering
+func (e *Element) GetChildrenWithOcclusionCheck(visibleOnly, checkOcclusion bool) ([]*Element, error) {
+	if e.ref == nil {
+		return nil, fmt.Errorf("element is nil")
+	}
+
+	return e.getChildrenInternal(visibleOnly, checkOcclusion)
+}
+
+func (e *Element) getChildrenInternal(visibleOnly bool, checkOcclusion bool) ([]*Element, error) {
 	var count C.int
 	var rawChildren unsafe.Pointer
 
 	if visibleOnly {
-		rawChildren = unsafe.Pointer(C.getVisibleChildren(e.ref, &count))
+		occlusionFlag := C.int(0)
+		if checkOcclusion {
+			occlusionFlag = C.int(1)
+		}
+		rawChildren = unsafe.Pointer(C.getVisibleChildren(e.ref, &count, occlusionFlag))
 	} else {
 		rawChildren = unsafe.Pointer(C.getChildren(e.ref, &count))
 	}
