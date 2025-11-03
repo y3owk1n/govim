@@ -164,7 +164,7 @@ action_border_color = "#000000"
 action_opacity = 0.95
 
 # Action keys for hint mode with actions (hardcoded):
-#   l = left click, r = right click, d = double click, m = middle click
+#   l = left click, r = right click, d = double click, m = middle click, g = go to pos
 
 [scroll]
 # Base scroll amount for j/k keys in pixels

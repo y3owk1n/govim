@@ -320,6 +320,20 @@ func (e *Element) MiddleClick() error {
 	return nil
 }
 
+// GoToPosition performs a move mouse action to the element
+func (e *Element) GoToPosition() error {
+	if e.ref == nil {
+		return fmt.Errorf("element is nil")
+	}
+
+	result := C.performMoveMouseToPosition(e.ref)
+	if result == 1 {
+		return nil
+	}
+
+	return fmt.Errorf("left-click action failed")
+}
+
 // SetFocus sets focus to the element
 func (e *Element) SetFocus() error {
 	if e.ref == nil {

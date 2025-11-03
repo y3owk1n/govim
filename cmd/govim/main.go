@@ -616,6 +616,7 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 		{"r", "ight"},
 		{"d", "ouble"},
 		{"m", "iddle"},
+		{"g", "oto pos"},
 	}
 
 	// Create hints for each action, positioned horizontally with consistent gaps
@@ -724,6 +725,9 @@ func (a *App) handleActionKey(key string) {
 	case "m": // Middle click
 		a.logger.Info("Performing middle click", zap.String("label", hint.Label))
 		err = hint.Element.Element.MiddleClick()
+	case "g": // Move mouse to a position
+		a.logger.Info("Performing go to position", zap.String("label", hint.Label))
+		err = hint.Element.Element.GoToPosition()
 	default:
 		a.logger.Debug("Unknown action key, ignoring", zap.String("key", key))
 		return

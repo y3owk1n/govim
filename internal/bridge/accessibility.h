@@ -44,6 +44,8 @@ int performRightClick(void* element);
 int performDoubleClick(void* element);
 int performMiddleClick(void* element);
 
+int performMoveMouseToPosition(void* element);
+
 int hasClickAction(void* element);
 int setFocus(void* element);
 
