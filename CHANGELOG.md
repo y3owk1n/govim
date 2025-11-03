@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.0](https://github.com/y3owk1n/govim/compare/v1.2.0...v1.3.0) (2025-11-03)
+
+
+### Features
+
+* allow configuration for restore cursor position ([#47](https://github.com/y3owk1n/govim/issues/47)) ([d5e5d87](https://github.com/y3owk1n/govim/commit/d5e5d87d46b0ed79407a348d83125900471a65a7))
+* new action to move mouse to a position ([#46](https://github.com/y3owk1n/govim/issues/46)) ([9efc9eb](https://github.com/y3owk1n/govim/commit/9efc9eb52d35e6048b1c075824f033dd4fb6356e))
+
+
+### Bug Fixes
+
+* chromium support fix ([#43](https://github.com/y3owk1n/govim/issues/43)) ([f8c8463](https://github.com/y3owk1n/govim/commit/f8c84635fdf49c1863ff1cd518778649a0f49c63))
+* replace all click actions to use actual mouse click rather than accessibility ([#45](https://github.com/y3owk1n/govim/issues/45)) ([7ebfaef](https://github.com/y3owk1n/govim/commit/7ebfaefc6a557805740231626890d030ae1d2c36))
+
 ## [1.2.0](https://github.com/y3owk1n/govim/compare/v1.1.1...v1.2.0) (2025-11-03)
 
 
