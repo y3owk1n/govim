@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/y3owk1n/govim/compare/v1.1.1...v1.2.0) (2025-11-03)
+
+
+### Features
+
+* add occlusion detection with Dock exception ([#34](https://github.com/y3owk1n/govim/issues/34)) ([1d4146f](https://github.com/y3owk1n/govim/commit/1d4146ff44da7c114e4219b9d629ac6971355ada))
+
+
+### Bug Fixes
+
+* apply heuristic checks for clickable elements ([#38](https://github.com/y3owk1n/govim/issues/38)) ([f6be55d](https://github.com/y3owk1n/govim/commit/f6be55d4105c6c57844e5f02360983fd7c132f79))
+* dynamically add menubar and dock roles when enabled ([#37](https://github.com/y3owk1n/govim/issues/37)) ([ab53a03](https://github.com/y3owk1n/govim/commit/ab53a0367724c951f7b27e43f5460b1e31e38809))
+* properly check for electron with dynamic maxDepth ([#36](https://github.com/y3owk1n/govim/issues/36)) ([a10bdf7](https://github.com/y3owk1n/govim/commit/a10bdf741387e6b6965ba901093167a7a2b0419d))
+
 ## [1.1.1](https://github.com/y3owk1n/govim/compare/v1.1.0...v1.1.1) (2025-11-02)
 
 
