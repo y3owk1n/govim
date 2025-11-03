@@ -20,6 +20,7 @@ type TreeOptions struct {
 	MaxDepth           int
 	FilterFunc         func(*ElementInfo) bool
 	IncludeOutOfBounds bool
+	CheckOcclusion     bool
 }
 
 // DefaultTreeOptions returns default tree traversal options
@@ -28,6 +29,7 @@ func DefaultTreeOptions() TreeOptions {
 		MaxDepth:           10,
 		FilterFunc:         nil,
 		IncludeOutOfBounds: false,
+		CheckOcclusion:     false,
 	}
 }
 
@@ -64,7 +66,7 @@ func buildTreeRecursive(parent *TreeNode, depth int, opts TreeOptions, windowBou
 	if depth >= opts.MaxDepth {
 		return
 	}
-	children, err := parent.Element.GetChildren()
+	children, err := parent.Element.GetChildrenWithOcclusionCheck(true, opts.CheckOcclusion)
 	if err != nil || len(children) == 0 {
 		return
 	}

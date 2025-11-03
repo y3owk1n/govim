@@ -144,6 +144,7 @@ func GetDockClickableElements() ([]*TreeNode, error) {
 
 	opts := DefaultTreeOptions()
 	opts.IncludeOutOfBounds = true
+	opts.CheckOcclusion = false
 	opts.MaxDepth = 8
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		if info.Size.X < 6 || info.Size.Y < 6 {
