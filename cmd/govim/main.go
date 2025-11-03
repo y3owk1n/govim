@@ -593,7 +593,7 @@ func (a *App) handleHintKey(key string) {
 		} else {
 			// Direct click mode - click immediately
 			a.logger.Info("Clicking element", zap.String("label", a.hintInput))
-			if err := hint.Element.Element.LeftClick(); err != nil {
+			if err := hint.Element.Element.LeftClick(a.config.General.RestorePosAfterLeftClick); err != nil {
 				a.logger.Error("Failed to click element", zap.Error(err))
 			}
 			a.exitMode()
@@ -715,16 +715,16 @@ func (a *App) handleActionKey(key string) {
 	switch key {
 	case "l": // Left click
 		a.logger.Info("Performing left click", zap.String("label", hint.Label))
-		err = hint.Element.Element.LeftClick()
+		err = hint.Element.Element.LeftClick(a.config.General.RestorePosAfterLeftClick)
 	case "r": // Right click
 		a.logger.Info("Performing right click", zap.String("label", hint.Label))
-		err = hint.Element.Element.RightClick()
+		err = hint.Element.Element.RightClick(a.config.General.RestorePosAfterRightClick)
 	case "d": // Double click
 		a.logger.Info("Performing double click", zap.String("label", hint.Label))
-		err = hint.Element.Element.DoubleClick()
+		err = hint.Element.Element.DoubleClick(a.config.General.RestorePosAfterDoubleClick)
 	case "m": // Middle click
 		a.logger.Info("Performing middle click", zap.String("label", hint.Label))
-		err = hint.Element.Element.MiddleClick()
+		err = hint.Element.Element.MiddleClick(a.config.General.RestorePosAfterMiddleClick)
 	case "g": // Move mouse to a position
 		a.logger.Info("Performing go to position", zap.String("label", hint.Label))
 		err = hint.Element.Element.GoToPosition()

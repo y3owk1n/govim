@@ -22,9 +22,13 @@ type Config struct {
 }
 
 type GeneralConfig struct {
-	ExcludedApps        []string `toml:"excluded_apps"`
-	IncludeMenubarHints bool     `toml:"include_menubar_hints"`
-	IncludeDockHints    bool     `toml:"include_dock_hints"`
+	ExcludedApps               []string `toml:"excluded_apps"`
+	IncludeMenubarHints        bool     `toml:"include_menubar_hints"`
+	IncludeDockHints           bool     `toml:"include_dock_hints"`
+	RestorePosAfterLeftClick   bool     `toml:"restore_pos_after_left_click"`
+	RestorePosAfterRightClick  bool     `toml:"restore_pos_after_right_click"`
+	RestorePosAfterMiddleClick bool     `toml:"restore_pos_after_middle_click"`
+	RestorePosAfterDoubleClick bool     `toml:"restore_pos_after_double_click"`
 }
 
 type AccessibilityConfig struct {
@@ -101,9 +105,13 @@ type ElectronSupportConfig struct {
 func DefaultConfig() *Config {
 	return &Config{
 		General: GeneralConfig{
-			ExcludedApps:        []string{},
-			IncludeMenubarHints: false,
-			IncludeDockHints:    false,
+			ExcludedApps:               []string{},
+			IncludeMenubarHints:        false,
+			IncludeDockHints:           false,
+			RestorePosAfterLeftClick:   false,
+			RestorePosAfterRightClick:  false,
+			RestorePosAfterMiddleClick: false,
+			RestorePosAfterDoubleClick: false,
 		},
 		Accessibility: AccessibilityConfig{
 			AccessibilityCheckOnStart: true,
