@@ -7,30 +7,58 @@
 ![Go Version](https://img.shields.io/github/go-mod/go-version/y3owk1n/govim)
 [![Latest Release](https://img.shields.io/github/v/release/y3owk1n/govim)](https://github.com/y3owk1n/govim/releases)
 
-**Keyboard-driven navigation for macOS - Navigate and click without touching your mouse 🖱️**
+**Navigate macOS without touching your mouse - keyboard-driven productivity at its finest 🖱️⌨️**
 
-[Installation](#installation) •
-[Features](#features) •
-[Usage](#usage) •
-[Configuration](#configuration)
+[Installation](#-installation) •
+[Quick Start](#-quick-start) •
+[Features](#-features) •
+[Configuration](#%EF%B8%8F-configuration) •
+[CLI Usage](#-cli-usage)
 
 </div>
 
+## 🎯 Project Philosophy
+
+**GoVim is a free, open-source alternative to Homerow, Shortcat, and Vimac—and it always will be.** Built with Objective-C and Go, it's a working MVP that's proven itself capable of replacing Homerow in daily use for myself.
+
+### Community-Driven Development
+
+This project thrives on community contributions. I'm happy to merge pull requests that align with the project's goals, and I hope GoVim stays current through collective effort rather than solo maintenance, and slowly dies off with hundreds of issues.
+
+### Configuration-First Approach
+
+**No GUI settings panel.** GoVim embraces configuration files over UI settings because:
+- ✅ Config files are faster and more powerful, plus easier for dotfile management
+- ✅ Easy to version control and share
+- ✅ No maintenance burden for UI code
+- ✅ Menubar provides quick access to essential commands
+
+This is an intentional design choice to keep the project lean, maintainable, and focused on what matters: keyboard-driven productivity.
+
+**Key Advantages:**
+- 🆓 **Always free** - No paywalls, no subscriptions, no "upgrade to pro"
+- 🛠️ **Power-user friendly** - Text-based config is version-controllable and shareable
+- 🤝 **Community-owned** - Your contributions shape the project's direction
+- 🔧 **Scriptable** - CLI commands enable automation and integration
+
 > [!NOTE]
-> This is a personal project maintained on a best-effort basis. PRs are more likely to be reviewed than feature requests or issues, unless I am facing the same problem.
+> This is a personal project maintained on a best-effort basis. Pull requests are more likely to be reviewed than feature requests or issues, unless I'm experiencing the same problem.
 
 ## ✨ Features
 
-- 🎯 **Hint Mode** - Click any UI element using keyboard shortcuts
-- 📜 **Scroll Mode** - Vim-style scrolling in any application
-- 🌐 **Universal** - Works with native macOS apps and Electron apps
+- 🎯 **Hint Mode** - Click any UI element using keyboard shortcuts with visual labels
+- 🎬 **Action Mode** - Choose specific click actions (left, right, double, middle click)
+- 📜 **Scroll Mode** - Vim-style scrolling (`j`/`k`, `gg`/`G`, etc.) in any application
+- 🌐 **Universal Support** - Works with native macOS apps, Electron apps, and Chrome/Firefox
 - ⚡ **Performance** - Built with native macOS APIs for instant response
-- 🛠️ **Customizable** - Configure hints, hotkeys, and behaviors via TOML
-- 🎨 **Minimal UI** - Non-intrusive hints that don't get in your way
+- 🛠️ **Highly Customizable** - Configure hints, hotkeys, and behaviors via TOML
+- 🚫 **App Exclusion** - Exclude specific apps where GoVim shouldn't activate
+- 🎨 **Minimal UI** - Non-intrusive hints that stay out of your way
+- 💬 **IPC Control** - Control the daemon via CLI commands
 
 ## 🚀 Installation
 
-### Homebrew
+### Homebrew (Recommended)
 
 ```bash
 brew tap y3owk1n/tap
@@ -38,6 +66,9 @@ brew install y3owk1n/tap/govim
 ```
 
 ### Nix Darwin
+
+<details>
+<summary>Click to expand Nix configuration</summary>
 
 Add the following file to your overlay:
 
@@ -53,13 +84,13 @@ Add the following file to your overlay:
 }:
 buildGoModule (finalAttrs: {
   pname = "govim";
-  version = "1.1.0";
+  version = "1.2.0";
 
   src = fetchFromGitHub {
     owner = "y3owk1n";
     repo = "govim";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-UN0Y49X8fD+2gSJrnv8qGzthKPrpBv51sxA7BEUViWc=";
+    hash = "sha256-dzcpdVbl2eVU4L9x/qnXC5DOWbMCgt9/wEKroOedXoY=";
   };
 
   vendorHash = "sha256-x5NB18fP8ERIB5qeMAMyMnSoDEF2+g+NoJKrC+kIj+k=";
@@ -88,7 +119,7 @@ buildGoModule (finalAttrs: {
 })
 ```
 
-Then, you can add the following to as a custom module package:
+Create a custom module:
 
 ```nix
 {
@@ -100,7 +131,6 @@ Then, you can add the following to as a custom module package:
 
 let
   cfg = config.govim;
-
   configFile = pkgs.writeScript "govim.toml" cfg.config;
 in
 
@@ -108,9 +138,7 @@ in
   options = {
     govim = with lib.types; {
       enable = lib.mkEnableOption "Govim keyboard navigation";
-
       package = lib.mkPackageOption pkgs "govim" { };
-
       config = lib.mkOption {
         type = types.lines;
         default = ''
@@ -139,112 +167,139 @@ in
 }
 ```
 
-Then somewhere in your nix config, you can add the following to enable the module:
+Enable in your configuration:
 
 ```nix
 {
-  imports = [
-    ./path-to-govim-module.nix
-  ];
-
-  govim = {
-    enable = true;
-  };
+  imports = [ ./path-to-govim-module.nix ];
+  govim.enable = true;
 }
 ```
+
+</details>
 
 ### Manual Build
 
 ```bash
-# Clone the repository
+# Clone and build
 git clone https://github.com/y3owk1n/govim.git
 cd govim
-
-# Build
 just build
 
-# Move the binary to a location in your $PATH
-mv ./bin/govim /usr/local/bin/govim # Or anywhere else
+# Install
+mv ./bin/govim /usr/local/bin/govim
 
 # Run
-govim launch # or without path `./bin/govim launch`
-
+govim launch
 ```
 
-### Required Permissions
+### ⚠️ Required Permissions
 
-⚠️ Grant Accessibility permissions in:
-`System Settings` → `Privacy & Security` → `Accessibility`
+Grant Accessibility permissions:
+1. Open **System Settings**
+2. Navigate to **Privacy & Security** → **Accessibility**
+3. Enable **GoVim**
+
+## 🎯 Quick Start
+
+After installation and granting permissions:
+
+```bash
+# Start GoVim
+govim launch
+
+# Try hint mode: Press Cmd+Shift+Space
+# Try scroll mode: Press Cmd+Shift+J
+```
 
 ## 🎮 Usage
 
 ### Hint Mode (Direct Click)
 
-1. Press `Cmd+Shift+Space` (default)
-2. Clickable elements show hint labels
-3. Type the label to click (e.g., "aa", "ab")
-4. Press `Esc` to exit
+**Default hotkey:** `Cmd+Shift+Space`
 
-### Hint Mode (Action)
+1. Press the hotkey
+2. Clickable elements display hint labels (e.g., "AA", "AB", "AC")
+3. Type the label to click that element
+4. Press `Esc` to cancel
 
-1. Press `Cmd+Shift+A` (default)
-2. Clickable elements show hint labels
-3. Type the label to click (e.g., "aa", "ab")
-4. Choose the action to perform (e.g., "left click", "right click", "double click", "middle click")
-5. Press `Esc` to exit
+### Hint Mode (Action Selection)
+
+**Default hotkey:** `Cmd+Shift+A`
+
+1. Press the hotkey
+2. Type the hint label
+3. Choose your action:
+   - **Left click** (default)
+   - **Right click** (context menu)
+   - **Double click**
+   - **Middle click**
+4. Press `Esc` to cancel
 
 ### Scroll Mode
 
-1. Press `Cmd+Shift+J` (default)
-2. Use Vim-style navigation:
-   - `j` / `k` - Scroll down/up
-   - `h` / `l` - Scroll left/right
-   - `c-d` / `c-u` - Page down/up
-   - `gg` / `G` - Top/bottom
-3. Press `Esc` to exit
+**Default hotkey:** `Cmd+Shift+J`
+
+Vim-style navigation keys:
+- `j` / `k` - Scroll down/up
+- `h` / `l` - Scroll left/right
+- `Ctrl+d` / `Ctrl+u` - Page down/up
+- `gg` - Jump to top
+- `G` - Jump to bottom
+- `Esc` - Exit scroll mode
 
 ### Menu Bar
 
-The ⌨️ icon in your menu bar provides:
-
-- Quit option
+The ⌨️ icon in your menu bar provides quick access to:
+- Quit GoVim
 
 ## ⚙️ Configuration
 
-Config file location can be any of the following:
+### Config File Location
 
-- Macos Convention: `~/Library/Application Support/govim/config.toml`
-- XDG: `~/.config/govim/config.toml`
+GoVim looks for configuration in:
+- **macOS Convention:** `~/Library/Application Support/govim/config.toml`
+- **XDG Standard:** `~/.config/govim/config.toml`
+- **Custom Path:** Use `--config` flag: `govim launch --config /path/to/config.toml`
 
-or any other location specified via the `--config` flag.
-
-### Example Configuration
+### Default Configuration
 
 See [`configs/default-config.toml`](configs/default-config.toml) for all available options.
 
-### Include hints on the macOS menu bar and Dock
+### Common Configurations
+
+#### Enable Menu Bar and Dock Hints
 
 ```toml
 [general]
 include_menubar_hints = true
-include_dock_hints = true # includes mission control
+include_dock_hints = true  # Also includes Mission Control
 ```
 
-### Per-App Role Configuration
+#### App Exclusion
 
-GoVim supports global and per-app accessibility role configurations:
+Exclude specific apps where GoVim shouldn't activate:
 
-- **Global roles** (`clickable_roles` and `scrollable_roles`) are used for all applications
-- **Per-app roles** allow you to add additional roles for specific applications
-- The final roles used = global roles + app-specific additional roles (merged)
+```toml
+[general]
+excluded_apps = [
+    "com.apple.Terminal",
+    "com.googlecode.iterm2",
+    "com.microsoft.rdc.macos",
+    "com.vmware.fusion"
+]
+```
 
-To find an app's bundle ID:
-
+**Find an app's bundle ID:**
 ```bash
 osascript -e 'id of app "AppName"'
 ```
 
-For example, in `Mail.app`, lots of element are `AXStaticText` and they should be clickable. In this case, we don't want to add to the global one, as it will causes lots of unclickable hints, especially in browser space.
+#### Per-App Role Configuration
+
+Customize clickable/scrollable roles for specific apps. This is useful when certain apps use non-standard UI elements.
+
+**Example:** In Mail.app, many `AXStaticText` elements should be clickable:
 
 ```toml
 [accessibility]
@@ -254,117 +309,102 @@ bundle_id = "com.apple.mail"
 additional_clickable_roles = ["AXStaticText"]
 ```
 
-### App Exclusion
+Global roles apply to all apps, while per-app roles are merged with global roles for specific applications.
 
-GoVim supports excluding specific applications where it should do nothing (no hint mode or scroll mode activation). This is useful for applications where GoVim might interfere or isn't needed.
+#### Reduce Hint Label Length
 
-To find an app's bundle ID:
+When many elements are clickable, hints use 3 characters (e.g., "AAA") to avoid conflicts. To keep hints at 2 characters:
 
-```bash
-osascript -e 'id of app "AppName"'
-```
-
-Example configuration:
+**Option 1:** Reduce max hints displayed
 
 ```toml
-[general]
-excluded_apps = [
-    "com.apple.Terminal",           # Terminal
-    "com.googlecode.iterm2",        # iTerm2
-    "com.microsoft.rdc.macos",      # Microsoft Remote Desktop
-    "com.vmware.fusion"             # VMware Fusion
-]
+[performance]
+max_hints_displayed = 80  # Keeps hints at 2 characters with default 9-char set
 ```
 
-When GoVim detects that the currently focused application is in the `excluded_apps` list, it will:
+**Option 2:** Add more hint characters
 
-- Ignore hint mode activation attempts
-- Ignore scroll mode activation attempts
-- Log the exclusion for debugging purposes
+```toml
+[hints]
+hint_characters = "asdfghjklqwertyuiop"  # 19 chars = 361 two-char combinations
+```
 
-The exclusion check is case-insensitive and handles whitespace automatically.
+**Hint capacity reference:**
+- 9 characters = 81 two-char hints
+- 12 characters = 144 two-char hints
+- 15 characters = 225 two-char hints
 
 ### Electron & Chrome Support
 
+GoVim includes built-in support for Electron apps and Chromium browsers.
+
+**Supported Electron apps** (automatic):
+- VS Code
+- Windsurf
+- Cursor
+- Slack
+- Spotify
+- Obsidian
+- Firefox
+
+**Configuration:**
+
+```toml
+[accessibility.electron_support]
+enable = true  # Enable Electron support (default)
+
+# Add additional Electron apps
+additional_bundles = [
+    "com.example.app",          # Exact bundle ID
+    "com.company.prefix*"       # Wildcard for multiple apps
+]
+```
+
+**Chrome/Chromium setup:**
+1. Navigate to `chrome://accessibility`
+2. Enable **Native accessibility API support**
+3. Enable **Web accessibility**
+
 > [!NOTE]
-> Electron, firefox and chrome support is a mess, and I'm not even sure if I am doing it correctly or not.
-> Feel free to help out if you know better about this...
+> Chromium apps don't need to be added to `additional_bundles`. The accessibility settings in Chrome are sufficient.
 
-GoVim includes built-in support for Electron apps (VS Code, Windsurf, Slack, etc.) and Chromium browsers.
+## 🖥️ CLI Usage
 
-- `accessibility.electron_support.enable` toggles automatic enabling of Electron accessibility hooks for legacy apps.
-- `accessibility.electron_support.additional_bundles` accepts exact bundle IDs or `prefix*` wildcards for extra Electron apps that require manual accessibility.
+GoVim provides comprehensive CLI commands with IPC (Inter-Process Communication) for controlling the daemon.
 
-Built-in enabled apps:
-
-- `org.mozilla.firefox` - Firefox
-- `com.microsoft.VSCode` - VS Code
-- `com.exafunction.windsurf` - Windsurf
-- `com.todesktop.230313mzl4w4u92` - Cursor
-- `com.tinyspeck.slackmacgap` - Slack
-- `com.spotify.client` - Spotify
-- `md.obsidian` - Obsidian
-- For other apps, you can add them to `accessibility.electron_support.additional_bundles` in your config, or just submit a PR to add into the source
-
-Note that you don't have to add chromium bundles here. To support it, you need to:
-
-1. Go to `chrome://accessibility`
-2. Turn on `Native accessibility API support`
-3. Turn on `Web accessibility`
-
-> [!NOTE]
-> Not sure if there's a better way to do this... feel free to help out!
-
-## CLI Usage
-
-GoVim provides a comprehensive CLI with IPC (Inter-Process Communication) for controlling the running daemon.
-
-### Launch Commands
-
-Start the GoVim daemon:
+### Launch Daemon
 
 ```bash
-govim launch
-govim launch --config /path/to/config.toml
+govim launch                              # Use default config location
+govim launch --config /path/to/config.toml  # Use custom config
 ```
 
 ### Control Commands
 
-Control the running daemon (requires GoVim to be running):
+These require GoVim to be running:
 
 ```bash
-# Start/resume GoVim if paused
-govim start
-
-# Pause GoVim (doesn't quit, just disables functionality)
-govim stop
-
-# Show current status
-govim status
+govim start     # Resume GoVim if paused
+govim stop      # Pause GoVim (doesn't quit, just disables functionality)
+govim status    # Show current status (running/paused, current mode, config path)
 ```
 
-### Mode Commands
-
-Activate different modes (requires GoVim to be running):
+### Mode Activation
 
 ```bash
-# Activate hint mode (direct click)
-govim hints
-
-# Activate hint mode (with action)
-govim hints_action
-
-# Activate scroll mode
-govim scroll
+govim hints         # Activate hint mode (direct click)
+govim hints_action  # Activate hint mode with action selection
+govim scroll        # Activate scroll mode
+govim idle          # Return to idle state
 ```
 
-### Examples
+### Example Workflow
 
 ```bash
 # Start GoVim
 govim launch
 
-# In another terminal, check status
+# Check status in another terminal
 govim status
 # Output:
 #   GoVim Status:
@@ -372,13 +412,10 @@ govim status
 #     Mode: idle
 #     Config: /Users/you/Library/Application Support/govim/config.toml
 
-# Activate hints mode via CLI
+# Activate hints via CLI instead of hotkey
 govim hints
 
-# Return to idle
-govim idle
-
-# Pause GoVim
+# Pause functionality temporarily
 govim stop
 
 # Resume
@@ -387,19 +424,70 @@ govim start
 
 ### IPC Architecture
 
-The CLI uses Unix domain sockets (`/tmp/govim.sock`) for communication with the daemon. This allows:
+The CLI uses Unix domain sockets (`/tmp/govim.sock`) for:
+- Fast, reliable communication between CLI and daemon
+- Multiple concurrent CLI commands
+- Proper error handling when daemon isn't running
 
-- Fast, reliable communication
-- Multiple CLI commands while daemon runs
-- Proper error handling when daemon is not running
+## 🔧 Troubleshooting
 
-## Architecture
+### Accessibility Permissions Not Working
+
+1. Open **System Settings** → **Privacy & Security** → **Accessibility**
+2. Remove GoVim from the list if present
+3. Re-add GoVim
+4. Restart GoVim
+
+### Hints Not Appearing in Electron Apps
+
+If hints don't appear in Electron app content (VS Code, Windsurf, etc.):
+
+1. Verify Electron support is enabled (it's on by default):
+   ```toml
+   [accessibility.electron_support]
+   enable = true
+   ```
+
+2. Check logs for these messages:
+   - `"App requires Electron support"`
+   - `"Enabled AXManualAccessibility"`
+
+3. If your app isn't in the built-in list, add it manually:
+   ```toml
+   [accessibility.electron_support]
+   additional_bundles = ["com.your.app"]
+   ```
+
+### Viewing Logs
+
+**Log location:** `~/Library/Logs/govim/app.log`
+
+**Enable debug logging:**
+```toml
+[logging]
+log_level = "debug"
+```
+
+### GoVim Not Responding
+
+```bash
+# Check if daemon is running
+govim status
+
+# If not running, restart
+govim launch
+
+# If stuck, force quit and restart
+pkill govim
+govim launch
+```
+
+## 🏗️ Architecture
 
 GoVim is built with:
-
-- **Go**: Core application logic
-- **CGo/Objective-C**: macOS Accessibility API integration
-- **Native macOS APIs**: For overlay rendering and hotkey management
+- **Go** - Core application logic, configuration, and CLI
+- **CGo/Objective-C** - macOS Accessibility API integration
+- **Native macOS APIs** - Overlay rendering and hotkey management
 
 ### Project Structure
 
@@ -408,76 +496,24 @@ govim/
 ├── cmd/govim/           # Main entry point
 ├── internal/
 │   ├── accessibility/   # Accessibility API wrappers
-│   ├── hints/          # Hint generation and display
+│   ├── hints/          # Hint generation and display logic
 │   ├── scroll/         # Scroll mode implementation
-│   ├── hotkeys/        # Hotkey management
-│   ├── config/         # Configuration parsing
-│   ├── cli/            # CLI commands (cobra-based)
-│   ├── ipc/            # IPC server/client for CLI communication
+│   ├── hotkeys/        # Global hotkey management
+│   ├── config/         # TOML configuration parsing
+│   ├── cli/            # CLI commands (Cobra-based)
+│   ├── ipc/            # IPC server/client for daemon control
 │   └── bridge/         # CGo/Objective-C bridges
-├── configs/            # Default configuration
+├── configs/            # Default configuration files
 └── scripts/            # Build and packaging scripts
 ```
 
-## Troubleshooting
+## 💻 Development
 
-### Accessibility Permissions
+### Prerequisites
 
-If GoVim isn't working, ensure it has Accessibility permissions:
-
-1. Open System Settings
-2. Go to Privacy & Security → Accessibility
-3. Enable GoVim
-
-### Logs
-
-Logs are stored at: `~/Library/Logs/govim/app.log`
-
-Enable debug logging in your config for troubleshooting:
-
-```toml
-[logging]
-log_level = "debug"
-```
-
-### Electron Apps (Windsurf, VS Code, etc.)
-
-If hints aren't appearing in Electron app content areas:
-
-1. Ensure Electron support is enabled (default):
-
-   ```toml
-   [accessibility.electron_support]
-   enable = true
-   ```
-
-2. Check logs for: `"App requires Electron support"` and `"Enabled AXManualAccessibility"`
-
-3. Supported apps include: Windsurf, VS Code, Slack, GitHub Desktop, Zoom, Obsidian, Teams
-
-### Too Many Hints / Long Hint Labels
-
-When there are many clickable elements, hints will use 3 characters (e.g., "AAA", "AAS") to avoid prefix conflicts. All hints will have the same length, so you can type the full 3-character code without ambiguity.
-
-To reduce hint length:
-
-1. **Reduce max hints** to stay within 2-character range:
-
-   ```toml
-   [performance]
-   max_hints_displayed = 80  # With 9 chars, this keeps hints at 2 chars
-   ```
-
-2. **Add more hint characters** for more 2-char combinations:
-
-   ```toml
-   [hints]
-   hint_characters = "asdfghjklqwertyuiop"  # 19 chars = 361 two-char combos
-   ```
-
-**Hint capacity**: 9 chars = 81 two-char hints, 12 chars = 144 two-char hints, 15 chars = 225 two-char hints.
-
-## Development
+- Go 1.21+
+- macOS development tools
+- Just (command runner)
 
 ### Building
 
@@ -486,51 +522,68 @@ just build                  # Development build (auto-detects version from git)
 just release                # Optimized release build
 just build-version v1.0.0   # Build with custom version
 just test                   # Run tests
+just test-race              # Run tests with race detection
 just lint                   # Run linter
 ```
 
-Version information is automatically injected at build time from git tags. For custom versions:
+Version information is automatically injected at build time from git tags.
 
+**Manual build with custom version:**
 ```bash
-# Build with specific version
-just build-version v1.0.0
-
-# Manual build with ldflags
-go build -ldflags="-s -w -X github.com/y3owk1n/govim/internal/cli.Version=v1.0.0" -o bin/govim cmd/govim/main.go
+go build -ldflags="-s -w -X github.com/y3owk1n/govim/internal/cli.Version=v1.0.0" \
+  -o bin/govim cmd/govim/main.go
 ```
 
 ### Testing
 
 ```bash
-just test           # Unit tests
-just test-race      # Race detection
+just test           # Run unit tests
+just test-race      # Run tests with race detection
+just lint           # Run golangci-lint
 ```
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-Inspired by:
-
-- [Homerow](https://www.homerow.app/)
-- [Vimac](https://github.com/dexterleng/vimac)
-- [Shortcat](https://shortcat.app/)
-- [Vimium](https://github.com/philc/vimium)
 
 ## 🤝 Contributing
 
-Contributions welcome! Here's how:
+Contributions are welcome! Here's how to contribute:
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run `just test` and `just lint` to verify
-5. Submit a pull request
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Make** your changes
+4. **Test** your changes (`just test && just lint`)
+5. **Commit** (`git commit -m 'Add amazing feature'`)
+6. **Push** to your branch (`git push origin feature/amazing-feature`)
+7. **Open** a Pull Request
+
+### Contribution Guidelines
+
+- Write clear commit messages
+- Add tests for new features
+- Update documentation as needed
+- Follow existing code style
+- Keep PRs focused on a single change
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+GoVim is inspired by these excellent projects:
+- [Homerow](https://www.homerow.app/) - Modern keyboard navigation for macOS
+- [Vimac](https://github.com/dexterleng/vimac) - Vim-style keyboard navigation
+- [Shortcat](https://shortcat.app/) - Keyboard productivity tool
+- [Vimium](https://github.com/philc/vimium) - Vim bindings for browsers
+
+## 🌟 Star History
+
+If you find GoVim useful, consider giving it a star on GitHub!
 
 ---
 
 <div align="center">
-Made with ❤️ by <a href="https://github.com/y3owk1n">y3owk1n</a>
+
+Made with ❤️ by [y3owk1n](https://github.com/y3owk1n)
+
+[Report Bug](https://github.com/y3owk1n/govim/issues) · [Request Feature](https://github.com/y3owk1n/govim/issues) · [Discussions](https://github.com/y3owk1n/govim/discussions)
+
 </div>
