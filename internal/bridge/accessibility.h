@@ -39,10 +39,10 @@ int getElementCenter(void* element, CGPoint* outPoint);
 void moveMouse(CGPoint position);
 
 // Click functions - perform click actions on accessibility elements and restore cursor position
-int performLeftClick(void* element);
-int performRightClick(void* element);
-int performDoubleClick(void* element);
-int performMiddleClick(void* element);
+int performLeftClick(void* element, bool restoreCursor);
+int performRightClick(void* element, bool restoreCursor);
+int performDoubleClick(void* element, bool restoreCursor);
+int performMiddleClick(void* element, bool restoreCursor);
 
 int performMoveMouseToPosition(void* element);
 

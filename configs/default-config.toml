@@ -28,7 +28,16 @@ excluded_apps = []
 include_menubar_hints = false
 # Show hints on the Dock (includes mission control)
 include_dock_hints = false
-# Tip: enable both to interact with menu bar and Dock via hints.
+
+# Restore cursor position after action
+# Restore cursor position after left click
+restore_pos_after_left_click = false
+# Restore cursor position after right click
+restore_pos_after_right_click = false
+# Restore cursor position after middle click
+restore_pos_after_middle_click = false
+# Restore cursor position after double click
+restore_pos_after_double_click = false
 
 [accessibility]
 # Check Accessibility permission on startup; exits with guidance if missing.

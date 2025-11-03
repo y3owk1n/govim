@@ -268,12 +268,12 @@ func (e *Element) GetChildrenCount() int {
 }
 
 // LeftClick performs a click action on the element
-func (e *Element) LeftClick() error {
+func (e *Element) LeftClick(restoreCursor bool) error {
 	if e.ref == nil {
 		return fmt.Errorf("element is nil")
 	}
 
-	result := C.performLeftClick(e.ref)
+	result := C.performLeftClick(e.ref, C.bool(restoreCursor))
 	if result == 1 {
 		return nil
 	}
@@ -282,12 +282,12 @@ func (e *Element) LeftClick() error {
 }
 
 // RightClick performs a right-click action on the element
-func (e *Element) RightClick() error {
+func (e *Element) RightClick(restoreCursor bool) error {
 	if e.ref == nil {
 		return fmt.Errorf("element is nil")
 	}
 
-	result := C.performRightClick(e.ref)
+	result := C.performRightClick(e.ref, C.bool(restoreCursor))
 	if result == 0 {
 		return fmt.Errorf("right-click action failed")
 	}
@@ -295,12 +295,12 @@ func (e *Element) RightClick() error {
 }
 
 // DoubleClick performs a double-click action on the element
-func (e *Element) DoubleClick() error {
+func (e *Element) DoubleClick(restoreCursor bool) error {
 	if e.ref == nil {
 		return fmt.Errorf("element is nil")
 	}
 
-	result := C.performDoubleClick(e.ref)
+	result := C.performDoubleClick(e.ref, C.bool(restoreCursor))
 	if result == 0 {
 		return fmt.Errorf("double-click action failed")
 	}
@@ -308,12 +308,12 @@ func (e *Element) DoubleClick() error {
 }
 
 // MiddleClick performs a middle-click action on the element
-func (e *Element) MiddleClick() error {
+func (e *Element) MiddleClick(restoreCursor bool) error {
 	if e.ref == nil {
 		return fmt.Errorf("element is nil")
 	}
 
-	result := C.performMiddleClick(e.ref)
+	result := C.performMiddleClick(e.ref, C.bool(restoreCursor))
 	if result == 0 {
 		return fmt.Errorf("middle-click action failed")
 	}

@@ -649,19 +649,21 @@ void moveMouse(CGPoint position) {
 }
 
 // Generic click function
-static int performClick(void* element, CGEventType downEvent, CGEventType upEvent, CGMouseButton button) {
+static int performClick(void* element, CGEventType downEvent, CGEventType upEvent, CGMouseButton button, bool restoreCursor) {
     if (!element) return 0;
 
     CGPoint clickPoint;
-
     if (!getElementCenter(element, &clickPoint)) {
         return 0;
     }
 
-    // Save current cursor position
-    CGEventRef event = CGEventCreate(NULL);
-    CGPoint originalPosition = CGEventGetLocation(event);
-    CFRelease(event);
+    // Save current cursor position if needed
+    CGPoint originalPosition = CGPointZero;
+    if (restoreCursor) {
+        CGEventRef event = CGEventCreate(NULL);
+        originalPosition = CGEventGetLocation(event);
+        CFRelease(event);
+    }
 
     moveMouse(clickPoint);
 
@@ -671,8 +673,10 @@ static int performClick(void* element, CGEventType downEvent, CGEventType upEven
     if (!down || !up) {
         if (down) CFRelease(down);
         if (up) CFRelease(up);
-        // Restore cursor position before returning
-        moveMouse(originalPosition);
+        // Restore cursor position before returning if needed
+        if (restoreCursor) {
+            moveMouse(originalPosition);
+        }
         return 0;
     }
 
@@ -683,41 +687,45 @@ static int performClick(void* element, CGEventType downEvent, CGEventType upEven
 
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
 
-    // Restore cursor to original position
-    moveMouse(originalPosition);
+    // Restore cursor to original position if needed
+    if (restoreCursor) {
+        moveMouse(originalPosition);
+    }
 
     return 1;
 }
 
 // Perform left click
-int performLeftClick(void* element) {
-    return performClick(element, kCGEventLeftMouseDown, kCGEventLeftMouseUp, kCGMouseButtonLeft);
+int performLeftClick(void* element, bool restoreCursor) {
+    return performClick(element, kCGEventLeftMouseDown, kCGEventLeftMouseUp, kCGMouseButtonLeft, restoreCursor);
 }
 
 // Perform right click
-int performRightClick(void* element) {
-    return performClick(element, kCGEventRightMouseDown, kCGEventRightMouseUp, kCGMouseButtonRight);
+int performRightClick(void* element, bool restoreCursor) {
+    return performClick(element, kCGEventRightMouseDown, kCGEventRightMouseUp, kCGMouseButtonRight, restoreCursor);
 }
 
 // Perform middle click
-int performMiddleClick(void* element) {
-    return performClick(element, kCGEventOtherMouseDown, kCGEventOtherMouseUp, kCGMouseButtonCenter);
+int performMiddleClick(void* element, bool restoreCursor) {
+    return performClick(element, kCGEventOtherMouseDown, kCGEventOtherMouseUp, kCGMouseButtonCenter, restoreCursor);
 }
 
 // Perform double click
-int performDoubleClick(void* element) {
+int performDoubleClick(void* element, bool restoreCursor) {
     if (!element) return 0;
 
     CGPoint position;
-
     if (!getElementCenter(element, &position)) {
         return 0;
     }
 
-    // Save current cursor position
-    CGEventRef event = CGEventCreate(NULL);
-    CGPoint originalPosition = CGEventGetLocation(event);
-    CFRelease(event);
+    // Save current cursor position if needed
+    CGPoint originalPosition = CGPointZero;
+    if (restoreCursor) {
+        CGEventRef event = CGEventCreate(NULL);
+        originalPosition = CGEventGetLocation(event);
+        CFRelease(event);
+    }
 
     moveMouse(position);
 
@@ -731,8 +739,10 @@ int performDoubleClick(void* element) {
         if (up1) CFRelease(up1);
         if (down2) CFRelease(down2);
         if (up2) CFRelease(up2);
-        // Restore cursor position before returning
-        moveMouse(originalPosition);
+        // Restore cursor position before returning if needed
+        if (restoreCursor) {
+            moveMouse(originalPosition);
+        }
         return 0;
     }
 
@@ -754,8 +764,10 @@ int performDoubleClick(void* element) {
 
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
 
-    // Restore cursor to original position
-    moveMouse(originalPosition);
+    // Restore cursor to original position if needed
+    if (restoreCursor) {
+        moveMouse(originalPosition);
+    }
 
     return 1;
 }
