@@ -380,19 +380,11 @@ func (e *Element) IsClickable() bool {
 		return false
 	}
 
-	// Some elements (like Dock items, menu bar items) may not report as "enabled"
-	// but are still clickable
-	exemptRoles := map[string]bool{
-		"AXDockItem":    true,
-		"AXMenuBarItem": true,
-	}
+	// We are checking this with some predefined heuristics
+	// Not sure if its working fine, but it works for now
+	result := C.hasClickAction(e.ref)
 
-	if exemptRoles[info.Role] {
-		return true
-	}
-
-	// For other roles, check if enabled
-	return info.IsEnabled
+	return result == 1
 }
 
 // GetAllWindows returns all windows of the focused application

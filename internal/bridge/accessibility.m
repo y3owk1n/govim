@@ -496,31 +496,112 @@ void** getChildren(void* element, int* count) {
     return result;
 }
 
+static CFStringRef kAXLinkRole            = CFSTR("AXLink");
+static CFStringRef kAXCheckboxRole        = CFSTR("AXCheckBox");
+static CFStringRef kAXFocusableAttribute  = CFSTR("AXFocusable");
+static CFStringRef kAXVisibleAttribute    = CFSTR("AXVisible");
+
 // Check if element has click action
 int hasClickAction(void* element) {
     if (!element) return 0;
-
     AXUIElementRef axElement = (AXUIElementRef)element;
+
+    // Check explicit actions
     CFArrayRef actions = NULL;
-
-    AXError error = AXUIElementCopyActionNames(axElement, &actions);
-    if (error != kAXErrorSuccess || !actions) {
-        return 0;
-    }
-
-    CFIndex count = CFArrayGetCount(actions);
-    int hasPress = 0;
-
-    for (CFIndex i = 0; i < count; i++) {
-        CFStringRef action = (CFStringRef)CFArrayGetValueAtIndex(actions, i);
-        if (CFStringCompare(action, kAXPressAction, 0) == kCFCompareEqualTo) {
-            hasPress = 1;
-            break;
+    if (AXUIElementCopyActionNames(axElement, &actions) == kAXErrorSuccess && actions) {
+        CFIndex count = CFArrayGetCount(actions);
+        for (CFIndex i = 0; i < count; i++) {
+            CFStringRef action = (CFStringRef)CFArrayGetValueAtIndex(actions, i);
+            if (CFStringCompare(action, kAXPressAction, 0) == kCFCompareEqualTo ||
+                CFStringCompare(action, CFSTR("AXConfirm"), 0) == kCFCompareEqualTo ||
+                CFStringCompare(action, CFSTR("AXPick"), 0) == kCFCompareEqualTo ||
+                CFStringCompare(action, CFSTR("AXShowMenu"), 0) == kCFCompareEqualTo) {
+                CFRelease(actions);
+                return 1;
+            }
         }
+        CFRelease(actions);
     }
 
-    CFRelease(actions);
-    return hasPress;
+    // Focusable + enabled
+    CFBooleanRef enabled = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXEnabledAttribute, (CFTypeRef *)&enabled) == kAXErrorSuccess && enabled) {
+        if (CFBooleanGetValue(enabled)) {
+            CFRelease(enabled);
+            CFBooleanRef focusable = NULL;
+            if (AXUIElementCopyAttributeValue(axElement, kAXFocusableAttribute, (CFTypeRef *)&focusable) == kAXErrorSuccess && focusable) {
+                int isFocus = CFBooleanGetValue(focusable);
+                CFRelease(focusable);
+                if (isFocus) return 1;
+            }
+        } else CFRelease(enabled);
+    }
+
+    // Has title or label
+    CFTypeRef title = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXTitleAttribute, &title) == kAXErrorSuccess && title) {
+        CFRelease(title);
+        return 1;
+    }
+
+    // Has description or help
+    CFTypeRef desc = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXDescriptionAttribute, &desc) == kAXErrorSuccess && desc) {
+        CFRelease(desc);
+        return 1;
+    }
+
+    // Has value or selected state
+    CFTypeRef value = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXValueAttribute, &value) == kAXErrorSuccess && value) {
+        CFRelease(value);
+        return 1;
+    }
+
+    CFTypeRef selected = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXSelectedAttribute, &selected) == kAXErrorSuccess && selected) {
+        CFRelease(selected);
+        return 1;
+    }
+
+    // Has visual bounds
+    CFTypeRef position = NULL;
+    CFTypeRef size = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXPositionAttribute, &position) == kAXErrorSuccess &&
+        AXUIElementCopyAttributeValue(axElement, kAXSizeAttribute, &size) == kAXErrorSuccess &&
+        position && size) {
+        CFRelease(position);
+        CFRelease(size);
+        return 1;
+    }
+    if (position) CFRelease(position);
+    if (size) CFRelease(size);
+
+    // Expanded/collapsible state
+    CFTypeRef expanded = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXExpandedAttribute, &expanded) == kAXErrorSuccess && expanded) {
+        CFRelease(expanded);
+        return 1;
+    }
+
+    // Visible + leaf node
+    CFBooleanRef visible = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXVisibleAttribute, (CFTypeRef *)&visible) == kAXErrorSuccess && visible) {
+        if (CFBooleanGetValue(visible)) {
+            CFArrayRef children = NULL;
+            if (AXUIElementCopyAttributeValue(axElement, kAXChildrenAttribute, (CFTypeRef *)&children) == kAXErrorSuccess) {
+                if (children && CFArrayGetCount(children) == 0) {
+                    CFRelease(children);
+                    CFRelease(visible);
+                    return 1;
+                }
+                if (children) CFRelease(children);
+            }
+        }
+        CFRelease(visible);
+    }
+
+    return 0;
 }
 
 // Perform click

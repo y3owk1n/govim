@@ -39,12 +39,24 @@ accessibility_check_on_start = true
 # Users can add or remove roles as needed
 clickable_roles = [
     "AXButton",
+    "AXComboBox",
     "AXCheckBox",
     "AXRadioButton",
-    "AXPopUpButton",
     "AXLink",
+    "AXPopUpButton",
     "AXTextField",
+    "AXSlider",
+    "AXTabGroup",
+    "AXTabButton",
+    "AXSwitch",
+    "AXToolbar",
+    "AXDisclosureTriangle",
     "AXTextArea",
+    "AXMenuButton",
+    "AXMenuItem",
+    "AXGroup",
+    "AXImage",
+    "AXCell",
 ]
 
 # Global accessibility roles that are treated as scrollable
