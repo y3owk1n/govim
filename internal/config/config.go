@@ -109,16 +109,24 @@ func DefaultConfig() *Config {
 			AccessibilityCheckOnStart: true,
 			ClickableRoles: []string{
 				"AXButton",
+				"AXComboBox",
 				"AXCheckBox",
 				"AXRadioButton",
-				"AXPopUpButton",
-				"AXMenuItem",
-				"AXMenuBarItem",
-				"AXDockItem",
-				"AXApplicationDockItem",
 				"AXLink",
+				"AXPopUpButton",
 				"AXTextField",
+				"AXSlider",
+				"AXTabGroup",
+				"AXTabButton",
+				"AXSwitch",
+				"AXToolbar",
+				"AXDisclosureTriangle",
 				"AXTextArea",
+				"AXMenuButton",
+				"AXMenuItem",
+				"AXGroup",
+				"AXImage",
+				"AXCell",
 			},
 			ScrollableRoles: []string{
 				"AXScrollArea",
@@ -409,7 +417,6 @@ func (c *Config) GetClickableRolesForApp(bundleID string) []string {
 	// Add menubar roles if enabled
 	if c.General.IncludeMenubarHints {
 		rolesMap["AXMenuBarItem"] = struct{}{}
-		rolesMap["AXMenuItem"] = struct{}{}
 	}
 
 	// Add dock roles if enabled
