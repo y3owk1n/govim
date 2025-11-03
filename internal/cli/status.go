@@ -23,12 +23,12 @@ var statusCmd = &cobra.Command{
 		}
 
 		if !response.Success {
-			return fmt.Errorf(response.Message)
+			return fmt.Errorf("%s", response.Message)
 		}
 
 		// Pretty print the status data
 		fmt.Println("GoVim Status:")
-		if data, ok := response.Data.(map[string]interface{}); ok {
+		if data, ok := response.Data.(map[string]any); ok {
 			if enabled, ok := data["enabled"].(bool); ok {
 				status := "stopped"
 				if enabled {

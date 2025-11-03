@@ -76,7 +76,7 @@ func sendCommand(action string) error {
 	}
 
 	if !response.Success {
-		return fmt.Errorf(response.Message)
+		return fmt.Errorf("%s", response.Message)
 	}
 
 	fmt.Println(response.Message)
