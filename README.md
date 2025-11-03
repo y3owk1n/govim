@@ -66,7 +66,6 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Find a way to auto deduplicate hints that are targeting the same point
 - Scroll areas are hardcoded from 1-9, do we ever need more than that and make it dynamic upon query? We can still use <Tab> to cycle next tho
 - Homerow supports `continuous clicks`, is that something important?
-- Maybe a new action (move_mouse), that just move the mouse to the point after clicking the hint, maybe useful for trying to hover something?
 - Maybe forces to certain input source? I normally just use English, but maybe it's useful for others
 - Electron apps does not show hints on the first activation. Maybe there's some manual work need to be done after setting up electron support?
 - Cant actually make scroll works in Electron apps, what is the best approach? There are tons of random `AXGroup` where some is scrollable and some is not...
@@ -258,6 +257,7 @@ govim launch
    - **Right click** (context menu)
    - **Double click**
    - **Middle click**
+   - **Go to a position** (move mouse)
 4. Press `Esc` to cancel
 
 ### Scroll Mode

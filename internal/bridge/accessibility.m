@@ -760,6 +760,21 @@ int performDoubleClick(void* element) {
     return 1;
 }
 
+// Perform middle click
+int performMoveMouseToPosition(void* element) {
+    if (!element) return 0;
+
+    CGPoint clickPoint;
+
+    if (!getElementCenter(element, &clickPoint)) {
+        return 0;
+    }
+
+    moveMouse(clickPoint);
+
+    return 1;
+}
+
 // Set focus
 int setFocus(void* element) {
     if (!element) return 0;
