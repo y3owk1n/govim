@@ -58,6 +58,7 @@ This is an intentional design choice to keep the project lean, maintainable, and
 
 ### Consideration (NOT roadmap)
 
+- Consider zIndex for hints on different layers? There might be multiple layers when we are considering `Menubar`, `Dock` and `Notification bar`
 - Better UI representation for action menu (maybe auto edge detection like tooltip in browser, that will place itself around the element based on the space available around it)
 - Still a bit slow when activating in windows that have huge lists, such as Mail.app without `unread` filter
 - Maybe ditch Accessibility based actions and fully focus on pure mouse click simulation? Noticed that accessibility actions are not very reliable :(
