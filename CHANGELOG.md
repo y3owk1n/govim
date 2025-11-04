@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/y3owk1n/neru/compare/v1.3.0...v1.4.0) (2025-11-04)
+
+
+### Features
+
+* add notification center hints (configurable) ([#49](https://github.com/y3owk1n/neru/issues/49)) ([5e28692](https://github.com/y3owk1n/neru/commit/5e2869297b83086e6a992a61750f9c65723038f8))
+* update branding to `neru` ([#52](https://github.com/y3owk1n/neru/issues/52)) ([7f9922b](https://github.com/y3owk1n/neru/commit/7f9922b0c555814a9bac0ba6499979f1b5981374))
+
+
+### Bug Fixes
+
+* better heuristic for clickable detection ([#51](https://github.com/y3owk1n/neru/issues/51)) ([f8767af](https://github.com/y3owk1n/neru/commit/f8767af40078a0a4e08705f15e2a51589c681c6b))
+
 ## [1.3.0](https://github.com/y3owk1n/neru/compare/v1.2.0...v1.3.0) (2025-11-03)
 
 
