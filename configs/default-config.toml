@@ -1,17 +1,17 @@
-# GoVim Configuration — Mini Docs
+# Neru Configuration — Mini Docs
 #
 # Copy locations:
-#   - macOS: ~/Library/Application Support/govim/config.toml
-#   - XDG:   ~/.config/govim/config.toml
-# Or pass a custom path via the CLI: `govim launch --config /path/to/config.toml`
+#   - macOS: ~/Library/Application Support/neru/config.toml
+#   - XDG:   ~/.config/neru/config.toml
+# Or pass a custom path via the CLI: `neru launch --config /path/to/config.toml`
 #
 # Conventions
 # - Colors: `#RGB`, `#RRGGBB`, or `#RRGGBBAA`.
 # - Hotkeys: `Modifier+...+Key` with modifiers `Cmd`, `Ctrl`, `Alt`, `Shift`, `Option`.
 #   Examples: `Cmd+Shift+Space`, `Ctrl+D`. Set to "" to disable.
 [general]
-# Applications to exclude from GoVim functionality
-# GoVim will do nothing when these applications are focused and pass through everything back to the os
+# Applications to exclude from Neru functionality
+# Neru will do nothing when these applications are focused and pass through everything back to the os
 # Use bundle IDs to identify applications. To find an app's bundle ID:
 # osascript -e 'id of app "AppName"'
 # Examples:
@@ -238,7 +238,7 @@ max_concurrent_queries = 10
 # Use "debug" for troubleshooting; default is "info".
 log_level = "info"
 
-# Log file location (empty for default: ~/Library/Logs/govim/app.log)
+# Log file location (empty for default: ~/Library/Logs/neru/app.log)
 # Set a custom path to redirect logs elsewhere; directories are created as needed.
 log_file = ""
 

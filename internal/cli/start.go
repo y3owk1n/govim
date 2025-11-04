@@ -6,8 +6,8 @@ import (
 
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start the govim program (resume if paused)",
-	Long:  `Start or resume the govim program. This enables govim if it was previously stopped.`,
+	Short: "Start the neru program (resume if paused)",
+	Long:  `Start or resume the neru program. This enables neru if it was previously stopped.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return requiresRunningInstance()
 	},

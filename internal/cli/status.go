@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/y3owk1n/govim/internal/ipc"
+	"github.com/y3owk1n/neru/internal/ipc"
 )
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show govim status",
-	Long:  `Display the current status of the govim program.`,
+	Short: "Show neru status",
+	Long:  `Display the current status of the neru program.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return requiresRunningInstance()
 	},
@@ -27,7 +27,7 @@ var statusCmd = &cobra.Command{
 		}
 
 		// Pretty print the status data
-		fmt.Println("GoVim Status:")
+		fmt.Println("Neru Status:")
 		if data, ok := response.Data.(map[string]any); ok {
 			if enabled, ok := data["enabled"].(bool); ok {
 				status := "stopped"

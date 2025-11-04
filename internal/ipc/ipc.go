@@ -14,7 +14,7 @@ import (
 
 const (
 	// SocketName is the name of the Unix socket file
-	SocketName = "govim.sock"
+	SocketName = "neru.sock"
 
 	// DefaultTimeout is the default timeout for IPC operations
 	DefaultTimeout = 5 * time.Second
@@ -174,9 +174,9 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 	conn, err := dialer.DialContext(ctx, "unix", c.socketPath)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			return Response{}, fmt.Errorf("connection timeout: govim may be unresponsive")
+			return Response{}, fmt.Errorf("connection timeout: neru may be unresponsive")
 		}
-		return Response{}, fmt.Errorf("failed to connect to govim (is it running?): %w", err)
+		return Response{}, fmt.Errorf("failed to connect to neru (is it running?): %w", err)
 	}
 
 	var closeErr error
@@ -196,7 +196,7 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 
 	if err := encoder.Encode(cmd); err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			return Response{}, fmt.Errorf("send timeout: govim may be unresponsive")
+			return Response{}, fmt.Errorf("send timeout: neru may be unresponsive")
 		}
 		err = fmt.Errorf("failed to send command: %w", err)
 		if closeErr != nil {
@@ -208,7 +208,7 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 	var response Response
 	if err := decoder.Decode(&response); err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			return Response{}, fmt.Errorf("receive timeout: govim may be unresponsive")
+			return Response{}, fmt.Errorf("receive timeout: neru may be unresponsive")
 		}
 		err = fmt.Errorf("failed to receive response: %w", err)
 		if closeErr != nil {

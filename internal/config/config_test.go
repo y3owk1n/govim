@@ -161,7 +161,7 @@ func TestGetConfigPath(t *testing.T) {
 	}
 
 	homeDir, _ := os.UserHomeDir()
-	expectedPath := filepath.Join(homeDir, "Library", "Application Support", "govim", "config.toml")
+	expectedPath := filepath.Join(homeDir, "Library", "Application Support", "neru", "config.toml")
 	if path != expectedPath {
 		t.Errorf("Expected path %s, got %s", expectedPath, path)
 	}

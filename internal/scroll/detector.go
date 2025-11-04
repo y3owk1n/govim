@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/y3owk1n/govim/internal/accessibility"
+	"github.com/y3owk1n/neru/internal/accessibility"
 )
 
 // ScrollArea represents a scrollable area

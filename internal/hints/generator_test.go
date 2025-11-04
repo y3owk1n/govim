@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/y3owk1n/govim/internal/accessibility"
-	_ "github.com/y3owk1n/govim/internal/bridge" // Import for CGo compilation
+	"github.com/y3owk1n/neru/internal/accessibility"
+	_ "github.com/y3owk1n/neru/internal/bridge" // Import for CGo compilation
 )
 
 func TestGenerateAlphabetLabels(t *testing.T) {

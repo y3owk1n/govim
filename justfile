@@ -1,4 +1,4 @@
-# GoVim Build System
+# Neru Build System
 # Version information (can be overridden)
 
 VERSION := `git describe --tags --always --dirty 2>/dev/null || echo "dev"`
@@ -7,17 +7,17 @@ BUILD_DATE := `date -u +"%Y-%m-%dT%H:%M:%SZ"`
 
 # Ldflags for version injection
 
-LDFLAGS := "-s -w -X github.com/y3owk1n/govim/internal/cli.Version=" + VERSION + " -X github.com/y3owk1n/govim/internal/cli.GitCommit=" + GIT_COMMIT + " -X github.com/y3owk1n/govim/internal/cli.BuildDate=" + BUILD_DATE
+LDFLAGS := "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=" + VERSION + " -X github.com/y3owk1n/neru/internal/cli.GitCommit=" + GIT_COMMIT + " -X github.com/y3owk1n/neru/internal/cli.BuildDate=" + BUILD_DATE
 
 # Default build
 default: build
 
 # Build the application (development)
 build:
-    @echo "Building GoVim..."
+    @echo "Building Neru..."
     @echo "Version: {{ VERSION }}"
-    go build -ldflags="{{ LDFLAGS }}" -o bin/govim cmd/govim/main.go
-    @echo "✓ Build complete: bin/govim"
+    go build -ldflags="{{ LDFLAGS }}" -o bin/neru cmd/neru/main.go
+    @echo "✓ Build complete: bin/neru"
 
 # Build with optimizations for release
 release:
@@ -25,14 +25,14 @@ release:
     @echo "Version: {{ VERSION }}"
     @echo "Commit: {{ GIT_COMMIT }}"
     @echo "Date: {{ BUILD_DATE }}"
-    go build -ldflags="{{ LDFLAGS }}" -trimpath -o bin/govim cmd/govim/main.go
-    @echo "✓ Release build complete: bin/govim"
+    go build -ldflags="{{ LDFLAGS }}" -trimpath -o bin/neru cmd/neru/main.go
+    @echo "✓ Release build complete: bin/neru"
 
 # Build with custom version
 build-version VERSION_OVERRIDE:
-    @echo "Building GoVim with custom version..."
-    go build -ldflags="-s -w -X github.com/y3owk1n/govim/internal/cli.Version={{ VERSION_OVERRIDE }} -X github.com/y3owk1n/govim/internal/cli.GitCommit={{ GIT_COMMIT }} -X github.com/y3owk1n/govim/internal/cli.BuildDate={{ BUILD_DATE }}" -trimpath -o bin/govim cmd/govim/main.go
-    @echo "✓ Build complete: bin/govim (version: {{ VERSION_OVERRIDE }})"
+    @echo "Building Neru with custom version..."
+    go build -ldflags="-s -w -X github.com/y3owk1n/neru/internal/cli.Version={{ VERSION_OVERRIDE }} -X github.com/y3owk1n/neru/internal/cli.GitCommit={{ GIT_COMMIT }} -X github.com/y3owk1n/neru/internal/cli.BuildDate={{ BUILD_DATE }}" -trimpath -o bin/neru cmd/neru/main.go
+    @echo "✓ Build complete: bin/neru (version: {{ VERSION_OVERRIDE }})"
 
 # Run tests
 test:
@@ -52,7 +52,7 @@ bench:
 # Install locally
 install: build
     @echo "Installing to /usr/local/bin..."
-    cp bin/govim /usr/local/bin/
+    cp bin/neru /usr/local/bin/
     @echo "✓ Installed successfully"
 
 # Clean build artifacts
@@ -65,13 +65,13 @@ clean:
 
 # Run the application (debug mode)
 run:
-    @echo "Running GoVim..."
-    go run cmd/govim/main.go
+    @echo "Running Neru..."
+    go run cmd/neru/main.go
 
 # Run with verbose logging
 run-debug:
-    @echo "Running GoVim (debug mode)..."
-    go run cmd/govim/main.go --log-level=debug
+    @echo "Running Neru (debug mode)..."
+    go run cmd/neru/main.go --log-level=debug
 
 # Format code
 fmt:
@@ -106,7 +106,7 @@ verify:
 
 # Show help
 help:
-    @echo "GoVim Build Commands:"
+    @echo "Neru Build Commands:"
     @echo ""
     @echo "  just build                    - Build the application with version info"
     @echo "  just release                  - Build optimized release version"
