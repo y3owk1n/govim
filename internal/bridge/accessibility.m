@@ -506,99 +506,94 @@ int hasClickAction(void* element) {
     if (!element) return 0;
     AXUIElementRef axElement = (AXUIElementRef)element;
 
-    // Check explicit actions
+    // Ignore hidden or disabled elements early
+    CFBooleanRef hidden = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXHiddenAttribute, (CFTypeRef *)&hidden) == kAXErrorSuccess && hidden) {
+        if (CFBooleanGetValue(hidden)) {
+            CFRelease(hidden);
+            return 0;
+        }
+        CFRelease(hidden);
+    }
+
+    CFBooleanRef enabled = NULL;
+    bool isEnabled = true; // default to true if attribute not present
+    if (AXUIElementCopyAttributeValue(axElement, kAXEnabledAttribute, (CFTypeRef *)&enabled) == kAXErrorSuccess && enabled) {
+        isEnabled = CFBooleanGetValue(enabled);
+        CFRelease(enabled);
+    }
+    if (!isEnabled) return 0;
+
+    // Get role for role-specific fallbacks
+    CFStringRef role = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute, (CFTypeRef *)&role) != kAXErrorSuccess) {
+        role = NULL;
+    }
+
+    // Explicit actions are the strongest signal
     CFArrayRef actions = NULL;
     if (AXUIElementCopyActionNames(axElement, &actions) == kAXErrorSuccess && actions) {
         CFIndex count = CFArrayGetCount(actions);
         for (CFIndex i = 0; i < count; i++) {
             CFStringRef action = (CFStringRef)CFArrayGetValueAtIndex(actions, i);
             if (CFStringCompare(action, kAXPressAction, 0) == kCFCompareEqualTo ||
+                CFStringCompare(action, CFSTR("AXShowMenu"), 0) == kCFCompareEqualTo ||
                 CFStringCompare(action, CFSTR("AXConfirm"), 0) == kCFCompareEqualTo ||
                 CFStringCompare(action, CFSTR("AXPick"), 0) == kCFCompareEqualTo ||
-                CFStringCompare(action, CFSTR("AXShowMenu"), 0) == kCFCompareEqualTo) {
+                CFStringCompare(action, CFSTR("AXRaise"), 0) == kCFCompareEqualTo) {
                 CFRelease(actions);
+                if (role) CFRelease(role);
                 return 1;
             }
         }
         CFRelease(actions);
     }
 
-    // Focusable + enabled
-    CFBooleanRef enabled = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXEnabledAttribute, (CFTypeRef *)&enabled) == kAXErrorSuccess && enabled) {
-        if (CFBooleanGetValue(enabled)) {
-            CFRelease(enabled);
-            CFBooleanRef focusable = NULL;
-            if (AXUIElementCopyAttributeValue(axElement, kAXFocusableAttribute, (CFTypeRef *)&focusable) == kAXErrorSuccess && focusable) {
-                int isFocus = CFBooleanGetValue(focusable);
-                CFRelease(focusable);
-                if (isFocus) return 1;
+    // Some elements support AXPress even if not listed in action names
+    CFStringRef pressDesc = NULL;
+    if (AXUIElementCopyActionDescription(axElement, kAXPressAction, &pressDesc) == kAXErrorSuccess && pressDesc) {
+        CFRelease(pressDesc);
+        if (role) CFRelease(role);
+        return 1;
+    }
+    if (pressDesc) CFRelease(pressDesc);
+
+    // Focusable and enabled controls are clickable (e.g., text fields)
+    CFBooleanRef focusable = NULL;
+    if (AXUIElementCopyAttributeValue(axElement, kAXFocusableAttribute, (CFTypeRef *)&focusable) == kAXErrorSuccess && focusable) {
+        if (CFBooleanGetValue(focusable)) {
+            CFRelease(focusable);
+            // Ensure the element has a hittable rect and is not occluded by other apps
+            CGPoint center;
+            pid_t pid;
+            bool visible = true;
+            if (getElementCenter((void*)axElement, &center) && AXUIElementGetPid(axElement, &pid) == kAXErrorSuccess) {
+                visible = isPointVisible(center, pid);
             }
-        } else CFRelease(enabled);
-    }
-
-    // Has title or label
-    CFTypeRef title = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXTitleAttribute, &title) == kAXErrorSuccess && title) {
-        CFRelease(title);
-        return 1;
-    }
-
-    // Has description or help
-    CFTypeRef desc = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXDescriptionAttribute, &desc) == kAXErrorSuccess && desc) {
-        CFRelease(desc);
-        return 1;
-    }
-
-    // Has value or selected state
-    CFTypeRef value = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXValueAttribute, &value) == kAXErrorSuccess && value) {
-        CFRelease(value);
-        return 1;
-    }
-
-    CFTypeRef selected = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXSelectedAttribute, &selected) == kAXErrorSuccess && selected) {
-        CFRelease(selected);
-        return 1;
-    }
-
-    // Has visual bounds
-    CFTypeRef position = NULL;
-    CFTypeRef size = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXPositionAttribute, &position) == kAXErrorSuccess &&
-        AXUIElementCopyAttributeValue(axElement, kAXSizeAttribute, &size) == kAXErrorSuccess &&
-        position && size) {
-        CFRelease(position);
-        CFRelease(size);
-        return 1;
-    }
-    if (position) CFRelease(position);
-    if (size) CFRelease(size);
-
-    // Expanded/collapsible state
-    CFTypeRef expanded = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXExpandedAttribute, &expanded) == kAXErrorSuccess && expanded) {
-        CFRelease(expanded);
-        return 1;
-    }
-
-    // Visible + leaf node
-    CFBooleanRef visible = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXVisibleAttribute, (CFTypeRef *)&visible) == kAXErrorSuccess && visible) {
-        if (CFBooleanGetValue(visible)) {
-            CFArrayRef children = NULL;
-            if (AXUIElementCopyAttributeValue(axElement, kAXChildrenAttribute, (CFTypeRef *)&children) == kAXErrorSuccess) {
-                if (children && CFArrayGetCount(children) == 0) {
-                    CFRelease(children);
-                    CFRelease(visible);
-                    return 1;
-                }
-                if (children) CFRelease(children);
-            }
+            if (role) CFRelease(role);
+            return visible ? 1 : 0;
         }
-        CFRelease(visible);
+        CFRelease(focusable);
+    }
+
+    // Role-specific fallback for links: Treat as clickable if they expose a URL
+    if (role && CFStringCompare(role, kAXLinkRole, 0) == kCFCompareEqualTo) {
+        CFTypeRef urlAttr = NULL;
+        if (AXUIElementCopyAttributeValue(axElement, kAXURLAttribute, &urlAttr) == kAXErrorSuccess && urlAttr) {
+            CFRelease(urlAttr);
+            CFRelease(role);
+            return 1;
+        }
+        if (urlAttr) CFRelease(urlAttr);
+    }
+
+    if (role) CFRelease(role);
+
+    // final check, ensure a visible bounding box and not occluded
+    CGPoint center;
+    pid_t pid;
+    if (getElementCenter((void*)axElement, &center) && AXUIElementGetPid(axElement, &pid) == kAXErrorSuccess) {
+        return isPointVisible(center, pid) ? 1 : 0;
     }
 
     return 0;

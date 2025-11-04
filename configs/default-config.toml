@@ -57,16 +57,12 @@ clickable_roles = [
     "AXPopUpButton",
     "AXTextField",
     "AXSlider",
-    "AXTabGroup",
     "AXTabButton",
     "AXSwitch",
-    "AXToolbar",
     "AXDisclosureTriangle",
     "AXTextArea",
     "AXMenuButton",
     "AXMenuItem",
-    "AXGroup",
-    "AXImage",
     "AXCell",
 ]
 
@@ -88,6 +84,13 @@ scrollable_roles = [
 # additional_clickable_roles = ["AXStaticText"]
 # # You can also add scrollable roles scoped to the app:
 # # additional_scrollable_roles = ["AXScrollArea"]
+
+# For example, in `Chrome`, we can add support for tabgroups.
+# [[accessibility.app_configs]]
+# bundle_id = "com.google.Chrome"
+# additional_clickable_roles = ["AXTabGroup"]
+
+# You can do and customise alot more when the defaults or global are not good enough.
 
 [accessibility.electron_support]
 ## Electron & Chromium support
