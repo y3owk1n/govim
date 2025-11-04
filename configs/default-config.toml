@@ -64,6 +64,7 @@ clickable_roles = [
     "AXMenuButton",
     "AXMenuItem",
     "AXCell",
+    "AXRow",
 ]
 
 # Global accessibility roles that are treated as scrollable

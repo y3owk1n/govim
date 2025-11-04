@@ -133,6 +133,7 @@ func DefaultConfig() *Config {
 				"AXMenuButton",
 				"AXMenuItem",
 				"AXCell",
+				"AXRow",
 			},
 			ScrollableRoles: []string{
 				"AXScrollArea",
