@@ -11,16 +11,16 @@ import (
 	"time"
 
 	"github.com/getlantern/systray"
-	"github.com/y3owk1n/govim/internal/accessibility"
-	_ "github.com/y3owk1n/govim/internal/bridge" // Import for CGo compilation
-	"github.com/y3owk1n/govim/internal/cli"
-	"github.com/y3owk1n/govim/internal/config"
-	"github.com/y3owk1n/govim/internal/eventtap"
-	"github.com/y3owk1n/govim/internal/hints"
-	"github.com/y3owk1n/govim/internal/hotkeys"
-	"github.com/y3owk1n/govim/internal/ipc"
-	"github.com/y3owk1n/govim/internal/logger"
-	"github.com/y3owk1n/govim/internal/scroll"
+	"github.com/y3owk1n/neru/internal/accessibility"
+	_ "github.com/y3owk1n/neru/internal/bridge" // Import for CGo compilation
+	"github.com/y3owk1n/neru/internal/cli"
+	"github.com/y3owk1n/neru/internal/config"
+	"github.com/y3owk1n/neru/internal/eventtap"
+	"github.com/y3owk1n/neru/internal/hints"
+	"github.com/y3owk1n/neru/internal/hotkeys"
+	"github.com/y3owk1n/neru/internal/ipc"
+	"github.com/y3owk1n/neru/internal/logger"
+	"github.com/y3owk1n/neru/internal/scroll"
 	"go.uber.org/zap"
 )
 
@@ -69,9 +69,9 @@ func NewApp(cfg *config.Config) (*App, error) {
 	if cfg.Accessibility.AccessibilityCheckOnStart {
 		if !accessibility.CheckAccessibilityPermissions() {
 			log.Warn("Accessibility permissions not granted. Please grant permissions in System Settings.")
-			fmt.Println("⚠️  GoVim requires Accessibility permissions to function.")
+			fmt.Println("⚠️  Neru requires Accessibility permissions to function.")
 			fmt.Println("Please go to: System Settings → Privacy & Security → Accessibility")
-			fmt.Println("and enable GoVim.")
+			fmt.Println("and enable Neru.")
 			return nil, fmt.Errorf("accessibility permissions required")
 		}
 	}
@@ -146,7 +146,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 
 // Run runs the application
 func (a *App) Run() error {
-	a.logger.Info("Starting GoVim")
+	a.logger.Info("Starting Neru")
 
 	// Start IPC server
 	a.ipcServer.Start()
@@ -155,8 +155,8 @@ func (a *App) Run() error {
 	// Initialize hotkeys based on current focused app and exclusion
 	a.refreshHotkeysForCurrentApp()
 
-	a.logger.Info("GoVim is running")
-	fmt.Println("✓ GoVim is running")
+	a.logger.Info("Neru is running")
+	fmt.Println("✓ Neru is running")
 
 	// Print configured hotkeys
 	if key := strings.TrimSpace(a.config.Hotkeys.ActivateHintMode); key != "" {
@@ -244,12 +244,12 @@ func (a *App) registerHotkeys() error {
 }
 
 // refreshHotkeysForCurrentApp registers or unregisters global hotkeys based on
-// whether GoVim is enabled and whether the currently focused app is excluded.
+// whether Neru is enabled and whether the currently focused app is excluded.
 func (a *App) refreshHotkeysForCurrentApp() {
 	// If disabled, ensure no hotkeys are registered
 	if !a.enabled {
 		if a.hotkeysRegistered {
-			a.logger.Debug("GoVim disabled; unregistering hotkeys")
+			a.logger.Debug("Neru disabled; unregistering hotkeys")
 			a.hotkeyManager.UnregisterAll()
 			a.hotkeysRegistered = false
 		}
@@ -366,7 +366,7 @@ func (a *App) isFocusedAppExcluded() bool {
 // activateHintMode activates hint mode
 func (a *App) activateHintMode(withActions bool) {
 	if !a.enabled {
-		a.logger.Debug("GoVim is disabled, ignoring hint mode activation")
+		a.logger.Debug("Neru is disabled, ignoring hint mode activation")
 		return
 	}
 	if a.currentMode == ModeHint || a.currentMode == ModeHintWithActions {
@@ -881,7 +881,7 @@ func (a *App) updateScrollHighlight(area *scroll.ScrollArea) {
 // activateScrollMode activates scroll mode
 func (a *App) activateScrollMode() {
 	if !a.enabled {
-		a.logger.Debug("GoVim is disabled, ignoring scroll mode activation")
+		a.logger.Debug("Neru is disabled, ignoring scroll mode activation")
 		return
 	}
 
@@ -1069,43 +1069,43 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 
 	case "start":
 		if a.enabled {
-			return ipc.Response{Success: false, Message: "govim is already running"}
+			return ipc.Response{Success: false, Message: "neru is already running"}
 		}
 		a.enabled = true
-		return ipc.Response{Success: true, Message: "govim started"}
+		return ipc.Response{Success: true, Message: "neru started"}
 
 	case "stop":
 		if !a.enabled {
-			return ipc.Response{Success: false, Message: "govim is already stopped"}
+			return ipc.Response{Success: false, Message: "neru is already stopped"}
 		}
 		a.enabled = false
 		a.exitMode()
-		return ipc.Response{Success: true, Message: "govim stopped"}
+		return ipc.Response{Success: true, Message: "neru stopped"}
 
 	case "hints":
 		if !a.enabled {
-			return ipc.Response{Success: false, Message: "govim is not running"}
+			return ipc.Response{Success: false, Message: "neru is not running"}
 		}
 		a.activateHintMode(false)
 		return ipc.Response{Success: true, Message: "hint mode activated"}
 
 	case "hints_action":
 		if !a.enabled {
-			return ipc.Response{Success: false, Message: "govim is not running"}
+			return ipc.Response{Success: false, Message: "neru is not running"}
 		}
 		a.activateHintMode(true)
 		return ipc.Response{Success: true, Message: "hint mode with actions activated"}
 
 	case "scroll":
 		if !a.enabled {
-			return ipc.Response{Success: false, Message: "govim is not running"}
+			return ipc.Response{Success: false, Message: "neru is not running"}
 		}
 		a.activateScrollMode()
 		return ipc.Response{Success: true, Message: "scroll mode activated"}
 
 	case "idle":
 		if !a.enabled {
-			return ipc.Response{Success: false, Message: "govim is not running"}
+			return ipc.Response{Success: false, Message: "neru is not running"}
 		}
 		a.exitMode()
 		return ipc.Response{Success: true, Message: "mode set to idle"}
@@ -1144,9 +1144,9 @@ var globalApp *App
 
 func onReady() {
 	systray.SetTitle("⌨️")
-	systray.SetTooltip("GoVim - Keyboard Navigation")
+	systray.SetTooltip("Neru - Keyboard Navigation")
 
-	mQuit := systray.AddMenuItem("Quit GoVim", "Exit the application")
+	mQuit := systray.AddMenuItem("Quit Neru", "Exit the application")
 
 	go func() {
 		<-mQuit.ClickedCh

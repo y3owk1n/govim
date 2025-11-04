@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/y3owk1n/govim/internal/accessibility"
+	"github.com/y3owk1n/neru/internal/accessibility"
 )
 
 // Hint represents a hint label for a UI element

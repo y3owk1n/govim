@@ -49,7 +49,7 @@ func Init(logLevel, logFilePath string, structured bool) error {
 		if err != nil {
 			return fmt.Errorf("failed to get home directory: %w", err)
 		}
-		logFilePath = filepath.Join(homeDir, "Library", "Logs", "govim", "app.log")
+		logFilePath = filepath.Join(homeDir, "Library", "Logs", "neru", "app.log")
 	}
 
 	// Create log directory

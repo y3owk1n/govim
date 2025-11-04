@@ -1,4 +1,4 @@
-module github.com/y3owk1n/govim
+module github.com/y3owk1n/neru
 
 go 1.25.2
 

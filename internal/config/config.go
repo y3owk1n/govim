@@ -226,14 +226,14 @@ func findConfigFile() string {
 		return ""
 	}
 
-	// Try ~/.config/govim/config.toml
-	configPath := filepath.Join(homeDir, ".config", "govim", "config.toml")
+	// Try ~/.config/neru/config.toml
+	configPath := filepath.Join(homeDir, ".config", "neru", "config.toml")
 	if _, err := os.Stat(configPath); err == nil {
 		return configPath
 	}
 
-	// Try ~/Library/Application Support/govim/config.toml
-	configPath = filepath.Join(homeDir, "Library", "Application Support", "govim", "config.toml")
+	// Try ~/Library/Application Support/neru/config.toml
+	configPath = filepath.Join(homeDir, "Library", "Application Support", "neru", "config.toml")
 	if _, err := os.Stat(configPath); err == nil {
 		return configPath
 	}
@@ -249,7 +249,7 @@ func GetConfigPath() string {
 	}
 
 	// Prefer macOS standard location
-	return filepath.Join(homeDir, "Library", "Application Support", "govim", "config.toml")
+	return filepath.Join(homeDir, "Library", "Application Support", "neru", "config.toml")
 }
 
 // Validate validates the configuration

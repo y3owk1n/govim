@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/y3owk1n/govim/internal/ipc"
+	"github.com/y3owk1n/neru/internal/ipc"
 )
 
 var (
@@ -21,9 +21,9 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "govim",
-	Short: "GoVim - Keyboard-driven navigation for macOS",
-	Long: `GoVim is a keyboard-driven navigation tool for macOS that provides
+	Use:   "neru",
+	Short: "Neru - Keyboard-driven navigation for macOS",
+	Long: `Neru is a keyboard-driven navigation tool for macOS that provides
 vim-like navigation capabilities across all applications using accessibility APIs.`,
 	Version: Version,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -43,14 +43,14 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "config file path")
 
 	// Customize version output
-	rootCmd.SetVersionTemplate(fmt.Sprintf("GoVim version %s\nGit commit: %s\nBuild date: %s\n", Version, GitCommit, BuildDate))
+	rootCmd.SetVersionTemplate(fmt.Sprintf("Neru version %s\nGit commit: %s\nBuild date: %s\n", Version, GitCommit, BuildDate))
 }
 
-// launchProgram launches the main govim program
+// launchProgram launches the main neru program
 func launchProgram(cfgPath string) {
 	// Check if already running
 	if ipc.IsServerRunning() {
-		fmt.Println("GoVim is already running")
+		fmt.Println("Neru is already running")
 		os.Exit(0)
 	}
 
@@ -63,10 +63,10 @@ func launchProgram(cfgPath string) {
 	}
 }
 
-// sendCommand sends a command to the running govim instance
+// sendCommand sends a command to the running neru instance
 func sendCommand(action string) error {
 	if !ipc.IsServerRunning() {
-		return fmt.Errorf("govim is not running. Start it first with 'govim' or 'govim launch'")
+		return fmt.Errorf("neru is not running. Start it first with 'neru' or 'neru launch'")
 	}
 
 	client := ipc.NewClient()
@@ -83,11 +83,11 @@ func sendCommand(action string) error {
 	return nil
 }
 
-// requiresRunningInstance checks if govim is running and exits with error if not
+// requiresRunningInstance checks if neru is running and exits with error if not
 func requiresRunningInstance() error {
 	if !ipc.IsServerRunning() {
-		fmt.Fprintln(os.Stderr, "Error: govim is not running")
-		fmt.Fprintln(os.Stderr, "Start it first with: govim launch")
+		fmt.Fprintln(os.Stderr, "Error: neru is not running")
+		fmt.Fprintln(os.Stderr, "Start it first with: neru launch")
 		os.Exit(1)
 	}
 	return nil

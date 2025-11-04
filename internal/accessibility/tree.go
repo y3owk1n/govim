@@ -3,7 +3,7 @@ package accessibility
 import (
 	"image"
 
-	"github.com/y3owk1n/govim/internal/logger"
+	"github.com/y3owk1n/neru/internal/logger"
 	"go.uber.org/zap"
 )
 

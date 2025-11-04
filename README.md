@@ -1,11 +1,15 @@
-# GoVim 🚀
+# Neru (練る)
+
+> Master your keyboard, refine your workflow
+
+Navigate macOS without touching your mouse - keyboard-driven productivity at its finest 🖱️⌨️
 
 <div align="center">
 
-[![License](https://img.shields.io/github/license/y3owk1n/govim)](LICENSE)
+[![License](https://img.shields.io/github/license/y3owk1n/neru)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
-![Go Version](https://img.shields.io/github/go-mod/go-version/y3owk1n/govim)
-[![Latest Release](https://img.shields.io/github/v/release/y3owk1n/govim)](https://github.com/y3owk1n/govim/releases)
+![Go Version](https://img.shields.io/github/go-mod/go-version/y3owk1n/neru)
+[![Latest Release](https://img.shields.io/github/v/release/y3owk1n/neru)](https://github.com/y3owk1n/neru/releases)
 
 **Navigate macOS without touching your mouse - keyboard-driven productivity at its finest 🖱️⌨️**
 
@@ -17,17 +21,15 @@
 
 </div>
 
-## 🎯 Project Philosophy
+## About Neru
 
-**GoVim is a free, open-source alternative to Homerow, Shortcat, and Vimac—and it always will be.** Built with Objective-C and Go, it's a working MVP that's proven itself capable of replacing Homerow in daily use for myself.
+**Neru** (練る) - A Japanese word meaning "to refine, polish, and master through practice" - embodies the philosophy of this tool: mastering keyboard-driven navigation to refine your macOS workflow.
 
-### Community-Driven Development
+Neru is a free, open-source alternative to Homerow, Shortcat, and Vimac—and it always will be. Built with Objective-C and Go, it's a working MVP that's proven itself capable of replacing Homerow in daily use for myself.
 
-This project thrives on community contributions. I'm happy to merge pull requests that align with the project's goals, and I hope GoVim stays current through collective effort rather than solo maintenance, and slowly dies off with hundreds of issues.
+This project thrives on community contributions. I'm happy to merge pull requests that align with the project's goals, and I hope Neru stays current through collective effort rather than solo maintenance, and slowly dies off with hundreds of issues.
 
-### Configuration-First Approach
-
-**No GUI settings panel.** GoVim embraces configuration files over UI settings because:
+**No GUI settings panel.** Neru embraces configuration files over UI settings because:
 
 - ✅ Config files are faster and more powerful, plus easier for dotfile management
 - ✅ Easy to version control and share
@@ -54,7 +56,7 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - 🌐 **Universal Support** - Works with native macOS apps, Electron apps, and Chrome/Firefox
 - ⚡ **Performance** - Built with native macOS APIs for instant response
 - 🛠️ **Highly Customizable** - Configure hints, hotkeys, and behaviors via TOML
-- 🚫 **App Exclusion** - Exclude specific apps where GoVim shouldn't activate
+- 🚫 **App Exclusion** - Exclude specific apps where Neru shouldn't activate
 - 🎨 **Minimal UI** - Non-intrusive hints that stay out of your way
 - 💬 **IPC Control** - Control the daemon via CLI commands
 
@@ -75,7 +77,7 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Add more actions to the menubar like `status`, `stop`, `start`, `current version`
 - Test suites, but am lazy for it
 - Implements launch agent with `start-service` and `stop-service`? Though I am fine just doing it in my nix config directly
-- Macos bundle with `GoVim.app` for easier installation? But we'll need a nice app icon for it tho...
+- Macos bundle with `Neru.app` for easier installation? But we'll need a nice app icon for it tho...
 
 ## 🚀 Installation
 
@@ -83,7 +85,7 @@ This is an intentional design choice to keep the project lean, maintainable, and
 
 ```bash
 brew tap y3owk1n/tap
-brew install y3owk1n/tap/govim
+brew install y3owk1n/tap/neru
 ```
 
 ### Nix Darwin
@@ -104,12 +106,12 @@ Add the following file to your overlay:
   nix-update-script,
 }:
 buildGoModule (finalAttrs: {
-  pname = "govim";
+  pname = "neru";
   version = "1.2.0";
 
   src = fetchFromGitHub {
     owner = "y3owk1n";
-    repo = "govim";
+    repo = "neru";
     tag = "v${finalAttrs.version}";
     hash = "sha256-dzcpdVbl2eVU4L9x/qnXC5DOWbMCgt9/wEKroOedXoY=";
   };
@@ -119,7 +121,7 @@ buildGoModule (finalAttrs: {
   ldflags = [
     "-s"
     "-w"
-    "-X github.com/y3owk1n/govim/internal/cli.Version=${finalAttrs.version}"
+    "-X github.com/y3owk1n/neru/internal/cli.Version=${finalAttrs.version}"
   ];
 
   # Completions
@@ -128,10 +130,10 @@ buildGoModule (finalAttrs: {
     writableTmpDirAsHomeHook
   ];
   postInstall = lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) ''
-    installShellCompletion --cmd govim \
-      --bash <($out/bin/govim completion bash) \
-      --fish <($out/bin/govim completion fish) \
-      --zsh <($out/bin/govim completion zsh)
+    installShellCompletion --cmd neru \
+      --bash <($out/bin/neru completion bash) \
+      --fish <($out/bin/neru completion fish) \
+      --zsh <($out/bin/neru completion zsh)
   '';
 
   passthru = {
@@ -151,21 +153,21 @@ Create a custom module:
 }:
 
 let
-  cfg = config.govim;
-  configFile = pkgs.writeScript "govim.toml" cfg.config;
+  cfg = config.neru;
+  configFile = pkgs.writeScript "neru.toml" cfg.config;
 in
 
 {
   options = {
-    govim = with lib.types; {
-      enable = lib.mkEnableOption "Govim keyboard navigation";
-      package = lib.mkPackageOption pkgs "govim" { };
+    neru = with lib.types; {
+      enable = lib.mkEnableOption "neru keyboard navigation";
+      package = lib.mkPackageOption pkgs "neru" { };
       config = lib.mkOption {
         type = types.lines;
         default = ''
           # Your config here
         '';
-        description = "Config to use for {file} `govim.toml`.";
+        description = "Config to use for {file} `neru.toml`.";
       };
     };
   };
@@ -174,9 +176,9 @@ in
     lib.mkIf (cfg.enable) {
       environment.systemPackages = [ cfg.package ];
 
-      launchd.user.agents.govim = {
+      launchd.user.agents.neru = {
         command =
-          "${cfg.package}/bin/govim launch"
+          "${cfg.package}/bin/neru launch"
           + (lib.optionalString (cfg.config != "") " --config ${configFile}");
         serviceConfig = {
           KeepAlive = false;
@@ -192,8 +194,8 @@ Enable in your configuration:
 
 ```nix
 {
-  imports = [ ./path-to-govim-module.nix ];
-  govim.enable = true;
+  imports = [ ./path-to-neru-module.nix ];
+  neru.enable = true;
 }
 ```
 
@@ -203,15 +205,15 @@ Enable in your configuration:
 
 ```bash
 # Clone and build
-git clone https://github.com/y3owk1n/govim.git
-cd govim
+git clone https://github.com/y3owk1n/neru.git
+cd neru
 just build
 
 # Install
-mv ./bin/govim /usr/local/bin/govim
+mv ./bin/neru /usr/local/bin/neru
 
 # Run
-govim launch
+neru launch
 ```
 
 ### ⚠️ Required Permissions
@@ -220,15 +222,15 @@ Grant Accessibility permissions:
 
 1. Open **System Settings**
 2. Navigate to **Privacy & Security** → **Accessibility**
-3. Enable **GoVim**
+3. Enable **Neru**
 
 ## 🎯 Quick Start
 
 After installation and granting permissions:
 
 ```bash
-# Start GoVim
-govim launch
+# Start Neru
+neru launch
 
 # Try hint mode: Press Cmd+Shift+Space
 # Try scroll mode: Press Cmd+Shift+J
@@ -280,17 +282,17 @@ Vim-style navigation keys:
 
 The ⌨️ icon in your menu bar provides quick access to:
 
-- Quit GoVim
+- Quit Neru
 
 ## ⚙️ Configuration
 
 ### Config File Location
 
-GoVim looks for configuration in:
+Neru looks for configuration in:
 
-- **macOS Convention:** `~/Library/Application Support/govim/config.toml`
-- **XDG Standard:** `~/.config/govim/config.toml` (Prefer this more so that we can put this in our dotfile)
-- **Custom Path:** Use `--config` flag: `govim launch --config /path/to/config.toml` (Useful for nix users)
+- **macOS Convention:** `~/Library/Application Support/neru/config.toml`
+- **XDG Standard:** `~/.config/neru/config.toml` (Prefer this more so that we can put this in our dotfile)
+- **Custom Path:** Use `--config` flag: `neru launch --config /path/to/config.toml` (Useful for nix users)
 
 ### Default Configuration
 
@@ -311,8 +313,8 @@ activate_scroll_mode = "Ctrl+S"
 You shoul be also able to just clear the keybind and bind it with something like skhd or any similar tools, since we exposes commands in the cli through IPC. For example in skhd:
 
 ```bash
-ctrl - f : govim hints
-ctrl - g : govim hints_action
+ctrl - f : neru hints
+ctrl - g : neru hints_action
 ctrl - s : scroll
 ```
 
@@ -339,7 +341,7 @@ restore_pos_after_double_click = true
 
 #### App Exclusion
 
-Exclude specific apps where GoVim shouldn't activate. This will also unregister all the binded hotkeys when the app is focused so that in specific app, you can use the hotkey to do something else.
+Exclude specific apps where Neru shouldn't activate. This will also unregister all the binded hotkeys when the app is focused so that in specific app, you can use the hotkey to do something else.
 
 ```toml
 [general]
@@ -399,7 +401,7 @@ hint_characters = "asdfghjklqwertyuiop"  # 19 chars = 361 two-char combinations
 
 ### Electron & Chrome Support
 
-GoVim includes built-in support for Electron apps and Chromium browsers.
+Neru includes built-in support for Electron apps and Chromium browsers.
 
 **Supported Electron apps** (automatic):
 
@@ -540,61 +542,61 @@ scroll_to_edge_delta = 5000
 
 ## 🖥️ CLI Usage
 
-GoVim provides comprehensive CLI commands with IPC (Inter-Process Communication) for controlling the daemon.
+Neru provides comprehensive CLI commands with IPC (Inter-Process Communication) for controlling the daemon.
 
 ### Launch Daemon
 
 ```bash
-govim launch                              # Use default config location
-govim launch --config /path/to/config.toml  # Use custom config
+neru launch                              # Use default config location
+neru launch --config /path/to/config.toml  # Use custom config
 ```
 
 ### Control Commands
 
-These require GoVim to be running:
+These require Neru to be running:
 
 ```bash
-govim start     # Resume GoVim if paused
-govim stop      # Pause GoVim (doesn't quit, just disables functionality)
-govim status    # Show current status (running/paused, current mode, config path)
+neru start     # Resume Neru if paused
+neru stop      # Pause Neru (doesn't quit, just disables functionality)
+neru status    # Show current status (running/paused, current mode, config path)
 ```
 
 ### Mode Activation
 
 ```bash
-govim hints         # Activate hint mode (direct click)
-govim hints_action  # Activate hint mode with action selection
-govim scroll        # Activate scroll mode
-govim idle          # Return to idle state
+neru hints         # Activate hint mode (direct click)
+neru hints_action  # Activate hint mode with action selection
+neru scroll        # Activate scroll mode
+neru idle          # Return to idle state
 ```
 
 ### Example Workflow
 
 ```bash
-# Start GoVim
-govim launch
+# Start Neru
+neru launch
 
 # Check status in another terminal
-govim status
+neru status
 # Output:
-#   GoVim Status:
+#   Neru Status:
 #     Status: running
 #     Mode: idle
-#     Config: /Users/you/Library/Application Support/govim/config.toml
+#     Config: /Users/you/Library/Application Support/neru/config.toml
 
 # Activate hints via CLI instead of hotkey
-govim hints
+neru hints
 
 # Pause functionality temporarily
-govim stop
+neru stop
 
 # Resume
-govim start
+neru start
 ```
 
 ### IPC Architecture
 
-The CLI uses Unix domain sockets (`/tmp/govim.sock`) for:
+The CLI uses Unix domain sockets (`/tmp/neru.sock`) for:
 
 - Fast, reliable communication between CLI and daemon
 - Multiple concurrent CLI commands
@@ -605,9 +607,9 @@ The CLI uses Unix domain sockets (`/tmp/govim.sock`) for:
 ### Accessibility Permissions Not Working
 
 1. Open **System Settings** → **Privacy & Security** → **Accessibility**
-2. Remove GoVim from the list if present
-3. Re-add GoVim
-4. Restart GoVim
+2. Remove Neru from the list if present
+3. Re-add Neru
+4. Restart Neru
 
 ### Hints Not Appearing in Electron Apps
 
@@ -633,7 +635,7 @@ If hints don't appear in Electron app content (VS Code, Windsurf, etc.):
 
 ### Viewing Logs
 
-**Log location:** `~/Library/Logs/govim/app.log`
+**Log location:** `~/Library/Logs/neru/app.log`
 
 **Enable debug logging:**
 
@@ -642,23 +644,23 @@ If hints don't appear in Electron app content (VS Code, Windsurf, etc.):
 log_level = "debug"
 ```
 
-### GoVim Not Responding
+### Neru Not Responding
 
 ```bash
 # Check if daemon is running
-govim status
+neru status
 
 # If not running, restart
-govim launch
+neru launch
 
 # If stuck, force quit and restart
-pkill govim
-govim launch
+pkill neru
+neru launch
 ```
 
 ## 🏗️ Architecture
 
-GoVim is built with:
+Neru is built with:
 
 - **Go** - Core application logic, configuration, and CLI
 - **CGo/Objective-C** - macOS Accessibility API integration
@@ -667,8 +669,8 @@ GoVim is built with:
 ### Project Structure
 
 ```
-govim/
-├── cmd/govim/           # Main entry point
+neru/
+├── cmd/neru/           # Main entry point
 ├── internal/
 │   ├── accessibility/   # Accessibility API wrappers
 │   ├── hints/          # Hint generation and display logic
@@ -706,8 +708,8 @@ Version information is automatically injected at build time from git tags.
 **Manual build with custom version:**
 
 ```bash
-go build -ldflags="-s -w -X github.com/y3owk1n/govim/internal/cli.Version=v1.0.0" \
-  -o bin/govim cmd/govim/main.go
+go build -ldflags="-s -w -X github.com/y3owk1n/neru/internal/cli.Version=v1.0.0" \
+  -o bin/neru cmd/neru/main.go
 ```
 
 ### Testing
@@ -744,7 +746,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-GoVim is inspired by these excellent projects:
+Neru is inspired by these excellent projects:
 
 - [Homerow](https://www.homerow.app/) - Modern keyboard navigation for macOS
 - [Vimac](https://github.com/dexterleng/vimac) - Vim-style keyboard navigation
@@ -753,7 +755,7 @@ GoVim is inspired by these excellent projects:
 
 ## 🌟 Star History
 
-If you find GoVim useful, consider giving it a star on GitHub!
+If you find Neru useful, consider giving it a star on GitHub!
 
 ---
 
@@ -761,6 +763,6 @@ If you find GoVim useful, consider giving it a star on GitHub!
 
 Made with ❤️ by [y3owk1n](https://github.com/y3owk1n)
 
-[Report Bug](https://github.com/y3owk1n/govim/issues) · [Request Feature](https://github.com/y3owk1n/govim/issues) · [Discussions](https://github.com/y3owk1n/govim/discussions)
+[Report Bug](https://github.com/y3owk1n/neru/issues) · [Request Feature](https://github.com/y3owk1n/neru/issues) · [Discussions](https://github.com/y3owk1n/neru/discussions)
 
 </div>

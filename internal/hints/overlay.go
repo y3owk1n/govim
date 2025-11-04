@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/y3owk1n/govim/internal/config"
+	"github.com/y3owk1n/neru/internal/config"
 )
 
 // Overlay manages the hint overlay window

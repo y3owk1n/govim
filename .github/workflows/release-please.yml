@@ -38,22 +38,22 @@ jobs:
           go-version: ${{ matrix.go }}
 
       # Build artifacts for multiple platforms.
-      - name: Build govim artifacts
+      - name: Build neru artifacts
         if: ${{ steps.release.outputs.release_created }}
         run: |
           mkdir -p bin
           # Build for darwin-arm64
-          env CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X github.com/y3owk1n/govim/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/govim-darwin-arm64 cmd/govim/main.go
+          env CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/neru-darwin-arm64 cmd/neru/main.go
 
           # Build for darwin-amd64
-          env CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X github.com/y3owk1n/govim/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/govim-darwin-amd64 cmd/govim/main.go
+          env CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/neru-darwin-amd64 cmd/neru/main.go
 
       # Generate SHA256 checksum files for each artifact
       - name: Generate Checksums
         if: ${{ steps.release.outputs.release_created }}
         run: |
           cd bin
-          for file in govim-*; do
+          for file in neru-*; do
               shasum -a 256 "$file" | awk '{print $1}' > "$file.sha256"
           done
           ls -l
@@ -64,7 +64,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
         run: |
-          for file in bin/govim-*; do
+          for file in bin/neru-*; do
               if [[ "$file" != *.sha256 ]]; then
                   gh release upload "${{ steps.release.outputs.tag_name }}" "$file"
                   gh release upload "${{ steps.release.outputs.tag_name }}" "$file.sha256"

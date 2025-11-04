@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/y3owk1n/govim/internal/logger"
+	"github.com/y3owk1n/neru/internal/logger"
 )
 
 func rectFromInfo(info *ElementInfo) image.Rectangle {

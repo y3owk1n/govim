@@ -3,7 +3,7 @@ package scroll
 import (
 	"fmt"
 
-	"github.com/y3owk1n/govim/internal/config"
+	"github.com/y3owk1n/neru/internal/config"
 	"go.uber.org/zap"
 )
 
