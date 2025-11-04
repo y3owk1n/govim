@@ -13,7 +13,7 @@
 [Quick Start](#-quick-start) •
 [Features](#-features) •
 [Configuration](#%EF%B8%8F-configuration) •
-[CLI Usage](#-cli-usage)
+[CLI Usage](#%EF%B8%8F-cli-usage)
 
 </div>
 
@@ -242,9 +242,11 @@ govim launch
 **Default hotkey:** `Cmd+Shift+Space`
 
 1. Press the hotkey
-2. Clickable elements display hint labels (e.g., "AA", "AB", "AC")
-3. Type the label to click that element
-4. Press `Esc` to cancel
+2. Clickable elements display hint labels (e.g., "AA", "AB", "AC") - You can also use `delete` just like in vimium if you type something wrong, instead of needing to reactivate the hint again.
+3. Type the label to left click that element
+4. Restore cursor to previous position (if enabled)
+
+Press `esc` anytime to quit the hint selection.
 
 ### Hint Mode (Action Selection)
 
@@ -258,7 +260,9 @@ govim launch
    - **Double click**
    - **Middle click**
    - **Go to a position** (move mouse)
-4. Press `Esc` to cancel
+4. Restore cursor to previous position (if enabled)
+
+Press `esc` anytime to quit the hint selection.
 
 ### Scroll Mode
 
@@ -286,14 +290,34 @@ The ⌨️ icon in your menu bar provides quick access to:
 GoVim looks for configuration in:
 
 - **macOS Convention:** `~/Library/Application Support/govim/config.toml`
-- **XDG Standard:** `~/.config/govim/config.toml`
-- **Custom Path:** Use `--config` flag: `govim launch --config /path/to/config.toml`
+- **XDG Standard:** `~/.config/govim/config.toml` (Prefer this more so that we can put this in our dotfile)
+- **Custom Path:** Use `--config` flag: `govim launch --config /path/to/config.toml` (Useful for nix users)
 
 ### Default Configuration
 
 See [`configs/default-config.toml`](configs/default-config.toml) for all available options.
 
 ### Common Configurations
+
+#### Change the default keybindings
+
+```toml
+[hotkeys]
+# all hotkeys can be disabled by either setting the key to "" or just commenting it out
+activate_hint_mode = "Ctrl+F"
+activate_hint_mode_with_actions = "Ctrl+G"
+activate_scroll_mode = "Ctrl+S"
+```
+
+You shoul be also able to just clear the keybind and bind it with something like skhd or any similar tools, since we exposes commands in the cli through IPC. For example in skhd:
+
+```bash
+ctrl - f : govim hints
+ctrl - g : govim hints_action
+ctrl - s : scroll
+```
+
+Read more about [CLI Usage](#%EF%B8%8F-cli-usage).
 
 #### Enable Menu Bar and Dock Hints
 
@@ -303,9 +327,19 @@ include_menubar_hints = true
 include_dock_hints = true  # Also includes Mission Control
 ```
 
+#### Restore cursor after click action
+
+```toml
+[general]
+restore_pos_after_left_click = true
+restore_pos_after_right_click = true
+restore_pos_after_middle_click = true
+restore_pos_after_double_click = true
+```
+
 #### App Exclusion
 
-Exclude specific apps where GoVim shouldn't activate:
+Exclude specific apps where GoVim shouldn't activate. This will also unregister all the binded hotkeys when the app is focused so that in specific app, you can use the hotkey to do something else.
 
 ```toml
 [general]
@@ -403,6 +437,105 @@ additional_bundles = [
     "com.example.app",          # Exact bundle ID
     "com.company.prefix*"       # Wildcard for multiple apps
 ]
+```
+
+### Look and feel for hints
+
+You can configure how you want those hints
+
+```toml
+[hints]
+# Font size for hint labels
+# Valid range: 6–72
+font_size = 12
+
+# Font family (leave empty for system default)
+font_family = ""
+
+# Background color (hex format)
+background_color = "#FFD700"
+
+# Text color (hex format)
+text_color = "#000000"
+
+# Matched text color - color for characters that have been typed (hex format)
+matched_text_color = "#0066CC"
+
+# Border radius (pixels)
+# Non-negative integer
+border_radius = 4
+
+# Padding (pixels)
+# Non-negative integer
+padding = 4
+
+# Border width (pixels)
+# Non-negative integer
+border_width = 1
+
+# Border color (hex format)
+border_color = "#000000"
+
+# Opacity (0.0 to 1.0)
+# Controls hint translucency; 1.0 is fully opaque
+opacity = 0.95
+
+# Action overlay colors (used when selecting click type)
+# Background color (hex format)
+action_background_color = "#66CCFF"
+
+# Text color (hex format)
+action_text_color = "#000000"
+
+# Matched text color (hex format)
+action_matched_text_color = "#003366"
+
+# Border color (hex format)
+action_border_color = "#000000"
+
+# Opacity (0.0 to 1.0)
+action_opacity = 0.95
+```
+
+### Scroll configuration
+
+Note that this is a simple implementation for scrolling, not exactly working fine yet, help would be appreciated (especially in electron and chromium applications)
+
+```toml
+[scroll]
+# Base scroll amount for j/k keys in pixels
+# Minimum: 1. Increase for faster per-press scrolling.
+scroll_speed = 50
+
+# Highlight the active scroll area with a border
+# When true, draws a border around the detected scroll container.
+highlight_scroll_area = true
+
+# Highlight border color (hex format)
+highlight_color = "#FF0000"
+
+# Highlight border width in pixels
+highlight_width = 2
+
+# Estimated page height in pixels (used for calculating Ctrl+D/U scroll distance)
+# Increase if your app windows are taller; decrease for short panes.
+page_height = 1200
+
+# Half-page scroll multiplier for Ctrl+D/U (0.5 = 600px with default page_height)
+# Valid range: (0, 1]
+half_page_multiplier = 0.5
+
+# Full-page scroll multiplier (not currently used)
+# Valid range: (0, 1]
+full_page_multiplier = 0.9
+
+# Number of scroll events to send for gg/G commands
+# Higher values create longer smooth scrolls to edges.
+scroll_to_edge_iterations = 20
+
+# Pixels to scroll per iteration for gg/G (total = iterations * delta)
+# Increase for faster edge scrolling; tune with iterations above.
+scroll_to_edge_delta = 5000
 ```
 
 ## 🖥️ CLI Usage
