@@ -2,8 +2,6 @@
 
 > Master your keyboard, refine your workflow
 
-Navigate macOS without touching your mouse - keyboard-driven productivity at its finest 🖱️⌨️
-
 <div align="center">
 
 [![License](https://img.shields.io/github/license/y3owk1n/neru)](LICENSE)
@@ -688,7 +686,7 @@ neru/
 
 ### Prerequisites
 
-- Go 1.21+
+- Go 1.25+
 - macOS development tools
 - Just (command runner)
 
