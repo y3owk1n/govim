@@ -28,6 +28,8 @@ excluded_apps = []
 include_menubar_hints = false
 # Show hints on the Dock (includes mission control)
 include_dock_hints = false
+# Show hints on the Notification Center
+include_nc_hints = false
 
 # Restore cursor position after action
 # Restore cursor position after left click

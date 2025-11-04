@@ -423,6 +423,16 @@ func (a *App) activateHintMode(withActions bool) {
 		}
 	}
 
+	// Optionally include Notification Center elements
+	if a.config.General.IncludeNCHints {
+		if ncElems, derr := accessibility.GetNCClickableElements(); derr == nil {
+			elements = append(elements, ncElems...)
+			a.logger.Debug("Included nc elements", zap.Int("count", len(ncElems)))
+		} else {
+			a.logger.Warn("Failed to get nc elements", zap.Error(derr))
+		}
+	}
+
 	if len(elements) == 0 {
 		a.logger.Warn("No clickable elements found")
 		return
