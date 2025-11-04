@@ -67,10 +67,10 @@ func GetClickableElements() ([]*TreeNode, error) {
 	opts := DefaultTreeOptions()
 	if isElectron {
 		// For Electron apps, go deeper to find web content
-		opts.MaxDepth = 25
+		opts.MaxDepth = 40
 		logger.Debug("Detected Electron app, using deeper tree traversal for scroll areas")
 	} else {
-		opts.MaxDepth = 10
+		opts.MaxDepth = 25
 	}
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		// Filter out very small elements
@@ -113,10 +113,10 @@ func GetScrollableElements() ([]*TreeNode, error) {
 	opts := DefaultTreeOptions()
 	if isElectron {
 		// For Electron apps, go deeper to find web content
-		opts.MaxDepth = 15
+		opts.MaxDepth = 20
 		logger.Debug("Detected Electron app, using deeper tree traversal for scroll areas")
 	} else {
-		opts.MaxDepth = 5
+		opts.MaxDepth = 10
 	}
 
 	tree, err := BuildTree(window, opts)
@@ -142,7 +142,7 @@ func GetMenuBarClickableElements() ([]*TreeNode, error) {
 	defer menubar.Release()
 
 	opts := DefaultTreeOptions()
-	opts.MaxDepth = 8
+	opts.MaxDepth = 10
 	// Filter out tiny elements
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		if info.Size.X < 6 || info.Size.Y < 6 {
@@ -172,7 +172,7 @@ func GetDockClickableElements() ([]*TreeNode, error) {
 	opts := DefaultTreeOptions()
 	opts.IncludeOutOfBounds = true
 	opts.CheckOcclusion = false
-	opts.MaxDepth = 8
+	opts.MaxDepth = 10
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		if info.Size.X < 6 || info.Size.Y < 6 {
 			return false
@@ -201,7 +201,7 @@ func GetNCClickableElements() ([]*TreeNode, error) {
 	opts := DefaultTreeOptions()
 	opts.IncludeOutOfBounds = true
 	opts.CheckOcclusion = false
-	opts.MaxDepth = 8
+	opts.MaxDepth = 10
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		if info.Size.X < 6 || info.Size.Y < 6 {
 			return false
