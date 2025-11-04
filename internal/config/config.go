@@ -25,6 +25,7 @@ type GeneralConfig struct {
 	ExcludedApps               []string `toml:"excluded_apps"`
 	IncludeMenubarHints        bool     `toml:"include_menubar_hints"`
 	IncludeDockHints           bool     `toml:"include_dock_hints"`
+	IncludeNCHints             bool     `toml:"include_nc_hints"`
 	RestorePosAfterLeftClick   bool     `toml:"restore_pos_after_left_click"`
 	RestorePosAfterRightClick  bool     `toml:"restore_pos_after_right_click"`
 	RestorePosAfterMiddleClick bool     `toml:"restore_pos_after_middle_click"`
@@ -108,6 +109,7 @@ func DefaultConfig() *Config {
 			ExcludedApps:               []string{},
 			IncludeMenubarHints:        false,
 			IncludeDockHints:           false,
+			IncludeNCHints:             false,
 			RestorePosAfterLeftClick:   false,
 			RestorePosAfterRightClick:  false,
 			RestorePosAfterMiddleClick: false,

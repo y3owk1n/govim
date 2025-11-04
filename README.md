@@ -319,12 +319,13 @@ ctrl - s : scroll
 
 Read more about [CLI Usage](#%EF%B8%8F-cli-usage).
 
-#### Enable Menu Bar and Dock Hints
+#### Enable Menu Bar Dock and Notification Center Hints
 
 ```toml
 [general]
 include_menubar_hints = true
 include_dock_hints = true  # Also includes Mission Control
+include_nc_hints = true # Notification popups
 ```
 
 #### Restore cursor after click action

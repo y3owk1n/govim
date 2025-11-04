@@ -189,3 +189,32 @@ func GetDockClickableElements() ([]*TreeNode, error) {
 	}
 	return tree.FindClickableElements(), nil
 }
+
+// GetNCClickableElements returns clickable elements from the Notification Center
+func GetNCClickableElements() ([]*TreeNode, error) {
+	nc := GetApplicationByBundleID("com.apple.notificationcenterui")
+	if nc == nil {
+		return []*TreeNode{}, nil
+	}
+	defer nc.Release()
+
+	opts := DefaultTreeOptions()
+	opts.IncludeOutOfBounds = true
+	opts.CheckOcclusion = false
+	opts.MaxDepth = 8
+	opts.FilterFunc = func(info *ElementInfo) bool {
+		if info.Size.X < 6 || info.Size.Y < 6 {
+			return false
+		}
+		return true
+	}
+
+	tree, err := BuildTree(nc, opts)
+	if err != nil {
+		return nil, err
+	}
+	if tree == nil {
+		return []*TreeNode{}, nil
+	}
+	return tree.FindClickableElements(), nil
+}
