@@ -221,18 +221,6 @@ scroll_to_edge_delta = 5000
 # Minimum: 1. Higher values increase CPU and memory usage.
 max_hints_displayed = 500
 
-# Debounce time for UI updates (milliseconds)
-# Lower feels snappier; higher reduces CPU during rapid changes.
-debounce_ms = 50
-
-# Cache duration for UI element tree (milliseconds)
-# Trade-off between freshness and performance.
-cache_duration_ms = 100
-
-# Maximum concurrent element queries
-# Minimum: 1. Controls parallelism when scanning accessibility elements.
-max_concurrent_queries = 10
-
 [logging]
 # Log level: "debug", "info", "warn", "error"
 # Use "debug" for troubleshooting; default is "info".
