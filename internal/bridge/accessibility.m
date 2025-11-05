@@ -99,157 +99,6 @@ static bool isElementOccluded(CGRect elementRect, pid_t elementPid) {
     return true; // Occluded (less than 2 points visible)
 }
 
-// Get children that are actually visible on screen
-// checkOcclusion: if true, filters out elements covered by other windows
-void** getVisibleChildren(void* element, int* count, int checkOcclusion) {
-    if (!element || !count) return NULL;
-
-    AXUIElementRef axElement = (AXUIElementRef)element;
-
-    // Get the PID of the element's application
-    pid_t elementPid;
-    if (AXUIElementGetPid(axElement, &elementPid) != kAXErrorSuccess) {
-        *count = 0;
-        return NULL;
-    }
-
-    // Check if this is the Dock
-    NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier:elementPid];
-    BOOL isDock = app && [[app bundleIdentifier] isEqualToString:@"com.apple.dock"];
-
-    // First, get all children
-    int totalCount = 0;
-    void** allChildren = getChildren(element, &totalCount);
-
-    if (!allChildren || totalCount == 0) {
-        *count = 0;
-        return NULL;
-    }
-
-    // For the Dock, skip all filtering and return all children
-    if (isDock) {
-        *count = totalCount;
-        return allChildren;
-    }
-
-    // For non-Dock apps, continue with normal filtering...
-
-    // Try to get the parent element's bounds (if available)
-    CGRect parentBounds = CGRectZero;
-    bool hasParentBounds = false;
-
-    CFTypeRef posValue = NULL, sizeValue = NULL;
-
-    if (AXUIElementCopyAttributeValue(axElement, kAXPositionAttribute, &posValue) == kAXErrorSuccess && posValue) {
-        if (AXValueGetValue(posValue, kAXValueCGPointType, &parentBounds.origin)) {
-            if (AXUIElementCopyAttributeValue(axElement, kAXSizeAttribute, &sizeValue) == kAXErrorSuccess && sizeValue) {
-                if (AXValueGetValue(sizeValue, kAXValueCGSizeType, &parentBounds.size)) {
-                    hasParentBounds = true;
-                }
-                CFRelease(sizeValue);
-            }
-        }
-        CFRelease(posValue);
-    }
-
-    // Get screen bounds for all displays
-    uint32_t displayCount;
-    CGDirectDisplayID displays[32];
-    CGGetActiveDisplayList(32, displays, &displayCount);
-
-    // Create a union of all display bounds
-    CGRect allScreensBounds = CGRectZero;
-    for (uint32_t i = 0; i < displayCount; i++) {
-        CGRect displayBounds = CGDisplayBounds(displays[i]);
-        if (i == 0) {
-            allScreensBounds = displayBounds;
-        } else {
-            allScreensBounds = CGRectUnion(allScreensBounds, displayBounds);
-        }
-    }
-
-    // Temporary array to hold visible children
-    void** visibleChildren = (void**)malloc(totalCount * sizeof(void*));
-    int visibleCount = 0;
-
-    for (int i = 0; i < totalCount; i++) {
-        AXUIElementRef child = (AXUIElementRef)allChildren[i];
-
-        // Get child's position and size
-        CGPoint childPos = CGPointZero;
-        CGSize childSize = CGSizeZero;
-        bool hasPosition = false, hasSize = false;
-
-        CFTypeRef childPosValue = NULL;
-        if (AXUIElementCopyAttributeValue(child, kAXPositionAttribute, &childPosValue) == kAXErrorSuccess && childPosValue) {
-            if (AXValueGetValue(childPosValue, kAXValueCGPointType, &childPos)) {
-                hasPosition = true;
-            }
-            CFRelease(childPosValue);
-        }
-
-        CFTypeRef childSizeValue = NULL;
-        if (AXUIElementCopyAttributeValue(child, kAXSizeAttribute, &childSizeValue) == kAXErrorSuccess && childSizeValue) {
-            if (AXValueGetValue(childSizeValue, kAXValueCGSizeType, &childSize)) {
-                hasSize = true;
-            }
-            CFRelease(childSizeValue);
-        }
-
-        // If we can't get position/size, include it anyway (might be a container)
-        if (!hasPosition && !hasSize) {
-            visibleChildren[visibleCount++] = (void*)child;
-            continue;
-        }
-
-        // Check if child has non-zero size (if size is available)
-        if (hasSize && (childSize.width <= 0 || childSize.height <= 0)) {
-            CFRelease(child);
-            continue;
-        }
-
-        // If we have position, do spatial checks
-        if (hasPosition && hasSize) {
-            CGRect childRect = CGRectMake(childPos.x, childPos.y, childSize.width, childSize.height);
-
-            // Check if child intersects with any screen bounds
-            if (!CGRectIntersectsRect(childRect, allScreensBounds)) {
-                CFRelease(child);
-                continue;
-            }
-
-            // If parent has bounds, check if child intersects with parent
-            if (hasParentBounds && !CGRectIntersectsRect(childRect, parentBounds)) {
-                CFRelease(child);
-                continue;
-            }
-
-            // Only check occlusion if requested
-            if (checkOcclusion && isElementOccluded(childRect, elementPid)) {
-                CFRelease(child);
-                continue;
-            }
-        }
-
-        // This child is visible, add it to our result
-        visibleChildren[visibleCount++] = (void*)child;
-    }
-
-    free(allChildren);
-
-    if (visibleCount == 0) {
-        free(visibleChildren);
-        *count = 0;
-        return NULL;
-    }
-
-    // Resize array to actual visible count
-    void** result = (void**)realloc(visibleChildren, visibleCount * sizeof(void*));
-    *count = visibleCount;
-
-    return result ? result : visibleChildren;
-}
-
 // Get system-wide accessibility element
 void* getSystemWideElement() {
     AXUIElementRef systemWide = AXUIElementCreateSystemWide();
@@ -493,6 +342,46 @@ void** getChildren(void* element, int* count) {
     }
 
     CFRelease(childrenValue);
+    return result;
+}
+
+void** getVisibleRows(void* element, int* count) {
+    if (!element || !count) return NULL;
+
+    AXUIElementRef axElement = (AXUIElementRef)element;
+    CFTypeRef rowsValue = NULL;
+
+    // Try to fetch visible rows
+    if (AXUIElementCopyAttributeValue(axElement, kAXVisibleRowsAttribute, &rowsValue) != kAXErrorSuccess) {
+        *count = 0;
+        return NULL;
+    }
+
+    // Ensure the result is an array
+    if (CFGetTypeID(rowsValue) != CFArrayGetTypeID()) {
+        CFRelease(rowsValue);
+        *count = 0;
+        return NULL;
+    }
+
+    CFArrayRef rows = (CFArrayRef)rowsValue;
+    CFIndex rowCount = CFArrayGetCount(rows);
+    *count = (int)rowCount;
+
+    void** result = (void**)malloc(rowCount * sizeof(void*));
+    if (!result) {
+        CFRelease(rowsValue);
+        *count = 0;
+        return NULL;
+    }
+
+    for (CFIndex i = 0; i < rowCount; i++) {
+        AXUIElementRef row = (AXUIElementRef)CFArrayGetValueAtIndex(rows, i);
+        CFRetain(row);
+        result[i] = (void*)row;
+    }
+
+    CFRelease(rowsValue);
     return result;
 }
 
