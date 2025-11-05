@@ -3,8 +3,15 @@ package accessibility
 import (
 	"fmt"
 	"image"
+	"sync"
+	"time"
 
 	"github.com/y3owk1n/neru/internal/logger"
+)
+
+var (
+	globalCache *InfoCache
+	cacheOnce   sync.Once
 )
 
 func rectFromInfo(info *ElementInfo) image.Rectangle {
@@ -45,6 +52,10 @@ func PrintTree(node *TreeNode, depth int) {
 
 // GetClickableElements returns all clickable elements in the frontmost window
 func GetClickableElements() ([]*TreeNode, error) {
+	cacheOnce.Do(func() {
+		globalCache = NewInfoCache(5 * time.Second)
+	})
+
 	window := GetFrontmostWindow()
 	if window == nil {
 		return nil, fmt.Errorf("no frontmost window")
@@ -65,6 +76,7 @@ func GetClickableElements() ([]*TreeNode, error) {
 	}
 
 	opts := DefaultTreeOptions()
+	opts.Cache = globalCache
 	if isElectron {
 		// For Electron apps, go deeper to find web content
 		opts.MaxDepth = 40
@@ -91,6 +103,10 @@ func GetClickableElements() ([]*TreeNode, error) {
 
 // GetScrollableElements returns all scrollable elements in the frontmost window
 func GetScrollableElements() ([]*TreeNode, error) {
+	cacheOnce.Do(func() {
+		globalCache = NewInfoCache(5 * time.Second)
+	})
+
 	window := GetFrontmostWindow()
 	if window == nil {
 		return nil, fmt.Errorf("no frontmost window")
@@ -111,6 +127,7 @@ func GetScrollableElements() ([]*TreeNode, error) {
 	}
 
 	opts := DefaultTreeOptions()
+	opts.Cache = globalCache
 	if isElectron {
 		// For Electron apps, go deeper to find web content
 		opts.MaxDepth = 20
@@ -129,6 +146,10 @@ func GetScrollableElements() ([]*TreeNode, error) {
 
 // GetMenuBarClickableElements returns clickable elements from the focused app's menu bar
 func GetMenuBarClickableElements() ([]*TreeNode, error) {
+	cacheOnce.Do(func() {
+		globalCache = NewInfoCache(5 * time.Second)
+	})
+
 	app := GetFocusedApplication()
 	if app == nil {
 		return []*TreeNode{}, nil
@@ -142,6 +163,7 @@ func GetMenuBarClickableElements() ([]*TreeNode, error) {
 	defer menubar.Release()
 
 	opts := DefaultTreeOptions()
+	opts.Cache = globalCache
 	opts.MaxDepth = 10
 	// Filter out tiny elements
 	opts.FilterFunc = func(info *ElementInfo) bool {
@@ -163,6 +185,10 @@ func GetMenuBarClickableElements() ([]*TreeNode, error) {
 
 // GetDockClickableElements returns clickable elements from the Dock
 func GetDockClickableElements() ([]*TreeNode, error) {
+	cacheOnce.Do(func() {
+		globalCache = NewInfoCache(5 * time.Second)
+	})
+
 	dock := GetApplicationByBundleID("com.apple.dock")
 	if dock == nil {
 		return []*TreeNode{}, nil
@@ -170,8 +196,8 @@ func GetDockClickableElements() ([]*TreeNode, error) {
 	defer dock.Release()
 
 	opts := DefaultTreeOptions()
+	opts.Cache = globalCache
 	opts.IncludeOutOfBounds = true
-	opts.CheckOcclusion = false
 	opts.MaxDepth = 10
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		if info.Size.X < 6 || info.Size.Y < 6 {
@@ -192,6 +218,10 @@ func GetDockClickableElements() ([]*TreeNode, error) {
 
 // GetNCClickableElements returns clickable elements from the Notification Center
 func GetNCClickableElements() ([]*TreeNode, error) {
+	cacheOnce.Do(func() {
+		globalCache = NewInfoCache(5 * time.Second)
+	})
+
 	nc := GetApplicationByBundleID("com.apple.notificationcenterui")
 	if nc == nil {
 		return []*TreeNode{}, nil
@@ -199,8 +229,8 @@ func GetNCClickableElements() ([]*TreeNode, error) {
 	defer nc.Release()
 
 	opts := DefaultTreeOptions()
+	opts.Cache = globalCache
 	opts.IncludeOutOfBounds = true
-	opts.CheckOcclusion = false
 	opts.MaxDepth = 10
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		if info.Size.X < 6 || info.Size.Y < 6 {

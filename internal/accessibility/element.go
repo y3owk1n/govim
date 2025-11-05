@@ -221,8 +221,17 @@ func (e *Element) GetChildren() ([]*Element, error) {
 	var count C.int
 	var rawChildren unsafe.Pointer
 
-	info, err := e.GetInfo()
-	if err == nil {
+	info := globalCache.Get(e)
+	if info == nil {
+		var err error
+		info, err = e.GetInfo()
+		if err != nil {
+			return nil, nil
+		}
+		globalCache.Set(e, info)
+	}
+
+	if info != nil {
 		switch info.Role {
 		case "AXList", "AXTable", "AXOutline":
 			ptr := unsafe.Pointer(C.getVisibleRows(e.ref, &count))
@@ -582,9 +591,14 @@ func (e *Element) IsClickable() bool {
 		return false
 	}
 
-	info, err := e.GetInfo()
-	if err != nil {
-		return false
+	info := globalCache.Get(e)
+	if info == nil {
+		var err error
+		info, err = e.GetInfo()
+		if err != nil {
+			return false
+		}
+		globalCache.Set(e, info)
 	}
 
 	if !info.IsEnabled {
@@ -611,9 +625,14 @@ func (e *Element) IsScrollable() bool {
 		return false
 	}
 
-	info, err := e.GetInfo()
-	if err != nil {
-		return false
+	info := globalCache.Get(e)
+	if info == nil {
+		var err error
+		info, err = e.GetInfo()
+		if err != nil {
+			return false
+		}
+		globalCache.Set(e, info)
 	}
 
 	// Check if the role is in the scrollable roles list

@@ -10,6 +10,7 @@ import "C"
 
 import (
 	"image"
+	"time"
 )
 
 // TreeNode represents a node in the accessibility tree
@@ -25,7 +26,7 @@ type TreeOptions struct {
 	MaxDepth           int
 	FilterFunc         func(*ElementInfo) bool
 	IncludeOutOfBounds bool
-	CheckOcclusion     bool
+	Cache              *InfoCache
 }
 
 // DefaultTreeOptions returns default tree traversal options
@@ -34,7 +35,7 @@ func DefaultTreeOptions() TreeOptions {
 		MaxDepth:           10,
 		FilterFunc:         nil,
 		IncludeOutOfBounds: false,
-		CheckOcclusion:     false,
+		Cache:              NewInfoCache(5 * time.Second),
 	}
 }
 
@@ -43,10 +44,18 @@ func BuildTree(root *Element, opts TreeOptions) (*TreeNode, error) {
 	if root == nil {
 		return nil, nil
 	}
-	info, err := root.GetInfo()
-	if err != nil {
-		return nil, err
+
+	// Try to get from cache first
+	info := opts.Cache.Get(root)
+	if info == nil {
+		var err error
+		info, err = root.GetInfo()
+		if err != nil {
+			return nil, err
+		}
+		opts.Cache.Set(root, info)
 	}
+
 	// Calculate window bounds for spatial filtering
 	windowBounds := rectFromInfo(info)
 	// Add padding to catch elements slightly outside
@@ -63,8 +72,43 @@ func BuildTree(root *Element, opts TreeOptions) (*TreeNode, error) {
 	return node, nil
 }
 
+// Roles that typically don't contain interactive elements
+var nonInteractiveRoles = map[string]bool{
+	"AXStaticText": true,
+	"AXImage":      true,
+	"AXHeading":    true,
+}
+
+// Roles that are themselves interactive (leaf nodes)
+var interactiveLeafRoles = map[string]bool{
+	"AXButton":             true,
+	"AXComboBox":           true,
+	"AXCheckBox":           true,
+	"AXRadioButton":        true,
+	"AXLink":               true,
+	"AXPopUpButton":        true,
+	"AXTextField":          true,
+	"AXSlider":             true,
+	"AXTabButton":          true,
+	"AXSwitch":             true,
+	"AXDisclosureTriangle": true,
+	"AXTextArea":           true,
+	"AXMenuButton":         true,
+	"AXMenuItem":           true,
+}
+
 func buildTreeRecursive(parent *TreeNode, depth int, opts TreeOptions, windowBounds image.Rectangle) {
 	if depth >= opts.MaxDepth {
+		return
+	}
+
+	// Early exit for roles that can't have interactive children
+	if nonInteractiveRoles[parent.Info.Role] {
+		return
+	}
+
+	// Don't traverse deeper into interactive leaf elements
+	if interactiveLeafRoles[parent.Info.Role] {
 		return
 	}
 
@@ -76,9 +120,14 @@ func buildTreeRecursive(parent *TreeNode, depth int, opts TreeOptions, windowBou
 	parent.Children = make([]*TreeNode, 0, len(children))
 
 	for _, child := range children {
-		info, err := child.GetInfo()
-		if err != nil {
-			continue
+		// Try cache first
+		info := opts.Cache.Get(child)
+		if info == nil {
+			info, err = child.GetInfo()
+			if err != nil {
+				continue
+			}
+			opts.Cache.Set(child, info)
 		}
 
 		if !shouldIncludeElement(info, opts, windowBounds) {
