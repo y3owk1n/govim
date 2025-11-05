@@ -601,10 +601,6 @@ func (e *Element) IsClickable() bool {
 		globalCache.Set(e, info)
 	}
 
-	if !info.IsEnabled {
-		return false
-	}
-
 	// First check if the role is in the clickable roles list
 	clickableRolesMu.RLock()
 	_, ok := clickableRoles[info.Role]
