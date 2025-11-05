@@ -32,7 +32,7 @@ void* getElementAtPosition(CGPoint position);
 
 int getChildrenCount(void* element);
 void** getChildren(void* element, int* count);
-void** getVisibleChildren(void* element, int* count, int checkOcclusion);
+void** getVisibleRows(void* element, int* count);
 
 int getElementCenter(void* element, CGPoint* outPoint);
 

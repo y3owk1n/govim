@@ -218,53 +218,36 @@ func (e *Element) GetChildren() ([]*Element, error) {
 		return nil, fmt.Errorf("element is nil")
 	}
 
-	return e.getChildrenInternal(true, false) // visible only, but no occlusion check by default
-}
-
-// GetChildrenWithOcclusionCheck returns child elements with strict occlusion filtering
-func (e *Element) GetChildrenWithOcclusionCheck(visibleOnly, checkOcclusion bool) ([]*Element, error) {
-	if e.ref == nil {
-		return nil, fmt.Errorf("element is nil")
-	}
-
-	return e.getChildrenInternal(visibleOnly, checkOcclusion)
-}
-
-func (e *Element) getChildrenInternal(visibleOnly bool, checkOcclusion bool) ([]*Element, error) {
 	var count C.int
 	var rawChildren unsafe.Pointer
 
-	if visibleOnly {
-		occlusionFlag := C.int(0)
-		if checkOcclusion {
-			occlusionFlag = C.int(1)
+	info, err := e.GetInfo()
+	if err == nil {
+		switch info.Role {
+		case "AXList", "AXTable", "AXOutline":
+			ptr := unsafe.Pointer(C.getVisibleRows(e.ref, &count))
+			if ptr != nil {
+				rawChildren = ptr
+			} else {
+				rawChildren = unsafe.Pointer(C.getChildren(e.ref, &count))
+			}
+		default:
+			rawChildren = unsafe.Pointer(C.getChildren(e.ref, &count))
 		}
-		rawChildren = unsafe.Pointer(C.getVisibleChildren(e.ref, &count, occlusionFlag))
-	} else {
-		rawChildren = unsafe.Pointer(C.getChildren(e.ref, &count))
 	}
 
 	if rawChildren == nil || count == 0 {
-		return []*Element{}, nil
+		return nil, nil
 	}
-
 	defer C.free(rawChildren)
 
 	childSlice := (*[1 << 30]unsafe.Pointer)(rawChildren)[:count:count]
-	result := make([]*Element, count)
-	for i := 0; i < int(count); i++ {
-		result[i] = &Element{ref: childSlice[i]}
+	children := make([]*Element, count)
+	for i := range children {
+		children[i] = &Element{ref: childSlice[i]}
 	}
 
-	return result, nil
-}
-
-// GetChildrenCount returns the number of child elements
-func (e *Element) GetChildrenCount() int {
-	if e.ref == nil {
-		return 0
-	}
-	return int(C.getChildrenCount(e.ref))
+	return children, nil
 }
 
 // LeftClick performs a click action on the element
@@ -591,4 +574,58 @@ func (e *Element) Scroll(deltaX, deltaY int) error {
 		return fmt.Errorf("failed to scroll element")
 	}
 	return nil
+}
+
+// IsClickable checks if the element is clickable
+func (e *Element) IsClickable() bool {
+	if e.ref == nil {
+		return false
+	}
+
+	info, err := e.GetInfo()
+	if err != nil {
+		return false
+	}
+
+	if !info.IsEnabled {
+		return false
+	}
+
+	// First check if the role is in the clickable roles list
+	clickableRolesMu.RLock()
+	_, ok := clickableRoles[info.Role]
+	clickableRolesMu.RUnlock()
+
+	if ok {
+		// Also verify it actually has scroll capability
+		result := C.hasClickAction(e.ref)
+		return result == 1
+	}
+
+	return false
+}
+
+// IsScrollable checks if the element is scrollable
+func (e *Element) IsScrollable() bool {
+	if e.ref == nil {
+		return false
+	}
+
+	info, err := e.GetInfo()
+	if err != nil {
+		return false
+	}
+
+	// Check if the role is in the scrollable roles list
+	scrollableRolesMu.RLock()
+	_, ok := scrollableRoles[info.Role]
+	scrollableRolesMu.RUnlock()
+
+	if ok {
+		// Also verify it actually has scroll capability
+		result := C.isScrollable(e.ref)
+		return result == 1
+	}
+
+	return false
 }
