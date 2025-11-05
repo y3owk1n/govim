@@ -1,5 +1,13 @@
 package accessibility
 
+/*
+#cgo CFLAGS: -x objective-c
+#include "../bridge/accessibility.h"
+#include <stdlib.h>
+
+*/
+import "C"
+
 import (
 	"image"
 	"runtime"
@@ -457,7 +465,7 @@ func (n *TreeNode) FindClickableElements() []*TreeNode {
 			clickableRolesMu.RUnlock()
 			return ok
 		},
-		func(e *Element) bool { return e.IsClickable() },
+		func(e *Element) bool { return C.hasClickAction(e.ref) == 1 },
 	)
 }
 
@@ -470,7 +478,7 @@ func (n *TreeNode) FindScrollableElements() []*TreeNode {
 			scrollableRolesMu.RUnlock()
 			return ok
 		},
-		func(e *Element) bool { return e.IsScrollable() },
+		func(e *Element) bool { return C.isScrollable(e.ref) == 1 },
 	)
 }
 

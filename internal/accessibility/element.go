@@ -373,29 +373,6 @@ func (e *Element) Release() {
 	}
 }
 
-// IsClickable checks if the element is clickable
-func (e *Element) IsClickable() bool {
-	info, err := e.GetInfo()
-	if err != nil {
-		return false
-	}
-
-	// Check if the role is in the clickable roles list
-	clickableRolesMu.RLock()
-	_, ok := clickableRoles[info.Role]
-	clickableRolesMu.RUnlock()
-
-	if !ok {
-		return false
-	}
-
-	// We are checking this with some predefined heuristics
-	// Not sure if its working fine, but it works for now
-	result := C.hasClickAction(e.ref)
-
-	return result == 1
-}
-
 // GetAllWindows returns all windows of the focused application
 func GetAllWindows() ([]*Element, error) {
 	var count C.int
@@ -582,31 +559,6 @@ func ResetElectronSupport() {
 			logger.Debug("Failed to reset AXManualAccessibility", zap.Int("pid", pid))
 		}
 	}
-}
-
-// IsScrollable checks if the element is scrollable
-func (e *Element) IsScrollable() bool {
-	if e.ref == nil {
-		return false
-	}
-
-	info, err := e.GetInfo()
-	if err != nil {
-		return false
-	}
-
-	// Check if the role is in the scrollable roles list
-	scrollableRolesMu.RLock()
-	_, ok := scrollableRoles[info.Role]
-	scrollableRolesMu.RUnlock()
-
-	if ok {
-		// Also verify it actually has scroll capability
-		result := C.isScrollable(e.ref)
-		return result == 1
-	}
-
-	return false
 }
 
 // GetScrollBounds returns the scroll area bounds
