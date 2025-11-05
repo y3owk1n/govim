@@ -85,10 +85,7 @@ type HintsConfig struct {
 }
 
 type PerformanceConfig struct {
-	MaxHintsDisplayed    int `toml:"max_hints_displayed"`
-	DebounceMs           int `toml:"debounce_ms"`
-	CacheDurationMs      int `toml:"cache_duration_ms"`
-	MaxConcurrentQueries int `toml:"max_concurrent_queries"`
+	MaxHintsDisplayed int `toml:"max_hints_displayed"`
 }
 
 type LoggingConfig struct {
@@ -179,10 +176,7 @@ func DefaultConfig() *Config {
 			ActionOpacity:          0.95,
 		},
 		Performance: PerformanceConfig{
-			MaxHintsDisplayed:    200,
-			DebounceMs:           50,
-			CacheDurationMs:      100,
-			MaxConcurrentQueries: 10,
+			MaxHintsDisplayed: 200,
 		},
 		Logging: LoggingConfig{
 			LogLevel:          "info",
@@ -284,9 +278,6 @@ func (c *Config) Validate() error {
 	// Validate performance settings
 	if c.Performance.MaxHintsDisplayed < 1 {
 		return fmt.Errorf("performance.max_hints_displayed must be at least 1")
-	}
-	if c.Performance.MaxConcurrentQueries < 1 {
-		return fmt.Errorf("performance.max_concurrent_queries must be at least 1")
 	}
 
 	// Validate hotkeys
