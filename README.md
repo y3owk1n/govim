@@ -60,7 +60,6 @@ This is an intentional design choice to keep the project lean, maintainable, and
 
 ### Consideration (NOT roadmap)
 
-- Dock is not working with hints now, find out why...
 - Consider zIndex for hints on different layers? There might be multiple layers when we are considering `Menubar`, `Dock` and `Notification bar`
 - Better UI representation for action menu (maybe auto edge detection like tooltip in browser, that will place itself around the element based on the space available around it)
 - Find a way to auto deduplicate hints that are targeting the same point
