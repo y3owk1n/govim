@@ -165,14 +165,17 @@ Create a custom module:
 
 let
   cfg = config.neru;
+
   configFile = pkgs.writeScript "neru.toml" cfg.config;
 in
 
 {
   options = {
     neru = with lib.types; {
-      enable = lib.mkEnableOption "neru keyboard navigation";
+      enable = lib.mkEnableOption "Neru keyboard navigation";
+
       package = lib.mkPackageOption pkgs "neru" { };
+
       config = lib.mkOption {
         type = types.lines;
         default = ''
@@ -189,7 +192,7 @@ in
 
       launchd.user.agents.neru = {
         command =
-          "${cfg.package}/bin/neru launch"
+          "${cfg.package}/Applications/Neru.app/Contents/MacOS/Neru launch"
           + (lib.optionalString (cfg.config != "") " --config ${configFile}");
         serviceConfig = {
           KeepAlive = false;
