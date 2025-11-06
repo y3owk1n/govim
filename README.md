@@ -74,6 +74,7 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Add more actions to the menubar like `status`, `stop`, `start`, `current version`
 - Test suites, but am lazy for it
 - Implements launch agent with `start-service` and `stop-service`? Though I am fine just doing it in my nix config directly
+- Better app icon and menubar icon
 
 ## 🚀 Installation
 
