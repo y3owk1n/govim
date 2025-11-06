@@ -23,7 +23,6 @@ type TreeNode struct {
 
 // TreeOptions configures tree traversal
 type TreeOptions struct {
-	MaxDepth           int
 	FilterFunc         func(*ElementInfo) bool
 	IncludeOutOfBounds bool
 	Cache              *InfoCache
@@ -32,7 +31,6 @@ type TreeOptions struct {
 // DefaultTreeOptions returns default tree traversal options
 func DefaultTreeOptions() TreeOptions {
 	return TreeOptions{
-		MaxDepth:           10,
 		FilterFunc:         nil,
 		IncludeOutOfBounds: false,
 		Cache:              NewInfoCache(5 * time.Second),
@@ -66,9 +64,8 @@ func BuildTree(root *Element, opts TreeOptions) (*TreeNode, error) {
 		Info:    info,
 	}
 
-	if opts.MaxDepth > 0 {
-		buildTreeRecursive(node, 1, opts, windowBounds)
-	}
+	buildTreeRecursive(node, 1, opts, windowBounds)
+
 	return node, nil
 }
 
@@ -98,10 +95,6 @@ var interactiveLeafRoles = map[string]bool{
 }
 
 func buildTreeRecursive(parent *TreeNode, depth int, opts TreeOptions, windowBounds image.Rectangle) {
-	if depth >= opts.MaxDepth {
-		return
-	}
-
 	// Early exit for roles that can't have interactive children
 	if nonInteractiveRoles[parent.Info.Role] {
 		return

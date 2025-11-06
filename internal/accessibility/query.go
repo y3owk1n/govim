@@ -5,8 +5,6 @@ import (
 	"image"
 	"sync"
 	"time"
-
-	"github.com/y3owk1n/neru/internal/logger"
 )
 
 var (
@@ -39,7 +37,7 @@ func PrintTree(node *TreeNode, depth int) {
 		return
 	}
 	indent := ""
-	for i := 0; i < depth; i++ {
+	for range depth {
 		indent += "  "
 	}
 	fmt.Printf("%sRole: %s, Title: %s, Size: %dx%d\n",
@@ -62,28 +60,8 @@ func GetClickableElements() ([]*TreeNode, error) {
 	}
 	defer window.Release()
 
-	windowInfo, err := window.GetInfo()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get window info: %w", err)
-	}
-
-	// Check if this is an Electron app
-	var isElectron bool
-	if app := GetApplicationByPID(windowInfo.PID); app != nil {
-		bundleID := app.GetBundleIdentifier()
-		isElectron = ShouldEnableElectronSupport(bundleID, nil)
-		app.Release()
-	}
-
 	opts := DefaultTreeOptions()
 	opts.Cache = globalCache
-	if isElectron {
-		// For Electron apps, go deeper to find web content
-		opts.MaxDepth = 40
-		logger.Debug("Detected Electron app, using deeper tree traversal for scroll areas")
-	} else {
-		opts.MaxDepth = 25
-	}
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		// Filter out very small elements
 		if info.Size.X < 10 || info.Size.Y < 10 {
@@ -113,28 +91,8 @@ func GetScrollableElements() ([]*TreeNode, error) {
 	}
 	defer window.Release()
 
-	windowInfo, err := window.GetInfo()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get window info: %w", err)
-	}
-
-	// Check if this is an Electron app
-	var isElectron bool
-	if app := GetApplicationByPID(windowInfo.PID); app != nil {
-		bundleID := app.GetBundleIdentifier()
-		isElectron = ShouldEnableElectronSupport(bundleID, nil)
-		app.Release()
-	}
-
 	opts := DefaultTreeOptions()
 	opts.Cache = globalCache
-	if isElectron {
-		// For Electron apps, go deeper to find web content
-		opts.MaxDepth = 20
-		logger.Debug("Detected Electron app, using deeper tree traversal for scroll areas")
-	} else {
-		opts.MaxDepth = 10
-	}
 
 	tree, err := BuildTree(window, opts)
 	if err != nil {
@@ -164,7 +122,6 @@ func GetMenuBarClickableElements() ([]*TreeNode, error) {
 
 	opts := DefaultTreeOptions()
 	opts.Cache = globalCache
-	opts.MaxDepth = 10
 	// Filter out tiny elements
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		if info.Size.X < 6 || info.Size.Y < 6 {
@@ -197,7 +154,6 @@ func GetClickableElementsFromBundleID(bundleID string) ([]*TreeNode, error) {
 	opts := DefaultTreeOptions()
 	opts.Cache = globalCache
 	opts.IncludeOutOfBounds = true
-	opts.MaxDepth = 10
 	opts.FilterFunc = func(info *ElementInfo) bool {
 		if info.Size.X < 6 || info.Size.Y < 6 {
 			return false
