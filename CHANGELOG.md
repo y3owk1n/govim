@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.1](https://github.com/y3owk1n/neru/compare/v1.5.0...v1.5.1) (2025-11-06)
+
+
+### Bug Fixes
+
+* add defaults to the config to support launch on bundle start ([#67](https://github.com/y3owk1n/neru/issues/67)) ([30049e0](https://github.com/y3owk1n/neru/commit/30049e031853f65d661db2758437f3b05687b343))
+* root cmd to auto launch when in app bundle ([#65](https://github.com/y3owk1n/neru/issues/65)) ([0af1e45](https://github.com/y3owk1n/neru/commit/0af1e45d382c2a0d0701b8268db1e016ae6456fc))
+
 ## [1.5.0](https://github.com/y3owk1n/neru/compare/v1.4.0...v1.5.0) (2025-11-06)
 
 
