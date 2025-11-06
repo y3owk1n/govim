@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/y3owk1n/neru/internal/ipc"
@@ -12,7 +14,6 @@ var (
 	configPath string
 	// LaunchFunc is set by main to handle daemon launch
 	LaunchFunc func(configPath string)
-
 	// Version information (set via ldflags at build time)
 	Version   = "dev"
 	GitCommit = "unknown"
@@ -27,6 +28,12 @@ var rootCmd = &cobra.Command{
 vim-like navigation capabilities across all applications using accessibility APIs.`,
 	Version: Version,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Auto-launch when running from app bundle without arguments
+		if isRunningFromAppBundle() && len(args) == 0 {
+			fmt.Println("Launching Neru from app bundle...")
+			launchProgram(configPath)
+			return nil
+		}
 		return cmd.Help()
 	},
 }
@@ -41,9 +48,25 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "config file path")
-
 	// Customize version output
 	rootCmd.SetVersionTemplate(fmt.Sprintf("Neru version %s\nGit commit: %s\nBuild date: %s\n", Version, GitCommit, BuildDate))
+}
+
+// isRunningFromAppBundle checks if the binary is running from a macOS app bundle
+func isRunningFromAppBundle() bool {
+	execPath, err := os.Executable()
+	if err != nil {
+		return false
+	}
+
+	// Resolve symlinks to get the real path
+	realPath, err := filepath.EvalSymlinks(execPath)
+	if err != nil {
+		realPath = execPath
+	}
+
+	// Check if running from .app/Contents/MacOS/
+	return strings.Contains(realPath, ".app/Contents/MacOS")
 }
 
 // launchProgram launches the main neru program
