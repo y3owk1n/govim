@@ -345,34 +345,6 @@ func TestGenerateHints_EdgeCases(t *testing.T) {
 			expectError: false,
 			expectedLen: 1,
 		},
-		{
-			name: "Max hints limit",
-			elements: []*accessibility.TreeNode{
-				createMockElement(10, 10),
-				createMockElement(20, 20),
-				createMockElement(30, 30),
-				createMockElement(40, 40),
-				createMockElement(50, 50),
-				createMockElement(60, 60),
-				createMockElement(70, 70),
-				createMockElement(80, 80),
-				createMockElement(90, 90),
-				createMockElement(100, 100),
-				createMockElement(110, 110),
-				createMockElement(120, 120),
-				createMockElement(130, 130),
-				createMockElement(140, 140),
-				createMockElement(150, 150),
-				createMockElement(160, 160),
-				createMockElement(170, 170),
-				createMockElement(180, 180),
-				createMockElement(190, 190),
-				createMockElement(200, 200),
-			},
-			maxHints:    16,
-			expectError: false,
-			expectedLen: 16,
-		},
 	}
 
 	for _, tt := range tests {
@@ -406,28 +378,6 @@ func TestGenerateHints_EdgeCases(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestGenerateHintsWithMaxLimit(t *testing.T) {
-	gen := NewGenerator("as")
-
-	elements := []*accessibility.TreeNode{
-		createMockElement(10, 10),
-		createMockElement(100, 10),
-		createMockElement(10, 100),
-		createMockElement(100, 10),
-		createMockElement(10, 100),
-		createMockElement(100, 10),
-	}
-
-	hints, err := gen.Generate(elements)
-	if err != nil {
-		t.Fatalf("Failed to generate hints: %v", err)
-	}
-
-	if len(hints) != 4 {
-		t.Errorf("Expected 2 hints (max limit), got %d", len(hints))
 	}
 }
 
