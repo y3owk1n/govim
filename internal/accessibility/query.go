@@ -183,17 +183,16 @@ func GetMenuBarClickableElements() ([]*TreeNode, error) {
 	return tree.FindClickableElements(), nil
 }
 
-// GetDockClickableElements returns clickable elements from the Dock
-func GetDockClickableElements() ([]*TreeNode, error) {
+func GetClickableElementsFromBundleID(bundleID string) ([]*TreeNode, error) {
 	cacheOnce.Do(func() {
 		globalCache = NewInfoCache(5 * time.Second)
 	})
 
-	dock := GetApplicationByBundleID("com.apple.dock")
-	if dock == nil {
+	app := GetApplicationByBundleID(bundleID)
+	if app == nil {
 		return []*TreeNode{}, nil
 	}
-	defer dock.Release()
+	defer app.Release()
 
 	opts := DefaultTreeOptions()
 	opts.Cache = globalCache
@@ -206,40 +205,7 @@ func GetDockClickableElements() ([]*TreeNode, error) {
 		return true
 	}
 
-	tree, err := BuildTree(dock, opts)
-	if err != nil {
-		return nil, err
-	}
-	if tree == nil {
-		return []*TreeNode{}, nil
-	}
-	return tree.FindClickableElements(), nil
-}
-
-// GetNCClickableElements returns clickable elements from the Notification Center
-func GetNCClickableElements() ([]*TreeNode, error) {
-	cacheOnce.Do(func() {
-		globalCache = NewInfoCache(5 * time.Second)
-	})
-
-	nc := GetApplicationByBundleID("com.apple.notificationcenterui")
-	if nc == nil {
-		return []*TreeNode{}, nil
-	}
-	defer nc.Release()
-
-	opts := DefaultTreeOptions()
-	opts.Cache = globalCache
-	opts.IncludeOutOfBounds = true
-	opts.MaxDepth = 10
-	opts.FilterFunc = func(info *ElementInfo) bool {
-		if info.Size.X < 6 || info.Size.Y < 6 {
-			return false
-		}
-		return true
-	}
-
-	tree, err := BuildTree(nc, opts)
+	tree, err := BuildTree(app, opts)
 	if err != nil {
 		return nil, err
 	}

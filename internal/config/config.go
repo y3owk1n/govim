@@ -22,14 +22,15 @@ type Config struct {
 }
 
 type GeneralConfig struct {
-	ExcludedApps               []string `toml:"excluded_apps"`
-	IncludeMenubarHints        bool     `toml:"include_menubar_hints"`
-	IncludeDockHints           bool     `toml:"include_dock_hints"`
-	IncludeNCHints             bool     `toml:"include_nc_hints"`
-	RestorePosAfterLeftClick   bool     `toml:"restore_pos_after_left_click"`
-	RestorePosAfterRightClick  bool     `toml:"restore_pos_after_right_click"`
-	RestorePosAfterMiddleClick bool     `toml:"restore_pos_after_middle_click"`
-	RestorePosAfterDoubleClick bool     `toml:"restore_pos_after_double_click"`
+	ExcludedApps                  []string `toml:"excluded_apps"`
+	IncludeMenubarHints           bool     `toml:"include_menubar_hints"`
+	AdditionalMenubarHintsTargets []string `toml:"additional_menubar_hints_targets"`
+	IncludeDockHints              bool     `toml:"include_dock_hints"`
+	IncludeNCHints                bool     `toml:"include_nc_hints"`
+	RestorePosAfterLeftClick      bool     `toml:"restore_pos_after_left_click"`
+	RestorePosAfterRightClick     bool     `toml:"restore_pos_after_right_click"`
+	RestorePosAfterMiddleClick    bool     `toml:"restore_pos_after_middle_click"`
+	RestorePosAfterDoubleClick    bool     `toml:"restore_pos_after_double_click"`
 }
 
 type AccessibilityConfig struct {
@@ -103,38 +104,20 @@ type ElectronSupportConfig struct {
 func DefaultConfig() *Config {
 	return &Config{
 		General: GeneralConfig{
-			ExcludedApps:               []string{},
-			IncludeMenubarHints:        false,
-			IncludeDockHints:           false,
-			IncludeNCHints:             false,
-			RestorePosAfterLeftClick:   false,
-			RestorePosAfterRightClick:  false,
-			RestorePosAfterMiddleClick: false,
-			RestorePosAfterDoubleClick: false,
+			ExcludedApps:                  []string{},
+			IncludeMenubarHints:           false,
+			AdditionalMenubarHintsTargets: []string{},
+			IncludeDockHints:              false,
+			IncludeNCHints:                false,
+			RestorePosAfterLeftClick:      false,
+			RestorePosAfterRightClick:     false,
+			RestorePosAfterMiddleClick:    false,
+			RestorePosAfterDoubleClick:    false,
 		},
 		Accessibility: AccessibilityConfig{
 			AccessibilityCheckOnStart: true,
-			ClickableRoles: []string{
-				"AXButton",
-				"AXComboBox",
-				"AXCheckBox",
-				"AXRadioButton",
-				"AXLink",
-				"AXPopUpButton",
-				"AXTextField",
-				"AXSlider",
-				"AXTabButton",
-				"AXSwitch",
-				"AXDisclosureTriangle",
-				"AXTextArea",
-				"AXMenuButton",
-				"AXMenuItem",
-				"AXCell",
-				"AXRow",
-			},
-			ScrollableRoles: []string{
-				"AXScrollArea",
-			},
+			ClickableRoles:            []string{},
+			ScrollableRoles:           []string{},
 			ElectronSupport: ElectronSupportConfig{
 				Enable:            true,
 				AdditionalBundles: []string{},

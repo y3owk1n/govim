@@ -26,6 +26,14 @@ excluded_apps = []
 # Include additional targets in hint mode
 # Show hints on the macOS menu bar
 include_menubar_hints = false
+
+# Do nothing if `include_menubar_hints` is false
+additional_menubar_hints_targets = [
+  "com.apple.TextInputMenuAgent", # TextInput menu bar
+  "com.apple.controlcenter",      # Control Center
+  "com.apple.systemuiserver",     # SystemUIServer (e.g. Siri in menubar)
+]
+
 # Show hints on the Dock (includes mission control)
 include_dock_hints = false
 # Show hints on the Notification Center

@@ -411,11 +411,22 @@ func (a *App) activateHintMode(withActions bool) {
 		} else {
 			a.logger.Warn("Failed to get menubar elements", zap.Error(merr))
 		}
+
+		// Optionally include additional menubar elements
+		for _, bundleID := range a.config.General.AdditionalMenubarHintsTargets {
+			if additionalElems, derr := accessibility.GetClickableElementsFromBundleID(bundleID); derr == nil {
+				elements = append(elements, additionalElems...)
+				a.logger.Debug("Included additional menubar elements", zap.Int("count", len(additionalElems)))
+			} else {
+				a.logger.Warn("Failed to get additional menubar elements", zap.Error(derr))
+			}
+		}
+
 	}
 
 	// Optionally include Dock elements
 	if a.config.General.IncludeDockHints {
-		if dockElems, derr := accessibility.GetDockClickableElements(); derr == nil {
+		if dockElems, derr := accessibility.GetClickableElementsFromBundleID("com.apple.dock"); derr == nil {
 			elements = append(elements, dockElems...)
 			a.logger.Debug("Included dock elements", zap.Int("count", len(dockElems)))
 		} else {
@@ -425,7 +436,7 @@ func (a *App) activateHintMode(withActions bool) {
 
 	// Optionally include Notification Center elements
 	if a.config.General.IncludeNCHints {
-		if ncElems, derr := accessibility.GetNCClickableElements(); derr == nil {
+		if ncElems, derr := accessibility.GetClickableElementsFromBundleID("com.apple.notificationcenterui"); derr == nil {
 			elements = append(elements, ncElems...)
 			a.logger.Debug("Included nc elements", zap.Int("count", len(ncElems)))
 		} else {

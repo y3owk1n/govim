@@ -322,6 +322,13 @@ Read more about [CLI Usage](#%EF%B8%8F-cli-usage).
 ```toml
 [general]
 include_menubar_hints = true
+# Do nothing if `include_menubar_hints` is false
+additional_menubar_hints_targets = [
+  "com.apple.TextInputMenuAgent", # TextInput menu bar
+  "com.apple.controlcenter",      # Control Center
+  "com.apple.systemuiserver",     # SystemUIServer (e.g. Siri in menubar)
+]
+
 include_dock_hints = true  # Also includes Mission Control
 include_nc_hints = true # Notification popups
 ```
