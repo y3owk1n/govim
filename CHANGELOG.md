@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.5.0](https://github.com/y3owk1n/neru/compare/v1.4.0...v1.5.0) (2025-11-06)
+
+
+### Features
+
+* allow configurable additional targets for menubar by bundle IDs ([#60](https://github.com/y3owk1n/neru/issues/60)) ([bca0da2](https://github.com/y3owk1n/neru/commit/bca0da2b8399931413a0a21c578b9ce449333325))
+* implement bundle to work locally ([#62](https://github.com/y3owk1n/neru/issues/62)) ([7f18d45](https://github.com/y3owk1n/neru/commit/7f18d4540416d81b01795145c9bdfb82ba02c915))
+
+
+### Bug Fixes
+
+* add cache for elements and improve tree walking duration ([#58](https://github.com/y3owk1n/neru/issues/58)) ([22b1fa3](https://github.com/y3owk1n/neru/commit/22b1fa38d94908416f7213392dc65ddc1d589a98))
+* allow 3 characters for maxHints ([#63](https://github.com/y3owk1n/neru/issues/63)) ([641c2b9](https://github.com/y3owk1n/neru/commit/641c2b9b127b0fecede934ed8062e0cb1da258bf))
+* no need to check isEnabled in go code ([#59](https://github.com/y3owk1n/neru/issues/59)) ([ce753d9](https://github.com/y3owk1n/neru/commit/ce753d99a7bac47e4cc35465939b2ed8c70a6877))
+* optimize tree building and element finding with parallelization and simple ttl caching ([#54](https://github.com/y3owk1n/neru/issues/54)) ([008f827](https://github.com/y3owk1n/neru/commit/008f827e003cbcc3ef8f62e41c1140a909fd887f))
+* remove `isclickable` and `isscrollable` proxy and call it directly ([#56](https://github.com/y3owk1n/neru/issues/56)) ([e94de63](https://github.com/y3owk1n/neru/commit/e94de63765af66ca361fd2a6ae7ffe20f961f8f5))
+* remove configurable maxHints and derive it from `hintChars` ([#61](https://github.com/y3owk1n/neru/issues/61)) ([3745e68](https://github.com/y3owk1n/neru/commit/3745e68107e847025c689945fbafe5df223fa20f))
+* replace complex `visibleChildren` logic with `AXVisibleRow` detection ([#57](https://github.com/y3owk1n/neru/issues/57)) ([ac896fb](https://github.com/y3owk1n/neru/commit/ac896fba19c20126f5bcfec30e554bcf06fccb43))
+
 ## [1.4.0](https://github.com/y3owk1n/neru/compare/v1.3.0...v1.4.0) (2025-11-04)
 
 
