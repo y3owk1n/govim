@@ -74,6 +74,7 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Add more actions to the menubar like `status`, `stop`, `start`, `current version`
 - Test suites, but am lazy for it
 - Implements launch agent with `start-service` and `stop-service`? Though I am fine just doing it in my nix config directly
+- Better app icon and menubar icon
 
 ## 🚀 Installation
 
@@ -217,13 +218,17 @@ Enable in your configuration:
 # Clone and build
 git clone https://github.com/y3owk1n/neru.git
 cd neru
-just build
 
-# Install
-mv ./bin/neru /usr/local/bin/neru
+just release # if you prefer cli only
+just bundle # if you prefer app bundle
+
+# You can then move to where you want
+mv ./bin/neru /usr/local/bin/neru # if you prefer cli only (bin path depends on your setup)
+mv ./build/Neru.app /Applications # if you prefer app bundle
 
 # Run
-neru launch
+open -a Neru # if you prefer app bundle
+neru launch # if you prefer cli only
 ```
 
 ### ⚠️ Required Permissions
@@ -240,7 +245,8 @@ After installation and granting permissions:
 
 ```bash
 # Start Neru
-neru launch
+open -a Neru # if you prefer app bundle
+neru launch # if you prefer cli only
 
 # Try hint mode: Press Cmd+Shift+Space
 # Try scroll mode: Press Cmd+Shift+J
@@ -304,6 +310,9 @@ Neru looks for configuration in:
 - **XDG Standard:** `~/.config/neru/config.toml` (Prefer this more so that we can put this in our dotfile)
 - **Custom Path:** Use `--config` flag: `neru launch --config /path/to/config.toml` (Useful for nix users)
 
+> [!NOTE]
+> If theres no config file, Neru will use the defaults.
+
 ### Default Configuration
 
 See [`configs/default-config.toml`](configs/default-config.toml) for all available options.
@@ -325,7 +334,7 @@ You shoul be also able to just clear the keybind and bind it with something like
 ```bash
 ctrl - f : neru hints
 ctrl - g : neru hints_action
-ctrl - s : scroll
+ctrl - s : neru scroll
 ```
 
 Read more about [CLI Usage](#%EF%B8%8F-cli-usage).
@@ -394,7 +403,7 @@ Global roles apply to all apps, while per-app roles are merged with global roles
 
 ### Electron & Chrome Support
 
-Neru includes built-in support for Electron apps and Chromium browsers.
+Neru includes built-in support for Electron apps and Chromium browsers. (Note that this is off by default)
 
 **Supported Electron apps** (automatic):
 
@@ -425,7 +434,7 @@ Neru includes built-in support for Electron apps and Chromium browsers.
 
 ```toml
 [accessibility.electron_support]
-enable = true  # Enable Electron support (default)
+enable = true  # Enable Electron support (off by default)
 
 # Add additional Electron apps
 additional_bundles = [

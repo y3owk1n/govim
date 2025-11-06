@@ -105,7 +105,7 @@ scrollable_roles = [
 ## Electron & Chromium support
 # Enables manual accessibility toggles for Electron-like apps.
 # Built-in: VS Code, Windsurf, Slack, Cursor, Spotify, Obsidian, Firefox.
-enable = true
+enable = false
 
 # Extra bundle IDs requiring Electron-style accessibility.
 # Examples: ["com.example.app"]
