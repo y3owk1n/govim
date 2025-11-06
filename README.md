@@ -64,6 +64,7 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Better UI representation for action menu (maybe auto edge detection like tooltip in browser, that will place itself around the element based on the space available around it)
 - Find a way to auto deduplicate hints that are targeting the same point
 - Scroll areas are hardcoded from 1-9, do we ever need more than that and make it dynamic upon query? We can still use <Tab> to cycle next tho
+- Get rid of `PageHeight` in config and find a way to calculate available scroll for (c-d, c-u, gg, G) more reliably.
 - Homerow supports `continuous clicks`, is that something important?
 - Maybe forces to certain input source? I normally just use English, but maybe it's useful for others
 - Electron apps does not show hints on the first activation. Maybe there's some manual work need to be done after setting up electron support?
