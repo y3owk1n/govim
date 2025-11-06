@@ -74,7 +74,6 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Add more actions to the menubar like `status`, `stop`, `start`, `current version`
 - Test suites, but am lazy for it
 - Implements launch agent with `start-service` and `stop-service`? Though I am fine just doing it in my nix config directly
-- Macos bundle with `Neru.app` for easier installation? But we'll need a nice app icon for it tho...
 
 ## 🚀 Installation
 
@@ -82,7 +81,7 @@ This is an intentional design choice to keep the project lean, maintainable, and
 
 ```bash
 brew tap y3owk1n/tap
-brew install y3owk1n/tap/neru
+brew install --cask y3owk1n/tap/neru
 ```
 
 ### Nix Darwin
@@ -94,49 +93,63 @@ Add the following file to your overlay:
 
 ```nix
 {
-  stdenv,
-  buildGoModule,
-  fetchFromGitHub,
+  fetchzip,
+  gitUpdater,
   installShellFiles,
-  writableTmpDirAsHomeHook,
+  stdenv,
+  versionCheckHook,
   lib,
-  nix-update-script,
 }:
-buildGoModule (finalAttrs: {
-  pname = "neru";
-  version = "1.2.0";
 
-  src = fetchFromGitHub {
-    owner = "y3owk1n";
-    repo = "neru";
-    tag = "v${finalAttrs.version}";
-    hash = "sha256-dzcpdVbl2eVU4L9x/qnXC5DOWbMCgt9/wEKroOedXoY=";
+let
+  appName = "Neru.app";
+  version = "1.5.0";
+in
+stdenv.mkDerivation {
+  pname = "neru";
+
+  inherit version;
+
+  src = fetchzip {
+    url = "https://github.com/y3owk1n/neru/releases/download/v${version}/neru-darwin-arm64.zip";
+    sha256 = "sha256-TcurBgkj3/vmOd40rBJzoVr2+rcOspR0QZ1zv9sN6O4=";
+    stripRoot = false;
   };
 
-  vendorHash = "sha256-x5NB18fP8ERIB5qeMAMyMnSoDEF2+g+NoJKrC+kIj+k=";
+  nativeBuildInputs = [ installShellFiles ];
 
-  ldflags = [
-    "-s"
-    "-w"
-    "-X github.com/y3owk1n/neru/internal/cli.Version=${finalAttrs.version}"
-  ];
-
-  # Completions
-  nativeBuildInputs = [
-    installShellFiles
-    writableTmpDirAsHomeHook
-  ];
-  postInstall = lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) ''
-    installShellCompletion --cmd neru \
-      --bash <($out/bin/neru completion bash) \
-      --fish <($out/bin/neru completion fish) \
-      --zsh <($out/bin/neru completion zsh)
+  installPhase = ''
+    runHook preInstall
+    mkdir -p $out/Applications
+    mv ${appName} $out/Applications
+    cp -R bin $out
+    mkdir -p $out/share
+    runHook postInstall
   '';
 
-  passthru = {
-    updateScript = nix-update-script { };
+  postInstall = ''
+    if ${lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) "true"}; then
+      installShellCompletion --cmd neru \
+        --bash <($out/bin/neru completion bash) \
+        --fish <($out/bin/neru completion fish) \
+        --zsh <($out/bin/neru completion zsh)
+    fi
+  '';
+
+  doInstallCheck = true;
+  nativeInstallCheckInputs = [
+    versionCheckHook
+  ];
+
+  passthru.updateScript = gitUpdater {
+    url = "https://github.com/y3owk1n/neru.git";
+    rev-prefix = "v";
   };
-})
+
+  meta = {
+    mainProgram = "neru";
+  };
+}
 ```
 
 Create a custom module:
