@@ -94,7 +94,6 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Create hint generator
 	hintGen := hints.NewGenerator(
 		cfg.Hints.HintCharacters,
-		cfg.Performance.MaxHintsDisplayed,
 	)
 
 	// Create hint overlay

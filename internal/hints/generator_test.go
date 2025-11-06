@@ -10,7 +10,7 @@ import (
 )
 
 func TestGenerateAlphabetLabels(t *testing.T) {
-	gen := NewGenerator("asdf", 100)
+	gen := NewGenerator("asdf")
 
 	tests := []struct {
 		count    int
@@ -201,24 +201,13 @@ func TestGenerate(t *testing.T) {
 		{
 			name:       "alphabet style",
 			characters: "asdf",
-			maxHints:   10,
 			elements:   elements,
 			wantCount:  3,
 			wantLabels: []string{"A", "S", "D"},
 		},
-
-		{
-			name:       "limited hints",
-			characters: "asdf",
-			maxHints:   2,
-			elements:   elements,
-			wantCount:  2,
-			wantLabels: []string{"A", "S"},
-		},
 		{
 			name:       "empty elements",
 			characters: "asdf",
-			maxHints:   10,
 			elements:   []*accessibility.TreeNode{},
 			wantCount:  0,
 			wantLabels: []string{},
@@ -227,9 +216,8 @@ func TestGenerate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			generator := NewGenerator(tt.characters, tt.maxHints)
+			generator := NewGenerator(tt.characters)
 			hints, err := generator.Generate(tt.elements)
-
 			if err != nil {
 				t.Fatalf("Generate() error = %v", err)
 			}
@@ -303,7 +291,7 @@ func createMockElement(x, y int) *accessibility.TreeNode {
 }
 
 func TestGenerateHints(t *testing.T) {
-	gen := NewGenerator("asdf", 100)
+	gen := NewGenerator("asdf")
 
 	elements := []*accessibility.TreeNode{
 		createMockElement(10, 10),
@@ -363,16 +351,33 @@ func TestGenerateHints_EdgeCases(t *testing.T) {
 				createMockElement(10, 10),
 				createMockElement(20, 20),
 				createMockElement(30, 30),
+				createMockElement(40, 40),
+				createMockElement(50, 50),
+				createMockElement(60, 60),
+				createMockElement(70, 70),
+				createMockElement(80, 80),
+				createMockElement(90, 90),
+				createMockElement(100, 100),
+				createMockElement(110, 110),
+				createMockElement(120, 120),
+				createMockElement(130, 130),
+				createMockElement(140, 140),
+				createMockElement(150, 150),
+				createMockElement(160, 160),
+				createMockElement(170, 170),
+				createMockElement(180, 180),
+				createMockElement(190, 190),
+				createMockElement(200, 200),
 			},
-			maxHints:    2,
+			maxHints:    16,
 			expectError: false,
-			expectedLen: 2,
+			expectedLen: 16,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gen := NewGenerator("asdf", tt.maxHints)
+			gen := NewGenerator("asdf")
 			hints, err := gen.Generate(tt.elements)
 
 			if tt.expectError {
@@ -405,12 +410,15 @@ func TestGenerateHints_EdgeCases(t *testing.T) {
 }
 
 func TestGenerateHintsWithMaxLimit(t *testing.T) {
-	gen := NewGenerator("asdf", 2)
+	gen := NewGenerator("as")
 
 	elements := []*accessibility.TreeNode{
 		createMockElement(10, 10),
 		createMockElement(100, 10),
 		createMockElement(10, 100),
+		createMockElement(100, 10),
+		createMockElement(10, 100),
+		createMockElement(100, 10),
 	}
 
 	hints, err := gen.Generate(elements)
@@ -418,7 +426,7 @@ func TestGenerateHintsWithMaxLimit(t *testing.T) {
 		t.Fatalf("Failed to generate hints: %v", err)
 	}
 
-	if len(hints) != 2 {
+	if len(hints) != 4 {
 		t.Errorf("Expected 2 hints (max limit), got %d", len(hints))
 	}
 }
@@ -440,7 +448,7 @@ func TestGenerateAlphabetLabels_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gen := NewGenerator(tt.chars, 1000)
+			gen := NewGenerator(tt.chars)
 			labels := gen.generateAlphabetLabels(tt.count)
 
 			if tt.count <= 0 {
@@ -495,7 +503,7 @@ func TestNoPrefixConflicts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gen := NewGenerator(tt.chars, 1000)
+			gen := NewGenerator(tt.chars)
 			labels := gen.generateAlphabetLabels(tt.count)
 
 			if len(labels) != tt.count {

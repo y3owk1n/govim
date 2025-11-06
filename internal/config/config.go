@@ -17,7 +17,6 @@ type Config struct {
 	Hotkeys       HotkeysConfig       `toml:"hotkeys"`
 	Scroll        ScrollConfig        `toml:"scroll"`
 	Hints         HintsConfig         `toml:"hints"`
-	Performance   PerformanceConfig   `toml:"performance"`
 	Logging       LoggingConfig       `toml:"logging"`
 }
 
@@ -83,10 +82,6 @@ type HintsConfig struct {
 	ActionMatchedTextColor string  `toml:"action_matched_text_color"`
 	ActionBorderColor      string  `toml:"action_border_color"`
 	ActionOpacity          float64 `toml:"action_opacity"`
-}
-
-type PerformanceConfig struct {
-	MaxHintsDisplayed int `toml:"max_hints_displayed"`
 }
 
 type LoggingConfig struct {
@@ -157,9 +152,6 @@ func DefaultConfig() *Config {
 			ActionMatchedTextColor: "#003366",
 			ActionBorderColor:      "#000000",
 			ActionOpacity:          0.95,
-		},
-		Performance: PerformanceConfig{
-			MaxHintsDisplayed: 200,
 		},
 		Logging: LoggingConfig{
 			LogLevel:          "info",
@@ -256,11 +248,6 @@ func (c *Config) Validate() error {
 	}
 	if c.Hints.ActionOpacity < 0 || c.Hints.ActionOpacity > 1 {
 		return fmt.Errorf("hints.action_opacity must be between 0 and 1")
-	}
-
-	// Validate performance settings
-	if c.Performance.MaxHintsDisplayed < 1 {
-		return fmt.Errorf("performance.max_hints_displayed must be at least 1")
 	}
 
 	// Validate hotkeys

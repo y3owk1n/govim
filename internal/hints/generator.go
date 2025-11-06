@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/y3owk1n/neru/internal/accessibility"
+	"github.com/y3owk1n/neru/internal/logger"
+	"go.uber.org/zap"
 )
 
 // Hint represents a hint label for a UI element
@@ -24,11 +26,18 @@ type Generator struct {
 }
 
 // NewGenerator creates a new hint generator
-func NewGenerator(characters string, maxHints int) *Generator {
+func NewGenerator(characters string) *Generator {
 	// Ensure we have at least some characters
 	if characters == "" {
 		characters = "asdfghjkl" // fallback to default
 	}
+
+	charCount := len(characters)
+	maxHints := charCount * charCount
+
+	logger.Debug("Considered characters", zap.String("characters", characters), zap.Int("charCount", charCount))
+	logger.Debug("Setting maxHints", zap.Int("maxHints", maxHints))
+
 	return &Generator{
 		characters: characters,
 		maxHints:   maxHints,

@@ -379,30 +379,6 @@ additional_clickable_roles = ["AXStaticText"]
 
 Global roles apply to all apps, while per-app roles are merged with global roles for specific applications.
 
-#### Reduce Hint Label Length
-
-When many elements are clickable, hints use 3 characters (e.g., "AAA") to avoid conflicts. To keep hints at 2 characters:
-
-**Option 1:** Reduce max hints displayed
-
-```toml
-[performance]
-max_hints_displayed = 80  # Keeps hints at 2 characters with default 9-char set
-```
-
-**Option 2:** Add more hint characters
-
-```toml
-[hints]
-hint_characters = "asdfghjklqwertyuiop"  # 19 chars = 361 two-char combinations
-```
-
-**Hint capacity reference:**
-
-- 9 characters = 81 two-char hints
-- 12 characters = 144 two-char hints
-- 15 characters = 225 two-char hints
-
 ### Electron & Chrome Support
 
 Neru includes built-in support for Electron apps and Chromium browsers.
