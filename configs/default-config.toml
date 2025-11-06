@@ -224,11 +224,6 @@ scroll_to_edge_iterations = 20
 # Increase for faster edge scrolling; tune with iterations above.
 scroll_to_edge_delta = 5000
 
-[performance]
-# Maximum number of hints to display
-# Minimum: 1. Higher values increase CPU and memory usage.
-max_hints_displayed = 500
-
 [logging]
 # Log level: "debug", "info", "warn", "error"
 # Use "debug" for troubleshooting; default is "info".
