@@ -1162,11 +1162,43 @@ func onReady() {
 	systray.SetTitle("⌨️")
 	systray.SetTooltip("Neru - Keyboard Navigation")
 
+	// Status submenu for version
+	mVersion := systray.AddMenuItem(fmt.Sprintf("Version %s", cli.Version), "Show version")
+	mVersion.Disable()
+
+	// Status toggle
+	mStatus := systray.AddMenuItem("Status: Running", "Show current status")
+	mStatus.Disable()
+
+	// Control actions
+	systray.AddSeparator()
+	mToggle := systray.AddMenuItem("Stop", "Pause/Resume Neru functionality")
+
+	// Quit option
+	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit Neru", "Exit the application")
 
+	// Handle clicks in a separate goroutine
 	go func() {
-		<-mQuit.ClickedCh
-		systray.Quit()
+		for {
+			select {
+			case <-mToggle.ClickedCh:
+				if globalApp != nil {
+					if globalApp.enabled {
+						globalApp.enabled = false
+						mStatus.SetTitle("Status: Paused")
+						mToggle.SetTitle("Start")
+					} else {
+						globalApp.enabled = true
+						mStatus.SetTitle("Status: Running")
+						mToggle.SetTitle("Stop")
+					}
+				}
+			case <-mQuit.ClickedCh:
+				systray.Quit()
+				return
+			}
+		}
 	}()
 }
 

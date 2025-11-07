@@ -69,7 +69,6 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Cant actually make scroll works in Electron apps, what is the best approach? There are tons of random `AXGroup` where some is scrollable and some is not...
 - Sort of working in Mision Control, but it still shows hints from the frontmost app. How can we know that we are in mission control and ignore the frontmost app?
 - Research if there's a good way to implemet visual hint mode where we can select text? Doing this with accessibility seems a little hard and vague
-- Add more actions to the menubar like `status`, `stop`, `start`, `current version`
 - Test suites, but am lazy for it
 - Implements launch agent with `start-service` and `stop-service`? Though I am fine just doing it in my nix config directly
 - Better app icon and menubar icon
