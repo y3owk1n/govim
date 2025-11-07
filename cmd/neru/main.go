@@ -15,6 +15,7 @@ import (
 	_ "github.com/y3owk1n/neru/internal/bridge" // Import for CGo compilation
 	"github.com/y3owk1n/neru/internal/cli"
 	"github.com/y3owk1n/neru/internal/config"
+	"github.com/y3owk1n/neru/internal/electron"
 	"github.com/y3owk1n/neru/internal/eventtap"
 	"github.com/y3owk1n/neru/internal/hints"
 	"github.com/y3owk1n/neru/internal/hotkeys"
@@ -46,6 +47,7 @@ type App struct {
 	scrollController *scroll.Controller
 	eventTap         *eventtap.EventTap
 	ipcServer        *ipc.Server
+	electronManager  *electron.ElectronManager
 	currentMode      Mode
 	currentHints     *hints.HintCollection
 	hintInput        string
@@ -118,6 +120,11 @@ func NewApp(cfg *config.Config) (*App, error) {
 		hotkeysRegistered: false,
 	}
 
+	// Create electron manager
+	if cfg.Accessibility.ElectronSupport.Enable {
+		app.electronManager = electron.NewElectronManager()
+	}
+
 	// Create event tap for capturing keys in modes
 	app.eventTap = eventtap.NewEventTap(app.handleKeyPress, log)
 	if app.eventTap == nil {
@@ -150,6 +157,13 @@ func (a *App) Run() error {
 	// Start IPC server
 	a.ipcServer.Start()
 	a.logger.Info("IPC server started")
+
+	if a.config.Accessibility.ElectronSupport.Enable {
+		// Start electron manager
+		a.electronManager.Start()
+	}
+
+	a.logger.Info("Electron manager started")
 
 	// Initialize hotkeys based on current focused app and exclusion
 	a.refreshHotkeysForCurrentApp()
@@ -383,11 +397,6 @@ func (a *App) activateHintMode(withActions bool) {
 
 	// Update roles for the current focused app
 	a.updateRolesForCurrentApp()
-
-	// Enable Electron accessibility if needed before scanning
-	if a.config.Accessibility.ElectronSupport.Enable {
-		accessibility.EnsureElectronSupport(a.config.Accessibility.ElectronSupport.AdditionalBundles)
-	}
 
 	// Get clickable elements
 	roles := accessibility.GetClickableRoles()
@@ -911,10 +920,6 @@ func (a *App) activateScrollMode() {
 	// Update roles for the current focused app
 	a.updateRolesForCurrentApp()
 
-	if a.config.Accessibility.ElectronSupport.Enable {
-		accessibility.EnsureElectronSupport(a.config.Accessibility.ElectronSupport.AdditionalBundles)
-	}
-
 	a.logger.Info("Initializing scroll controller")
 	// Activate scroll mode
 	if err := a.scrollController.Initialize(); err != nil {
@@ -1014,10 +1019,6 @@ func (a *App) exitMode() {
 		a.eventTap.Disable()
 	}
 
-	// if a.config.Accessibility.ElectronSupport.Enable {
-	// 	accessibility.ResetElectronSupport()
-	// }
-
 	a.currentMode = ModeIdle
 }
 
@@ -1049,6 +1050,11 @@ func (a *App) Cleanup() {
 	a.exitMode()
 	a.hotkeyManager.UnregisterAll()
 	a.hintOverlay.Destroy()
+
+	// Stop electron manager
+	if a.electronManager != nil {
+		a.electronManager.Stop()
+	}
 
 	// Stop IPC server
 	if a.ipcServer != nil {

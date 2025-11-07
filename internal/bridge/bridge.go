@@ -7,10 +7,15 @@ package bridge
 #include "overlay.h"
 #include "hotkeys.h"
 #include "eventtap.h"
+#include "appwatcher.h"
 #include <stdlib.h>
 */
 import "C"
-import "unsafe"
+
+import (
+	"sync"
+	"unsafe"
+)
 
 // This file ensures the bridge package is properly initialized
 // and the Objective-C files are compiled with CGo
@@ -38,4 +43,68 @@ func HasClickAction(element unsafe.Pointer) bool {
 	}
 	result := C.hasClickAction(element)
 	return result == 1
+}
+
+var (
+	appWatcher     AppWatcher
+	appWatcherOnce sync.Once
+)
+
+// AppWatcher interface defines the methods for application watching
+type AppWatcher interface {
+	HandleLaunch(appName, bundleID string)
+	HandleTerminate(appName, bundleID string)
+	HandleActivate(appName, bundleID string)
+	HandleDeactivate(appName, bundleID string)
+}
+
+// SetAppWatcher sets the application watcher implementation
+func SetAppWatcher(w AppWatcher) {
+	appWatcher = w
+}
+
+// StartAppWatcher starts watching for application events
+func StartAppWatcher() {
+	C.startAppWatcher()
+}
+
+// StopAppWatcher stops watching for application events
+func StopAppWatcher() {
+	C.stopAppWatcher()
+}
+
+//export handleAppLaunch
+func handleAppLaunch(cAppName *C.char, cBundleID *C.char) {
+	if appWatcher != nil {
+		appName := C.GoString(cAppName)
+		bundleID := C.GoString(cBundleID)
+		appWatcher.HandleLaunch(appName, bundleID)
+	}
+}
+
+//export handleAppTerminate
+func handleAppTerminate(cAppName *C.char, cBundleID *C.char) {
+	if appWatcher != nil {
+		appName := C.GoString(cAppName)
+		bundleID := C.GoString(cBundleID)
+		appWatcher.HandleTerminate(appName, bundleID)
+	}
+}
+
+//export handleAppActivate
+func handleAppActivate(cAppName *C.char, cBundleID *C.char) {
+	if appWatcher != nil {
+		appName := C.GoString(cAppName)
+		bundleID := C.GoString(cBundleID)
+		appWatcher.HandleActivate(appName, bundleID)
+	}
+}
+
+//export handleAppDeactivate
+func handleAppDeactivate(cAppName *C.char, cBundleID *C.char) {
+	if appWatcher != nil {
+		appName := C.GoString(cAppName)
+		bundleID := C.GoString(cBundleID)
+		appWatcher.HandleDeactivate(appName, bundleID)
+	}
 }
