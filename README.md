@@ -19,7 +19,7 @@
 
 </div>
 
-https://github.com/user-attachments/assets/6d796898-b780-499d-b3a3-35b9ec537079
+<https://github.com/user-attachments/assets/6d796898-b780-499d-b3a3-35b9ec537079>
 
 ## About Neru
 
@@ -286,10 +286,12 @@ Press `esc` anytime to quit the hint selection.
 **Default hotkey:** `Cmd+Shift+J`
 
 1. Press the hotkey
-2. Type the hint label (will move the cursor to the position selected)
-3. Start scrolling
+2. In the hint selection mode, type the hint label (will move the cursor to the position selected)
+3. At the same time, press `tab` to enter scroll mode directly without selecting a hint
+4. Start scrolling
 
 Press `esc` anytime to quit the scroll mode.
+Press `tab` to toggle between direct scroll and hint selection to move your cursor.
 
 Vim-style navigation keys:
 
