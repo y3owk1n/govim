@@ -19,6 +19,8 @@
 
 </div>
 
+https://github.com/user-attachments/assets/6d796898-b780-499d-b3a3-35b9ec537079
+
 ## About Neru
 
 **Neru** (練る) - A Japanese word meaning "to refine, polish, and master through practice" - embodies the philosophy of this tool: mastering keyboard-driven navigation to refine your macOS workflow.
