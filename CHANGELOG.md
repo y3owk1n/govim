@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.6.0](https://github.com/y3owk1n/neru/compare/v1.5.1...v1.6.0) (2025-11-07)
+
+
+### Features
+
+* add more actions to systray ([#83](https://github.com/y3owk1n/neru/issues/83)) ([af3e11d](https://github.com/y3owk1n/neru/commit/af3e11d3897372ff0441d81642825ee9d91fc958))
+* add more actions to systray menu for Neru ([#76](https://github.com/y3owk1n/neru/issues/76)) ([5c121db](https://github.com/y3owk1n/neru/commit/5c121db03e4b66e4e99e74f32b8375a21a079d84))
+* allow to bypass heuristic checks for scrollable and clickable ([#81](https://github.com/y3owk1n/neru/issues/81)) ([60af71b](https://github.com/y3owk1n/neru/commit/60af71b69ecfb9771daac45504911afc2fa29318))
+* also allow per-app ignore checks ([2803d0d](https://github.com/y3owk1n/neru/commit/2803d0d0b439386f465e99f48e96786aca2bf14d))
+* make scroll areas dynamic with available areas ([#79](https://github.com/y3owk1n/neru/issues/79)) ([bded86e](https://github.com/y3owk1n/neru/commit/bded86e4e2492cc9748a4fb16a0664156c279982))
+* revamp hotkey to support custom bash script and IPC calls ([#82](https://github.com/y3owk1n/neru/issues/82)) ([09633de](https://github.com/y3owk1n/neru/commit/09633def7a623668a87a3548a85795b8fdf978e7))
+* split out electron, chromium and firefox supports ([#74](https://github.com/y3owk1n/neru/issues/74)) ([6b842f6](https://github.com/y3owk1n/neru/commit/6b842f61410b961206472e835d3044b798348e31))
+* use app watcher to enable electron accessibility ([#73](https://github.com/y3owk1n/neru/issues/73)) ([2b9e0e5](https://github.com/y3owk1n/neru/commit/2b9e0e5f7cde5a3c7013c9bda5e0fe715d970c88))
+
+
+### Bug Fixes
+
+* add conditional parallelize for tree building ([#72](https://github.com/y3owk1n/neru/issues/72)) ([21c06aa](https://github.com/y3owk1n/neru/commit/21c06aa204abcad6e52cd681a2cb54f1f2a7f5b3))
+* always force to US keyboard ([#75](https://github.com/y3owk1n/neru/issues/75)) ([a76b29f](https://github.com/y3owk1n/neru/commit/a76b29f8dc0937468dece6341df9bcf8c98e91b4))
+* avoid memory leak and proper cleanups ([#80](https://github.com/y3owk1n/neru/issues/80)) ([1845299](https://github.com/y3owk1n/neru/commit/18452998f3fa05e45d46b0eb5b07a9235524a87d))
+* centralize app watcher into single instance ([#78](https://github.com/y3owk1n/neru/issues/78)) ([b81a7c0](https://github.com/y3owk1n/neru/commit/b81a7c00f71e50fec7b26923cd2fe045c67bc7f8))
+* move timer based watcher for hotkeys registration to app watcher ([#77](https://github.com/y3owk1n/neru/issues/77)) ([ae4e6cd](https://github.com/y3owk1n/neru/commit/ae4e6cd1eadbed5debb9c3ce355f9363b035b28a))
+* removing maxDepth checks ([#70](https://github.com/y3owk1n/neru/issues/70)) ([53e0557](https://github.com/y3owk1n/neru/commit/53e0557552052b804427f859dca430e2608bcec2))
+
 ## [1.5.1](https://github.com/y3owk1n/neru/compare/v1.5.0...v1.5.1) (2025-11-06)
 
 
