@@ -81,11 +81,15 @@ type HintsConfig struct {
 	BorderColor      string  `toml:"border_color"`
 	Opacity          float64 `toml:"opacity"`
 	// Action overlay specific colors and opacity
-	ActionBackgroundColor  string  `toml:"action_background_color"`
-	ActionTextColor        string  `toml:"action_text_color"`
-	ActionMatchedTextColor string  `toml:"action_matched_text_color"`
-	ActionBorderColor      string  `toml:"action_border_color"`
-	ActionOpacity          float64 `toml:"action_opacity"`
+	ActionBackgroundColor  string `toml:"action_background_color"`
+	ActionTextColor        string `toml:"action_text_color"`
+	ActionMatchedTextColor string `toml:"action_matched_text_color"`
+	ActionBorderColor      string `toml:"action_border_color"`
+	// Scroll hints specific colors and opacity
+	ScrollHintsBackgroundColor  string `toml:"scroll_hints_background_color"`
+	ScrollHintsTextColor        string `toml:"scroll_hints_text_color"`
+	ScrollHintsMatchedTextColor string `toml:"scroll_hints_matched_text_color"`
+	ScrollHintsBorderColor      string `toml:"scroll_hints_border_color"`
 }
 
 type LoggingConfig struct {
@@ -181,7 +185,11 @@ func DefaultConfig() *Config {
 			ActionTextColor:        "#000000",
 			ActionMatchedTextColor: "#003366",
 			ActionBorderColor:      "#000000",
-			ActionOpacity:          0.95,
+			// Defaults for scroll hints colors to visually differentiate
+			ScrollHintsBackgroundColor:  "#2ECC71",
+			ScrollHintsTextColor:        "#000000",
+			ScrollHintsMatchedTextColor: "#145A32",
+			ScrollHintsBorderColor:      "#000000",
 		},
 		Scroll: ScrollConfig{
 			ScrollSpeed:         50,
@@ -308,10 +316,6 @@ func (c *Config) Validate() error {
 	if c.Hints.Opacity < 0 || c.Hints.Opacity > 1 {
 		return fmt.Errorf("hints.opacity must be between 0 and 1")
 	}
-	if c.Hints.ActionOpacity < 0 || c.Hints.ActionOpacity > 1 {
-		return fmt.Errorf("hints.action_opacity must be between 0 and 1")
-	}
-
 	// Hotkeys are validated in the bindings validation section below
 
 	// Validate colors
@@ -341,6 +345,19 @@ func (c *Config) Validate() error {
 		return err
 	}
 	if err := validateColor(c.Scroll.HighlightColor, "scroll.highlight_color"); err != nil {
+		return err
+	}
+	// Validate scroll hints colors
+	if err := validateColor(c.Hints.ScrollHintsBackgroundColor, "hints.scroll_hints_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.ScrollHintsTextColor, "hints.scroll_hints_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.ScrollHintsMatchedTextColor, "hints.scroll_hints_matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.ScrollHintsBorderColor, "hints.scroll_hints_border_color"); err != nil {
 		return err
 	}
 

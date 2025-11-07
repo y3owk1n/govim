@@ -137,7 +137,6 @@ func NewApp(cfg *config.Config) (*App, error) {
 			style.TextColor = app.config.Hints.ActionTextColor
 			style.MatchedTextColor = app.config.Hints.ActionMatchedTextColor
 			style.BorderColor = app.config.Hints.ActionBorderColor
-			style.Opacity = app.config.Hints.ActionOpacity
 			if err := app.hintOverlay.DrawHintsWithStyle(hints, style); err != nil {
 				app.logger.Error("Failed to redraw hints", zap.Error(err))
 			}
@@ -572,7 +571,6 @@ func (a *App) activateHintMode(mode Mode) {
 		style.TextColor = a.config.Hints.ActionTextColor
 		style.MatchedTextColor = a.config.Hints.ActionMatchedTextColor
 		style.BorderColor = a.config.Hints.ActionBorderColor
-		style.Opacity = a.config.Hints.ActionOpacity
 		if err := a.hintOverlay.DrawHintsWithStyle(hintList, style); err != nil {
 			a.logger.Error("Failed to draw hints", zap.Error(err))
 			return
@@ -591,7 +589,12 @@ func (a *App) activateHintMode(mode Mode) {
 		a.logger.Info("Hint mode activated", zap.Int("hints", len(hintList)))
 		a.logger.Info("Type a hint label to click the element")
 	case ModeScroll:
-		if err := a.hintOverlay.DrawHints(hintList); err != nil {
+		style := a.config.Hints
+		style.BackgroundColor = a.config.Hints.ScrollHintsBackgroundColor
+		style.TextColor = a.config.Hints.ScrollHintsTextColor
+		style.MatchedTextColor = a.config.Hints.ScrollHintsMatchedTextColor
+		style.BorderColor = a.config.Hints.ScrollHintsBorderColor
+		if err := a.hintOverlay.DrawHintsWithStyle(hintList, style); err != nil {
 			a.logger.Error("Failed to draw hints", zap.Error(err))
 			return
 		}
@@ -739,7 +742,6 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 	actionStyle.TextColor = a.config.Hints.ActionTextColor
 	actionStyle.MatchedTextColor = a.config.Hints.ActionMatchedTextColor
 	actionStyle.BorderColor = a.config.Hints.ActionBorderColor
-	actionStyle.Opacity = a.config.Hints.ActionOpacity
 	// Use smaller sizing for action hints
 	actionStyle.FontSize = 11    // Smaller font
 	actionStyle.Padding = 3      // Less padding

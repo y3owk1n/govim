@@ -525,21 +525,16 @@ You can configure how you want those hints
 
 ```toml
 [hints]
+# Characters used to build hint labels for alphabet style.
+# - At least 2 characters; choose distinct, easy-to-type ones.
+hint_characters = "asdfghjkl"
+
 # Font size for hint labels
 # Valid range: 6–72
 font_size = 12
 
 # Font family (leave empty for system default)
 font_family = ""
-
-# Background color (hex format)
-background_color = "#FFD700"
-
-# Text color (hex format)
-text_color = "#000000"
-
-# Matched text color - color for characters that have been typed (hex format)
-matched_text_color = "#0066CC"
 
 # Border radius (pixels)
 # Non-negative integer
@@ -553,28 +548,30 @@ padding = 4
 # Non-negative integer
 border_width = 1
 
-# Border color (hex format)
-border_color = "#000000"
-
 # Opacity (0.0 to 1.0)
 # Controls hint translucency; 1.0 is fully opaque
 opacity = 0.95
 
+# Default colors for hints (used when no style is specified, e.g. in normal hint mode)
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#0066CC" # Matched text color - color for characters that have been typed
+border_color = "#000000"
+
 # Action overlay colors (used when selecting click type)
-# Background color (hex format)
 action_background_color = "#66CCFF"
-
-# Text color (hex format)
 action_text_color = "#000000"
-
-# Matched text color (hex format)
 action_matched_text_color = "#003366"
-
-# Border color (hex format)
 action_border_color = "#000000"
 
-# Opacity (0.0 to 1.0)
-action_opacity = 0.95
+# Action keys for hint mode with actions (hardcoded):
+#   l = left click, r = right click, d = double click, m = middle click, g = go to pos
+
+# Scroll hints specific colors and opacity
+scroll_hints_background_color = "#2ECC71"
+scroll_hints_text_color = "#000000"
+scroll_hints_matched_text_color = "#145A32"
+scroll_hints_border_color = "#000000"
 ```
 
 ### Scroll configuration
