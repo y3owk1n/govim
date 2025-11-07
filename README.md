@@ -384,6 +384,49 @@ excluded_apps = [
 osascript -e 'id of app "AppName"'
 ```
 
+#### Global Role Configuration
+
+You can customize clickable/scrollable roles for all apps.
+
+```toml
+[accessibility]
+
+# These are the defaults, feel free to remove or add more as you see fit
+clickable_roles = [
+    "AXButton",
+    "AXComboBox",
+    "AXCheckBox",
+    "AXRadioButton",
+    "AXLink",
+    "AXPopUpButton",
+    "AXTextField",
+    "AXSlider",
+    "AXTabButton",
+    "AXSwitch",
+    "AXDisclosureTriangle",
+    "AXTextArea",
+    "AXMenuButton",
+    "AXMenuItem",
+    "AXCell",
+    "AXRow",
+]
+
+# There are predefined heuristics checks for if an element should be clickable or not.
+# Skip role checking for clickable elements (all elements will be considered clickable)
+# Enable this if you know what you're doing
+ignore_clickable_check = false
+
+# These are the defaults, feel free to remove or add more as you see fit
+scrollable_roles = [
+    "AXScrollArea",
+]
+
+# There are predefined heuristics checks for if an element is scrollable or not.
+# Skip role checking for scrollable elements (all elements will be considered scrollable)
+# Enable this if you know what you're doing
+ignore_scrollable_check = false
+```
+
 #### Per-App Role Configuration
 
 Customize clickable/scrollable roles for specific apps. This is useful when certain apps use non-standard UI elements.

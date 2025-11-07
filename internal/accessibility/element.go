@@ -15,6 +15,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/y3owk1n/neru/internal/config"
 	"github.com/y3owk1n/neru/internal/logger"
 	"go.uber.org/zap"
 )
@@ -472,6 +473,11 @@ func (e *Element) IsClickable() bool {
 		return false
 	}
 
+	// If ignore_clickable_check is enabled in config, return true
+	if cfg := config.Global(); cfg != nil && cfg.Accessibility.IgnoreClickableCheck {
+		return true
+	}
+
 	info := globalCache.Get(e)
 	if info == nil {
 		var err error
@@ -488,7 +494,7 @@ func (e *Element) IsClickable() bool {
 	clickableRolesMu.RUnlock()
 
 	if ok {
-		// Also verify it actually has scroll capability
+		// Also verify it actually has click action
 		result := C.hasClickAction(e.ref)
 		return result == 1
 	}
@@ -500,6 +506,11 @@ func (e *Element) IsClickable() bool {
 func (e *Element) IsScrollable() bool {
 	if e.ref == nil {
 		return false
+	}
+
+	// If ignore_scrollable_check is enabled in config, return true
+	if cfg := config.Global(); cfg != nil && cfg.Accessibility.IgnoreScrollableCheck {
+		return true
 	}
 
 	info := globalCache.Get(e)

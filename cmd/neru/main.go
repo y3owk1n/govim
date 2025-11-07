@@ -80,6 +80,9 @@ func NewApp(cfg *config.Config) (*App, error) {
 		}
 	}
 
+	// Set global config
+	config.SetGlobal(cfg)
+
 	// Apply clickable and scrollable roles from config
 	log.Info("Applying clickable roles",
 		zap.Int("count", len(cfg.Accessibility.ClickableRoles)),

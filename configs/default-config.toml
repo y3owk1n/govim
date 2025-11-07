@@ -75,12 +75,22 @@ clickable_roles = [
     "AXRow",
 ]
 
+# There are predefined heuristics checks for if an element should be clickable or not.
+# Skip role checking for clickable elements (all elements will be considered clickable)
+# Enable this if you know what you're doing
+ignore_clickable_check = false
+
 # Global accessibility roles that are treated as scrollable
 # These roles will be used for ALL applications
 # Users can add or remove roles as needed
 scrollable_roles = [
     "AXScrollArea",
 ]
+
+# There are predefined heuristics checks for if an element is scrollable or not.
+# Skip role checking for scrollable elements (all elements will be considered scrollable)
+# Enable this if you know what you're doing
+ignore_scrollable_check = false
 
 # Per-app role configurations
 # These allow you to add additional clickable/scrollable roles for specific applications
