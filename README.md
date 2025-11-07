@@ -437,14 +437,25 @@ ignore_scrollable_check = false
 
 Customize clickable/scrollable roles for specific apps. This is useful when certain apps use non-standard UI elements.
 
-**Example:** In Mail.app, many `AXStaticText` elements should be clickable:
-
 ```toml
 [accessibility]
 
 [[accessibility.app_configs]]
-bundle_id = "com.apple.mail"
+bundle_id = "com.example.bundle"
 additional_clickable_roles = ["AXStaticText"]
+additional_scrollable_roles = ["AXGroup"]
+ignore_clickable_check = true # This will override the global ignore_clickable_check
+ignore_scrollable_check = true # This will override the global ignore_scrollable_check
+
+# ignore check per app role is useful in electron apps in my opinion
+```
+
+**Example:** in `Chrome`, we can add support for tabgroups:
+
+```toml
+[[accessibility.app_configs]]
+bundle_id = "com.google.Chrome"
+additional_clickable_roles = ["AXTabGroup"]
 ```
 
 Global roles apply to all apps, while per-app roles are merged with global roles for specific applications.

@@ -473,9 +473,27 @@ func (e *Element) IsClickable() bool {
 		return false
 	}
 
-	// If ignore_clickable_check is enabled in config, return true
-	if cfg := config.Global(); cfg != nil && cfg.Accessibility.IgnoreClickableCheck {
-		return true
+	cfg := config.Global()
+
+	if cfg != nil {
+		// Check if the app has an app-specific ignore_clickable_check
+		if cfg.Accessibility.AppConfigs != nil {
+			if len(cfg.Accessibility.AppConfigs) > 0 {
+				bundleID := e.GetBundleIdentifier()
+				for _, appConfig := range cfg.Accessibility.AppConfigs {
+					if appConfig.BundleID == bundleID {
+						if appConfig.IgnoreClickableCheck {
+							return true
+						}
+					}
+				}
+			}
+		}
+
+		// If ignore_clickable_check is enabled in config, return true
+		if cfg.Accessibility.IgnoreClickableCheck {
+			return true
+		}
 	}
 
 	info := globalCache.Get(e)
@@ -508,9 +526,27 @@ func (e *Element) IsScrollable() bool {
 		return false
 	}
 
-	// If ignore_scrollable_check is enabled in config, return true
-	if cfg := config.Global(); cfg != nil && cfg.Accessibility.IgnoreScrollableCheck {
-		return true
+	cfg := config.Global()
+
+	if cfg != nil {
+		// Check if the app has an app-specific ignore_scrollable_check
+		if cfg.Accessibility.AppConfigs != nil {
+			if len(cfg.Accessibility.AppConfigs) > 0 {
+				bundleID := e.GetBundleIdentifier()
+				for _, appConfig := range cfg.Accessibility.AppConfigs {
+					if appConfig.BundleID == bundleID {
+						if appConfig.IgnoreScrollableCheck {
+							return true
+						}
+					}
+				}
+			}
+		}
+
+		// If ignore_scrollable_check is enabled in config, return true
+		if cfg.Accessibility.IgnoreScrollableCheck {
+			return true
+		}
 	}
 
 	info := globalCache.Get(e)

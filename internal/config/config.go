@@ -43,9 +43,11 @@ type AccessibilityConfig struct {
 }
 
 type AppConfig struct {
-	BundleID             string   `toml:"bundle_id"`
-	AdditionalClickable  []string `toml:"additional_clickable_roles"`
-	AdditionalScrollable []string `toml:"additional_scrollable_roles"`
+	BundleID              string   `toml:"bundle_id"`
+	AdditionalClickable   []string `toml:"additional_clickable_roles"`
+	AdditionalScrollable  []string `toml:"additional_scrollable_roles"`
+	IgnoreClickableCheck  bool     `toml:"ignore_clickable_check"`
+	IgnoreScrollableCheck bool     `toml:"ignore_scrollable_check"`
 }
 
 type HotkeysConfig struct {
@@ -143,6 +145,8 @@ func DefaultConfig() *Config {
 			ScrollableRoles: []string{
 				"AXScrollArea",
 			},
+			IgnoreClickableCheck:  false,
+			IgnoreScrollableCheck: false,
 			AdditionalAXSupport: AdditionalAXSupport{
 				Enable:                    false,
 				AdditionalElectronBundles: []string{},

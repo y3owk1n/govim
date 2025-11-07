@@ -97,12 +97,14 @@ ignore_scrollable_check = false
 # The roles defined here are ADDED to the global roles above (not replaced)
 # To find an app's bundle ID, run: osascript -e 'id of app "AppName"'
 
-# For example, in `Mail.app`, lots of element are `AXStaticText` and they should be clickable. In this case, we don't want to add to the global one, as it will causes lots of unclickable hints, especially in browser space.
 # [[accessibility.app_configs]]
-# bundle_id = "com.apple.mail"
+# bundle_id = "com.example.bundle"
 # additional_clickable_roles = ["AXStaticText"]
 # # You can also add scrollable roles scoped to the app:
-# # additional_scrollable_roles = ["AXScrollArea"]
+# additional_scrollable_roles = ["AXGroup"]
+# # You can also ignore the check for the app:
+# ignore_clickable_check = true
+# ignore_scrollable_check = true
 
 # For example, in `Chrome`, we can add support for tabgroups.
 # [[accessibility.app_configs]]
