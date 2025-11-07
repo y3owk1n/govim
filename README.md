@@ -323,12 +323,12 @@ See [`configs/default-config.toml`](configs/default-config.toml) for all availab
 ```toml
 [hotkeys]
 # all hotkeys can be disabled by either setting the key to "" or just commenting it out
-activate_hint_mode = "Ctrl+F"
-activate_hint_mode_with_actions = "Ctrl+G"
-activate_scroll_mode = "Ctrl+S"
+"Ctrl+F" = "hints"
+"Ctrl+G" = "hints_action"
+"Ctrl+S" = "scroll"
 ```
 
-You shoul be also able to just clear the keybind and bind it with something like skhd or any similar tools, since we exposes commands in the cli through IPC. For example in skhd:
+You should be also able to just clear the keybind and bind it with something like skhd or any similar tools, since we exposes commands in the cli through IPC. For example in skhd:
 
 ```bash
 ctrl - f : neru hints

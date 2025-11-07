@@ -14,6 +14,6 @@ EventTap createEventTap(EventTapCallback callback, void* userData);
 void enableEventTap(EventTap tap);
 void disableEventTap(EventTap tap);
 void destroyEventTap(EventTap tap);
-void setEventTapHotkeys(EventTap tap, const char* hintModeHotkey, const char* hintModeWithActionsHotkey, const char* scrollModeHotkey);
+void setEventTapHotkeys(EventTap tap, const char** hotkeys, int count);
 
 #endif // EVENTTAP_H

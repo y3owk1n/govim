@@ -8,6 +8,7 @@ package eventtap
 extern void eventTapCallbackBridge(char* key, void* userData);
 */
 import "C"
+
 import (
 	"sync"
 	"unsafe"
@@ -54,29 +55,29 @@ func (et *EventTap) Enable() {
 }
 
 // SetHotkeys configures which hotkey combinations should pass through to the system
-func (et *EventTap) SetHotkeys(hintModeHotkey, hintModeWithActionsHotkey, scrollModeHotkey string) {
+func (et *EventTap) SetHotkeys(hotkeys []string) {
 	if et.handle == nil {
 		return
 	}
 
-	var hintModeCStr, hintModeWithActionsCStr, scrollModeCStr *C.char
-
-	if hintModeHotkey != "" {
-		hintModeCStr = C.CString(hintModeHotkey)
-		defer C.free(unsafe.Pointer(hintModeCStr))
+	// Convert Go string slice to C array
+	cHotkeys := make([]*C.char, len(hotkeys))
+	for i, hotkey := range hotkeys {
+		if hotkey != "" {
+			cHotkeys[i] = C.CString(hotkey)
+			defer C.free(unsafe.Pointer(cHotkeys[i]))
+		} else {
+			cHotkeys[i] = nil
+		}
 	}
 
-	if hintModeWithActionsHotkey != "" {
-		hintModeWithActionsCStr = C.CString(hintModeWithActionsHotkey)
-		defer C.free(unsafe.Pointer(hintModeWithActionsCStr))
+	// Pass pointer to first element and length
+	var cHotkeysPtr **C.char
+	if len(cHotkeys) > 0 {
+		cHotkeysPtr = &cHotkeys[0]
 	}
 
-	if scrollModeHotkey != "" {
-		scrollModeCStr = C.CString(scrollModeHotkey)
-		defer C.free(unsafe.Pointer(scrollModeCStr))
-	}
-
-	C.setEventTapHotkeys(et.handle, hintModeCStr, hintModeWithActionsCStr, scrollModeCStr)
+	C.setEventTapHotkeys(et.handle, cHotkeysPtr, C.int(len(cHotkeys)))
 }
 
 // Disable disables the event tap

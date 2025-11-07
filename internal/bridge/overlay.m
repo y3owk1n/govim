@@ -277,7 +277,7 @@
                                                    xRadius:self.hintBorderRadius
                                                    yRadius:self.hintBorderRadius];
         }
-        
+
         [self.hintBackgroundColor setFill];
         [path fill];
 
@@ -414,7 +414,27 @@ void showOverlayWindow(OverlayWindow window) {
     if (!window) return;
 
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    [controller.window orderFrontRegardless];
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // Set window level to maximum
+        [controller.window setLevel:kCGMaximumWindowLevel];
+
+        // Set collection behavior
+        [controller.window setCollectionBehavior:
+            NSWindowCollectionBehaviorCanJoinAllSpaces |
+            NSWindowCollectionBehaviorStationary |
+            NSWindowCollectionBehaviorIgnoresCycle |
+            NSWindowCollectionBehaviorFullScreenAuxiliary];
+
+        // orderFrontRegardless to make it visible
+        [controller.window setIsVisible:YES];
+        [controller.window orderFrontRegardless];
+        [controller.window makeKeyAndOrderFront:nil];
+
+        // Force display update
+        [controller.window display];
+        [controller.overlayView setNeedsDisplay:YES];
+    });
 }
 
 void hideOverlayWindow(OverlayWindow window) {
