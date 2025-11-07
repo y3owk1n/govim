@@ -117,20 +117,20 @@ func Close() error {
 	logFileMu.Lock()
 	defer logFileMu.Unlock()
 
-	// Sync logger first
 	if globalLogger != nil {
 		if err := globalLogger.Sync(); err != nil {
-			// Ignore sync errors on stdout/stderr (common on macOS)
-			// but log them for debugging
-			if !strings.Contains(err.Error(), "sync /dev/stdout") &&
-				!strings.Contains(err.Error(), "sync /dev/stderr") {
-				fmt.Fprintf(os.Stderr, "Warning: failed to sync logger: %v\n", err)
+			// Ignore common sync errors that occur during shutdown
+			if !strings.Contains(err.Error(), "invalid argument") &&
+				!strings.Contains(err.Error(), "inappropriate ioctl for device") {
+				return fmt.Errorf("failed to sync logger: %w", err)
 			}
 		}
+		globalLogger = nil
 	}
 
-	// Close log file
 	if logFile != nil {
+		// Best effort sync, ignore errors on stdout/stderr
+		_ = logFile.Sync()
 		if err := logFile.Close(); err != nil {
 			return fmt.Errorf("failed to close log file: %w", err)
 		}

@@ -1085,23 +1085,42 @@ func isLetter(b byte) bool {
 func (a *App) Cleanup() {
 	a.logger.Info("Cleaning up")
 
+	// Exit any active mode first
 	a.exitMode()
 
-	// Unregister all hotkeys
-	a.hotkeyManager.UnregisterAll()
-
-	a.hintOverlay.Destroy()
-
-	// Stop IPC server
+	// Stop IPC server first to prevent new requests
 	if a.ipcServer != nil {
 		if err := a.ipcServer.Stop(); err != nil {
 			a.logger.Error("Failed to stop IPC server", zap.Error(err))
 		}
 	}
 
+	// Unregister all hotkeys
+	if a.hotkeyManager != nil {
+		a.hotkeyManager.UnregisterAll()
+	}
+
+	// Clean up UI elements
+	if a.hintOverlay != nil {
+		a.hintOverlay.Destroy()
+	}
+
+	// Clean up scroll controller if exists
+	if a.scrollController != nil {
+		a.scrollController.Cleanup()
+	}
+
 	// Cleanup event tap
 	if a.eventTap != nil {
 		a.eventTap.Destroy()
+	}
+
+	// Sync and close logger at the end
+	if err := logger.Sync(); err != nil {
+		// Ignore "inappropriate ioctl for device" error which occurs when syncing stdout/stderr
+		if !strings.Contains(err.Error(), "inappropriate ioctl for device") {
+			a.logger.Error("Failed to sync logger", zap.Error(err))
+		}
 	}
 
 	// Stop app watcher

@@ -105,6 +105,12 @@ func (s *Server) handleConnection(conn net.Conn) {
 		}
 	}()
 
+	// Set read deadline to prevent hanging connections
+	if err := conn.SetDeadline(time.Now().Add(30 * time.Second)); err != nil {
+		s.logger.Error("Failed to set connection deadline", zap.Error(err))
+		return
+	}
+
 	decoder := json.NewDecoder(conn)
 	encoder := json.NewEncoder(conn)
 
