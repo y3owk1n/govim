@@ -10,6 +10,7 @@ import "C"
 
 import (
 	"image"
+	"sync"
 	"time"
 )
 
@@ -26,6 +27,8 @@ type TreeOptions struct {
 	FilterFunc         func(*ElementInfo) bool
 	IncludeOutOfBounds bool
 	Cache              *InfoCache
+	ParallelThreshold  int
+	MaxParallelDepth   int
 }
 
 // DefaultTreeOptions returns default tree traversal options
@@ -34,6 +37,8 @@ func DefaultTreeOptions() TreeOptions {
 		FilterFunc:         nil,
 		IncludeOutOfBounds: false,
 		Cache:              NewInfoCache(5 * time.Second),
+		ParallelThreshold:  8, // Only parallelize if there are more than 8 elements
+		MaxParallelDepth:   4, // Don't parallelize deeper than 4 levels
 	}
 }
 
@@ -110,12 +115,25 @@ func buildTreeRecursive(parent *TreeNode, depth int, opts TreeOptions, windowBou
 		return
 	}
 
+	// Decide whether to parallelize
+	shouldParallelize := depth <= opts.MaxParallelDepth &&
+		len(children) >= opts.ParallelThreshold
+
+	if shouldParallelize {
+		buildChildrenParallel(parent, children, depth, opts, windowBounds)
+	} else {
+		buildChildrenSequential(parent, children, depth, opts, windowBounds)
+	}
+}
+
+func buildChildrenSequential(parent *TreeNode, children []*Element, depth int, opts TreeOptions, windowBounds image.Rectangle) {
 	parent.Children = make([]*TreeNode, 0, len(children))
 
 	for _, child := range children {
 		// Try cache first
 		info := opts.Cache.Get(child)
 		if info == nil {
+			var err error
 			info, err = child.GetInfo()
 			if err != nil {
 				continue
@@ -136,6 +154,75 @@ func buildTreeRecursive(parent *TreeNode, depth int, opts TreeOptions, windowBou
 
 		parent.Children = append(parent.Children, childNode)
 		buildTreeRecursive(childNode, depth+1, opts, windowBounds)
+	}
+}
+
+func buildChildrenParallel(parent *TreeNode, children []*Element, depth int, opts TreeOptions, windowBounds image.Rectangle) {
+	// Pre-allocate result slice
+	type childResult struct {
+		node  *TreeNode
+		index int
+	}
+
+	results := make(chan childResult, len(children))
+	var wg sync.WaitGroup
+
+	// Process children in parallel
+	for i, child := range children {
+		wg.Add(1)
+		go func(idx int, elem *Element) {
+			defer wg.Done()
+
+			// Try cache first (cache must be thread-safe!)
+			info := opts.Cache.Get(elem)
+			if info == nil {
+				var err error
+				info, err = elem.GetInfo()
+				if err != nil {
+					return
+				}
+				opts.Cache.Set(elem, info)
+			}
+
+			if !shouldIncludeElement(info, opts, windowBounds) {
+				return
+			}
+
+			childNode := &TreeNode{
+				Element:  elem,
+				Info:     info,
+				Parent:   parent,
+				Children: []*TreeNode{},
+			}
+
+			// Recursively build (this may spawn more goroutines at deeper levels)
+			buildTreeRecursive(childNode, depth+1, opts, windowBounds)
+
+			results <- childResult{node: childNode, index: idx}
+		}(i, child)
+	}
+
+	// Close results channel when all goroutines complete
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Collect results while maintaining order
+	collected := make([]*TreeNode, len(children))
+	validCount := 0
+
+	for result := range results {
+		collected[result.index] = result.node
+		validCount++
+	}
+
+	// Build final children slice in original order, skipping nils
+	parent.Children = make([]*TreeNode, 0, validCount)
+	for _, node := range collected {
+		if node != nil {
+			parent.Children = append(parent.Children, node)
+		}
 	}
 }
 
