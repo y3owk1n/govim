@@ -1,8 +1,7 @@
 package scroll
 
 import (
-	"fmt"
-
+	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/config"
 	"go.uber.org/zap"
 )
@@ -24,84 +23,42 @@ const (
 	AmountChar ScrollAmount = iota
 	AmountHalfPage
 	AmountFullPage
+	AmountEnd
 )
 
 // Controller manages scrolling operations
 type Controller struct {
-	detector *Detector
-	config   *config.ScrollConfig
-	logger   *zap.Logger
+	config *config.ScrollConfig
+	logger *zap.Logger
 }
 
 // NewController creates a new scroll controller
 func NewController(cfg config.ScrollConfig, logger *zap.Logger) *Controller {
 	return &Controller{
-		detector: NewDetector(),
-		config:   &cfg,
-		logger:   logger,
+		config: &cfg,
+		logger: logger,
 	}
-}
-
-// Initialize initializes the scroll controller
-func (c *Controller) Initialize() error {
-	c.logger.Info("Starting scroll area detection")
-
-	// Detect scroll areas
-	areas, err := c.detector.DetectScrollAreas()
-	if err != nil {
-		c.logger.Error("Failed to detect scroll areas", zap.Error(err))
-		return fmt.Errorf("failed to detect scroll areas: %w", err)
-	}
-
-	c.logger.Info("Detected scroll areas", zap.Int("count", len(areas)))
-
-	if len(areas) == 0 {
-		return fmt.Errorf("no scroll areas found")
-	}
-
-	c.logger.Info("Getting largest area")
-	// Activate the largest scroll area by default
-	largestArea := c.detector.GetLargestArea()
-	if largestArea != nil {
-		c.logger.Info("Setting active area")
-		if err := c.detector.SetActiveArea(0); err != nil {
-			return fmt.Errorf("failed to set active area: %w", err)
-		}
-		largestArea.Active = true
-
-		c.logger.Info("Activated largest scroll area",
-			zap.Int("width", largestArea.Bounds.Dx()),
-			zap.Int("height", largestArea.Bounds.Dy()))
-	}
-
-	c.logger.Info("Scroll controller initialized successfully")
-	return nil
 }
 
 // Scroll scrolls in the specified direction
 func (c *Controller) Scroll(dir Direction, amount ScrollAmount) error {
-	area := c.detector.GetActiveArea()
-	if area == nil {
-		c.logger.Error("No active scroll area")
-		return fmt.Errorf("no active scroll area")
-	}
-
-	deltaX, deltaY := c.calculateDelta(dir, amount, area)
+	deltaX, deltaY := c.calculateDelta(dir, amount)
 
 	c.logger.Debug("Scrolling",
 		zap.String("direction", c.directionString(dir)),
 		zap.Int("deltaX", deltaX),
 		zap.Int("deltaY", deltaY))
 
-	if err := area.Element.Element.Scroll(deltaX, deltaY); err != nil {
+	if err := accessibility.ScrollAtCursor(deltaX, deltaY); err != nil {
 		c.logger.Error("Scroll failed", zap.Error(err))
 		return err
 	}
+
 	return nil
 }
 
 // calculateDelta calculates the scroll delta based on direction and amount
-func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount, area *ScrollArea) (int, int) {
+func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount) (int, int) {
 	var deltaX, deltaY int
 
 	// Use config values for all scroll amounts
@@ -117,6 +74,9 @@ func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount, area *Sc
 	case AmountFullPage:
 		// Full page - use page_height * full_page_multiplier
 		baseScroll = int(float64(c.config.PageHeight) * c.config.FullPageMultiplier)
+	case AmountEnd:
+		// Top/Bottom - use page_height * end_multiplier
+		baseScroll = int(c.config.ScrollToEdgeDelta)
 	}
 
 	// Note: For CGEvent scroll wheel, positive = up/left, negative = down/right
@@ -132,41 +92,6 @@ func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount, area *Sc
 	}
 
 	return deltaX, deltaY
-}
-
-// GetActiveArea returns the active scroll area
-func (c *Controller) GetActiveArea() *ScrollArea {
-	return c.detector.GetActiveArea()
-}
-
-// CycleArea cycles to the next scroll area
-func (c *Controller) CycleArea() *ScrollArea {
-	area := c.detector.CycleActiveArea()
-	if area != nil {
-		c.logger.Info("Cycled to scroll area",
-			zap.Int("width", area.Bounds.Dx()),
-			zap.Int("height", area.Bounds.Dy()))
-	}
-	return area
-}
-
-// GetAllAreas returns all detected scroll areas
-func (c *Controller) GetAllAreas() []*ScrollArea {
-	return c.detector.GetAreas()
-}
-
-// Cleanup cleans up the controller
-func (c *Controller) Cleanup() {
-	// First clear all areas
-	c.detector.Clear()
-	// Force reset of active area
-	c.detector.ResetActive()
-	c.logger.Debug("Scroll controller cleaned up")
-}
-
-// GetDetector returns the scroll detector
-func (c *Controller) GetDetector() *Detector {
-	return c.detector
 }
 
 // directionString converts direction to string
@@ -219,36 +144,12 @@ func (c *Controller) ScrollDownHalfPage() error {
 
 // ScrollToTop scrolls to the top (gg in Vim)
 func (c *Controller) ScrollToTop() error {
-	area := c.detector.GetActiveArea()
-	if area == nil {
-		return fmt.Errorf("no active scroll area")
-	}
-
-	// Use config values for scroll to edge
-	c.logger.Info("Scrolling to top")
-	for i := 0; i < c.config.ScrollToEdgeIterations; i++ {
-		if err := area.Element.Element.Scroll(0, c.config.ScrollToEdgeDelta); err != nil {
-			return fmt.Errorf("failed to scroll: %w", err)
-		}
-	}
-	return nil
+	return c.Scroll(DirectionUp, AmountEnd)
 }
 
 // ScrollToBottom scrolls to the bottom (G in Vim)
 func (c *Controller) ScrollToBottom() error {
-	area := c.detector.GetActiveArea()
-	if area == nil {
-		return fmt.Errorf("no active scroll area")
-	}
-
-	// Use config values for scroll to edge
-	c.logger.Info("Scrolling to bottom")
-	for i := 0; i < c.config.ScrollToEdgeIterations; i++ {
-		if err := area.Element.Element.Scroll(0, -c.config.ScrollToEdgeDelta); err != nil {
-			return fmt.Errorf("failed to scroll: %w", err)
-		}
-	}
-	return nil
+	return c.Scroll(DirectionDown, AmountEnd)
 }
 
 // ScrollUpFullPage scrolls up by full page

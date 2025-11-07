@@ -454,13 +454,8 @@ func (e *Element) GetScrollBounds() image.Rectangle {
 	}
 }
 
-// Scroll scrolls the element by the specified delta
-func (e *Element) Scroll(deltaX, deltaY int) error {
-	if e.ref == nil {
-		return fmt.Errorf("element is nil")
-	}
-
-	result := C.scrollElement(e.ref, C.int(deltaX), C.int(deltaY))
+func ScrollAtCursor(deltaX, deltaY int) error {
+	result := C.scrollAtCursor(C.int(deltaX), C.int(deltaY))
 	if result == 0 {
 		return fmt.Errorf("failed to scroll element")
 	}
@@ -520,33 +515,10 @@ func (e *Element) IsClickable() bool {
 	return false
 }
 
-// IsScrollable checks if the element is scrollable
+// IsClickable checks if the element is clickable
 func (e *Element) IsScrollable() bool {
 	if e.ref == nil {
 		return false
-	}
-
-	cfg := config.Global()
-
-	if cfg != nil {
-		// Check if the app has an app-specific ignore_scrollable_check
-		if cfg.Accessibility.AppConfigs != nil {
-			if len(cfg.Accessibility.AppConfigs) > 0 {
-				bundleID := e.GetBundleIdentifier()
-				for _, appConfig := range cfg.Accessibility.AppConfigs {
-					if appConfig.BundleID == bundleID {
-						if appConfig.IgnoreScrollableCheck {
-							return true
-						}
-					}
-				}
-			}
-		}
-
-		// If ignore_scrollable_check is enabled in config, return true
-		if cfg.Accessibility.IgnoreScrollableCheck {
-			return true
-		}
 	}
 
 	info := globalCache.Get(e)
@@ -559,16 +531,10 @@ func (e *Element) IsScrollable() bool {
 		globalCache.Set(e, info)
 	}
 
-	// Check if the role is in the scrollable roles list
+	// First check if the role is in the clickable roles list
 	scrollableRolesMu.RLock()
 	_, ok := scrollableRoles[info.Role]
 	scrollableRolesMu.RUnlock()
 
-	if ok {
-		// Also verify it actually has scroll capability
-		result := C.isScrollable(e.ref)
-		return result == 1
-	}
-
-	return false
+	return ok
 }

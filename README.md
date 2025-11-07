@@ -65,7 +65,6 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Find a way to auto deduplicate hints that are targeting the same point
 - Get rid of `PageHeight` in config and find a way to calculate available scroll for (c-d, c-u, gg, G) more reliably.
 - Homerow supports `continuous clicks`, is that something important?
-- Cant actually make scroll works in Electron apps, what is the best approach? There are tons of random `AXGroup` where some is scrollable and some is not...
 - Sort of working in Mision Control, but it still shows hints from the frontmost app. How can we know that we are in mission control and ignore the frontmost app?
 - Research if there's a good way to implemet visual hint mode where we can select text? Doing this with accessibility seems a little hard and vague
 - Test suites, but am lazy for it
@@ -284,6 +283,12 @@ Press `esc` anytime to quit the hint selection.
 
 **Default hotkey:** `Cmd+Shift+J`
 
+1. Press the hotkey
+2. Type the hint label (will move the cursor to the position selected)
+3. Start scrolling
+
+Press `esc` anytime to quit the scroll mode.
+
 Vim-style navigation keys:
 
 - `j` / `k` - Scroll down/up
@@ -424,13 +429,15 @@ ignore_clickable_check = false
 
 # These are the defaults, feel free to remove or add more as you see fit
 scrollable_roles = [
+    "AXWebArea",
     "AXScrollArea",
+    "AXTable",
+    "AXRow",
+    "AXColumn",
+    "AXOutline",
+    "AXList",
+    "AXGroup",
 ]
-
-# There are predefined heuristics checks for if an element is scrollable or not.
-# Skip role checking for scrollable elements (all elements will be considered scrollable)
-# Enable this if you know what you're doing
-ignore_scrollable_check = false
 ```
 
 #### Per-App Role Configuration
@@ -445,9 +452,6 @@ bundle_id = "com.example.bundle"
 additional_clickable_roles = ["AXStaticText"]
 additional_scrollable_roles = ["AXGroup"]
 ignore_clickable_check = true # This will override the global ignore_clickable_check
-ignore_scrollable_check = true # This will override the global ignore_scrollable_check
-
-# ignore check per app role is useful in electron apps in my opinion
 ```
 
 **Example:** in `Chrome`, we can add support for tabgroups:
@@ -601,13 +605,8 @@ half_page_multiplier = 0.5
 # Valid range: (0, 1]
 full_page_multiplier = 0.9
 
-# Number of scroll events to send for gg/G commands
-# Higher values create longer smooth scrolls to edges.
-scroll_to_edge_iterations = 20
-
-# Pixels to scroll per iteration for gg/G (total = iterations * delta)
-# Increase for faster edge scrolling; tune with iterations above.
-scroll_to_edge_delta = 5000
+# Pixels to scroll to for gg/G
+scroll_to_edge_delta = 1000000000
 ```
 
 ## 🖥️ CLI Usage

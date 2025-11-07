@@ -84,13 +84,15 @@ ignore_clickable_check = false
 # These roles will be used for ALL applications
 # Users can add or remove roles as needed
 scrollable_roles = [
+    "AXWebArea",
     "AXScrollArea",
+    "AXTable",
+    "AXRow",
+    "AXColumn",
+    "AXOutline",
+    "AXList",
+    "AXGroup",
 ]
-
-# There are predefined heuristics checks for if an element is scrollable or not.
-# Skip role checking for scrollable elements (all elements will be considered scrollable)
-# Enable this if you know what you're doing
-ignore_scrollable_check = false
 
 # Per-app role configurations
 # These allow you to add additional clickable/scrollable roles for specific applications
@@ -104,7 +106,6 @@ ignore_scrollable_check = false
 # additional_scrollable_roles = ["AXGroup"]
 # # You can also ignore the check for the app:
 # ignore_clickable_check = true
-# ignore_scrollable_check = true
 
 # For example, in `Chrome`, we can add support for tabgroups.
 # [[accessibility.app_configs]]
@@ -206,7 +207,7 @@ action_opacity = 0.95
 scroll_speed = 50
 
 # Highlight the active scroll area with a border
-# When true, draws a border around the detected scroll container.
+# When true, draws a border around the active app.
 highlight_scroll_area = true
 
 # Highlight border color (hex format)
@@ -227,13 +228,8 @@ half_page_multiplier = 0.5
 # Valid range: (0, 1]
 full_page_multiplier = 0.9
 
-# Number of scroll events to send for gg/G commands
-# Higher values create longer smooth scrolls to edges.
-scroll_to_edge_iterations = 20
-
-# Pixels to scroll per iteration for gg/G (total = iterations * delta)
-# Increase for faster edge scrolling; tune with iterations above.
-scroll_to_edge_delta = 5000
+# Pixels to scroll to for gg/G
+scroll_to_edge_delta = 1000000000
 
 [logging]
 # Log level: "debug", "info", "warn", "error"

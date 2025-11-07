@@ -37,17 +37,15 @@ type AccessibilityConfig struct {
 	ClickableRoles            []string            `toml:"clickable_roles"`
 	ScrollableRoles           []string            `toml:"scrollable_roles"`
 	IgnoreClickableCheck      bool                `toml:"ignore_clickable_check"`
-	IgnoreScrollableCheck     bool                `toml:"ignore_scrollable_check"`
 	AdditionalAXSupport       AdditionalAXSupport `toml:"additional_ax_support"`
 	AppConfigs                []AppConfig         `toml:"app_configs"`
 }
 
 type AppConfig struct {
-	BundleID              string   `toml:"bundle_id"`
-	AdditionalClickable   []string `toml:"additional_clickable_roles"`
-	AdditionalScrollable  []string `toml:"additional_scrollable_roles"`
-	IgnoreClickableCheck  bool     `toml:"ignore_clickable_check"`
-	IgnoreScrollableCheck bool     `toml:"ignore_scrollable_check"`
+	BundleID             string   `toml:"bundle_id"`
+	AdditionalClickable  []string `toml:"additional_clickable_roles"`
+	AdditionalScrollable []string `toml:"additional_scrollable_roles"`
+	IgnoreClickableCheck bool     `toml:"ignore_clickable_check"`
 }
 
 type HotkeysConfig struct {
@@ -60,15 +58,14 @@ type HotkeysConfig struct {
 }
 
 type ScrollConfig struct {
-	ScrollSpeed            int     `toml:"scroll_speed"`
-	HighlightScrollArea    bool    `toml:"highlight_scroll_area"`
-	HighlightColor         string  `toml:"highlight_color"`
-	HighlightWidth         int     `toml:"highlight_width"`
-	PageHeight             int     `toml:"page_height"`
-	HalfPageMultiplier     float64 `toml:"half_page_multiplier"`
-	FullPageMultiplier     float64 `toml:"full_page_multiplier"`
-	ScrollToEdgeIterations int     `toml:"scroll_to_edge_iterations"`
-	ScrollToEdgeDelta      int     `toml:"scroll_to_edge_delta"`
+	ScrollSpeed         int     `toml:"scroll_speed"`
+	HighlightScrollArea bool    `toml:"highlight_scroll_area"`
+	HighlightColor      string  `toml:"highlight_color"`
+	HighlightWidth      int     `toml:"highlight_width"`
+	PageHeight          int     `toml:"page_height"`
+	HalfPageMultiplier  float64 `toml:"half_page_multiplier"`
+	FullPageMultiplier  float64 `toml:"full_page_multiplier"`
+	ScrollToEdgeDelta   int     `toml:"scroll_to_edge_delta"`
 }
 
 type HintsConfig struct {
@@ -143,10 +140,16 @@ func DefaultConfig() *Config {
 				"AXRow",
 			},
 			ScrollableRoles: []string{
+				"AXWebArea",
 				"AXScrollArea",
+				"AXTable",
+				"AXRow",
+				"AXColumn",
+				"AXOutline",
+				"AXList",
+				"AXGroup",
 			},
-			IgnoreClickableCheck:  false,
-			IgnoreScrollableCheck: false,
+			IgnoreClickableCheck: false,
 			AdditionalAXSupport: AdditionalAXSupport{
 				Enable:                    false,
 				AdditionalElectronBundles: []string{},
@@ -181,15 +184,14 @@ func DefaultConfig() *Config {
 			ActionOpacity:          0.95,
 		},
 		Scroll: ScrollConfig{
-			ScrollSpeed:            50,
-			HighlightScrollArea:    true,
-			HighlightColor:         "#FF0000",
-			HighlightWidth:         2,
-			PageHeight:             1200,
-			HalfPageMultiplier:     0.5,
-			FullPageMultiplier:     0.9,
-			ScrollToEdgeIterations: 20,
-			ScrollToEdgeDelta:      5000,
+			ScrollSpeed:         50,
+			HighlightScrollArea: true,
+			HighlightColor:      "#FF0000",
+			HighlightWidth:      2,
+			PageHeight:          1200,
+			HalfPageMultiplier:  0.5,
+			FullPageMultiplier:  0.9,
+			ScrollToEdgeDelta:   1000000000,
 		},
 		Logging: LoggingConfig{
 			LogLevel:          "info",
