@@ -41,22 +41,22 @@ const (
 type App struct {
 	config *config.Config
 	// ConfigPath holds the path the daemon was started with (if any)
-	ConfigPath         string
-	logger             *zap.Logger
-	hotkeyManager      *hotkeys.Manager
-	hintGenerator      *hints.Generator
-	hintOverlay        *hints.Overlay
-	scrollController   *scroll.Controller
-	eventTap           *eventtap.EventTap
-	ipcServer          *ipc.Server
-	electronManager    *electron.ElectronManager
-	appWatcher         *appwatcher.Watcher
-	currentMode        Mode
-	hintManager        *hints.Manager
-	lastScrollKey      string
-	selectedHint       *hints.Hint
-	selectedScrollHint *hints.Hint
-	enabled            bool
+	ConfigPath       string
+	logger           *zap.Logger
+	hotkeyManager    *hotkeys.Manager
+	hintGenerator    *hints.Generator
+	hintOverlay      *hints.Overlay
+	scrollController *scroll.Controller
+	eventTap         *eventtap.EventTap
+	ipcServer        *ipc.Server
+	electronManager  *electron.ElectronManager
+	appWatcher       *appwatcher.Watcher
+	currentMode      Mode
+	hintManager      *hints.Manager
+	lastScrollKey    string
+	selectedHint     *hints.Hint
+	canScroll        bool
+	enabled          bool
 	// Track whether global hotkeys are currently registered
 	hotkeysRegistered bool
 }
@@ -608,6 +608,7 @@ func (a *App) activateHintMode(mode Mode) {
 
 	// Reset state
 	a.selectedHint = nil
+	a.canScroll = false
 
 	// Enable event tap to capture keys (must be last to ensure proper initialization)
 	if a.eventTap != nil {
@@ -640,8 +641,15 @@ func (a *App) handleHintKey(key string) {
 		return
 	}
 
-	if a.selectedScrollHint != nil {
+	if a.canScroll {
 		a.handleScrollKey(key)
+		return
+	}
+
+	if a.currentMode == ModeScroll && !a.canScroll && key == "\t" {
+		a.canScroll = true
+		a.hintOverlay.Clear()
+		a.showScroll()
 		return
 	}
 
@@ -663,7 +671,7 @@ func (a *App) handleHintKey(key string) {
 			}
 			a.exitMode()
 		case ModeScroll:
-			a.selectedScrollHint = hint
+			a.canScroll = true
 			// Enter scroll mode - scroll to element
 			a.logger.Info("Hint selected, start scrolling", zap.String("label", a.hintManager.GetInput()))
 			if err := hint.Element.Element.GoToPosition(); err != nil {
@@ -671,7 +679,7 @@ func (a *App) handleHintKey(key string) {
 			}
 
 			a.hintOverlay.Clear()
-			a.showScroll(hint)
+			a.showScroll()
 		}
 		return
 	}
@@ -793,7 +801,7 @@ func (a *App) handleActionKey(key string) {
 }
 
 // showActionMenu displays the action selection menu at the hint location
-func (a *App) showScroll(hint *hints.Hint) {
+func (a *App) showScroll() {
 	a.drawScrollHighlightBorder()
 }
 
@@ -835,9 +843,6 @@ func (a *App) handleScrollKey(key string) {
 		err = a.scrollController.ScrollLeft()
 	case "l":
 		err = a.scrollController.ScrollRight()
-	// Remove plain d/u - only use Ctrl+D/U
-	// case "d": // Removed - use Ctrl+D instead
-	// case "u": // Removed - use Ctrl+U instead
 	case "g": // gg for top (need to press twice)
 		if a.lastScrollKey == "g" {
 			a.logger.Info("gg detected - scroll to top")
@@ -853,6 +858,9 @@ func (a *App) handleScrollKey(key string) {
 		a.logger.Info("G key detected - scroll to bottom")
 		err = a.scrollController.ScrollToBottom()
 		a.lastScrollKey = ""
+	case "\t":
+		a.logger.Info("? key detected - show hint again")
+		a.activateHintMode(ModeScroll)
 	default:
 		a.logger.Debug("Ignoring non-scroll key", zap.String("key", key))
 		a.lastScrollKey = ""
@@ -899,7 +907,7 @@ func (a *App) exitMode() {
 		a.hintManager.Reset()
 	}
 	a.selectedHint = nil
-	a.selectedScrollHint = nil
+	a.canScroll = false
 
 	// Then clear and hide the overlay after all potential visual generators are cleaned
 	a.hintOverlay.Clear()
