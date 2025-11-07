@@ -194,5 +194,15 @@ func (d *Detector) SetActiveByNumber(number int) *ScrollArea {
 
 // Clear clears all detected areas
 func (d *Detector) Clear() {
+	for _, area := range d.areas {
+		area.Active = false
+	}
 	d.areas = []*ScrollArea{}
+}
+
+// ResetActive resets active state for all areas
+func (d *Detector) ResetActive() {
+	for _, area := range d.areas {
+		area.Active = false
+	}
 }

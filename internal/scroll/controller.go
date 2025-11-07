@@ -157,7 +157,11 @@ func (c *Controller) GetAllAreas() []*ScrollArea {
 
 // Cleanup cleans up the controller
 func (c *Controller) Cleanup() {
+	// First clear all areas
 	c.detector.Clear()
+	// Force reset of active area
+	c.detector.ResetActive()
+	c.logger.Debug("Scroll controller cleaned up")
 }
 
 // GetDetector returns the scroll detector

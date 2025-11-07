@@ -49,6 +49,9 @@ func (o *Overlay) Clear() {
 
 // DrawHints draws hints on the overlay
 func (o *Overlay) DrawHints(hints []*Hint) error {
+	if hints == nil {
+		hints = []*Hint{}
+	}
 	return o.drawHintsInternal(hints, o.config, true)
 }
 
