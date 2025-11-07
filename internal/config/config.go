@@ -36,6 +36,8 @@ type AccessibilityConfig struct {
 	AccessibilityCheckOnStart bool                `toml:"accessibility_check_on_start"`
 	ClickableRoles            []string            `toml:"clickable_roles"`
 	ScrollableRoles           []string            `toml:"scrollable_roles"`
+	IgnoreClickableCheck      bool                `toml:"ignore_clickable_check"`
+	IgnoreScrollableCheck     bool                `toml:"ignore_scrollable_check"`
 	AdditionalAXSupport       AdditionalAXSupport `toml:"additional_ax_support"`
 	AppConfigs                []AppConfig         `toml:"app_configs"`
 }
