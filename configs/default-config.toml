@@ -101,15 +101,21 @@ scrollable_roles = [
 
 # You can do and customise alot more when the defaults or global are not good enough.
 
-[accessibility.electron_support]
-## Electron & Chromium support
-# Enables manual accessibility toggles for Electron-like apps.
-# Built-in: VS Code, Windsurf, Slack, Cursor, Spotify, Obsidian, Firefox.
+[accessibility.additional_ax_support]
+# Enables additional AX supports for different apps.
+# `AXManualAccessibility` will be enabled for Electron-like apps.
+# `AXEnhancedUserInterface` will be enabled for Chromium-like apps.
+# `AXEnhancedUserInterface` will be enabled for Firefox-like apps.
 enable = false
 
-# Extra bundle IDs requiring Electron-style accessibility.
-# Examples: ["com.example.app"]
-additional_bundles = []
+# Extra bundle IDs for electron support.
+additional_electron_bundles = []
+
+# Extra bundle IDs for chromium support.
+additional_chromium_bundles = []
+
+# Extra bundle IDs for firefox support.
+additional_firefox_bundles = []
 
 [hotkeys]
 # all hotkeys can be disabled by either setting the key to "" or just commenting it out

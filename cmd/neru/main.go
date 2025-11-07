@@ -121,8 +121,8 @@ func NewApp(cfg *config.Config) (*App, error) {
 	}
 
 	// Create electron manager
-	if cfg.Accessibility.ElectronSupport.Enable {
-		app.electronManager = electron.NewElectronManager()
+	if cfg.Accessibility.AdditionalAXSupport.Enable {
+		app.electronManager = electron.NewElectronManager(cfg.Accessibility.AdditionalAXSupport.AdditionalElectronBundles, cfg.Accessibility.AdditionalAXSupport.AdditionalChromiumBundles, cfg.Accessibility.AdditionalAXSupport.AdditionalFirefoxBundles)
 	}
 
 	// Create event tap for capturing keys in modes
@@ -158,7 +158,7 @@ func (a *App) Run() error {
 	a.ipcServer.Start()
 	a.logger.Info("IPC server started")
 
-	if a.config.Accessibility.ElectronSupport.Enable {
+	if a.config.Accessibility.AdditionalAXSupport.Enable {
 		// Start electron manager
 		a.electronManager.Start()
 	}
