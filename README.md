@@ -63,7 +63,6 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Consider zIndex for hints on different layers? There might be multiple layers when we are considering `Menubar`, `Dock` and `Notification bar`
 - Better UI representation for action menu (maybe auto edge detection like tooltip in browser, that will place itself around the element based on the space available around it)
 - Find a way to auto deduplicate hints that are targeting the same point
-- Scroll areas are hardcoded from 1-9, do we ever need more than that and make it dynamic upon query? We can still use <Tab> to cycle next tho
 - Get rid of `PageHeight` in config and find a way to calculate available scroll for (c-d, c-u, gg, G) more reliably.
 - Homerow supports `continuous clicks`, is that something important?
 - Cant actually make scroll works in Electron apps, what is the best approach? There are tons of random `AXGroup` where some is scrollable and some is not...

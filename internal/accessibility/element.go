@@ -355,6 +355,15 @@ func (e *Element) Release() {
 	}
 }
 
+// ReleaseAll releases all elements in a slice
+func ReleaseAll(elements []*Element) {
+	for _, elem := range elements {
+		if elem != nil {
+			elem.Release()
+		}
+	}
+}
+
 // GetAllWindows returns all windows of the focused application
 func GetAllWindows() ([]*Element, error) {
 	var count C.int

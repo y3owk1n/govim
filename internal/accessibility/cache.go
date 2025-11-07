@@ -97,9 +97,6 @@ func (c *InfoCache) cleanup() {
 
 // Stop stops the cleanup goroutine
 func (c *InfoCache) Stop() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if !c.stopped {
 		close(c.stopCh)
 		c.stopped = true
@@ -110,7 +107,6 @@ func (c *InfoCache) Stop() {
 func (c *InfoCache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
 	c.data = make(map[uintptr]*CachedInfo, 100)
 }
 
@@ -118,6 +114,5 @@ func (c *InfoCache) Clear() {
 func (c *InfoCache) Size() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-
 	return len(c.data)
 }

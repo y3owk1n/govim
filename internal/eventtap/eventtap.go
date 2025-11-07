@@ -90,8 +90,15 @@ func (et *EventTap) Disable() {
 // Destroy destroys the event tap
 func (et *EventTap) Destroy() {
 	if et.handle != nil {
+		// Disable first to prevent any pending callbacks
+		et.Disable()
+
+		// Destroy the tap
 		C.destroyEventTap(et.handle)
 		et.handle = nil
+
+		// Clear callback to prevent any lingering references
+		et.callback = nil
 
 		// Clear global reference if this is the global event tap
 		globalEventTapMu.Lock()
