@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/y3owk1n/neru/internal/accessibility"
-	"github.com/y3owk1n/neru/internal/appwatcher"
 	"github.com/y3owk1n/neru/internal/bridge"
 	"github.com/y3owk1n/neru/internal/logger"
 	"go.uber.org/zap"
@@ -18,7 +17,6 @@ const (
 
 // ElectronManager handles Electron-specific functionality
 type ElectronManager struct {
-	watcher                   *appwatcher.Watcher
 	additionalElectronBundles []string
 	additionalChromiumBundles []string
 	additionalFirefoxBundles  []string
@@ -36,63 +34,15 @@ var (
 // NewElectronManager creates a new ElectronManager
 func NewElectronManager(additionalElectronBundles []string, additionalChromiumBundles []string, additionalFirefoxBundles []string) *ElectronManager {
 	em := &ElectronManager{
-		watcher:                   appwatcher.New(),
 		additionalElectronBundles: additionalElectronBundles,
 		additionalChromiumBundles: additionalChromiumBundles,
 		additionalFirefoxBundles:  additionalFirefoxBundles,
 	}
 
-	// Implement bridge.AppWatcher interface
-	bridge.SetAppWatcher(bridge.AppWatcher(em))
 	return em
 }
 
-// Start initializes the Electron manager and sets up watchers
-func (em *ElectronManager) Start() {
-	bridge.StartAppWatcher()
-}
-
-// Stop cleans up the Electron manager
-func (em *ElectronManager) Stop() {
-	bridge.StopAppWatcher()
-}
-
-// HandleLaunch implements bridge.AppWatcher
-func (em *ElectronManager) HandleLaunch(appName, bundleID string) {
-	logger.Debug("[Electron] App launched", zap.String("bundle_id", bundleID))
-}
-
-// HandleTerminate implements bridge.AppWatcher
-func (em *ElectronManager) HandleTerminate(appName, bundleID string) {
-	logger.Debug("[Electron] App terminated", zap.String("bundle_id", bundleID))
-}
-
-// HandleActivate implements bridge.AppWatcher
-func (em *ElectronManager) HandleActivate(appName, bundleID string) {
-	logger.Debug("[Electron] App activated", zap.String("bundle_id", bundleID))
-
-	if ShouldEnableElectronSupport(bundleID, em.additionalElectronBundles) {
-		ensureElectronAccessibility(bundleID)
-		return
-	}
-
-	if ShouldEnableChromiumSupport(bundleID, em.additionalChromiumBundles) {
-		ensureChromiumAccessibility(bundleID)
-		return
-	}
-
-	if ShouldEnableFirefoxSupport(bundleID, em.additionalFirefoxBundles) {
-		ensureFirefoxAccessibility(bundleID)
-		return
-	}
-}
-
-// HandleDeactivate implements bridge.AppWatcher
-func (em *ElectronManager) HandleDeactivate(appName, bundleID string) {
-	logger.Debug("[Electron] App deactivated", zap.String("bundle_id", bundleID))
-}
-
-func ensureElectronAccessibility(bundleID string) bool {
+func EnsureElectronAccessibility(bundleID string) bool {
 	app := accessibility.GetApplicationByBundleID(bundleID)
 
 	info, err := app.GetInfo()
@@ -138,7 +88,7 @@ func ensureElectronAccessibility(bundleID string) bool {
 	return true
 }
 
-func ensureChromiumAccessibility(bundleID string) bool {
+func EnsureChromiumAccessibility(bundleID string) bool {
 	app := accessibility.GetApplicationByBundleID(bundleID)
 
 	info, err := app.GetInfo()
@@ -184,7 +134,7 @@ func ensureChromiumAccessibility(bundleID string) bool {
 	return true
 }
 
-func ensureFirefoxAccessibility(bundleID string) bool {
+func EnsureFirefoxAccessibility(bundleID string) bool {
 	app := accessibility.GetApplicationByBundleID(bundleID)
 
 	info, err := app.GetInfo()
