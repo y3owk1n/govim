@@ -297,6 +297,12 @@ Vim-style navigation keys:
 
 The ⌨️ icon in your menu bar provides quick access to:
 
+- Current Version
+- Current Status
+- Enable/Disable
+- Show Hints
+- Show Hints with Action Selection
+- Show Scroll Mode
 - Quit Neru
 
 ## ⚙️ Configuration

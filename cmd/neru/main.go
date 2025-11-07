@@ -1269,7 +1269,10 @@ func onReady() {
 
 	// Control actions
 	systray.AddSeparator()
-	mToggle := systray.AddMenuItem("Stop", "Pause/Resume Neru functionality")
+	mToggle := systray.AddMenuItem("Disable", "Disable/Enable Neru without quitting")
+	mHints := systray.AddMenuItem("Hints Mode", "Show hints")
+	mHintsWithActions := systray.AddMenuItem("Hints Mode with Actions", "Show hints with actions")
+	mScroll := systray.AddMenuItem("Scroll Mode", "Show scroll hints")
 
 	// Quit option
 	systray.AddSeparator()
@@ -1283,13 +1286,25 @@ func onReady() {
 				if globalApp != nil {
 					if globalApp.enabled {
 						globalApp.enabled = false
-						mStatus.SetTitle("Status: Paused")
-						mToggle.SetTitle("Start")
+						mStatus.SetTitle("Status: Disabled")
+						mToggle.SetTitle("Enable")
 					} else {
 						globalApp.enabled = true
-						mStatus.SetTitle("Status: Running")
-						mToggle.SetTitle("Stop")
+						mStatus.SetTitle("Status: Enabled")
+						mToggle.SetTitle("Disable")
 					}
+				}
+			case <-mHints.ClickedCh:
+				if globalApp != nil {
+					globalApp.activateHintMode(false)
+				}
+			case <-mHintsWithActions.ClickedCh:
+				if globalApp != nil {
+					globalApp.activateHintMode(true)
+				}
+			case <-mScroll.ClickedCh:
+				if globalApp != nil {
+					globalApp.activateScrollMode()
 				}
 			case <-mQuit.ClickedCh:
 				systray.Quit()
