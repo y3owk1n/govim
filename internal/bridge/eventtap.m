@@ -6,9 +6,8 @@ typedef struct {
     CFRunLoopSourceRef runLoopSource;
     EventTapCallback callback;
     void* userData;
-    NSString* hintModeHotkey;
-    NSString* hintModeWithActionsHotkey;
-    NSString* scrollModeHotkey;
+    NSString** hotkeys;
+    int hotkeyCount;
 } EventTapContext;
 
 // Helper function to check if current key combination matches a hotkey
@@ -16,15 +15,15 @@ BOOL isHotkeyMatch(CGKeyCode keyCode, CGEventFlags flags, NSString* hotkeyString
     if (!hotkeyString || [hotkeyString length] == 0) {
         return NO;
     }
-    
+
     NSArray *parts = [hotkeyString componentsSeparatedByString:@"+"];
     NSString *mainKey = nil;
     BOOL needsCmd = NO, needsShift = NO, needsAlt = NO, needsCtrl = NO;
-    
+
     // Parse hotkey string
     for (NSString *part in parts) {
         NSString *trimmed = [part stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-        
+
         if ([trimmed isEqualToString:@"Cmd"] || [trimmed isEqualToString:@"Command"]) {
             needsCmd = YES;
         } else if ([trimmed isEqualToString:@"Shift"]) {
@@ -37,19 +36,19 @@ BOOL isHotkeyMatch(CGKeyCode keyCode, CGEventFlags flags, NSString* hotkeyString
             mainKey = trimmed;
         }
     }
-    
+
     if (!mainKey) return NO;
-    
+
     // Check modifier flags
     BOOL hasCmd = (flags & kCGEventFlagMaskCommand) != 0;
     BOOL hasShift = (flags & kCGEventFlagMaskShift) != 0;
     BOOL hasAlt = (flags & kCGEventFlagMaskAlternate) != 0;
     BOOL hasCtrl = (flags & kCGEventFlagMaskControl) != 0;
-    
+
     if (needsCmd != hasCmd || needsShift != hasShift || needsAlt != hasAlt || needsCtrl != hasCtrl) {
         return NO;
     }
-    
+
     // Map key names to key codes (same as in hotkeys.m)
     NSDictionary *keyMap = @{
         @"Space": @(49),
@@ -59,7 +58,7 @@ BOOL isHotkeyMatch(CGKeyCode keyCode, CGEventFlags flags, NSString* hotkeyString
         @"Tab": @(48),
         @"Delete": @(51),
         @"Backspace": @(51),
-        
+
         // Letters
         @"A": @(0), @"B": @(11), @"C": @(8), @"D": @(2), @"E": @(14),
         @"F": @(3), @"G": @(5), @"H": @(4), @"I": @(34), @"J": @(38),
@@ -67,26 +66,26 @@ BOOL isHotkeyMatch(CGKeyCode keyCode, CGEventFlags flags, NSString* hotkeyString
         @"P": @(35), @"Q": @(12), @"R": @(15), @"S": @(1), @"T": @(17),
         @"U": @(32), @"V": @(9), @"W": @(13), @"X": @(7), @"Y": @(16),
         @"Z": @(6),
-        
+
         // Numbers
         @"0": @(29), @"1": @(18), @"2": @(19), @"3": @(20), @"4": @(21),
         @"5": @(23), @"6": @(22), @"7": @(26), @"8": @(28), @"9": @(25),
-        
+
         // Function keys
         @"F1": @(122), @"F2": @(120), @"F3": @(99), @"F4": @(118),
         @"F5": @(96), @"F6": @(97), @"F7": @(98), @"F8": @(100),
         @"F9": @(101), @"F10": @(109), @"F11": @(103), @"F12": @(111),
-        
+
         // Arrow keys
         @"Left": @(123), @"Right": @(124), @"Down": @(125), @"Up": @(126),
     };
-    
+
     NSNumber *expectedKeyCode = keyMap[mainKey];
     if (!expectedKeyCode) {
         // Try lowercase
         expectedKeyCode = keyMap[[mainKey lowercaseString]];
     }
-    
+
     return expectedKeyCode && [expectedKeyCode intValue] == keyCode;
 }
 
@@ -99,11 +98,10 @@ CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef 
 
         // Check if this key combination matches any of our hotkeys
         // If so, let it pass through to the system (return event instead of NULL)
-        if (isHotkeyMatch(keyCode, flags, context->hintModeHotkey) ||
-            isHotkeyMatch(keyCode, flags, context->hintModeWithActionsHotkey) ||
-            isHotkeyMatch(keyCode, flags, context->scrollModeHotkey)) {
-            // Let the hotkey pass through to the global hotkey system
-            return event;
+        for (int i = 0; i < context->hotkeyCount; i++) {
+            if (isHotkeyMatch(keyCode, flags, context->hotkeys[i])) {
+                return event;
+            }
         }
 
         // Special handling for delete/backspace key (keycode 51)
@@ -136,7 +134,7 @@ CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef 
             if (sourceList) CFRelease(sourceList);
         }
 
-        CFDataRef layoutData = usKeyboard ? 
+        CFDataRef layoutData = usKeyboard ?
             TISGetInputSourceProperty(usKeyboard, kTISPropertyUnicodeKeyLayoutData) :
             TISGetInputSourceProperty(TISCopyCurrentKeyboardInputSource(), kTISPropertyUnicodeKeyLayoutData);
 
@@ -186,12 +184,16 @@ CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef 
 
 EventTap createEventTap(EventTapCallback callback, void* userData) {
     EventTapContext* context = (EventTapContext*)malloc(sizeof(EventTapContext));
+    if (!context) return NULL;
+
     context->callback = callback;
     context->userData = userData;
-    context->hintModeHotkey = nil;
-    context->hintModeWithActionsHotkey = nil;
-    context->scrollModeHotkey = nil;
 
+    // Initialize dynamic hotkeys to empty
+    context->hotkeys = NULL;
+    context->hotkeyCount = 0;
+
+    // Set up event tap
     CGEventMask eventMask = (1 << kCGEventKeyDown);
     context->eventTap = CGEventTapCreate(
         kCGSessionEventTap,
@@ -212,34 +214,28 @@ EventTap createEventTap(EventTapCallback callback, void* userData) {
     return (EventTap)context;
 }
 
-void setEventTapHotkeys(EventTap tap, const char* hintModeHotkey, const char* hintModeWithActionsHotkey, const char* scrollModeHotkey) {
+void setEventTapHotkeys(EventTap tap, const char** hotkeys, int count) {
     if (!tap) return;
-    
     EventTapContext* context = (EventTapContext*)tap;
-    
-    // Release old strings
-    if (context->hintModeHotkey) {
-        [context->hintModeHotkey release];
-        context->hintModeHotkey = nil;
+
+    // Free existing
+    if (context->hotkeys) {
+        for (int i = 0; i < context->hotkeyCount; i++) {
+            [context->hotkeys[i] release];
+        }
+        free(context->hotkeys);
+        context->hotkeys = nil;
     }
-    if (context->hintModeWithActionsHotkey) {
-        [context->hintModeWithActionsHotkey release];
-        context->hintModeWithActionsHotkey = nil;
-    }
-    if (context->scrollModeHotkey) {
-        [context->scrollModeHotkey release];
-        context->scrollModeHotkey = nil;
-    }
-    
-    // Set new strings
-    if (hintModeHotkey && strlen(hintModeHotkey) > 0) {
-        context->hintModeHotkey = [[NSString stringWithUTF8String:hintModeHotkey] retain];
-    }
-    if (hintModeWithActionsHotkey && strlen(hintModeWithActionsHotkey) > 0) {
-        context->hintModeWithActionsHotkey = [[NSString stringWithUTF8String:hintModeWithActionsHotkey] retain];
-    }
-    if (scrollModeHotkey && strlen(scrollModeHotkey) > 0) {
-        context->scrollModeHotkey = [[NSString stringWithUTF8String:scrollModeHotkey] retain];
+
+    context->hotkeyCount = count;
+    context->hotkeys = (NSString**)malloc(sizeof(NSString*) * count);
+
+    for (int i = 0; i < count; i++) {
+        if (hotkeys[i] && strlen(hotkeys[i]) > 0) {
+            context->hotkeys[i] = [[NSString stringWithUTF8String:hotkeys[i]] retain];
+        } else {
+            context->hotkeys[i] = nil;
+        }
     }
 }
 
@@ -247,7 +243,7 @@ void enableEventTap(EventTap tap) {
     if (!tap) return;
 
     EventTapContext* context = (EventTapContext*)tap;
-    
+
     // Must run on main thread since we're modifying the main run loop
     dispatch_async(dispatch_get_main_queue(), ^{
         CFRunLoopAddSource(CFRunLoopGetMain(), context->runLoopSource, kCFRunLoopCommonModes);
@@ -259,7 +255,7 @@ void disableEventTap(EventTap tap) {
     if (!tap) return;
 
     EventTapContext* context = (EventTapContext*)tap;
-    
+
     // Must run on main thread since we're modifying the main run loop
     dispatch_async(dispatch_get_main_queue(), ^{
         CGEventTapEnable(context->eventTap, false);
@@ -282,14 +278,11 @@ void destroyEventTap(EventTap tap) {
     }
 
     // Release hotkey strings
-    if (context->hintModeHotkey) {
-        [context->hintModeHotkey release];
-    }
-    if (context->hintModeWithActionsHotkey) {
-        [context->hintModeWithActionsHotkey release];
-    }
-    if (context->scrollModeHotkey) {
-        [context->scrollModeHotkey release];
+    if (context->hotkeys) {
+        for (int i = 0; i < context->hotkeyCount; i++) {
+            [context->hotkeys[i] release];
+        }
+        free(context->hotkeys);
     }
 
     free(context);

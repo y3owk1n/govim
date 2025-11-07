@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -161,12 +162,15 @@ func NewApp(cfg *config.Config) (*App, error) {
 	if app.eventTap == nil {
 		log.Warn("Event tap creation failed - key capture won't work")
 	} else {
+
+		keys := make([]string, 0, len(cfg.Hotkeys.Bindings))
+		for k := range cfg.Hotkeys.Bindings {
+			keys = append(keys, k)
+		}
+
 		// Configure hotkeys that should pass through to the global hotkey system
-		app.eventTap.SetHotkeys(
-			cfg.Hotkeys.ActivateHintMode,
-			cfg.Hotkeys.ActivateHintModeWithActions,
-			cfg.Hotkeys.ActivateScrollMode,
-		)
+		app.eventTap.SetHotkeys(keys)
+
 		// Ensure event tap is disabled initially (only enable in active modes)
 		app.eventTap.Disable()
 	}
@@ -232,15 +236,15 @@ func (a *App) Run() error {
 	a.logger.Info("Neru is running")
 	fmt.Println("✓ Neru is running")
 
-	// Print configured hotkeys
-	if key := strings.TrimSpace(a.config.Hotkeys.ActivateHintMode); key != "" {
-		fmt.Printf("  Hint mode (direct): %s\n", key)
-	}
-	if key := strings.TrimSpace(a.config.Hotkeys.ActivateHintModeWithActions); key != "" {
-		fmt.Printf("  Hint mode (with actions): %s\n", key)
-	}
-	if key := strings.TrimSpace(a.config.Hotkeys.ActivateScrollMode); key != "" {
-		fmt.Printf("  Scroll mode: %s\n", key)
+	for k, v := range a.config.Hotkeys.Bindings {
+		toShow := v
+		if strings.HasPrefix(v, "exec") {
+			runes := []rune(v)
+			if len(runes) > 30 {
+				toShow = string(runes[:30]) + "..."
+			}
+		}
+		fmt.Printf("  %s: %s\n", k, toShow)
 	}
 
 	// Wait for interrupt signal with force-quit support
@@ -282,35 +286,67 @@ func (a *App) Run() error {
 
 // registerHotkeys registers all global hotkeys
 func (a *App) registerHotkeys() error {
-	// Hint mode hotkey (direct click)
-	if key := strings.TrimSpace(a.config.Hotkeys.ActivateHintMode); key != "" {
-		a.logger.Info("Registering hint mode hotkey", zap.String("key", key))
-		if _, err := a.hotkeyManager.Register(key, func() {
-			a.activateHintMode(false)
-		}); err != nil {
-			return fmt.Errorf("failed to register hint mode hotkey: %w", err)
-		}
-	}
-
-	// Hint mode with actions hotkey
-	if key := strings.TrimSpace(a.config.Hotkeys.ActivateHintModeWithActions); key != "" {
-		a.logger.Info("Registering hint mode with actions hotkey", zap.String("key", key))
-		if _, err := a.hotkeyManager.Register(key, func() {
-			a.activateHintMode(true)
-		}); err != nil {
-			return fmt.Errorf("failed to register hint mode with actions hotkey: %w", err)
-		}
-	}
-
-	// Scroll mode hotkey
-	if key := strings.TrimSpace(a.config.Hotkeys.ActivateScrollMode); key != "" {
-		a.logger.Info("Registering scroll mode hotkey", zap.String("key", key))
-		if _, err := a.hotkeyManager.Register(key, a.activateScrollMode); err != nil {
-			return fmt.Errorf("failed to register scroll mode hotkey: %w", err)
-		}
-	}
-
 	// Note: Escape key for exiting modes is hardcoded in handleKeyPress, not registered as global hotkey
+
+	// Register arbitrary bindings from config.Hotkeys.Bindings
+	// We intentionally don't fail the entire registration process if one binding fails;
+	// instead we log the error and continue so the daemon remains running.
+	for k, v := range a.config.Hotkeys.Bindings {
+		key := strings.TrimSpace(k)
+		action := strings.TrimSpace(v)
+		if key == "" || action == "" {
+			continue
+		}
+
+		a.logger.Info("Registering hotkey binding", zap.String("key", key), zap.String("action", action))
+
+		// Capture values for closure
+		bindKey := key
+		bindAction := action
+
+		if _, err := a.hotkeyManager.Register(bindKey, func() {
+			// Run handler in separate goroutine so the hotkey callback returns quickly.
+			go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						a.logger.Error("panic in hotkey handler", zap.Any("recover", r), zap.String("key", bindKey))
+					}
+				}()
+
+				// Exec mode: run arbitrary bash command
+				if strings.HasPrefix(bindAction, "exec ") {
+					cmdStr := strings.TrimSpace(strings.TrimPrefix(bindAction, "exec"))
+					if cmdStr == "" {
+						a.logger.Error("hotkey exec has empty command", zap.String("key", bindKey))
+						return
+					}
+
+					a.logger.Debug("Executing shell command from hotkey", zap.String("key", bindKey), zap.String("cmd", cmdStr))
+					cmd := exec.Command("/bin/bash", "-lc", cmdStr)
+					out, err := cmd.CombinedOutput()
+					if err != nil {
+						a.logger.Error("hotkey exec failed", zap.String("key", bindKey), zap.String("cmd", cmdStr), zap.ByteString("output", out), zap.Error(err))
+					} else {
+						a.logger.Info("hotkey exec completed", zap.String("key", bindKey), zap.String("cmd", cmdStr), zap.ByteString("output", out))
+					}
+					return
+				}
+
+				// Otherwise treat the action as an internal neru command and dispatch it
+				resp := a.handleIPCCommand(ipc.Command{Action: bindAction})
+				if !resp.Success {
+					a.logger.Error("hotkey action failed", zap.String("key", bindKey), zap.String("action", bindAction), zap.String("message", resp.Message))
+				} else {
+					a.logger.Info("hotkey action executed", zap.String("key", bindKey), zap.String("action", bindAction))
+				}
+			}()
+		}); err != nil {
+			a.logger.Error("Failed to register hotkey binding", zap.String("key", key), zap.String("action", action), zap.Error(err))
+			// continue registering other bindings
+			continue
+		}
+	}
+
 	return nil
 }
 

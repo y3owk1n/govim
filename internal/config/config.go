@@ -49,9 +49,12 @@ type AppConfig struct {
 }
 
 type HotkeysConfig struct {
-	ActivateHintMode            string `toml:"activate_hint_mode"`
-	ActivateHintModeWithActions string `toml:"activate_hint_mode_with_actions"`
-	ActivateScrollMode          string `toml:"activate_scroll_mode"`
+	// Bindings holds hotkey -> action mappings parsed from the [hotkeys] table.
+	// Supported TOML format (preferred):
+	// [hotkeys]
+	// "Cmd+Shift+Space" = "hints"
+	// Values are strings. The special exec prefix is supported: "exec /usr/bin/say hi"
+	Bindings map[string]string
 }
 
 type ScrollConfig struct {
@@ -148,9 +151,11 @@ func DefaultConfig() *Config {
 			},
 		},
 		Hotkeys: HotkeysConfig{
-			ActivateHintMode:            "Cmd+Shift+Space",
-			ActivateHintModeWithActions: "Cmd+Shift+A",
-			ActivateScrollMode:          "Cmd+Shift+J",
+			Bindings: map[string]string{
+				"Cmd+Shift+Space": "hints",
+				"Cmd+Shift+A":     "hints_action",
+				"Cmd+Shift+J":     "scroll",
+			},
 		},
 		Hints: HintsConfig{
 			HintCharacters:   "asdfghjkl",
@@ -204,9 +209,31 @@ func Load(path string) (*Config, error) {
 		return cfg, nil
 	}
 
-	// Parse TOML file
+	// Parse TOML file into the typed config
 	if _, err := toml.DecodeFile(path, cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	// Decode the hotkeys table into a generic map and populate cfg.Hotkeys.Bindings.
+	// We only support the inline mapping format and reject the old nested `bindings` map.
+	var raw map[string]map[string]interface{}
+	if _, err := toml.DecodeFile(path, &raw); err == nil {
+		if hot, ok := raw["hotkeys"]; ok {
+			if _, hasBindings := hot["bindings"]; hasBindings {
+				return nil, fmt.Errorf("hotkeys.bindings is not supported; use inline mapping under [hotkeys], e.g. \"Cmd+Shift+Space\" = \"hints\"")
+			}
+			if cfg.Hotkeys.Bindings == nil {
+				cfg.Hotkeys.Bindings = map[string]string{}
+			}
+			for k, v := range hot {
+				// Only accept string values for actions
+				str, ok := v.(string)
+				if !ok {
+					return nil, fmt.Errorf("hotkeys.%s must be a string action", k)
+				}
+				cfg.Hotkeys.Bindings[k] = str
+			}
+		}
 	}
 
 	// Validate configuration
@@ -279,16 +306,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("hints.action_opacity must be between 0 and 1")
 	}
 
-	// Validate hotkeys
-	if err := validateHotkey(c.Hotkeys.ActivateHintMode, "hotkeys.activate_hint_mode"); err != nil {
-		return err
-	}
-	if err := validateHotkey(c.Hotkeys.ActivateHintModeWithActions, "hotkeys.activate_hint_mode_with_actions"); err != nil {
-		return err
-	}
-	if err := validateHotkey(c.Hotkeys.ActivateScrollMode, "hotkeys.activate_scroll_mode"); err != nil {
-		return err
-	}
+	// Hotkeys are validated in the bindings validation section below
 
 	// Validate colors
 	if err := validateColor(c.Hints.BackgroundColor, "hints.background_color"); err != nil {
@@ -382,6 +400,19 @@ func (c *Config) Validate() error {
 	for i, appConfig := range c.Accessibility.AppConfigs {
 		if strings.TrimSpace(appConfig.BundleID) == "" {
 			return fmt.Errorf("accessibility.app_configs[%d].bundle_id cannot be empty", i)
+		}
+
+		// Validate hotkey bindings
+		for k, v := range c.Hotkeys.Bindings {
+			if strings.TrimSpace(k) == "" {
+				return fmt.Errorf("hotkeys.bindings contains an empty key")
+			}
+			if err := validateHotkey(k, "hotkeys.bindings"); err != nil {
+				return err
+			}
+			if strings.TrimSpace(v) == "" {
+				return fmt.Errorf("hotkeys.bindings[%s] cannot be empty", k)
+			}
 		}
 		for _, role := range appConfig.AdditionalClickable {
 			if strings.TrimSpace(role) == "" {

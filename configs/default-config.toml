@@ -129,22 +129,15 @@ additional_firefox_bundles = []
 
 [hotkeys]
 # all hotkeys can be disabled by either setting the key to "" or just commenting it out
+"Cmd+Shift+Space" = "hints" # Same as running `neru hints` in the terminal
+"Cmd+Shift+A" = "hints_action" # Same as running `neru hints_action` in the terminal
+"Cmd+Shift+J" = "scroll" # Same as running `neru scroll` in the terminal
 
-# Activate hint mode (direct click)
-activate_hint_mode = "Cmd+Shift+Space"
-
-# Activate hint mode with action selection (choose click type after typing hint)
-activate_hint_mode_with_actions = "Cmd+Shift+A"
-
-# Activate scroll mode for vim-style scrolling
-activate_scroll_mode = "Cmd+Shift+J"
+# To run a shell command from a hotkey, prefix the value with `exec `:
+# "Ctrl+Alt+T" = "exec open -a Terminal"
+# "Ctrl+Alt+F" = "exec osascript -e 'display notification \"This is a test notification!\" with title \"Hello from Terminal\" subtitle \"Just testing 🚀\"'"
 
 # Note: Escape key is hardcoded to exit any active mode
-
-# Hotkey format notes:
-# - Use `Cmd`, `Ctrl`, `Alt`, `Shift`, or `Option` as modifiers.
-# - Keys can be letters, function keys, or names like `Space`.
-# - Set any hotkey to "" to disable that action.
 
 [hints]
 # Characters used to build hint labels for alphabet style.
