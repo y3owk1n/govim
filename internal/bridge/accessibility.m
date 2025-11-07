@@ -688,7 +688,6 @@ char* getElementAttribute(void* element, const char* attribute) {
 
     AXUIElementRef axElement = (AXUIElementRef)element;
     CFStringRef attrName = CFStringCreateWithCString(NULL, attribute, kCFStringEncodingUTF8);
-
     CFTypeRef value = NULL;
     AXError error = AXUIElementCopyAttributeValue(axElement, attrName, &value);
     CFRelease(attrName);
@@ -698,8 +697,38 @@ char* getElementAttribute(void* element, const char* attribute) {
     }
 
     char* result = NULL;
+
     if (CFGetTypeID(value) == CFStringGetTypeID()) {
         result = cfStringToCString((CFStringRef)value);
+    }
+    else if (CFGetTypeID(value) == AXValueGetTypeID()) {
+        // Handle AXValue types (like AXFrame, AXPosition, AXSize)
+        AXValueType valueType = AXValueGetType((AXValueRef)value);
+
+        if (valueType == kAXValueCGRectType) {
+            CGRect rect;
+            if (AXValueGetValue((AXValueRef)value, kAXValueCGRectType, &rect)) {
+                // Format as "{{x, y}, {width, height}}"
+                result = malloc(128);
+                snprintf(result, 128, "{{%.1f, %.1f}, {%.1f, %.1f}}",
+                        rect.origin.x, rect.origin.y,
+                        rect.size.width, rect.size.height);
+            }
+        }
+        else if (valueType == kAXValueCGPointType) {
+            CGPoint point;
+            if (AXValueGetValue((AXValueRef)value, kAXValueCGPointType, &point)) {
+                result = malloc(64);
+                snprintf(result, 64, "{%.1f, %.1f}", point.x, point.y);
+            }
+        }
+        else if (valueType == kAXValueCGSizeType) {
+            CGSize size;
+            if (AXValueGetValue((AXValueRef)value, kAXValueCGSizeType, &size)) {
+                result = malloc(64);
+                snprintf(result, 64, "{%.1f, %.1f}", size.width, size.height);
+            }
+        }
     }
 
     CFRelease(value);
@@ -856,54 +885,6 @@ char* getBundleIdentifier(void* app) {
     return cfStringToCString((__bridge CFStringRef)bundleId);
 }
 
-// Check if element is scrollable
-// This checks if the element actually has scroll capability by looking for scroll bars
-int isScrollable(void* element) {
-    if (!element) return 0;
-
-    AXUIElementRef axElement = (AXUIElementRef)element;
-
-    // Check if element has horizontal or vertical scroll bars
-    CFTypeRef horizontalScrollBar = NULL;
-    CFTypeRef verticalScrollBar = NULL;
-
-    int hasScrollBar = 0;
-
-    if (AXUIElementCopyAttributeValue(axElement, kAXHorizontalScrollBarAttribute, &horizontalScrollBar) == kAXErrorSuccess) {
-        if (horizontalScrollBar != NULL) {
-            hasScrollBar = 1;
-            CFRelease(horizontalScrollBar);
-        }
-    }
-
-    if (!hasScrollBar && AXUIElementCopyAttributeValue(axElement, kAXVerticalScrollBarAttribute, &verticalScrollBar) == kAXErrorSuccess) {
-        if (verticalScrollBar != NULL) {
-            hasScrollBar = 1;
-            CFRelease(verticalScrollBar);
-        }
-    }
-
-    // If we found scroll bars, it's scrollable
-    if (hasScrollBar) {
-        return 1;
-    }
-
-    // Fallback: check if it's a scroll area role (for compatibility)
-    CFTypeRef roleValue = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute, &roleValue) == kAXErrorSuccess) {
-        if (CFGetTypeID(roleValue) == CFStringGetTypeID()) {
-            CFStringRef role = (CFStringRef)roleValue;
-            if (CFStringCompare(role, kAXScrollAreaRole, 0) == kCFCompareEqualTo) {
-                CFRelease(roleValue);
-                return 1;
-            }
-        }
-        CFRelease(roleValue);
-    }
-
-    return 0;
-}
-
 // Get scroll bounds
 CGRect getScrollBounds(void* element) {
     CGRect rect = CGRectZero;
@@ -933,55 +914,26 @@ CGRect getScrollBounds(void* element) {
     return rect;
 }
 
-// Scroll element by simulating scroll wheel events (like Vimac does)
-int scrollElement(void* element, int deltaX, int deltaY) {
-    if (!element) return 0;
+// Scroll at current cursor position only
+int scrollAtCursor(int deltaX, int deltaY) {
+    CGEventRef event = CGEventCreate(NULL);
+    CGPoint cursorPos = CGEventGetLocation(event);
+    CFRelease(event);
 
-    AXUIElementRef axElement = (AXUIElementRef)element;
-
-    // Get the position of the element to scroll at that location
-    CFTypeRef positionRef = NULL;
-    CGPoint scrollPoint = CGPointZero;
-
-    if (AXUIElementCopyAttributeValue(axElement, kAXPositionAttribute, &positionRef) == kAXErrorSuccess) {
-        if (positionRef) {
-            AXValueGetValue((AXValueRef)positionRef, kAXValueCGPointType, &scrollPoint);
-            CFRelease(positionRef);
-
-            // Offset to center of element
-            CFTypeRef sizeRef = NULL;
-            if (AXUIElementCopyAttributeValue(axElement, kAXSizeAttribute, &sizeRef) == kAXErrorSuccess) {
-                if (sizeRef) {
-                    CGSize size;
-                    AXValueGetValue((AXValueRef)sizeRef, kAXValueCGSizeType, &size);
-                    scrollPoint.x += size.width / 2;
-                    scrollPoint.y += size.height / 2;
-                    CFRelease(sizeRef);
-                }
-            }
-        }
-    }
-
-    // Create scroll wheel event using pixel units for more reliable scrolling
     CGEventRef scrollEvent = CGEventCreateScrollWheelEvent(
         NULL,
-        kCGScrollEventUnitPixel,  // Use pixels instead of lines
-        2, // number of wheels (vertical and horizontal)
+        kCGScrollEventUnitPixel,
+        2,
         deltaY,
         deltaX
     );
 
     if (scrollEvent) {
-        // Set the event location to the scroll area center
-        CGEventSetLocation(scrollEvent, scrollPoint);
-
-        // Post the event to the HID event tap
+        CGEventSetLocation(scrollEvent, cursorPos);
         CGEventPost(kCGHIDEventTap, scrollEvent);
         CFRelease(scrollEvent);
-
         return 1;
     }
 
     return 0;
 }
-

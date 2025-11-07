@@ -61,8 +61,7 @@ char* getBundleIdentifier(void* app);
 int setApplicationAttribute(int pid, const char* attribute, int value);
 
 // Scroll functions
-int isScrollable(void* element);
 CGRect getScrollBounds(void* element);
-int scrollElement(void* element, int deltaX, int deltaY);
+int scrollAtCursor(int deltaX, int deltaY);
 
 #endif // ACCESSIBILITY_H
