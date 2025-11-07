@@ -40,22 +40,24 @@ const (
 type App struct {
 	config *config.Config
 	// ConfigPath holds the path the daemon was started with (if any)
-	ConfigPath       string
-	logger           *zap.Logger
-	hotkeyManager    *hotkeys.Manager
-	hintGenerator    *hints.Generator
-	hintOverlay      *hints.Overlay
-	scrollController *scroll.Controller
-	eventTap         *eventtap.EventTap
-	ipcServer        *ipc.Server
-	electronManager  *electron.ElectronManager
-	appWatcher       *appwatcher.Watcher
-	currentMode      Mode
-	currentHints     *hints.HintCollection
-	hintInput        string
-	lastScrollKey    string
-	selectedHint     *hints.Hint
-	enabled          bool
+	ConfigPath         string
+	logger             *zap.Logger
+	hotkeyManager      *hotkeys.Manager
+	hintGenerator      *hints.Generator
+	hintOverlay        *hints.Overlay
+	scrollController   *scroll.Controller
+	eventTap           *eventtap.EventTap
+	ipcServer          *ipc.Server
+	electronManager    *electron.ElectronManager
+	appWatcher         *appwatcher.Watcher
+	currentMode        Mode
+	currentHints       *hints.HintCollection
+	hintInput          string
+	lastScrollKey      string
+	selectedHint       *hints.Hint
+	currentScrollHints *hints.HintCollection
+	scrollInput        string
+	enabled            bool
 	// Track whether global hotkeys are currently registered
 	hotkeysRegistered bool
 }
@@ -808,6 +810,35 @@ func (a *App) handleScrollKey(key string) {
 		}
 	}
 
+	// Handle backspace/delete to remove last character
+	if key == "\x7f" || key == "delete" || key == "backspace" {
+		if len(a.scrollInput) > 0 {
+			// Remove last character
+			a.scrollInput = a.scrollInput[:len(a.scrollInput)-1]
+			a.logger.Debug("Backspace pressed, scroll hint input", zap.String("input", a.scrollInput))
+
+			// Redraw hints with updated filter
+			var filtered []*hints.Hint
+			if a.scrollInput == "" {
+				filtered = a.currentScrollHints.GetHints()
+			} else {
+				filtered = a.currentScrollHints.FilterByPrefix(a.scrollInput)
+			}
+
+			// Update matched prefix for filtered hints and redraw
+			for _, hint := range filtered {
+				hint.MatchedPrefix = a.scrollInput
+			}
+
+			// Redraw the hints
+			a.drawFilteredScrollHints(filtered)
+		} else {
+			// If no characters to remove, reset the hints to allow reselection
+			a.resetScrollHints()
+		}
+		return
+	}
+
 	// Regular keys
 	switch key {
 	case "j":
@@ -840,11 +871,75 @@ func (a *App) handleScrollKey(key string) {
 		a.switchScrollArea(true)
 		a.lastScrollKey = ""
 		return
-	case "1", "2", "3", "4", "5", "6", "7", "8", "9": // Number keys
-		a.switchScrollAreaByNumber(key)
-		a.lastScrollKey = ""
-		return
 	default:
+		// Handle hint characters for scroll areas
+		if len(key) == 1 && isLetter(key[0]) {
+			// Handle backspace/delete to remove last character
+			if key == "\x7f" || key == "delete" || key == "backspace" {
+				if len(a.scrollInput) > 0 {
+					// Remove last character
+					a.scrollInput = a.scrollInput[:len(a.scrollInput)-1]
+					a.logger.Debug("Backspace pressed, scroll hint input", zap.String("input", a.scrollInput))
+
+					// Redraw hints with updated filter
+					var filtered []*hints.Hint
+					if a.scrollInput == "" {
+						filtered = a.currentScrollHints.GetHints()
+					} else {
+						filtered = a.currentScrollHints.FilterByPrefix(a.scrollInput)
+					}
+
+					// Update matched prefix for filtered hints and redraw
+					for _, hint := range filtered {
+						hint.MatchedPrefix = a.scrollInput
+					}
+
+					// Redraw the hints
+					a.drawFilteredScrollHints(filtered)
+				}
+				return
+			}
+
+			// Accumulate input (convert to uppercase to match hints)
+			a.scrollInput += strings.ToUpper(key)
+			a.logger.Debug("Scroll hint input", zap.String("input", a.scrollInput))
+
+			// Filter hints that match the current input
+			filtered := a.currentScrollHints.FilterByPrefix(a.scrollInput)
+
+			if len(filtered) == 0 {
+				// No matches - reset
+				a.logger.Debug("No matching scroll areas, resetting")
+				a.scrollInput = ""
+				return
+			}
+
+			// Update matched prefix for all filtered hints
+			for _, hint := range filtered {
+				hint.MatchedPrefix = a.scrollInput
+			}
+
+			// Redraw the filtered hints
+			a.drawFilteredScrollHints(filtered)
+
+			if len(filtered) == 1 && len(filtered[0].Label) == len(a.scrollInput) {
+				// Exact match found
+				hint := filtered[0]
+				a.logger.Info("Matched scroll area", zap.String("label", hint.Label))
+				a.switchScrollAreaByHint(hint)
+
+				// Reset input but keep hints visible
+				a.scrollInput = ""
+				// Reset all hints to their original state
+				a.resetScrollHints()
+				return
+			}
+
+			// Partial match - continue collecting input
+			a.logger.Debug("Partial match", zap.Int("matches", len(filtered)))
+			return
+		}
+
 		a.logger.Debug("Ignoring non-scroll key", zap.String("key", key))
 		a.lastScrollKey = ""
 		return
@@ -876,24 +971,30 @@ func (a *App) switchScrollArea(next bool) {
 	}
 }
 
-// switchScrollAreaByNumber switches to a specific scroll area by number
-func (a *App) switchScrollAreaByNumber(key string) {
-	// Validate key is a digit
-	if len(key) != 1 || key[0] < '0' || key[0] > '9' {
-		a.logger.Debug("Invalid number key", zap.String("key", key))
+// switchScrollAreaByHint switches to a specific scroll area by hint
+func (a *App) switchScrollAreaByHint(hint *hints.Hint) {
+	if hint == nil || hint.Element == nil {
+		a.logger.Debug("Invalid hint")
 		return
 	}
 
-	number := int(key[0] - '0')
+	// Find the matching scroll area
 	detector := a.scrollController.GetDetector()
-	newArea := detector.SetActiveByNumber(number)
+	areas := detector.GetAreas()
 
-	if newArea != nil {
-		a.logger.Info("Switched to scroll area", zap.Int("number", number))
-		a.updateScrollHighlight(newArea)
-	} else {
-		a.logger.Debug("No scroll area at number", zap.Int("number", number))
+	for i, area := range areas {
+		if area.Element == hint.Element {
+			if err := detector.SetActiveArea(i); err != nil {
+				a.logger.Error("Failed to set active area", zap.Error(err))
+				return
+			}
+			a.logger.Info("Switched to scroll area", zap.String("label", hint.Label))
+			a.updateScrollHighlight(area)
+			return
+		}
 	}
+
+	a.logger.Debug("No matching scroll area found")
 }
 
 // updateScrollHighlight updates the scroll area highlight
@@ -905,6 +1006,45 @@ func (a *App) updateScrollHighlight(area *scroll.ScrollArea) {
 		a.config.Scroll.HighlightColor,
 		a.config.Scroll.HighlightWidth,
 	)
+	a.hintOverlay.Show()
+}
+
+// resetScrollHints resets all hints to their original state and redraws them
+func (a *App) resetScrollHints() {
+	if a.currentScrollHints == nil {
+		return
+	}
+
+	// Clear any matched prefixes
+	for _, hint := range a.currentScrollHints.GetHints() {
+		hint.MatchedPrefix = ""
+	}
+
+	// Redraw all hints in their original state
+	a.drawFilteredScrollHints(a.currentScrollHints.GetHints())
+}
+
+// drawFilteredScrollHints redraws the hints with highlighting for matched characters
+func (a *App) drawFilteredScrollHints(filtered []*hints.Hint) {
+	a.hintOverlay.Clear()
+
+	// Draw the filtered hints
+	if err := a.hintOverlay.DrawHints(filtered); err != nil {
+		a.logger.Error("Failed to redraw hints", zap.Error(err))
+	}
+
+	// Draw highlight on active area
+	activeArea := a.scrollController.GetDetector().GetActiveArea()
+	if activeArea != nil {
+		bounds := activeArea.Bounds
+		a.hintOverlay.DrawScrollHighlight(
+			bounds.Min.X, bounds.Min.Y,
+			bounds.Dx(), bounds.Dy(),
+			a.config.Scroll.HighlightColor,
+			a.config.Scroll.HighlightWidth,
+		)
+	}
+
 	a.hintOverlay.Show()
 }
 
@@ -954,36 +1094,63 @@ func (a *App) activateScrollMode() {
 	a.currentMode = ModeScroll
 	a.logger.Info("Scroll mode activated", zap.Int("areas", len(areas)))
 	a.logger.Info("Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom")
-	a.logger.Info("Tab to switch areas, or press 1-9 to jump to area")
+	a.logger.Info("Tab to switch areas, or type a hint label to jump to area")
 
 	a.logger.Info("Enabling event tap")
 	// Enable event tap to capture scroll keys
 	if a.eventTap != nil {
 		a.eventTap.Enable()
 	}
+	// Initialize scroll input and clear any previous hint state
+	a.scrollInput = ""
+	a.resetScrollHints()
 	a.logger.Info("Scroll mode activation complete")
 }
 
-// drawScrollAreaLabels draws number labels on all scroll areas
+// drawScrollAreaLabels draws hint labels on all scroll areas
 func (a *App) drawScrollAreaLabels(areas []*scroll.ScrollArea) {
 	// Clear existing overlay
 	a.hintOverlay.Clear()
 
-	// Create hints for each scroll area number
-	areaHints := make([]*hints.Hint, 0, len(areas))
-	for i, area := range areas {
-		// Position number at top-left of scroll area
-		hint := &hints.Hint{
-			Label:    fmt.Sprintf("%d", i+1),
+	// Generate simple sequential hints
+	labels := a.hintGenerator.GenerateScrollLabels(len(areas))
+	if len(labels) == 0 {
+		a.logger.Error("Not enough available characters for scroll hints after filtering scroll keys")
+		return
+	}
+
+	if len(labels) < len(areas) {
+		a.logger.Warn("Some scroll areas will not be labeled due to insufficient available characters",
+			zap.Int("areas", len(areas)),
+			zap.Int("available_labels", len(labels)))
+	}
+
+	// Create hints for areas up to the number of available labels
+	numHints := len(labels)
+	scrollHints := make([]*hints.Hint, numHints)
+	for i := 0; i < numHints; i++ {
+		area := areas[i]
+		scrollHints[i] = &hints.Hint{
+			Label:    labels[i],
+			Element:  area.Element,
 			Position: image.Point{X: area.Bounds.Min.X + 10, Y: area.Bounds.Min.Y + 10},
 			Size:     image.Point{X: 30, Y: 30},
 		}
-		areaHints = append(areaHints, hint)
 	}
 
-	// Draw the number hints
-	if len(areaHints) > 0 {
-		if err := a.hintOverlay.DrawHints(areaHints); err != nil {
+	// Store hints for later reference
+	a.currentScrollHints = hints.NewHintCollection(scrollHints)
+
+	// Position hints at top-left of each scroll area
+	for i, hint := range scrollHints {
+		area := areas[i]
+		hint.Position = image.Point{X: area.Bounds.Min.X + 10, Y: area.Bounds.Min.Y + 10}
+		hint.Size = image.Point{X: 30, Y: 30}
+	}
+
+	// Draw the scroll area hints
+	if a.currentScrollHints.Count() > 0 {
+		if err := a.hintOverlay.DrawHints(a.currentScrollHints.GetHints()); err != nil {
 			a.logger.Error("Failed to draw hints", zap.Error(err))
 		}
 	}

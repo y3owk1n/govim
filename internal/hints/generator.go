@@ -4,6 +4,7 @@ import (
 	"image"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/logger"
@@ -29,6 +30,7 @@ type Generator struct {
 func NewGenerator(characters string) *Generator {
 	// Ensure we have at least some characters
 	if characters == "" {
+		// Use home row characters by default
 		characters = "asdfghjkl" // fallback to default
 	}
 
@@ -136,6 +138,107 @@ func (g *Generator) generateAlphabetLabels(count int) []string {
 				}
 			}
 		}
+	}
+
+	return labels[:count]
+}
+
+// GenerateSimpleLabels generates sequential single-character labels without sorting.
+// This is used when we want to preserve the original order.
+func (g *Generator) GenerateSimpleLabels(count int) []string {
+	if count <= 0 {
+		return []string{}
+	}
+
+	chars := []rune(g.characters)
+	if count > len(chars) {
+		count = len(chars) // Limit to available characters
+	}
+
+	labels := make([]string, count)
+	for i := 0; i < count; i++ {
+		labels[i] = strings.ToUpper(string(chars[i]))
+	}
+
+	return labels
+}
+
+// GenerateScrollLabels generates labels for scroll areas, excluding scroll control keys.
+// This ensures we don't create hints that conflict with scroll navigation keys, and supports
+// multi-character combinations like the regular hint system.
+func (g *Generator) GenerateScrollLabels(count int) []string {
+	if count <= 0 {
+		return []string{}
+	}
+
+	// Define scroll control keys to exclude
+	scrollKeys := map[rune]bool{
+		'j': true, // down
+		'k': true, // up
+		'h': true, // left
+		'l': true, // right
+		'g': true, // top
+		'G': true, // bottom
+		'u': true, // unused but was a scroll key
+		'd': true, // unused but was a scroll key
+	}
+
+	// Filter available characters
+	var availableChars []rune
+	for _, ch := range g.characters {
+		ch = unicode.ToLower(ch)
+		if !scrollKeys[ch] {
+			availableChars = append(availableChars, ch)
+		}
+	}
+
+	if len(availableChars) == 0 {
+		logger.Warn("No available characters for scroll hints after filtering")
+		return []string{}
+	}
+
+	numChars := len(availableChars)
+	labels := make([]string, 0, count)
+
+	// Calculate minimum length needed to avoid prefix conflicts
+	// For n chars: 1-char = n, 2-char = n², 3-char = n³
+	var length int
+	if count <= numChars {
+		length = 1
+	} else if count <= numChars*numChars {
+		length = 2
+	} else {
+		length = 3
+	}
+
+	// Generate labels of the determined length
+	switch length {
+	case 1:
+		// Single character labels
+		for i := 0; i < count; i++ {
+			labels = append(labels, string(availableChars[i]))
+		}
+	case 2:
+		// All 2-char combinations
+		for i := 0; i < numChars && len(labels) < count; i++ {
+			for j := 0; j < numChars && len(labels) < count; j++ {
+				labels = append(labels, string(availableChars[i])+string(availableChars[j]))
+			}
+		}
+	case 3:
+		// All 3-char combinations
+		for i := 0; i < numChars && len(labels) < count; i++ {
+			for j := 0; j < numChars && len(labels) < count; j++ {
+				for k := 0; k < numChars && len(labels) < count; k++ {
+					labels = append(labels, string(availableChars[i])+string(availableChars[j])+string(availableChars[k]))
+				}
+			}
+		}
+	}
+
+	// Convert all labels to uppercase
+	for i := range labels {
+		labels[i] = strings.ToUpper(labels[i])
 	}
 
 	return labels[:count]
