@@ -131,7 +131,8 @@ func NewApp(cfg *config.Config) (*App, error) {
 
 	// Initialize hint managers
 	app.hintManager = hints.NewManager(func(hints []*hints.Hint) {
-		if app.currentMode == ModeHintWithActions {
+		switch app.currentMode {
+		case ModeHintWithActions:
 			style := app.config.Hints
 			style.BackgroundColor = app.config.Hints.ActionBackgroundColor
 			style.TextColor = app.config.Hints.ActionTextColor
@@ -140,8 +141,17 @@ func NewApp(cfg *config.Config) (*App, error) {
 			if err := app.hintOverlay.DrawHintsWithStyle(hints, style); err != nil {
 				app.logger.Error("Failed to redraw hints", zap.Error(err))
 			}
-		} else {
+		case ModeHint:
 			if err := app.hintOverlay.DrawHints(hints); err != nil {
+				app.logger.Error("Failed to redraw hints", zap.Error(err))
+			}
+		case ModeScroll:
+			style := app.config.Hints
+			style.BackgroundColor = app.config.Hints.ScrollHintsBackgroundColor
+			style.TextColor = app.config.Hints.ScrollHintsTextColor
+			style.MatchedTextColor = app.config.Hints.ScrollHintsMatchedTextColor
+			style.BorderColor = app.config.Hints.ScrollHintsBorderColor
+			if err := app.hintOverlay.DrawHintsWithStyle(hints, style); err != nil {
 				app.logger.Error("Failed to redraw hints", zap.Error(err))
 			}
 		}
