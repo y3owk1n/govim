@@ -122,9 +122,23 @@ CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef 
             return NULL;
         }
 
-        // Convert keycode to character
-        TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
-        CFDataRef layoutData = TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData);
+        // Always use US keyboard layout for consistent character mapping
+        static TISInputSourceRef usKeyboard = NULL;
+        if (!usKeyboard) {
+            CFStringRef kbdLayoutName = CFSTR("com.apple.keylayout.US");
+            CFArrayRef sourceList = TISCreateInputSourceList(
+                (CFDictionaryRef)@{ (id)kTISPropertyInputSourceID : (id)kbdLayoutName },
+                false);
+            if (sourceList && CFArrayGetCount(sourceList) > 0) {
+                usKeyboard = (TISInputSourceRef)CFArrayGetValueAtIndex(sourceList, 0);
+                CFRetain(usKeyboard);
+            }
+            if (sourceList) CFRelease(sourceList);
+        }
+
+        CFDataRef layoutData = usKeyboard ? 
+            TISGetInputSourceProperty(usKeyboard, kTISPropertyUnicodeKeyLayoutData) :
+            TISGetInputSourceProperty(TISCopyCurrentKeyboardInputSource(), kTISPropertyUnicodeKeyLayoutData);
 
         if (layoutData) {
             const UCKeyboardLayout* keyboardLayout = (const UCKeyboardLayout*)CFDataGetBytePtr(layoutData);
@@ -162,8 +176,6 @@ CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef 
                 }
             }
         }
-
-        if (currentKeyboard) CFRelease(currentKeyboard);
 
         // Consume the event (don't pass it through)
         return NULL;

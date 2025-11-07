@@ -66,7 +66,6 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Scroll areas are hardcoded from 1-9, do we ever need more than that and make it dynamic upon query? We can still use <Tab> to cycle next tho
 - Get rid of `PageHeight` in config and find a way to calculate available scroll for (c-d, c-u, gg, G) more reliably.
 - Homerow supports `continuous clicks`, is that something important?
-- Maybe forces to certain input source? I normally just use English, but maybe it's useful for others
 - Cant actually make scroll works in Electron apps, what is the best approach? There are tons of random `AXGroup` where some is scrollable and some is not...
 - Sort of working in Mision Control, but it still shows hints from the frontmost app. How can we know that we are in mission control and ignore the frontmost app?
 - Research if there's a good way to implemet visual hint mode where we can select text? Doing this with accessibility seems a little hard and vague
