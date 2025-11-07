@@ -40,24 +40,22 @@ const (
 type App struct {
 	config *config.Config
 	// ConfigPath holds the path the daemon was started with (if any)
-	ConfigPath         string
-	logger             *zap.Logger
-	hotkeyManager      *hotkeys.Manager
-	hintGenerator      *hints.Generator
-	hintOverlay        *hints.Overlay
-	scrollController   *scroll.Controller
-	eventTap           *eventtap.EventTap
-	ipcServer          *ipc.Server
-	electronManager    *electron.ElectronManager
-	appWatcher         *appwatcher.Watcher
-	currentMode        Mode
-	currentHints       *hints.HintCollection
-	hintInput          string
-	lastScrollKey      string
-	selectedHint       *hints.Hint
-	currentScrollHints *hints.HintCollection
-	scrollInput        string
-	enabled            bool
+	ConfigPath        string
+	logger            *zap.Logger
+	hotkeyManager     *hotkeys.Manager
+	hintGenerator     *hints.Generator
+	hintOverlay       *hints.Overlay
+	scrollController  *scroll.Controller
+	eventTap          *eventtap.EventTap
+	ipcServer         *ipc.Server
+	electronManager   *electron.ElectronManager
+	appWatcher        *appwatcher.Watcher
+	currentMode       Mode
+	hintManager       *hints.Manager
+	scrollHintManager *hints.Manager
+	lastScrollKey     string
+	selectedHint      *hints.Hint
+	enabled           bool
 	// Track whether global hotkeys are currently registered
 	hotkeysRegistered bool
 }
@@ -124,9 +122,31 @@ func NewApp(cfg *config.Config) (*App, error) {
 		scrollController:  scrollCtrl,
 		currentMode:       ModeIdle,
 		enabled:           true,
-		hintInput:         "",
 		hotkeysRegistered: false,
 	}
+
+	// Initialize hint managers
+	app.hintManager = hints.NewManager(func(hints []*hints.Hint) {
+		if app.currentMode == ModeHintWithActions {
+			style := app.config.Hints
+			style.BackgroundColor = app.config.Hints.ActionBackgroundColor
+			style.TextColor = app.config.Hints.ActionTextColor
+			style.MatchedTextColor = app.config.Hints.ActionMatchedTextColor
+			style.BorderColor = app.config.Hints.ActionBorderColor
+			style.Opacity = app.config.Hints.ActionOpacity
+			if err := app.hintOverlay.DrawHintsWithStyle(hints, style); err != nil {
+				app.logger.Error("Failed to redraw hints", zap.Error(err))
+			}
+		} else {
+			if err := app.hintOverlay.DrawHints(hints); err != nil {
+				app.logger.Error("Failed to redraw hints", zap.Error(err))
+			}
+		}
+	})
+
+	app.scrollHintManager = hints.NewManager(func(hints []*hints.Hint) {
+		app.drawFilteredScrollHints(hints)
+	})
 
 	// Create electron manager
 	if cfg.Accessibility.AdditionalAXSupport.Enable {
@@ -477,8 +497,9 @@ func (a *App) activateHintMode(withActions bool) {
 		return
 	}
 
-	// Create hint collection
-	a.currentHints = hints.NewHintCollection(hintList)
+	// Set up hints in the hint manager
+	hints := hints.NewHintCollection(hintList)
+	a.hintManager.SetHints(hints)
 
 	// Draw hints
 	// Use distinct colors when entering hint mode with actions
@@ -512,9 +533,10 @@ func (a *App) activateHintMode(withActions bool) {
 		a.logger.Info("Type a hint label to click the element")
 	}
 
-	// Enable event tap to capture keys
-	a.hintInput = ""
+	// Reset state
 	a.selectedHint = nil
+
+	// Enable event tap to capture keys (must be last to ensure proper initialization)
 	if a.eventTap != nil {
 		a.eventTap.Enable()
 	}
@@ -551,100 +573,27 @@ func (a *App) handleHintKey(key string) {
 		return
 	}
 
-	// Handle backspace/delete to remove last character
-	if key == "\x7f" || key == "delete" || key == "backspace" {
-		if len(a.hintInput) > 0 {
-			// Remove last character
-			a.hintInput = a.hintInput[:len(a.hintInput)-1]
-			a.logger.Debug("Backspace pressed, hint input", zap.String("input", a.hintInput))
-
-			// Redraw hints with updated filter
-			var filtered []*hints.Hint
-			if a.hintInput == "" {
-				// Show all hints if input is empty
-				filtered = a.currentHints.GetHints()
-			} else {
-				filtered = a.currentHints.FilterByPrefix(a.hintInput)
-			}
-
-			// Update matched prefix for filtered hints and redraw
-			for _, hint := range filtered {
-				hint.MatchedPrefix = a.hintInput
-			}
-			a.hintOverlay.Clear()
-			if err := a.hintOverlay.DrawHints(filtered); err != nil {
-				a.logger.Error("Failed to redraw hints", zap.Error(err))
-			}
-		}
-		return
-	}
-
-	// Ignore non-letter keys
-	if len(key) != 1 || !isLetter(key[0]) {
-		return
-	}
-
-	// Accumulate input (convert to uppercase to match hints)
-	a.hintInput += strings.ToUpper(key)
-	a.logger.Debug("Hint input", zap.String("input", a.hintInput))
-
-	// Check if any hints start with this input
-	filtered := a.currentHints.FilterByPrefix(a.hintInput)
-
-	if len(filtered) == 0 {
-		// No matches - reset
-		a.logger.Debug("No matching hints, resetting")
-		a.hintInput = ""
-		return
-	}
-
-	// Update matched prefix for filtered hints and redraw
-	for _, hint := range filtered {
-		hint.MatchedPrefix = a.hintInput
-	}
-	a.hintOverlay.Clear()
-	if a.currentMode == ModeHintWithActions {
-		style := a.config.Hints
-		style.BackgroundColor = a.config.Hints.ActionBackgroundColor
-		style.TextColor = a.config.Hints.ActionTextColor
-		style.MatchedTextColor = a.config.Hints.ActionMatchedTextColor
-		style.BorderColor = a.config.Hints.ActionBorderColor
-		style.Opacity = a.config.Hints.ActionOpacity
-		if err := a.hintOverlay.DrawHintsWithStyle(filtered, style); err != nil {
-			a.logger.Error("Failed to redraw hints", zap.Error(err))
-		}
-	} else {
-		if err := a.hintOverlay.DrawHints(filtered); err != nil {
-			a.logger.Error("Failed to redraw hints", zap.Error(err))
-		}
-	}
-
-	// If exactly one match and input matches the full label
-	if len(filtered) == 1 && filtered[0].Label == a.hintInput {
-		hint := filtered[0]
-
+	if hint, ok := a.hintManager.HandleInput(key); ok {
 		if a.currentMode == ModeHintWithActions {
 			// Store the hint and wait for action selection
 			a.selectedHint = hint
-			a.logger.Info("Hint selected, choose action", zap.String("label", a.hintInput))
+			a.logger.Info("Hint selected, choose action", zap.String("label", a.hintManager.GetInput()))
 
 			// Clear all hints and show action menu at the hint location
 			a.hintOverlay.Clear()
 			a.showActionMenu(hint)
-			return
 		} else {
 			// Direct click mode - click immediately
-			a.logger.Info("Clicking element", zap.String("label", a.hintInput))
+			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
 			if err := hint.Element.Element.LeftClick(a.config.General.RestorePosAfterLeftClick); err != nil {
 				a.logger.Error("Failed to click element", zap.Error(err))
 			}
 			a.exitMode()
-			return
 		}
+		return
 	}
 
-	// Otherwise, keep collecting input
-	a.logger.Debug("Partial match", zap.Int("matches", len(filtered)))
+	// Otherwise, key was handled by the hint manager
 }
 
 // showActionMenu displays the action selection menu at the hint location
@@ -721,31 +670,9 @@ func (a *App) handleActionKey(key string) {
 	if key == "\x7f" || key == "delete" || key == "backspace" {
 		a.logger.Debug("Backspace pressed in action mode, returning to hint selection")
 
-		// Clear selected hint
+		// Clear selected hint and reset hint manager
 		a.selectedHint = nil
-
-		// Remove the last character from hintInput (e.g., "ABD" -> "AB")
-		if len(a.hintInput) > 0 {
-			a.hintInput = a.hintInput[:len(a.hintInput)-1]
-			a.logger.Debug("Removed last character from hint input", zap.String("input", a.hintInput))
-		}
-
-		// Redraw hints with updated input filter
-		var filtered []*hints.Hint
-		if a.hintInput == "" {
-			filtered = a.currentHints.GetHints()
-		} else {
-			filtered = a.currentHints.FilterByPrefix(a.hintInput)
-		}
-
-		// Update matched prefix for filtered hints and redraw
-		for _, hint := range filtered {
-			hint.MatchedPrefix = a.hintInput
-		}
-		a.hintOverlay.Clear()
-		if err := a.hintOverlay.DrawHints(filtered); err != nil {
-			a.logger.Error("Failed to redraw hints", zap.Error(err))
-		}
+		a.hintManager.Reset()
 		return
 	}
 
@@ -812,28 +739,7 @@ func (a *App) handleScrollKey(key string) {
 
 	// Handle backspace/delete to remove last character
 	if key == "\x7f" || key == "delete" || key == "backspace" {
-		if len(a.scrollInput) > 0 {
-			// Remove last character
-			a.scrollInput = a.scrollInput[:len(a.scrollInput)-1]
-			a.logger.Debug("Backspace pressed, scroll hint input", zap.String("input", a.scrollInput))
-
-			// Redraw hints with updated filter
-			var filtered []*hints.Hint
-			if a.scrollInput == "" {
-				filtered = a.currentScrollHints.GetHints()
-			} else {
-				filtered = a.currentScrollHints.FilterByPrefix(a.scrollInput)
-			}
-
-			// Update matched prefix for filtered hints and redraw
-			for _, hint := range filtered {
-				hint.MatchedPrefix = a.scrollInput
-			}
-
-			// Redraw the hints
-			a.drawFilteredScrollHints(filtered)
-		} else {
-			// If no characters to remove, reset the hints to allow reselection
+		if a.scrollHintManager != nil {
 			a.resetScrollHints()
 		}
 		return
@@ -874,69 +780,13 @@ func (a *App) handleScrollKey(key string) {
 	default:
 		// Handle hint characters for scroll areas
 		if len(key) == 1 && isLetter(key[0]) {
-			// Handle backspace/delete to remove last character
-			if key == "\x7f" || key == "delete" || key == "backspace" {
-				if len(a.scrollInput) > 0 {
-					// Remove last character
-					a.scrollInput = a.scrollInput[:len(a.scrollInput)-1]
-					a.logger.Debug("Backspace pressed, scroll hint input", zap.String("input", a.scrollInput))
-
-					// Redraw hints with updated filter
-					var filtered []*hints.Hint
-					if a.scrollInput == "" {
-						filtered = a.currentScrollHints.GetHints()
-					} else {
-						filtered = a.currentScrollHints.FilterByPrefix(a.scrollInput)
-					}
-
-					// Update matched prefix for filtered hints and redraw
-					for _, hint := range filtered {
-						hint.MatchedPrefix = a.scrollInput
-					}
-
-					// Redraw the hints
-					a.drawFilteredScrollHints(filtered)
-				}
-				return
-			}
-
-			// Accumulate input (convert to uppercase to match hints)
-			a.scrollInput += strings.ToUpper(key)
-			a.logger.Debug("Scroll hint input", zap.String("input", a.scrollInput))
-
-			// Filter hints that match the current input
-			filtered := a.currentScrollHints.FilterByPrefix(a.scrollInput)
-
-			if len(filtered) == 0 {
-				// No matches - reset
-				a.logger.Debug("No matching scroll areas, resetting")
-				a.scrollInput = ""
-				return
-			}
-
-			// Update matched prefix for all filtered hints
-			for _, hint := range filtered {
-				hint.MatchedPrefix = a.scrollInput
-			}
-
-			// Redraw the filtered hints
-			a.drawFilteredScrollHints(filtered)
-
-			if len(filtered) == 1 && len(filtered[0].Label) == len(a.scrollInput) {
-				// Exact match found
-				hint := filtered[0]
+			if hint, ok := a.scrollHintManager.HandleInput(key); ok {
 				a.logger.Info("Matched scroll area", zap.String("label", hint.Label))
 				a.switchScrollAreaByHint(hint)
-
 				// Reset input but keep hints visible
-				a.scrollInput = ""
-				// Reset all hints to their original state
-				a.resetScrollHints()
+				a.scrollHintManager.Reset()
 				return
 			}
-
-			// Partial match - continue collecting input
-			a.logger.Debug("Partial match", zap.Int("matches", len(filtered)))
 			return
 		}
 
@@ -1011,17 +861,9 @@ func (a *App) updateScrollHighlight(area *scroll.ScrollArea) {
 
 // resetScrollHints resets all hints to their original state and redraws them
 func (a *App) resetScrollHints() {
-	if a.currentScrollHints == nil {
-		return
+	if a.scrollHintManager != nil {
+		a.scrollHintManager.Reset()
 	}
-
-	// Clear any matched prefixes
-	for _, hint := range a.currentScrollHints.GetHints() {
-		hint.MatchedPrefix = ""
-	}
-
-	// Redraw all hints in their original state
-	a.drawFilteredScrollHints(a.currentScrollHints.GetHints())
 }
 
 // drawFilteredScrollHints redraws the hints with highlighting for matched characters
@@ -1034,15 +876,12 @@ func (a *App) drawFilteredScrollHints(filtered []*hints.Hint) {
 	}
 
 	// Draw highlight on active area
-	activeArea := a.scrollController.GetDetector().GetActiveArea()
-	if activeArea != nil {
-		bounds := activeArea.Bounds
-		a.hintOverlay.DrawScrollHighlight(
-			bounds.Min.X, bounds.Min.Y,
-			bounds.Dx(), bounds.Dy(),
-			a.config.Scroll.HighlightColor,
-			a.config.Scroll.HighlightWidth,
-		)
+	detector := a.scrollController.GetDetector()
+	if detector != nil {
+		area := detector.GetActiveArea()
+		if area != nil {
+			a.updateScrollHighlight(area)
+		}
 	}
 
 	a.hintOverlay.Show()
@@ -1086,6 +925,13 @@ func (a *App) activateScrollMode() {
 		return
 	}
 
+	// Create new scroll hint manager
+	a.scrollHintManager = hints.NewManager(func(hints []*hints.Hint) {
+		if err := a.hintOverlay.DrawHints(hints); err != nil {
+			a.logger.Error("Failed to draw filtered hints", zap.Error(err))
+		}
+	})
+
 	a.logger.Info("Drawing scroll area labels", zap.Int("count", len(areas)))
 	// Draw scroll highlights with numbers for all areas
 	a.drawScrollAreaLabels(areas)
@@ -1101,8 +947,7 @@ func (a *App) activateScrollMode() {
 	if a.eventTap != nil {
 		a.eventTap.Enable()
 	}
-	// Initialize scroll input and clear any previous hint state
-	a.scrollInput = ""
+	// Reset any previous hint state
 	a.resetScrollHints()
 	a.logger.Info("Scroll mode activation complete")
 }
@@ -1138,8 +983,9 @@ func (a *App) drawScrollAreaLabels(areas []*scroll.ScrollArea) {
 		}
 	}
 
-	// Store hints for later reference
-	a.currentScrollHints = hints.NewHintCollection(scrollHints)
+	// Set up hints in the scroll hint manager
+	hintCollection := hints.NewHintCollection(scrollHints)
+	a.scrollHintManager.SetHints(hintCollection)
 
 	// Position hints at top-left of each scroll area
 	for i, hint := range scrollHints {
@@ -1148,26 +994,27 @@ func (a *App) drawScrollAreaLabels(areas []*scroll.ScrollArea) {
 		hint.Size = image.Point{X: 30, Y: 30}
 	}
 
-	// Draw the scroll area hints
-	if a.currentScrollHints.Count() > 0 {
-		if err := a.hintOverlay.DrawHints(a.currentScrollHints.GetHints()); err != nil {
-			a.logger.Error("Failed to draw hints", zap.Error(err))
+	// Draw initial hints and highlight
+	if err := a.hintOverlay.DrawHints(scrollHints); err != nil {
+		a.logger.Error("Failed to draw hints", zap.Error(err))
+	}
+
+	detector := a.scrollController.GetDetector()
+	if detector != nil {
+		if area := detector.GetActiveArea(); area != nil {
+			a.updateScrollHighlight(area)
 		}
 	}
 
-	// Draw highlight on active area
-	activeArea := a.scrollController.GetDetector().GetActiveArea()
-	if activeArea != nil {
-		bounds := activeArea.Bounds
-		a.hintOverlay.DrawScrollHighlight(
-			bounds.Min.X, bounds.Min.Y,
-			bounds.Dx(), bounds.Dy(),
-			a.config.Scroll.HighlightColor,
-			a.config.Scroll.HighlightWidth,
-		)
+	a.hintOverlay.Show()
+
+	// Set scroll mode and enable key capture
+	a.currentMode = ModeScroll
+	if a.eventTap != nil {
+		a.eventTap.Enable()
 	}
 
-	a.hintOverlay.Show()
+	a.logger.Info("Scroll mode activated", zap.Int("areas", len(scrollHints)))
 }
 
 // exitMode exits the current mode
@@ -1178,26 +1025,39 @@ func (a *App) exitMode() {
 
 	a.logger.Info("Exiting current mode", zap.String("mode", a.getModeString()))
 
-	// Clear overlay
-	a.hintOverlay.Hide()
-	a.hintOverlay.Clear()
-
-	// Clean up mode-specific state
+	// First, clean up visual state by resetting hint managers
 	switch a.currentMode {
 	case ModeHint, ModeHintWithActions:
-		a.currentHints = nil
-		a.hintInput = ""
+		if a.hintManager != nil {
+			a.hintManager.Reset()
+		}
 		a.selectedHint = nil
 	case ModeScroll:
+		// Reset scroll hint manager first
+		if a.scrollHintManager != nil {
+			a.scrollHintManager.Reset()
+			a.scrollHintManager = nil // Ensure it's fully cleared
+		}
+	}
+
+	// Then clean up controllers that might create visuals
+	if a.currentMode == ModeScroll {
 		a.scrollController.Cleanup()
 	}
 
-	// Disable event tap when exiting any mode
+	// Then clear and hide the overlay after all potential visual generators are cleaned
+	a.hintOverlay.Clear()
+	a.hintOverlay.Hide()
+
+	// Finally, disable event tap and set idle mode
 	if a.eventTap != nil {
 		a.eventTap.Disable()
 	}
 
+	// Update mode after all cleanup is done
 	a.currentMode = ModeIdle
+	a.logger.Debug("Mode transition complete",
+		zap.String("to", "idle"))
 }
 
 // getModeString returns the current mode as a string
