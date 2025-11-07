@@ -90,7 +90,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	accessibility.SetScrollableRoles(cfg.Accessibility.ScrollableRoles)
 
 	// Create hotkey manager
-	hotkeyMgr := hotkeys.NewManager(log)
+	hotkeyMgr := hotkeys.NewManager(log, cfg.General.ExcludedApps)
 	hotkeys.SetGlobalManager(hotkeyMgr)
 
 	// Create hint generator
@@ -166,7 +166,13 @@ func (a *App) Run() error {
 	a.logger.Info("Electron manager started")
 
 	// Initialize hotkeys based on current focused app and exclusion
-	a.refreshHotkeysForCurrentApp()
+	a.refreshHotkeysForAppOrCurrent("")
+
+	a.hotkeyManager.Start()
+
+	a.hotkeyManager.SetActivateCallback(func(appName, bundleID string) {
+		go a.refreshHotkeysForAppOrCurrent(bundleID)
+	})
 
 	a.logger.Info("Neru is running")
 	fmt.Println("✓ Neru is running")
@@ -181,9 +187,6 @@ func (a *App) Run() error {
 	if key := strings.TrimSpace(a.config.Hotkeys.ActivateScrollMode); key != "" {
 		fmt.Printf("  Scroll mode: %s\n", key)
 	}
-
-	// Start a background watcher to update hotkey registration when focus or enabled state changes
-	go a.watchFocusedAppForHotkeys()
 
 	// Wait for interrupt signal with force-quit support
 	sigChan := make(chan os.Signal, 1)
@@ -256,9 +259,9 @@ func (a *App) registerHotkeys() error {
 	return nil
 }
 
-// refreshHotkeysForCurrentApp registers or unregisters global hotkeys based on
+// refreshHotkeysForAppOrCurrent registers or unregisters global hotkeys based on
 // whether Neru is enabled and whether the currently focused app is excluded.
-func (a *App) refreshHotkeysForCurrentApp() {
+func (a *App) refreshHotkeysForAppOrCurrent(bundleID string) {
 	// If disabled, ensure no hotkeys are registered
 	if !a.enabled {
 		if a.hotkeysRegistered {
@@ -269,7 +272,9 @@ func (a *App) refreshHotkeysForCurrentApp() {
 		return
 	}
 
-	bundleID := a.getFocusedBundleID()
+	if bundleID == "" {
+		bundleID = a.getFocusedBundleID()
+	}
 
 	// If app is excluded, unregister; otherwise ensure registered
 	if a.config.IsAppExcluded(bundleID) {
@@ -288,31 +293,7 @@ func (a *App) refreshHotkeysForCurrentApp() {
 			return
 		}
 		a.hotkeysRegistered = true
-	}
-}
-
-// watchFocusedAppForHotkeys periodically checks the focused application and
-// updates global hotkey registration so excluded apps receive the keybindings.
-func (a *App) watchFocusedAppForHotkeys() {
-	var lastBundleID string
-	lastEnabled := a.enabled
-	for {
-		// Check current focused bundle
-		focused := accessibility.GetFocusedApplication()
-		var bundleID string
-		if focused != nil {
-			bundleID = focused.GetBundleIdentifier()
-			focused.Release()
-		}
-
-		// If focus or enabled state changed, refresh hotkeys
-		if bundleID != lastBundleID || lastEnabled != a.enabled {
-			a.refreshHotkeysForCurrentApp()
-			lastBundleID = bundleID
-			lastEnabled = a.enabled
-		}
-
-		time.Sleep(500 * time.Millisecond)
+		a.logger.Debug("Hotkeys registered")
 	}
 }
 
@@ -1048,7 +1029,12 @@ func (a *App) Cleanup() {
 	a.logger.Info("Cleaning up")
 
 	a.exitMode()
+
+	// Unregister all hotkeys
 	a.hotkeyManager.UnregisterAll()
+	// Stop hotkey manager (app watcher)
+	a.hotkeyManager.Stop()
+
 	a.hintOverlay.Destroy()
 
 	// Stop electron manager

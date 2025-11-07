@@ -59,17 +59,17 @@ func (em *ElectronManager) Stop() {
 
 // HandleLaunch implements bridge.AppWatcher
 func (em *ElectronManager) HandleLaunch(appName, bundleID string) {
-	logger.Debug("App launched", zap.String("bundle_id", bundleID))
+	logger.Debug("[Electron] App launched", zap.String("bundle_id", bundleID))
 }
 
 // HandleTerminate implements bridge.AppWatcher
 func (em *ElectronManager) HandleTerminate(appName, bundleID string) {
-	logger.Debug("App terminated", zap.String("bundle_id", bundleID))
+	logger.Debug("[Electron] App terminated", zap.String("bundle_id", bundleID))
 }
 
 // HandleActivate implements bridge.AppWatcher
 func (em *ElectronManager) HandleActivate(appName, bundleID string) {
-	logger.Debug("App activated", zap.String("bundle_id", bundleID))
+	logger.Debug("[Electron] App activated", zap.String("bundle_id", bundleID))
 
 	if ShouldEnableElectronSupport(bundleID, em.additionalElectronBundles) {
 		ensureElectronAccessibility(bundleID)
@@ -89,7 +89,7 @@ func (em *ElectronManager) HandleActivate(appName, bundleID string) {
 
 // HandleDeactivate implements bridge.AppWatcher
 func (em *ElectronManager) HandleDeactivate(appName, bundleID string) {
-	logger.Debug("App deactivated", zap.String("bundle_id", bundleID))
+	logger.Debug("[Electron] App deactivated", zap.String("bundle_id", bundleID))
 }
 
 func ensureElectronAccessibility(bundleID string) bool {
