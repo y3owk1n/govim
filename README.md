@@ -67,10 +67,8 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Get rid of `PageHeight` in config and find a way to calculate available scroll for (c-d, c-u, gg, G) more reliably.
 - Homerow supports `continuous clicks`, is that something important?
 - Maybe forces to certain input source? I normally just use English, but maybe it's useful for others
-- Electron apps does not show hints on the first activation. Maybe there's some manual work need to be done after setting up electron support?
 - Cant actually make scroll works in Electron apps, what is the best approach? There are tons of random `AXGroup` where some is scrollable and some is not...
 - Sort of working in Mision Control, but it still shows hints from the frontmost app. How can we know that we are in mission control and ignore the frontmost app?
-- Firefox seems fine but still the first activation shows very minimal hint after setting it up, same as electron apps
 - Research if there's a good way to implemet visual hint mode where we can select text? Doing this with accessibility seems a little hard and vague
 - Add more actions to the menubar like `status`, `stop`, `start`, `current version`
 - Test suites, but am lazy for it
@@ -228,7 +226,7 @@ just bundle # if you prefer app bundle
 
 # You can then move to where you want
 mv ./bin/neru /usr/local/bin/neru # if you prefer cli only (bin path depends on your setup)
-mv ./build/Neru.app /Applications # if you prefer app bundle
+mv ./build/Neru.app /Applications/Neru.app # if you prefer app bundle
 
 # Run
 open -a Neru # if you prefer app bundle
@@ -431,19 +429,28 @@ Neru includes built-in support for Electron apps and Chromium browsers. (Note th
 - Zen
 
 > [!NOTE]
-> You can still add your browsers to `additional_bundles` if they aren't detected automatically.
+> You can still add your browsers to `additional_*_bundles` if they aren't detected automatically.
 > Right now, chromium, firefox and electron apps are all under the same key, in future we might split them out.
 
 **Configuration:**
 
 ```toml
-[accessibility.electron_support]
-enable = true  # Enable Electron support (off by default)
+[accessibility.additional_ax_support]
+enable = true  # Enable additional AX support (off by default)
 
-# Add additional Electron apps
-additional_bundles = [
+# Add additional Electron apps (AXManualAccessibility)
+additional_electron_bundles = [
     "com.example.app",          # Exact bundle ID
-    "com.company.prefix*"       # Wildcard for multiple apps
+]
+
+# Add additional Chromium apps (AXEnhancedUserInterface)
+additional_chromium_bundles = [
+    "com.example.app",          # Exact bundle ID
+]
+
+# Add additional Firefox apps (AXEnhancedUserInterface)
+additional_firefox_bundles = [
+    "com.example.app",          # Exact bundle ID
 ]
 ```
 
@@ -624,7 +631,7 @@ If hints don't appear in Electron app content (VS Code, Windsurf, etc.):
 1. Verify Electron support is enabled (it's on by default):
 
    ```toml
-   [accessibility.electron_support]
+   [accessibility.additional_ax_support]
    enable = true
    ```
 
@@ -635,8 +642,10 @@ If hints don't appear in Electron app content (VS Code, Windsurf, etc.):
 3. If your app isn't in the built-in list, add it manually:
 
    ```toml
-   [accessibility.electron_support]
-   additional_bundles = ["com.your.app"]
+   [accessibility.additional_ax_support]
+   additional_electron_bundles = ["com.your.app"]
+   additional_chromium_bundles = ["com.your.app"]
+   additional_firefox_bundles = ["com.your.app"]
    ```
 
 ### Viewing Logs
@@ -678,7 +687,9 @@ Neru is built with:
 neru/
 ├── cmd/neru/           # Main entry point
 ├── internal/
-│   ├── accessibility/   # Accessibility API wrappers
+│   ├── accessibility/  # Accessibility API wrappers
+│   ├── appwatcher/     # App watcher with callbacks
+│   ├── electron/       # Electron manager (includes Chromium and Firefox)
 │   ├── hints/          # Hint generation and display logic
 │   ├── scroll/         # Scroll mode implementation
 │   ├── hotkeys/        # Global hotkey management

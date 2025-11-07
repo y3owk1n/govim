@@ -33,11 +33,11 @@ type GeneralConfig struct {
 }
 
 type AccessibilityConfig struct {
-	AccessibilityCheckOnStart bool                  `toml:"accessibility_check_on_start"`
-	ClickableRoles            []string              `toml:"clickable_roles"`
-	ScrollableRoles           []string              `toml:"scrollable_roles"`
-	ElectronSupport           ElectronSupportConfig `toml:"electron_support"`
-	AppConfigs                []AppConfig           `toml:"app_configs"`
+	AccessibilityCheckOnStart bool                `toml:"accessibility_check_on_start"`
+	ClickableRoles            []string            `toml:"clickable_roles"`
+	ScrollableRoles           []string            `toml:"scrollable_roles"`
+	AdditionalAXSupport       AdditionalAXSupport `toml:"additional_ax_support"`
+	AppConfigs                []AppConfig         `toml:"app_configs"`
 }
 
 type AppConfig struct {
@@ -90,9 +90,11 @@ type LoggingConfig struct {
 	StructuredLogging bool   `toml:"structured_logging"`
 }
 
-type ElectronSupportConfig struct {
-	Enable            bool     `toml:"enable"`
-	AdditionalBundles []string `toml:"additional_bundles"`
+type AdditionalAXSupport struct {
+	Enable                    bool     `toml:"enable"`
+	AdditionalElectronBundles []string `toml:"additional_electron_bundles"`
+	AdditionalChromiumBundles []string `toml:"additional_chromium_bundles"`
+	AdditionalFirefoxBundles  []string `toml:"additional_firefox_bundles"`
 }
 
 // DefaultConfig returns the default configuration
@@ -136,9 +138,11 @@ func DefaultConfig() *Config {
 			ScrollableRoles: []string{
 				"AXScrollArea",
 			},
-			ElectronSupport: ElectronSupportConfig{
-				Enable:            false,
-				AdditionalBundles: []string{},
+			AdditionalAXSupport: AdditionalAXSupport{
+				Enable:                    false,
+				AdditionalElectronBundles: []string{},
+				AdditionalChromiumBundles: []string{},
+				AdditionalFirefoxBundles:  []string{},
 			},
 		},
 		Hotkeys: HotkeysConfig{
@@ -354,9 +358,21 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	for _, bundle := range c.Accessibility.ElectronSupport.AdditionalBundles {
+	for _, bundle := range c.Accessibility.AdditionalAXSupport.AdditionalElectronBundles {
 		if strings.TrimSpace(bundle) == "" {
-			return fmt.Errorf("accessibility.electron_support.additional_bundles cannot contain empty values")
+			return fmt.Errorf("accessibility.electron_support.additional_electron_bundles cannot contain empty values")
+		}
+	}
+
+	for _, bundle := range c.Accessibility.AdditionalAXSupport.AdditionalChromiumBundles {
+		if strings.TrimSpace(bundle) == "" {
+			return fmt.Errorf("accessibility.electron_support.additional_chromium_bundles cannot contain empty values")
+		}
+	}
+
+	for _, bundle := range c.Accessibility.AdditionalAXSupport.AdditionalFirefoxBundles {
+		if strings.TrimSpace(bundle) == "" {
+			return fmt.Errorf("accessibility.electron_support.additional_firefox_bundles cannot contain empty values")
 		}
 	}
 
