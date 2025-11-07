@@ -14,8 +14,6 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/y3owk1n/neru/internal/appwatcher"
-	"github.com/y3owk1n/neru/internal/bridge"
 	"go.uber.org/zap"
 )
 
@@ -27,92 +25,21 @@ type Callback func()
 
 // Manager manages global hotkeys
 type Manager struct {
-	watcher                  *appwatcher.Watcher
-	excludedApps             []string
-	callbacks                map[HotkeyID]Callback
-	mu                       sync.RWMutex
-	logger                   *zap.Logger
-	nextID                   HotkeyID
-	handleLaunchCallback     func(appName, bundleID string)
-	handleTerminateCallback  func(appName, bundleID string)
-	handleActivateCallback   func(appName, bundleID string)
-	handleDeactivateCallback func(appName, bundleID string)
+	callbacks map[HotkeyID]Callback
+	mu        sync.RWMutex
+	logger    *zap.Logger
+	nextID    HotkeyID
 }
 
 // NewManager creates a new hotkey manager
-func NewManager(logger *zap.Logger, excludedApps []string) *Manager {
+func NewManager(logger *zap.Logger) *Manager {
 	manager := &Manager{
-		watcher:                  appwatcher.New(),
-		excludedApps:             excludedApps,
-		callbacks:                make(map[HotkeyID]Callback),
-		logger:                   logger,
-		nextID:                   1,
-		handleLaunchCallback:     func(appName, bundleID string) {},
-		handleTerminateCallback:  func(appName, bundleID string) {},
-		handleActivateCallback:   func(appName, bundleID string) {},
-		handleDeactivateCallback: func(appName, bundleID string) {},
+		callbacks: make(map[HotkeyID]Callback),
+		logger:    logger,
+		nextID:    1,
 	}
-
-	bridge.SetAppWatcher(bridge.AppWatcher(manager))
 
 	return manager
-}
-
-// Start initialize
-func (m *Manager) Start() {
-	bridge.StartAppWatcher()
-}
-
-func (m *Manager) Stop() {
-	bridge.StopAppWatcher()
-}
-
-func (m *Manager) SetLaunchCallback(callback func(appName, bundleID string)) {
-	m.handleLaunchCallback = callback
-}
-
-func (m *Manager) SetTerminateCallback(callback func(appName, bundleID string)) {
-	m.handleTerminateCallback = callback
-}
-
-func (m *Manager) SetActivateCallback(callback func(appName, bundleID string)) {
-	m.handleActivateCallback = callback
-}
-
-func (m *Manager) SetDeactivateCallback(callback func(appName, bundleID string)) {
-	m.handleDeactivateCallback = callback
-}
-
-func (m *Manager) HandleLaunch(appName, bundleID string) {
-	m.logger.Debug("[Hotkey] App launched", zap.String("bundle_id", bundleID))
-
-	if m.handleLaunchCallback != nil {
-		m.handleLaunchCallback(appName, bundleID)
-	}
-}
-
-func (m *Manager) HandleTerminate(appName, bundleID string) {
-	m.logger.Debug("[Hotkey] App terminated", zap.String("bundle_id", bundleID))
-
-	if m.handleTerminateCallback != nil {
-		m.handleTerminateCallback(appName, bundleID)
-	}
-}
-
-func (m *Manager) HandleActivate(appName, bundleID string) {
-	m.logger.Debug("[Hotkey] App activated", zap.String("bundle_id", bundleID))
-
-	if m.handleActivateCallback != nil {
-		m.handleActivateCallback(appName, bundleID)
-	}
-}
-
-func (m *Manager) HandleDeactivate(appName, bundleID string) {
-	m.logger.Debug("[Hotkey] App deactivated", zap.String("bundle_id", bundleID))
-
-	if m.handleDeactivateCallback != nil {
-		m.handleDeactivateCallback(appName, bundleID)
-	}
 }
 
 // Register registers a global hotkey

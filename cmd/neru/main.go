@@ -12,6 +12,7 @@ import (
 
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/accessibility"
+	"github.com/y3owk1n/neru/internal/appwatcher"
 	_ "github.com/y3owk1n/neru/internal/bridge" // Import for CGo compilation
 	"github.com/y3owk1n/neru/internal/cli"
 	"github.com/y3owk1n/neru/internal/config"
@@ -48,6 +49,7 @@ type App struct {
 	eventTap         *eventtap.EventTap
 	ipcServer        *ipc.Server
 	electronManager  *electron.ElectronManager
+	appWatcher       *appwatcher.Watcher
 	currentMode      Mode
 	currentHints     *hints.HintCollection
 	hintInput        string
@@ -89,8 +91,11 @@ func NewApp(cfg *config.Config) (*App, error) {
 		zap.Strings("roles", cfg.Accessibility.ScrollableRoles))
 	accessibility.SetScrollableRoles(cfg.Accessibility.ScrollableRoles)
 
+	// Create app watcher
+	appWatcher := appwatcher.NewWatcher()
+
 	// Create hotkey manager
-	hotkeyMgr := hotkeys.NewManager(log, cfg.General.ExcludedApps)
+	hotkeyMgr := hotkeys.NewManager(log)
 	hotkeys.SetGlobalManager(hotkeyMgr)
 
 	// Create hint generator
@@ -111,6 +116,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 		config:            cfg,
 		logger:            log,
 		hotkeyManager:     hotkeyMgr,
+		appWatcher:        appWatcher,
 		hintGenerator:     hintGen,
 		hintOverlay:       hintOverlay,
 		scrollController:  scrollCtrl,
@@ -158,20 +164,44 @@ func (a *App) Run() error {
 	a.ipcServer.Start()
 	a.logger.Info("IPC server started")
 
-	if a.config.Accessibility.AdditionalAXSupport.Enable {
-		// Start electron manager
-		a.electronManager.Start()
-	}
-
-	a.logger.Info("Electron manager started")
+	// Start app watcher
+	a.appWatcher.Start()
+	a.logger.Info("App watcher started")
 
 	// Initialize hotkeys based on current focused app and exclusion
 	a.refreshHotkeysForAppOrCurrent("")
+	a.logger.Info("Hotkeys initialized")
 
-	a.hotkeyManager.Start()
+	// setup watcher callbacks
+	a.appWatcher.OnActivate(func(appName, bundleID string) {
+		a.logger.Debug("App activated", zap.String("bundle_id", bundleID))
 
-	a.hotkeyManager.SetActivateCallback(func(appName, bundleID string) {
+		// refresh hotkeys for app
 		go a.refreshHotkeysForAppOrCurrent(bundleID)
+		a.logger.Debug("Handled hotkey refresh")
+
+		if a.config.Accessibility.AdditionalAXSupport.Enable {
+			// handle electrons
+			if electron.ShouldEnableElectronSupport(bundleID, a.config.Accessibility.AdditionalAXSupport.AdditionalElectronBundles) {
+				electron.EnsureElectronAccessibility(bundleID)
+				a.logger.Debug("Handled electron accessibility")
+			}
+
+			// handle chromium
+			if electron.ShouldEnableChromiumSupport(bundleID, a.config.Accessibility.AdditionalAXSupport.AdditionalChromiumBundles) {
+				electron.EnsureChromiumAccessibility(bundleID)
+				a.logger.Debug("Handled chromium accessibility")
+			}
+
+			// handle firefox
+			if electron.ShouldEnableFirefoxSupport(bundleID, a.config.Accessibility.AdditionalAXSupport.AdditionalFirefoxBundles) {
+				electron.EnsureFirefoxAccessibility(bundleID)
+				a.logger.Debug("Handled firefox accessibility")
+			}
+
+		}
+
+		a.logger.Debug("Done handling app activation")
 	})
 
 	a.logger.Info("Neru is running")
@@ -1032,15 +1062,8 @@ func (a *App) Cleanup() {
 
 	// Unregister all hotkeys
 	a.hotkeyManager.UnregisterAll()
-	// Stop hotkey manager (app watcher)
-	a.hotkeyManager.Stop()
 
 	a.hintOverlay.Destroy()
-
-	// Stop electron manager
-	if a.electronManager != nil {
-		a.electronManager.Stop()
-	}
 
 	// Stop IPC server
 	if a.ipcServer != nil {
@@ -1053,6 +1076,9 @@ func (a *App) Cleanup() {
 	if a.eventTap != nil {
 		a.eventTap.Destroy()
 	}
+
+	// Stop app watcher
+	a.appWatcher.Stop()
 
 	// Close logger (syncs and closes log file)
 	if err := logger.Close(); err != nil {

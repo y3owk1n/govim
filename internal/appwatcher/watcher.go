@@ -2,6 +2,8 @@ package appwatcher
 
 import (
 	"sync"
+
+	"github.com/y3owk1n/neru/internal/bridge"
 )
 
 // Callback function type for application events
@@ -17,10 +19,20 @@ type Watcher struct {
 	deactivateCallbacks []AppCallback
 }
 
-// New creates a new application watcher
-func New() *Watcher {
+func NewWatcher() *Watcher {
 	w := &Watcher{}
+
+	bridge.SetAppWatcher(bridge.AppWatcher(w))
+
 	return w
+}
+
+func (w *Watcher) Start() {
+	bridge.StartAppWatcher()
+}
+
+func (w *Watcher) Stop() {
+	bridge.StopAppWatcher()
 }
 
 // OnLaunch registers a callback for application launch events
