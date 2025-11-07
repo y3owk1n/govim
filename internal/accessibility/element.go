@@ -4,7 +4,6 @@ package accessibility
 #cgo CFLAGS: -x objective-c
 #include "../bridge/accessibility.h"
 #include <stdlib.h>
-
 */
 import "C"
 
@@ -16,7 +15,6 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/y3owk1n/neru/internal/bridge"
 	"github.com/y3owk1n/neru/internal/logger"
 	"go.uber.org/zap"
 )
@@ -26,20 +24,12 @@ type Element struct {
 	ref unsafe.Pointer
 }
 
-const (
-	electronAttributeName = "AXManualAccessibility"
-	enhancedAttributeName = "AXEnhancedUserInterface"
-)
-
 var (
 	clickableRoles   = make(map[string]struct{})
 	clickableRolesMu sync.RWMutex
 
 	scrollableRoles   = make(map[string]struct{})
 	scrollableRolesMu sync.RWMutex
-
-	electronPIDsMu      sync.Mutex
-	electronEnabledPIDs = make(map[int]struct{})
 )
 
 // SetClickableRoles configures which accessibility roles are treated as clickable.
@@ -433,124 +423,6 @@ func (e *Element) GetBundleIdentifier() string {
 	defer C.freeString(cBundleID)
 
 	return C.GoString(cBundleID)
-}
-
-// EnsureElectronSupport enables manual accessibility on legacy Electron apps if needed.
-func EnsureElectronSupport(additionalBundles []string) bool {
-	window := GetFrontmostWindow()
-	if window == nil {
-		return false
-	}
-	defer window.Release()
-
-	windowInfo, err := window.GetInfo()
-	if err != nil {
-		logger.Debug("Failed to inspect frontmost window", zap.Error(err))
-		return false
-	}
-
-	pid := windowInfo.PID
-	if pid <= 0 {
-		return false
-	}
-
-	var bundleID string
-	if app := GetApplicationByPID(pid); app != nil {
-		bundleID = app.GetBundleIdentifier()
-		app.Release()
-	}
-
-	if bundleID == "" {
-		bundleID = window.GetBundleIdentifier()
-	}
-
-	if bundleID == "" {
-		clearElectronPID(pid)
-		logger.Debug("Unable to determine bundle identifier for frontmost app", zap.Int("pid", pid))
-		return false
-	}
-
-	if !ShouldEnableElectronSupport(bundleID, additionalBundles) {
-		clearElectronPID(pid)
-		logger.Debug("App does not require Electron support",
-			zap.String("bundle_id", bundleID),
-			zap.Int("pid", pid))
-		return false
-	}
-
-	logger.Debug("App requires Electron support",
-		zap.String("bundle_id", bundleID),
-		zap.Int("pid", pid))
-
-	return ensureElectronAccessibility(pid, bundleID)
-}
-
-func ensureElectronAccessibility(pid int, bundleID string) bool {
-	electronPIDsMu.Lock()
-	_, already := electronEnabledPIDs[pid]
-	electronPIDsMu.Unlock()
-
-	if already {
-		return true
-	}
-
-	successSetElectron := bridge.SetApplicationAttribute(pid, electronAttributeName, true)
-
-	if successSetElectron {
-		logger.Debug("Enabled AXManualAccessibility", zap.Int("pid", pid), zap.String("bundle_id", bundleID))
-	}
-
-	successSetEnhanced := bridge.SetApplicationAttribute(pid, enhancedAttributeName, true)
-
-	if successSetEnhanced {
-		logger.Debug("Enabled AXEnhancedUserInterface", zap.Int("pid", pid), zap.String("bundle_id", bundleID))
-	}
-
-	if !successSetEnhanced && !successSetElectron {
-		logger.Warn("Failed to enable AXManualAccessibility or AXEnhancedUserInterface", zap.Int("pid", pid), zap.String("bundle_id", bundleID))
-		return false
-	}
-
-	electronPIDsMu.Lock()
-	electronEnabledPIDs[pid] = struct{}{}
-	electronPIDsMu.Unlock()
-	return true
-}
-
-func clearElectronPID(pid int) {
-	electronPIDsMu.Lock()
-	_, had := electronEnabledPIDs[pid]
-	delete(electronEnabledPIDs, pid)
-	electronPIDsMu.Unlock()
-
-	if had {
-		bridge.SetApplicationAttribute(pid, electronAttributeName, false)
-		logger.Debug("Disabled AXManualAccessibility", zap.Int("pid", pid))
-	}
-}
-
-// ResetElectronSupport disables manual accessibility for all tracked Electron processes.
-func ResetElectronSupport() {
-	electronPIDsMu.Lock()
-	if len(electronEnabledPIDs) == 0 {
-		electronPIDsMu.Unlock()
-		return
-	}
-
-	pids := make([]int, 0, len(electronEnabledPIDs))
-	for pid := range electronEnabledPIDs {
-		pids = append(pids, pid)
-	}
-	electronEnabledPIDs = make(map[int]struct{})
-	electronPIDsMu.Unlock()
-
-	for _, pid := range pids {
-		if bridge.SetApplicationAttribute(pid, electronAttributeName, false) {
-			logger.Debug("Reset AXManualAccessibility", zap.Int("pid", pid))
-		} else {
-			logger.Debug("Failed to reset AXManualAccessibility", zap.Int("pid", pid))
-		}
-	}
 }
 
 // GetScrollBounds returns the scroll area bounds
