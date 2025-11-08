@@ -37,9 +37,9 @@ jobs:
         run: |
           mkdir -p bin
           # Build for darwin-arm64
-          env CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/neru-darwin-arm64 cmd/neru/main.go
+          env CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/neru-darwin-arm64 ./cmd/neru
           # Build for darwin-amd64
-          env CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/neru-darwin-amd64 cmd/neru/main.go
+          env CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/neru-darwin-amd64 ./cmd/neru
 
       # Bundle arm64 app
       - name: Bundle neru-darwin-arm64
