@@ -58,14 +58,12 @@ type HotkeysConfig struct {
 }
 
 type ScrollConfig struct {
-	ScrollSpeed         int     `toml:"scroll_speed"`
-	HighlightScrollArea bool    `toml:"highlight_scroll_area"`
-	HighlightColor      string  `toml:"highlight_color"`
-	HighlightWidth      int     `toml:"highlight_width"`
-	PageHeight          int     `toml:"page_height"`
-	HalfPageMultiplier  float64 `toml:"half_page_multiplier"`
-	FullPageMultiplier  float64 `toml:"full_page_multiplier"`
-	ScrollToEdgeDelta   int     `toml:"scroll_to_edge_delta"`
+	ScrollStep          int    `toml:"scroll_step"`
+	ScrollStepHalf      int    `toml:"scroll_step_half"`
+	ScrollStepFull      int    `toml:"scroll_step_full"`
+	HighlightScrollArea bool   `toml:"highlight_scroll_area"`
+	HighlightColor      string `toml:"highlight_color"`
+	HighlightWidth      int    `toml:"highlight_width"`
 }
 
 type HintsConfig struct {
@@ -192,14 +190,12 @@ func DefaultConfig() *Config {
 			ScrollHintsBorderColor:      "#000000",
 		},
 		Scroll: ScrollConfig{
-			ScrollSpeed:         50,
+			ScrollStep:          50,
+			ScrollStepHalf:      500,
+			ScrollStepFull:      1000000,
 			HighlightScrollArea: true,
 			HighlightColor:      "#FF0000",
 			HighlightWidth:      2,
-			PageHeight:          1200,
-			HalfPageMultiplier:  0.5,
-			FullPageMultiplier:  0.9,
-			ScrollToEdgeDelta:   1000000000,
 		},
 		Logging: LoggingConfig{
 			LogLevel:          "info",
@@ -362,17 +358,14 @@ func (c *Config) Validate() error {
 	}
 
 	// Validate scroll settings
-	if c.Scroll.ScrollSpeed < 1 {
+	if c.Scroll.ScrollStep < 1 {
 		return fmt.Errorf("scroll.scroll_speed must be at least 1")
 	}
-	if c.Scroll.PageHeight < 100 {
-		return fmt.Errorf("scroll.page_height must be at least 100")
+	if c.Scroll.ScrollStepHalf < 1 {
+		return fmt.Errorf("scroll.half_page_multiplier must be at least 1")
 	}
-	if c.Scroll.HalfPageMultiplier <= 0 || c.Scroll.HalfPageMultiplier > 1 {
-		return fmt.Errorf("scroll.half_page_multiplier must be between 0 and 1")
-	}
-	if c.Scroll.FullPageMultiplier <= 0 || c.Scroll.FullPageMultiplier > 1 {
-		return fmt.Errorf("scroll.full_page_multiplier must be between 0 and 1")
+	if c.Scroll.ScrollStepFull < 1 {
+		return fmt.Errorf("scroll.full_page_multiplier must be at least 1")
 	}
 
 	// Validate hints settings
