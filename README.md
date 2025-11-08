@@ -589,7 +589,7 @@ scroll_step_half = 500
 
 # Full-page scroll amount for gg/G in pixels
 # Normally this will be an extremely large number
-scroll_to_edge_delta = 1000000
+scroll_step_full = 1000000
 
 # Highlight the active scroll area with a border
 # When true, draws a border around the active app
