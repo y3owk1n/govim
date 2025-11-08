@@ -64,4 +64,6 @@ int setApplicationAttribute(int pid, const char* attribute, int value);
 CGRect getScrollBounds(void* element);
 int scrollAtCursor(int deltaX, int deltaY);
 
+bool isMissionControlActive();
+
 #endif // ACCESSIBILITY_H

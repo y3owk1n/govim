@@ -62,11 +62,9 @@ This is an intentional design choice to keep the project lean, maintainable, and
 
 ### Consideration (NOT roadmap)
 
-- Consider zIndex for hints on different layers? There might be multiple layers when we are considering `Menubar`, `Dock` and `Notification bar`
 - Better UI representation for action menu (maybe auto edge detection like tooltip in browser, that will place itself around the element based on the space available around it)
 - Find a way to auto deduplicate hints that are targeting the same point
 - Homerow supports `continuous clicks`, is that something important?
-- Sort of working in Mision Control, but it still shows hints from the frontmost app. How can we know that we are in mission control and ignore the frontmost app?
 - Research if there's a good way to implemet visual hint mode where we can select text? Doing this with accessibility seems a little hard and vague
 - Test suites, but am lazy for it
 - Implements launch agent with `start-service` and `stop-service`? Though I am fine just doing it in my nix config directly

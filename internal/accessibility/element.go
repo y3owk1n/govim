@@ -538,3 +538,11 @@ func (e *Element) IsScrollable() bool {
 
 	return ok
 }
+
+// Check if is mission control is active
+// Hopefully works on all OS versions
+// Works on Tohoe 26.1 as of now
+func IsMissionControlActive() bool {
+	result := C.isMissionControlActive()
+	return bool(result)
+}
