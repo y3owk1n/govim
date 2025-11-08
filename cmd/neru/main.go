@@ -644,6 +644,34 @@ func (a *App) handleKeyPress(key string) {
 		return
 	}
 
+	// Handle Tab key
+	if key == "\t" {
+		a.logger.Debug("Tab pressed in mode", zap.String("mode", a.getCurrModeString()))
+
+		// If we are not in scroll mode yet, we can tab to scroll the current cursor position directly
+		if a.currentMode == ModeScroll && !a.canScroll {
+			a.logger.Debug("Switching to scroll mode from scroll hints")
+			a.canScroll = true
+			a.hintOverlay.Clear()
+			a.showScroll()
+			return
+		}
+
+		// If we are in hint mode, we can tab to hint with actions
+		if a.currentMode == ModeHint {
+			a.logger.Debug("Switching to hint with actions mode from hints")
+			a.activateHintMode(ModeHintWithActions)
+			return
+		}
+
+		// If we are in hint with actions mode, we can tab to hint
+		if a.currentMode == ModeHintWithActions && a.selectedHint == nil {
+			a.logger.Debug("Switching to hint mode from hint with actions")
+			a.activateHintMode(ModeHint)
+			return
+		}
+	}
+
 	a.handleHintKey(key)
 }
 
@@ -657,13 +685,6 @@ func (a *App) handleHintKey(key string) {
 
 	if a.canScroll {
 		a.handleScrollKey(key)
-		return
-	}
-
-	if a.currentMode == ModeScroll && !a.canScroll && key == "\t" {
-		a.canScroll = true
-		a.hintOverlay.Clear()
-		a.showScroll()
 		return
 	}
 

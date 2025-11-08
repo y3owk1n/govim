@@ -263,6 +263,7 @@ neru launch # if you prefer cli only
 4. Restore cursor to previous position (if enabled)
 
 Press `esc` anytime to quit the hint selection.
+Press `tab` to switch to hint mode with actions.
 
 ### Hint Mode (Action Selection)
 
@@ -279,6 +280,7 @@ Press `esc` anytime to quit the hint selection.
 4. Restore cursor to previous position (if enabled)
 
 Press `esc` anytime to quit the hint selection.
+Press `tab` to switch to hint mode.
 
 ### Scroll Mode
 
