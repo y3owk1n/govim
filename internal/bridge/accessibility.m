@@ -937,3 +937,101 @@ int scrollAtCursor(int deltaX, int deltaY) {
 
     return 0;
 }
+
+// Try to detect if Mission Control is active
+// Works on Sequoia 15.1 (Tahoe)
+// Maybe works on older versions as per stackoverflow result (https://stackoverflow.com/questions/12683225/osx-how-to-detect-if-mission-control-is-running)
+bool isMissionControlActive() {
+    bool result = false;
+
+    CFArrayRef windowList = CGWindowListCopyWindowInfo(
+        kCGWindowListOptionAll,
+        kCGNullWindowID
+    );
+
+    if (!windowList) {
+        return false;
+    }
+
+    // Get screen size
+    NSScreen *mainScreen = [NSScreen mainScreen];
+    if (!mainScreen) {
+        CFRelease(windowList);
+        return false;
+    }
+
+    CGSize screenSize = mainScreen.frame.size;
+    CFIndex count = CFArrayGetCount(windowList);
+    int fullscreenDockWindows = 0;
+    int highLayerDockWindows = 0;
+
+    for (CFIndex i = 0; i < count; i++) {
+        CFDictionaryRef windowInfo = (CFDictionaryRef)CFArrayGetValueAtIndex(windowList, i);
+        if (!windowInfo) continue;
+
+        CFStringRef ownerName = (CFStringRef)CFDictionaryGetValue(
+            windowInfo,
+            kCGWindowOwnerName
+        );
+
+        if (ownerName && CFStringCompare(ownerName, CFSTR("Dock"), 0) == kCFCompareEqualTo) {
+            CFStringRef windowName = (CFStringRef)CFDictionaryGetValue(
+                windowInfo,
+                kCGWindowName
+            );
+
+            CFDictionaryRef bounds = (CFDictionaryRef)CFDictionaryGetValue(
+                windowInfo,
+                kCGWindowBounds
+            );
+
+            CFNumberRef windowLayer = (CFNumberRef)CFDictionaryGetValue(
+                windowInfo,
+                kCGWindowLayer
+            );
+
+            if (bounds) {
+                double x = 0, y = 0, w = 0, h = 0;
+
+                CFNumberRef xValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("X"));
+                CFNumberRef yValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("Y"));
+                CFNumberRef wValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("Width"));
+                CFNumberRef hValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("Height"));
+
+                if (xValue) CFNumberGetValue(xValue, kCFNumberDoubleType, &x);
+                if (yValue) CFNumberGetValue(yValue, kCFNumberDoubleType, &y);
+                if (wValue) CFNumberGetValue(wValue, kCFNumberDoubleType, &w);
+                if (hValue) CFNumberGetValue(hValue, kCFNumberDoubleType, &h);
+
+                // check for Y < 0 (works on older macOS... maybe?)
+                if (y < 0) {
+                    result = true;
+                    break;
+                }
+
+                // count fullscreen Dock windows (works on Sequoia 15.1)
+                bool isFullscreen = (w >= screenSize.width * 0.95 && h >= screenSize.height * 0.95);
+                bool hasNoName = (!windowName || CFStringGetLength(windowName) == 0);
+
+                if (isFullscreen && hasNoName && windowLayer) {
+                    int layer = 0;
+                    CFNumberGetValue(windowLayer, kCFNumberIntType, &layer);
+
+                    fullscreenDockWindows++;
+                    if (layer >= 18 && layer <= 20) {
+                        highLayerDockWindows++;
+                    }
+                }
+            }
+        }
+    }
+
+    CFRelease(windowList);
+
+    // Try to return the results from old or new OS method
+    if (!result && fullscreenDockWindows >= 2 && highLayerDockWindows >= 2) {
+        result = true;
+    }
+
+    return result;
+}

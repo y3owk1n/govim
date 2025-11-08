@@ -482,58 +482,74 @@ func (a *App) activateHintMode(mode Mode) {
 	var elements []*accessibility.TreeNode
 
 	if mode == ModeHint || mode == ModeHintWithActions {
-		// Get clickable elements
-		roles := accessibility.GetClickableRoles()
-		a.logger.Debug("Scanning for clickable elements",
-			zap.Strings("roles", roles))
+		if !accessibility.IsMissionControlActive() {
+			a.logger.Info("Mission control is not active, proceed to scan for frontmost window clickable elements")
 
-		clickableElements, err := accessibility.GetClickableElements()
-		if err != nil {
-			a.logger.Error("Failed to get clickable elements", zap.Error(err))
-			return
+			// Get clickable elements
+			roles := accessibility.GetClickableRoles()
+			a.logger.Debug("Scanning for clickable elements",
+				zap.Strings("roles", roles))
+
+			clickableElements, err := accessibility.GetClickableElements()
+			if err != nil {
+				a.logger.Error("Failed to get clickable elements", zap.Error(err))
+				return
+			}
+
+			elements = clickableElements
+
+			a.logger.Info("Found clickable elements", zap.Int("count", len(elements)))
+		} else {
+			a.logger.Info("Mission control is active, ignore frontmost window clickable elements")
 		}
-
-		elements = clickableElements
-
-		a.logger.Info("Found clickable elements", zap.Int("count", len(elements)))
 	}
 
 	if mode == ModeScroll {
-		// Get scrollable elements
-		roles := accessibility.GetScrollableRoles()
-		a.logger.Debug("Scanning for scrollable elements",
-			zap.Strings("roles", roles))
+		if !accessibility.IsMissionControlActive() {
+			a.logger.Info("Mission control is not active, proceed to scan for scrollable elements")
+			// Get scrollable elements
+			roles := accessibility.GetScrollableRoles()
+			a.logger.Debug("Scanning for scrollable elements",
+				zap.Strings("roles", roles))
 
-		scrollableElements, err := accessibility.GetScrollableElements()
-		if err != nil {
-			a.logger.Error("Failed to get scrollable elements", zap.Error(err))
-			return
+			scrollableElements, err := accessibility.GetScrollableElements()
+			if err != nil {
+				a.logger.Error("Failed to get scrollable elements", zap.Error(err))
+				return
+			}
+
+			elements = scrollableElements
+
+			a.logger.Info("Found scrollable elements", zap.Int("count", len(elements)))
+		} else {
+			a.logger.Info("Mission control is active, ignore scrollable elements")
 		}
-
-		elements = scrollableElements
-
-		a.logger.Info("Found scrollable elements", zap.Int("count", len(elements)))
 	}
 
 	if mode != ModeScroll {
-		// Optionally include menu bar elements
-		if a.config.General.IncludeMenubarHints {
-			if mbElems, merr := accessibility.GetMenuBarClickableElements(); merr == nil {
-				elements = append(elements, mbElems...)
-				a.logger.Debug("Included menubar elements", zap.Int("count", len(mbElems)))
-			} else {
-				a.logger.Warn("Failed to get menubar elements", zap.Error(merr))
-			}
-
-			// Optionally include additional menubar elements
-			for _, bundleID := range a.config.General.AdditionalMenubarHintsTargets {
-				if additionalElems, derr := accessibility.GetClickableElementsFromBundleID(bundleID); derr == nil {
-					elements = append(elements, additionalElems...)
-					a.logger.Debug("Included additional menubar elements", zap.Int("count", len(additionalElems)))
+		if !accessibility.IsMissionControlActive() {
+			a.logger.Info("Mission control is not active, proceed to scan for menubar elements")
+			// Optionally include menu bar elements
+			if a.config.General.IncludeMenubarHints {
+				if mbElems, merr := accessibility.GetMenuBarClickableElements(); merr == nil {
+					elements = append(elements, mbElems...)
+					a.logger.Debug("Included menubar elements", zap.Int("count", len(mbElems)))
 				} else {
-					a.logger.Warn("Failed to get additional menubar elements", zap.Error(derr))
+					a.logger.Warn("Failed to get menubar elements", zap.Error(merr))
+				}
+
+				// Optionally include additional menubar elements
+				for _, bundleID := range a.config.General.AdditionalMenubarHintsTargets {
+					if additionalElems, derr := accessibility.GetClickableElementsFromBundleID(bundleID); derr == nil {
+						elements = append(elements, additionalElems...)
+						a.logger.Debug("Included additional menubar elements", zap.Int("count", len(additionalElems)))
+					} else {
+						a.logger.Warn("Failed to get additional menubar elements", zap.Error(derr))
+					}
 				}
 			}
+		} else {
+			a.logger.Info("Mission control is active, ignore menubar elements")
 		}
 
 		// Optionally include Dock elements
@@ -547,13 +563,18 @@ func (a *App) activateHintMode(mode Mode) {
 		}
 
 		// Optionally include Notification Center elements
-		if a.config.General.IncludeNCHints {
-			if ncElems, derr := accessibility.GetClickableElementsFromBundleID("com.apple.notificationcenterui"); derr == nil {
-				elements = append(elements, ncElems...)
-				a.logger.Debug("Included nc elements", zap.Int("count", len(ncElems)))
-			} else {
-				a.logger.Warn("Failed to get nc elements", zap.Error(derr))
+		if accessibility.IsMissionControlActive() {
+			a.logger.Info("Mission control is active, ignore nc elements")
+			if a.config.General.IncludeNCHints {
+				if ncElems, derr := accessibility.GetClickableElementsFromBundleID("com.apple.notificationcenterui"); derr == nil {
+					elements = append(elements, ncElems...)
+					a.logger.Debug("Included nc elements", zap.Int("count", len(ncElems)))
+				} else {
+					a.logger.Warn("Failed to get nc elements", zap.Error(derr))
+				}
 			}
+		} else {
+			a.logger.Info("Mission control is not active, proceed to scan for nc elements")
 		}
 	}
 
