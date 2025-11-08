@@ -1067,20 +1067,26 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 
 	case "status":
 		cfgPath := a.ConfigPath
+
 		if cfgPath == "" {
 			// Fallback to the standard config path if daemon wasn't started
 			// with an explicit --config
-			cfgPath = config.GetConfigPath()
+			cfgPath = config.FindConfigFile()
 		}
 
-		// Expand ~ to home dir and resolve relative paths to absolute
-		if strings.HasPrefix(cfgPath, "~") {
-			if home, err := os.UserHomeDir(); err == nil {
-				cfgPath = filepath.Join(home, cfgPath[1:])
+		// If config file doesn't exist, return default config
+		if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
+			cfgPath = "No config file found, using default config without config file"
+		} else {
+			// Expand ~ to home dir and resolve relative paths to absolute
+			if strings.HasPrefix(cfgPath, "~") {
+				if home, err := os.UserHomeDir(); err == nil {
+					cfgPath = filepath.Join(home, cfgPath[1:])
+				}
 			}
-		}
-		if abs, err := filepath.Abs(cfgPath); err == nil {
-			cfgPath = abs
+			if abs, err := filepath.Abs(cfgPath); err == nil {
+				cfgPath = abs
+			}
 		}
 
 		statusData := map[string]any{

@@ -211,7 +211,7 @@ func Load(path string) (*Config, error) {
 
 	// If path is empty, try default locations
 	if path == "" {
-		path = findConfigFile()
+		path = FindConfigFile()
 	}
 
 	// If config file doesn't exist, return default config
@@ -255,7 +255,7 @@ func Load(path string) (*Config, error) {
 }
 
 // findConfigFile searches for config file in default locations
-func findConfigFile() string {
+func FindConfigFile() string {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return ""
@@ -274,17 +274,6 @@ func findConfigFile() string {
 	}
 
 	return ""
-}
-
-// GetConfigPath returns the expected config file path
-func GetConfigPath() string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-
-	// Prefer macOS standard location
-	return filepath.Join(homeDir, "Library", "Application Support", "neru", "config.toml")
 }
 
 // Validate validates the configuration
