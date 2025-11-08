@@ -16,7 +16,7 @@ default: build
 build:
     @echo "Building Neru..."
     @echo "Version: {{ VERSION }}"
-    CGO_ENABLED=1 go build -ldflags="{{ LDFLAGS }}" -o bin/neru cmd/neru/main.go
+    CGO_ENABLED=1 go build -ldflags="{{ LDFLAGS }}" -o bin/neru ./cmd/neru
     @echo "✓ Build complete: bin/neru"
 
 # Build with optimizations for release
@@ -25,13 +25,13 @@ release:
     @echo "Version: {{ VERSION }}"
     @echo "Commit: {{ GIT_COMMIT }}"
     @echo "Date: {{ BUILD_DATE }}"
-    CGO_ENABLED=1 go build -ldflags="{{ LDFLAGS }}" -trimpath -o bin/neru cmd/neru/main.go
+    CGO_ENABLED=1 go build -ldflags="{{ LDFLAGS }}" -trimpath -o bin/neru ./cmd/neru
     @echo "✓ Release build complete: bin/neru"
 
 # Build with custom version
 build-version VERSION_OVERRIDE:
     @echo "Building Neru with custom version..."
-    CGO_ENABLED=1 go build -ldflags="-s -w -X github.com/y3owk1n/neru/internal/cli.Version={{ VERSION_OVERRIDE }} -X github.com/y3owk1n/neru/internal/cli.GitCommit={{ GIT_COMMIT }} -X github.com/y3owk1n/neru/internal/cli.BuildDate={{ BUILD_DATE }}" -trimpath -o bin/neru cmd/neru/main.go
+    CGO_ENABLED=1 go build -ldflags="-s -w -X github.com/y3owk1n/neru/internal/cli.Version={{ VERSION_OVERRIDE }} -X github.com/y3owk1n/neru/internal/cli.GitCommit={{ GIT_COMMIT }} -X github.com/y3owk1n/neru/internal/cli.BuildDate={{ BUILD_DATE }}" -trimpath -o bin/neru ./cmd/neru
     @echo "✓ Build complete: bin/neru (version: {{ VERSION_OVERRIDE }})"
 
 # Bundle the application
