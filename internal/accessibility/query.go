@@ -21,15 +21,6 @@ func rectFromInfo(info *ElementInfo) image.Rectangle {
 	)
 }
 
-func expandRectangle(rect image.Rectangle, padding int) image.Rectangle {
-	return image.Rect(
-		rect.Min.X-padding,
-		rect.Min.Y-padding,
-		rect.Max.X+padding,
-		rect.Max.Y+padding,
-	)
-}
-
 // NOTE: This is a debugging function that prints the entire accessibility tree structure.
 // Print the entire tree structure for debugging
 func PrintTree(node *TreeNode, depth int) {
@@ -62,14 +53,6 @@ func GetClickableElements() ([]*TreeNode, error) {
 
 	opts := DefaultTreeOptions()
 	opts.Cache = globalCache
-	opts.FilterFunc = func(info *ElementInfo) bool {
-		// Filter out very small elements
-		if info.Size.X < 10 || info.Size.Y < 10 {
-			return false
-		}
-
-		return true
-	}
 
 	tree, err := BuildTree(window, opts)
 	if err != nil {
@@ -122,13 +105,6 @@ func GetMenuBarClickableElements() ([]*TreeNode, error) {
 
 	opts := DefaultTreeOptions()
 	opts.Cache = globalCache
-	// Filter out tiny elements
-	opts.FilterFunc = func(info *ElementInfo) bool {
-		if info.Size.X < 6 || info.Size.Y < 6 {
-			return false
-		}
-		return true
-	}
 
 	tree, err := BuildTree(menubar, opts)
 	if err != nil {
@@ -154,12 +130,6 @@ func GetClickableElementsFromBundleID(bundleID string) ([]*TreeNode, error) {
 	opts := DefaultTreeOptions()
 	opts.Cache = globalCache
 	opts.IncludeOutOfBounds = true
-	opts.FilterFunc = func(info *ElementInfo) bool {
-		if info.Size.X < 6 || info.Size.Y < 6 {
-			return false
-		}
-		return true
-	}
 
 	tree, err := BuildTree(app, opts)
 	if err != nil {
