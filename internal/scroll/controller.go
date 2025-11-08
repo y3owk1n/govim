@@ -22,7 +22,6 @@ type ScrollAmount int
 const (
 	AmountChar ScrollAmount = iota
 	AmountHalfPage
-	AmountFullPage
 	AmountEnd
 )
 
@@ -66,17 +65,14 @@ func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount) (int, in
 
 	switch amount {
 	case AmountChar:
-		// Single scroll (j/k) - use scroll_speed from config
-		baseScroll = c.config.ScrollSpeed
+		// Single scroll (j/k)
+		baseScroll = c.config.ScrollStep
 	case AmountHalfPage:
-		// Half page (Ctrl+D/U) - use page_height * half_page_multiplier
-		baseScroll = int(float64(c.config.PageHeight) * c.config.HalfPageMultiplier)
-	case AmountFullPage:
-		// Full page - use page_height * full_page_multiplier
-		baseScroll = int(float64(c.config.PageHeight) * c.config.FullPageMultiplier)
+		// Half page (Ctrl+D/U)
+		baseScroll = c.config.ScrollStepHalf
 	case AmountEnd:
-		// Top/Bottom - use page_height * end_multiplier
-		baseScroll = int(c.config.ScrollToEdgeDelta)
+		// Top/Bottom (gg/G)
+		baseScroll = c.config.ScrollStepFull
 	}
 
 	// Note: For CGEvent scroll wheel, positive = up/left, negative = down/right
@@ -150,14 +146,4 @@ func (c *Controller) ScrollToTop() error {
 // ScrollToBottom scrolls to the bottom (G in Vim)
 func (c *Controller) ScrollToBottom() error {
 	return c.Scroll(DirectionDown, AmountEnd)
-}
-
-// ScrollUpFullPage scrolls up by full page
-func (c *Controller) ScrollUpFullPage() error {
-	return c.Scroll(DirectionUp, AmountFullPage)
-}
-
-// ScrollDownFullPage scrolls down by full page
-func (c *Controller) ScrollDownFullPage() error {
-	return c.Scroll(DirectionDown, AmountFullPage)
 }

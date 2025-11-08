@@ -65,7 +65,6 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Consider zIndex for hints on different layers? There might be multiple layers when we are considering `Menubar`, `Dock` and `Notification bar`
 - Better UI representation for action menu (maybe auto edge detection like tooltip in browser, that will place itself around the element based on the space available around it)
 - Find a way to auto deduplicate hints that are targeting the same point
-- Get rid of `PageHeight` in config and find a way to calculate available scroll for (c-d, c-u, gg, G) more reliably.
 - Homerow supports `continuous clicks`, is that something important?
 - Sort of working in Mision Control, but it still shows hints from the frontmost app. How can we know that we are in mission control and ignore the frontmost app?
 - Research if there's a good way to implemet visual hint mode where we can select text? Doing this with accessibility seems a little hard and vague
@@ -581,11 +580,18 @@ Note that this is a simple implementation for scrolling, not exactly working fin
 ```toml
 [scroll]
 # Base scroll amount for j/k keys in pixels
-# Minimum: 1. Increase for faster per-press scrolling.
-scroll_speed = 50
+scroll_step = 50
+
+# Half-page scroll amount for Ctrl+D/U in pixels
+scroll_step_half = 500
+
+# Full-page scroll amount for gg/G in pixels
+# Normally this will be an extremely large number
+scroll_to_edge_delta = 1000000
 
 # Highlight the active scroll area with a border
-# When true, draws a border around the detected scroll container.
+# When true, draws a border around the active app
+# This is just for visual feedback, it doesn't affect the actual scrolling
 highlight_scroll_area = true
 
 # Highlight border color (hex format)
@@ -593,21 +599,6 @@ highlight_color = "#FF0000"
 
 # Highlight border width in pixels
 highlight_width = 2
-
-# Estimated page height in pixels (used for calculating Ctrl+D/U scroll distance)
-# Increase if your app windows are taller; decrease for short panes.
-page_height = 1200
-
-# Half-page scroll multiplier for Ctrl+D/U (0.5 = 600px with default page_height)
-# Valid range: (0, 1]
-half_page_multiplier = 0.5
-
-# Full-page scroll multiplier (not currently used)
-# Valid range: (0, 1]
-full_page_multiplier = 0.9
-
-# Pixels to scroll to for gg/G
-scroll_to_edge_delta = 1000000000
 ```
 
 ## 🖥️ CLI Usage
@@ -826,6 +817,7 @@ Neru is inspired by these excellent projects:
 - [Vimac](https://github.com/dexterleng/vimac) - Vim-style keyboard navigation
 - [Shortcat](https://shortcat.app/) - Keyboard productivity tool
 - [Vimium](https://github.com/philc/vimium) - Vim bindings for browsers
+- [Vifari](https://github.com/dzirtusss/vifari) - Vimium/Vimari for Safari without browser extension in pure Lua
 
 ## 🌟 Star History
 

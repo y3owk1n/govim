@@ -190,11 +190,18 @@ scroll_hints_border_color = "#000000"
 
 [scroll]
 # Base scroll amount for j/k keys in pixels
-# Minimum: 1. Increase for faster per-press scrolling.
-scroll_speed = 50
+scroll_step = 50
+
+# Half-page scroll amount for Ctrl+D/U in pixels
+scroll_step_half = 500
+
+# Full-page scroll amount for gg/G in pixels
+# Normally this will be an extremely large number
+scroll_to_edge_delta = 1000000
 
 # Highlight the active scroll area with a border
 # When true, draws a border around the active app.
+# This is just for visual feedback, it doesn't affect the actual scrolling
 highlight_scroll_area = true
 
 # Highlight border color (hex format)
@@ -202,21 +209,6 @@ highlight_color = "#FF0000"
 
 # Highlight border width in pixels
 highlight_width = 2
-
-# Estimated page height in pixels (used for calculating Ctrl+D/U scroll distance)
-# Increase if your app windows are taller; decrease for short panes.
-page_height = 1200
-
-# Half-page scroll multiplier for Ctrl+D/U (0.5 = 600px with default page_height)
-# Valid range: (0, 1]
-half_page_multiplier = 0.5
-
-# Full-page scroll multiplier (not currently used)
-# Valid range: (0, 1]
-full_page_multiplier = 0.9
-
-# Pixels to scroll to for gg/G
-scroll_to_edge_delta = 1000000000
 
 [logging]
 # Log level: "debug", "info", "warn", "error"
