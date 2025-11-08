@@ -61,8 +61,6 @@ func BuildTree(root *Element, opts TreeOptions) (*TreeNode, error) {
 
 	// Calculate window bounds for spatial filtering
 	windowBounds := rectFromInfo(info)
-	// Add padding to catch elements slightly outside
-	windowBounds = expandRectangle(windowBounds, 0)
 
 	node := &TreeNode{
 		Element: root,
@@ -228,16 +226,24 @@ func buildChildrenParallel(parent *TreeNode, children []*Element, depth int, opt
 
 // shouldIncludeElement combines all filtering logic into one function
 func shouldIncludeElement(info *ElementInfo, opts TreeOptions, windowBounds image.Rectangle) bool {
-	// Skip elements that are completely outside the window bounds
-	// UNLESS IncludeOutOfBounds is true
 	if !opts.IncludeOutOfBounds {
 		elementRect := rectFromInfo(info)
-		if !elementRect.Overlaps(windowBounds) {
-			return false
+
+		// Filter out zero-sized interactive elements (they're broken/invalid)
+		if elementRect.Dx() == 0 || elementRect.Dy() == 0 {
+			if interactiveLeafRoles[info.Role] {
+				return false
+			}
+		}
+
+		// For non-zero sized elements, check if they overlap with window bounds
+		if elementRect.Dx() > 0 && elementRect.Dy() > 0 {
+			if !elementRect.Overlaps(windowBounds) {
+				return false
+			}
 		}
 	}
 
-	// Apply filter if provided
 	if opts.FilterFunc != nil && !opts.FilterFunc(info) {
 		return false
 	}
