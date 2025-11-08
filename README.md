@@ -57,7 +57,6 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - ⚡ **Performance** - Built with native macOS APIs for instant response
 - 🛠️ **Highly Customizable** - Configure hints, hotkeys, and behaviors via TOML
 - 🚫 **App Exclusion** - Exclude specific apps where Neru shouldn't activate
-- 🎨 **Minimal UI** - Non-intrusive hints that stay out of your way
 - 💬 **IPC Control** - Control the daemon via CLI commands
 
 ### Consideration (NOT roadmap)
@@ -69,6 +68,7 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Test suites, but am lazy for it
 - Implements launch agent with `start-service` and `stop-service`? Though I am fine just doing it in my nix config directly
 - Better app icon and menubar icon
+- Maybe make it a full-fledged vim mode? Just like [Vimnav.spoon](https://github.com/y3owk1n/vimnav.spoon)
 
 ## 🚀 Installation
 
@@ -664,6 +664,29 @@ The CLI uses Unix domain sockets (`/tmp/neru.sock`) for:
 - Proper error handling when daemon isn't running
 
 ## 🔧 Troubleshooting
+
+### Is App X Supported?
+
+Most app should work out of the box (especially native apps), if it doesn't, probably adding to the list of `accessibility.additional_ax_support` might work.
+
+#### Apps that work for sure (tested by me)
+
+- Native macOS apps should all work, the following are known to work:
+  - Finder
+  - Safari
+  - Activity Monitor
+  - System Settings
+  - Mail
+  - Notes
+  - Password
+- VS Code
+- Windsurf
+- Helium Browser
+- Firefox Browser
+- Adobe Illustrator 2025
+- Adobe Photoshop 2025
+- Orbstack
+- WhatsApp
 
 ### Accessibility Permissions Not Working
 
