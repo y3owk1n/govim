@@ -554,13 +554,13 @@ opacity = 0.95
 # Default colors for hints (used when no style is specified, e.g. in normal hint mode)
 background_color = "#FFD700"
 text_color = "#000000"
-matched_text_color = "#0066CC" # Matched text color - color for characters that have been typed
+matched_text_color = "#737373" # Matched text color - color for characters that have been typed
 border_color = "#000000"
 
 # Action overlay colors (used when selecting click type)
 action_background_color = "#66CCFF"
 action_text_color = "#000000"
-action_matched_text_color = "#003366"
+action_matched_text_color = "#005585"
 action_border_color = "#000000"
 
 # Action keys for hint mode with actions (hardcoded):
