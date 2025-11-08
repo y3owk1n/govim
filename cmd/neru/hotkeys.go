@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os/exec"
 	"strings"
 
@@ -37,31 +38,11 @@ func (a *App) registerHotkeys() error {
 					}
 				}()
 
-				// Exec mode: run arbitrary bash command
-				if strings.HasPrefix(bindAction, "exec ") {
-					cmdStr := strings.TrimSpace(strings.TrimPrefix(bindAction, "exec"))
-					if cmdStr == "" {
-						a.logger.Error("hotkey exec has empty command", zap.String("key", bindKey))
-						return
-					}
-
-					a.logger.Debug("Executing shell command from hotkey", zap.String("key", bindKey), zap.String("cmd", cmdStr))
-					cmd := exec.Command("/bin/bash", "-lc", cmdStr)
-					out, err := cmd.CombinedOutput()
-					if err != nil {
-						a.logger.Error("hotkey exec failed", zap.String("key", bindKey), zap.String("cmd", cmdStr), zap.ByteString("output", out), zap.Error(err))
-					} else {
-						a.logger.Info("hotkey exec completed", zap.String("key", bindKey), zap.String("cmd", cmdStr), zap.ByteString("output", out))
-					}
-					return
-				}
-
-				// Otherwise treat the action as an internal neru command and dispatch it
-				resp := a.handleIPCCommand(ipc.Command{Action: bindAction})
-				if !resp.Success {
-					a.logger.Error("hotkey action failed", zap.String("key", bindKey), zap.String("action", bindAction), zap.String("message", resp.Message))
-				} else {
-					a.logger.Info("hotkey action executed", zap.String("key", bindKey), zap.String("action", bindAction))
+				if err := a.executeHotkeyAction(bindKey, bindAction); err != nil {
+					a.logger.Error("hotkey action failed",
+						zap.String("key", bindKey),
+						zap.String("action", bindAction),
+						zap.Error(err))
 				}
 			}()
 		}); err != nil {
@@ -71,6 +52,43 @@ func (a *App) registerHotkeys() error {
 		}
 	}
 
+	return nil
+}
+
+// executeHotkeyAction executes a hotkey action (either exec or IPC command)
+func (a *App) executeHotkeyAction(key, action string) error {
+	// Exec mode: run arbitrary bash command
+	if strings.HasPrefix(action, "exec ") {
+		return a.executeShellCommand(key, action)
+	}
+
+	// Otherwise treat the action as an internal neru command and dispatch it
+	resp := a.handleIPCCommand(ipc.Command{Action: action})
+	if !resp.Success {
+		return fmt.Errorf("%s", resp.Message)
+	}
+
+	a.logger.Info("hotkey action executed", zap.String("key", key), zap.String("action", action))
+	return nil
+}
+
+// executeShellCommand executes a shell command from a hotkey
+func (a *App) executeShellCommand(key, action string) error {
+	cmdStr := strings.TrimSpace(strings.TrimPrefix(action, "exec"))
+	if cmdStr == "" {
+		a.logger.Error("hotkey exec has empty command", zap.String("key", key))
+		return fmt.Errorf("empty command")
+	}
+
+	a.logger.Debug("Executing shell command from hotkey", zap.String("key", key), zap.String("cmd", cmdStr))
+	cmd := exec.Command("/bin/bash", "-lc", cmdStr)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		a.logger.Error("hotkey exec failed", zap.String("key", key), zap.String("cmd", cmdStr), zap.ByteString("output", out), zap.Error(err))
+		return err
+	}
+
+	a.logger.Info("hotkey exec completed", zap.String("key", key), zap.String("cmd", cmdStr), zap.ByteString("output", out))
 	return nil
 }
 
