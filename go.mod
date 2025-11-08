@@ -4,6 +4,7 @@ go 1.25.2
 
 require (
 	github.com/BurntSushi/toml v1.3.2
+	github.com/atotto/clipboard v0.1.4
 	github.com/getlantern/systray v1.2.2
 	github.com/spf13/cobra v1.10.1
 	go.uber.org/zap v1.26.0
