@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/appwatcher"
@@ -1110,14 +1111,16 @@ func onReady() {
 	// Status submenu for version
 	mVersion := systray.AddMenuItem(fmt.Sprintf("Version %s", cli.Version), "Show version")
 	mVersion.Disable()
+	mVersionCopy := systray.AddMenuItem("Copy version", "Copy version to clipboard")
 
 	// Status toggle
+	systray.AddSeparator()
 	mStatus := systray.AddMenuItem("Status: Running", "Show current status")
 	mStatus.Disable()
+	mToggle := systray.AddMenuItem("Disable", "Disable/Enable Neru without quitting")
 
 	// Control actions
 	systray.AddSeparator()
-	mToggle := systray.AddMenuItem("Disable", "Disable/Enable Neru without quitting")
 	mHints := systray.AddMenuItem("Hints Mode", "Show hints")
 	mHintsWithActions := systray.AddMenuItem("Hints Mode with Actions", "Show hints with actions")
 	mScroll := systray.AddMenuItem("Scroll Mode", "Show scroll hints")
@@ -1130,6 +1133,11 @@ func onReady() {
 	go func() {
 		for {
 			select {
+			case <-mVersionCopy.ClickedCh:
+				err := clipboard.WriteAll(cli.Version)
+				if err != nil {
+					logger.Error("Error copying version to clipboard", zap.Error(err))
+				}
 			case <-mToggle.ClickedCh:
 				if globalApp != nil {
 					if globalApp.enabled {
