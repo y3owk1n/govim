@@ -494,7 +494,7 @@ func (a *App) exitMode() {
 
 	// If we are in mouse up mode, remove the mouse up action to prevent further draggings
 	if a.currentMode == ModeHintMouseUp {
-		a.logger.Info("Detected MouseUp or MouseDown mode, removing mouse up event...")
+		a.logger.Info("Detected MouseUp mode, removing mouse up event...")
 		err := accessibility.GetFrontmostWindow().LeftMouseUp(true)
 		if err != nil {
 			a.logger.Error("Failed to remove mouse up", zap.Error(err))
