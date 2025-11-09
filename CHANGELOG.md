@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.7.0](https://github.com/y3owk1n/neru/compare/v1.6.0...v1.7.0) (2025-11-09)
+
+
+### Features
+
+* implements `triple click` and simple `drag and drop` with mouse down and mouse up on a target ([#102](https://github.com/y3owk1n/neru/issues/102)) ([ee89ce1](https://github.com/y3owk1n/neru/commit/ee89ce121d3d77e4024b686c1e7769954f278cd2))
+* more robust cli and IPC handling + flexibility in hotkey mappings ([#103](https://github.com/y3owk1n/neru/issues/103)) ([e1eefbe](https://github.com/y3owk1n/neru/commit/e1eefbe31ab2aad9ca9fcaf46a6bc858fa2a8e91))
+
+
+### Bug Fixes
+
+* add version copy for systray ([#92](https://github.com/y3owk1n/neru/issues/92)) ([2e7242b](https://github.com/y3owk1n/neru/commit/2e7242b178c075190f402f00110d5280f6036769))
+* allow &lt;tab&gt; key to toggle between scroll hint and scroll mode ([#87](https://github.com/y3owk1n/neru/issues/87)) ([5fa4c15](https://github.com/y3owk1n/neru/commit/5fa4c1554f222756811e792648afddb5708938a5))
+* allow &lt;tab&gt; to switch between hints and hints_action ([#93](https://github.com/y3owk1n/neru/issues/93)) ([44ef64e](https://github.com/y3owk1n/neru/commit/44ef64ef6d75096530c52dfd0ebc2382a3205773))
+* allow scroll hints styles to be configurable ([#88](https://github.com/y3owk1n/neru/issues/88)) ([84e087c](https://github.com/y3owk1n/neru/commit/84e087ca27a072df9be6366a14117650f87f1f56))
+* auto mouse_up calls after mouse_down ([#104](https://github.com/y3owk1n/neru/issues/104)) ([f789391](https://github.com/y3owk1n/neru/commit/f7893910e3e18fdc4924f378bc47a02e0607186f))
+* chill `shouldIncludeElement` checks ([#96](https://github.com/y3owk1n/neru/issues/96)) ([3141ace](https://github.com/y3owk1n/neru/commit/3141ace32f747417b6e0102a40307ced1ab6c051))
+* ensure `status` command shows the right message when using default ([#91](https://github.com/y3owk1n/neru/issues/91)) ([4873616](https://github.com/y3owk1n/neru/commit/48736165cf2a99dee70464b51bd32f492e64a32d))
+* ensure to init the same style for default scrol hints ([#89](https://github.com/y3owk1n/neru/issues/89)) ([0e0fc86](https://github.com/y3owk1n/neru/commit/0e0fc8695e0f227f4a7d784728a0cd734442643b))
+* implements `IsMissionControlActive` to only show hints for mission control when active ([#95](https://github.com/y3owk1n/neru/issues/95)) ([9ac2295](https://github.com/y3owk1n/neru/commit/9ac2295db8757f064d3aa2b8c405913cd0b345d8))
+* make scroll configuration easier and put everything in pixel ([#90](https://github.com/y3owk1n/neru/issues/90)) ([401da6b](https://github.com/y3owk1n/neru/commit/401da6b26916814a576df61c89d52bcf179f44fa))
+* more refactor for main package ([#99](https://github.com/y3owk1n/neru/issues/99)) ([ed1c635](https://github.com/y3owk1n/neru/commit/ed1c635f9f2d53f7f88a30a976d0cfe601c25925))
+* nicer color for matched texts in hint ([#100](https://github.com/y3owk1n/neru/issues/100)) ([ba7e3c9](https://github.com/y3owk1n/neru/commit/ba7e3c944e31956a9a2d2f29ed57d990c40b4bbd))
+* refactor `main.go` and split them out, also update build command ([#98](https://github.com/y3owk1n/neru/issues/98)) ([2e98331](https://github.com/y3owk1n/neru/commit/2e983316818e7d5393a3fea32db0c07d1dcc8ec5))
+* simpler scroll mechanism ([#85](https://github.com/y3owk1n/neru/issues/85)) ([edd608f](https://github.com/y3owk1n/neru/commit/edd608f60a18c9ac601e471c40aa7bb44ddf69dc))
+* vertical action menu without magic heuristic numbers ([#101](https://github.com/y3owk1n/neru/issues/101)) ([9c2405d](https://github.com/y3owk1n/neru/commit/9c2405d6bb784917e726bad72111446a7880399b))
+* wrong key for `scroll_step_full` in default config [skip ci] ([#94](https://github.com/y3owk1n/neru/issues/94)) ([c15e203](https://github.com/y3owk1n/neru/commit/c15e203b6ffb909957a8c8c822d7a1ffa65c30da))
+
 ## [1.6.0](https://github.com/y3owk1n/neru/compare/v1.5.1...v1.6.0) (2025-11-07)
 
 
