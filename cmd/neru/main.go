@@ -25,9 +25,16 @@ type Mode int
 
 const (
 	ModeIdle Mode = iota
-	ModeHint
-	ModeHintWithActions
-	ModeScroll
+	ModeHintLeftClick
+	ModeHintRightClick
+	ModeHintDoubleClick
+	ModeHintTripleClick
+	ModeHintMouseUp
+	ModeHintMouseDown
+	ModeHintMiddleClick
+	ModeHintMoveMouse
+	ModeHintScroll
+	ModeContextMenu
 )
 
 // App represents the main application

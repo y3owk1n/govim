@@ -27,6 +27,7 @@ const (
 type Command struct {
 	Action string                 `json:"action"`
 	Params map[string]interface{} `json:"params,omitempty"`
+	Args   []string               `json:"args,omitempty"`
 }
 
 // Response represents an IPC response

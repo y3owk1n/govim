@@ -12,7 +12,7 @@ var startCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendCommand("start")
+		return sendCommand("start", args)
 	},
 }
 

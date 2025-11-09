@@ -74,14 +74,14 @@ func (a *App) collectElementsForMode(mode Mode) []*accessibility.TreeNode {
 
 	// Collect primary elements based on mode
 	switch mode {
-	case ModeHint, ModeHintWithActions:
+	case ModeHintLeftClick, ModeHintRightClick, ModeHintDoubleClick, ModeHintTripleClick, ModeHintMouseUp, ModeHintMouseDown, ModeHintMiddleClick, ModeHintMoveMouse, ModeContextMenu:
 		elements = a.collectClickableElements(missionControlActive)
-	case ModeScroll:
+	case ModeHintScroll:
 		elements = a.collectScrollableElements(missionControlActive)
 	}
 
 	// Add supplementary elements (menubar, dock, notification center)
-	if mode != ModeScroll {
+	if mode != ModeHintScroll {
 		elements = a.addSupplementaryElements(elements, missionControlActive)
 	}
 

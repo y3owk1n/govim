@@ -62,8 +62,13 @@ func (a *App) executeHotkeyAction(key, action string) error {
 		return a.executeShellCommand(key, action)
 	}
 
+	// Split action into action and params
+	actionParts := strings.Split(action, " ")
+	action = actionParts[0]
+	params := actionParts[1:]
+
 	// Otherwise treat the action as an internal neru command and dispatch it
-	resp := a.handleIPCCommand(ipc.Command{Action: action})
+	resp := a.handleIPCCommand(ipc.Command{Action: action, Args: params})
 	if !resp.Success {
 		return fmt.Errorf("%s", resp.Message)
 	}

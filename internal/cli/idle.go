@@ -12,7 +12,7 @@ var idleCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendCommand("idle")
+		return sendCommand("idle", args)
 	},
 }
 
