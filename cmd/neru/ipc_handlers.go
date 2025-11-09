@@ -13,7 +13,7 @@ import (
 
 // handleIPCCommand handles IPC commands from the CLI
 func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
-	a.logger.Info("Handling IPC command", zap.String("action", cmd.Action))
+	a.logger.Info("Handling IPC command", zap.String("action", cmd.Action), zap.String("params", strings.Join(cmd.Args, ", ")))
 
 	switch cmd.Action {
 	case "ping":
@@ -24,10 +24,6 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 		return a.handleStop(cmd)
 	case "hints":
 		return a.handleHints(cmd)
-	case "hints_action":
-		return a.handleHintsAction(cmd)
-	case "scroll":
-		return a.handleScroll(cmd)
 	case "idle":
 		return a.handleIdle(cmd)
 	case "status":
@@ -62,24 +58,37 @@ func (a *App) handleHints(cmd ipc.Command) ipc.Response {
 	if !a.enabled {
 		return ipc.Response{Success: false, Message: "neru is not running"}
 	}
-	a.activateHintMode(ModeHint)
+
+	// Parse params
+	params := cmd.Args
+	for _, param := range params {
+		switch param {
+		case "left_click":
+			a.activateHintMode(ModeHintLeftClick)
+		case "right_click":
+			a.activateHintMode(ModeHintRightClick)
+		case "double_click":
+			a.activateHintMode(ModeHintDoubleClick)
+		case "triple_click":
+			a.activateHintMode(ModeHintTripleClick)
+		case "mouse_up":
+			a.activateHintMode(ModeHintMouseUp)
+		case "mouse_down":
+			a.activateHintMode(ModeHintMouseDown)
+		case "middle_click":
+			a.activateHintMode(ModeHintMiddleClick)
+		case "move_mouse":
+			a.activateHintMode(ModeHintMoveMouse)
+		case "scroll":
+			a.activateHintMode(ModeHintScroll)
+		case "context_menu":
+			a.activateHintMode(ModeContextMenu)
+		default:
+			return ipc.Response{Success: false, Message: fmt.Sprintf("unknown hints mode: %s", param)}
+		}
+	}
+
 	return ipc.Response{Success: true, Message: "hint mode activated"}
-}
-
-func (a *App) handleHintsAction(cmd ipc.Command) ipc.Response {
-	if !a.enabled {
-		return ipc.Response{Success: false, Message: "neru is not running"}
-	}
-	a.activateHintMode(ModeHintWithActions)
-	return ipc.Response{Success: true, Message: "hint mode with actions activated"}
-}
-
-func (a *App) handleScroll(cmd ipc.Command) ipc.Response {
-	if !a.enabled {
-		return ipc.Response{Success: false, Message: "neru is not running"}
-	}
-	a.activateHintMode(ModeScroll)
-	return ipc.Response{Success: true, Message: "scroll mode activated"}
 }
 
 func (a *App) handleIdle(cmd ipc.Command) ipc.Response {

@@ -253,6 +253,8 @@ neru launch # if you prefer cli only
 
 ## 🎮 Usage
 
+The following are the default hotkeys without needing to configure anything. You can literally bind any key to any action with the support of IPC.
+
 ### Hint Mode (Direct Click)
 
 **Default hotkey:** `Cmd+Shift+Space`
@@ -263,9 +265,8 @@ neru launch # if you prefer cli only
 4. Restore cursor to previous position (if enabled)
 
 Press `esc` anytime to quit the hint selection.
-Press `tab` to switch to hint mode with actions.
 
-### Hint Mode (Action Selection)
+### Hint Mode (Context Menu)
 
 **Default hotkey:** `Cmd+Shift+A`
 
@@ -294,7 +295,6 @@ Keys:
 - H = release mouse
 
 Press `esc` anytime to quit the hint selection.
-Press `tab` to switch to hint mode.
 
 ### Scroll Mode
 
@@ -321,12 +321,23 @@ Vim-style navigation keys:
 
 The ⌨️ icon in your menu bar provides quick access to:
 
-- Current Version
-- Current Status
-- Enable/Disable
-- Show Hints
-- Show Hints with Action Selection
-- Show Scroll Mode
+- Version information
+  - Current Version
+  - Copy Version to Clipboard
+- Status information
+  - Current Status
+  - Enable/Disable
+- Actions
+  - Left Click
+  - Right Click
+  - Double Click
+  - Triple Click
+  - Mouse Up
+  - Mouse Down
+  - Middle Click
+  - Move Mouse
+  - Scroll
+  - Context Menu
 - Quit Neru
 
 ## ⚙️ Configuration
@@ -353,22 +364,46 @@ See [`configs/default-config.toml`](configs/default-config.toml) for all availab
 ```toml
 [hotkeys]
 # all hotkeys can be disabled by either setting the key to "" or just commenting it out
-"Ctrl+F" = "hints"
-"Ctrl+G" = "hints_action"
-"Ctrl+S" = "scroll"
+"Ctrl+F" = "hints left_click"
+"Ctrl+G" = "hints context_menu"
+"Ctrl+S" = "hints scroll"
+```
+
+#### Add more bindings
+
+```toml
+"Ctrl+R" = "hints right_click"
+"Ctrl+D" = "hints double_click"
+"Ctrl+T" = "hints triple_click"
+"Ctrl+H" = "hints middle_click"
+"Ctrl+U" = "hints mouse_up"
+"Ctrl+I" = "hints mouse_down"
+"Ctrl+M" = "hints move_mouse"
+```
+
+#### Execute shell commands
+
+```toml
+# To run a shell command from a hotkey, prefix the value with `exec `:
+"Ctrl+Alt+T" = "exec open -a Terminal"
+"Ctrl+Alt+F" = "exec osascript -e 'display notification \"This is a test notification!\" with title \"Hello from Terminal\" subtitle \"Just testing 🚀\"'"
+
+# Note that you need to properly escape the quotes else it will break.
 ```
 
 You should be also able to just clear the keybind and bind it with something like skhd or any similar tools, since we exposes commands in the cli through IPC. For example in skhd:
 
 ```bash
-ctrl - f : neru hints
-ctrl - g : neru hints_action
-ctrl - s : neru scroll
+ctrl - f : neru hints left_click
+ctrl - g : neru hints context_menu
+ctrl - s : neru hints scroll
 ```
 
 Read more about [CLI Usage](#%EF%B8%8F-cli-usage).
 
 #### Enable Menu Bar Dock and Notification Center Hints
+
+Default is `false`, set to `true` to show these additional hints.
 
 ```toml
 [general]
@@ -378,6 +413,7 @@ additional_menubar_hints_targets = [
   "com.apple.TextInputMenuAgent", # TextInput menu bar
   "com.apple.controlcenter",      # Control Center
   "com.apple.systemuiserver",     # SystemUIServer (e.g. Siri in menubar)
+  "com.somebundle.example",       # You can add more here for the apps that you use and shows in menubar (e.g. Aerospace, Orbstack, ...)
 ]
 
 include_dock_hints = true  # Also includes Mission Control
@@ -386,13 +422,25 @@ include_nc_hints = true # Notification popups
 
 #### Restore cursor after click action
 
+Default is `false`, set to `true` to restore the cursor position after clicking.
+
 ```toml
-[general]
-restore_pos_after_left_click = true
-restore_pos_after_right_click = true
-restore_pos_after_middle_click = true
-restore_pos_after_double_click = true
-restore_pos_after_triple_click = true
+[hints]
+
+[hints.left_click_hints]
+restore_cursor = true
+
+[hints.right_click_hints]
+restore_cursor = true
+
+[hints.middle_click_hints]
+restore_cursor = true
+
+[hints.double_click_hints]
+restore_cursor = true
+
+[hints.triple_click_hints]
+restore_cursor = true
 ```
 
 #### App Exclusion
@@ -568,26 +616,15 @@ border_width = 1
 # Controls hint translucency; 1.0 is fully opaque
 opacity = 0.95
 
-# Default colors for hints (used when no style is specified, e.g. in normal hint mode)
+# Example for left click hints
+# There are other hints for right, middle, double, triple, mouse up, mouse down, move mouse, scroll, and context menu
+# See the default configuration for more details
+[hints.left_click_hints]
 background_color = "#FFD700"
 text_color = "#000000"
 matched_text_color = "#737373" # Matched text color - color for characters that have been typed
 border_color = "#000000"
-
-# Action overlay colors (used when selecting click type)
-action_background_color = "#66CCFF"
-action_text_color = "#000000"
-action_matched_text_color = "#005585"
-action_border_color = "#000000"
-
-# Action keys for hint mode with actions (hardcoded):
-#   l = left click, r = right click, d = double click, m = middle click, g = go to pos
-
-# Scroll hints specific colors and opacity
-scroll_hints_background_color = "#2ECC71"
-scroll_hints_text_color = "#000000"
-scroll_hints_matched_text_color = "#145A32"
-scroll_hints_border_color = "#000000"
+restore_cursor = false
 ```
 
 ### Scroll configuration
@@ -642,9 +679,21 @@ neru status    # Show current status (running/paused, current mode, config path)
 ### Mode Activation
 
 ```bash
-neru hints         # Activate hint mode (direct click)
-neru hints_action  # Activate hint mode with action selection
-neru scroll        # Activate scroll mode
+neru hints --help  # Show help for hints mode
+
+# Available modes:
+neru hints left_click
+neru hints right_click
+neru hints double_click
+neru hints triple_click
+neru hints mouse_up
+neru hints mouse_down
+neru hints middle_click
+neru hints move_mouse
+neru hints scroll
+neru hints context_menu
+
+# Return to idle state
 neru idle          # Return to idle state
 ```
 
@@ -663,7 +712,7 @@ neru status
 #     Config: /Users/you/Library/Application Support/neru/config.toml
 
 # Activate hints via CLI instead of hotkey
-neru hints
+neru hints left_click
 
 # Pause functionality temporarily
 neru stop
@@ -814,7 +863,7 @@ Version information is automatically injected at build time from git tags.
 
 ```bash
 go build -ldflags="-s -w -X github.com/y3owk1n/neru/internal/cli.Version=v1.0.0" \
-  -o bin/neru cmd/neru/main.go
+  -o bin/neru ./cmd/neru
 ```
 
 ### Testing

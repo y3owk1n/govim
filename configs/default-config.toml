@@ -32,24 +32,13 @@ additional_menubar_hints_targets = [
   "com.apple.TextInputMenuAgent", # TextInput menu bar
   "com.apple.controlcenter",      # Control Center
   "com.apple.systemuiserver",     # SystemUIServer (e.g. Siri in menubar)
+  # "com.somebundle.example",       # You can add more here for the apps that you use and shows in menubar (e.g. Aerospace, Orbstack, ...)
 ]
 
 # Show hints on the Dock (includes mission control)
 include_dock_hints = false
 # Show hints on the Notification Center
 include_nc_hints = false
-
-# Restore cursor position after action
-# Restore cursor position after left click
-restore_pos_after_left_click = false
-# Restore cursor position after right click
-restore_pos_after_right_click = false
-# Restore cursor position after middle click
-restore_pos_after_middle_click = false
-# Restore cursor position after double click
-restore_pos_after_double_click = false
-# Restore cursor position after triple click
-restore_pos_after_triple_click = false
 
 [accessibility]
 # Check Accessibility permission on startup; exits with guidance if missing.
@@ -133,16 +122,23 @@ additional_chromium_bundles = []
 additional_firefox_bundles = []
 
 [hotkeys]
-# all hotkeys can be disabled by either setting the key to "" or just commenting it out
-"Cmd+Shift+Space" = "hints" # Same as running `neru hints` in the terminal
-"Cmd+Shift+A" = "hints_action" # Same as running `neru hints_action` in the terminal
-"Cmd+Shift+J" = "scroll" # Same as running `neru scroll` in the terminal
+# all hotkeys can be disabled by setting the key to ""
+"Cmd+Shift+Space" = "hints left_click" # Same as running `neru left_click` in the terminal
+"Cmd+Shift+A" = "hints context_menu"
+"Cmd+Shift+J" = "hints scroll"
+
+# Add more hotkeys that uses the IPC commands
+# "Ctrl+R" = "hints right_click"
+# "Ctrl+D" = "hints double_click"
+# "Ctrl+T" = "hints triple_click"
+# "Ctrl+H" = "hints middle_click"
+# "Ctrl+U" = "hints mouse_up"
+# "Ctrl+I" = "hints mouse_down"
+# "Ctrl+M" = "hints move_mouse"
 
 # To run a shell command from a hotkey, prefix the value with `exec `:
 # "Ctrl+Alt+T" = "exec open -a Terminal"
 # "Ctrl+Alt+F" = "exec osascript -e 'display notification \"This is a test notification!\" with title \"Hello from Terminal\" subtitle \"Just testing 🚀\"'"
-
-# Note: Escape key is hardcoded to exit any active mode
 
 [hints]
 # Characters used to build hint labels for alphabet style.
@@ -172,23 +168,70 @@ border_width = 1
 # Controls hint translucency; 1.0 is fully opaque
 opacity = 0.95
 
-# Default colors for hints (used when no style is specified, e.g. in normal hint mode)
+[hints.left_click_hints]
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#737373" # Matched text color - color for characters that have been typed
+border_color = "#000000"
+restore_cursor = false
+
+[hints.right_click_hints]
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#737373" # Matched text color - color for characters that have been typed
+border_color = "#000000"
+restore_cursor = false
+
+[hints.double_click_hints]
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#737373" # Matched text color - color for characters that have been typed
+border_color = "#000000"
+restore_cursor = false
+
+[hints.triple_click_hints]
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#737373" # Matched text color - color for characters that have been typed
+border_color = "#000000"
+restore_cursor = false
+
+[hints.middle_click_hints]
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#737373" # Matched text color - color for characters that have been typed
+border_color = "#000000"
+restore_cursor = false
+
+[hints.mouse_up_hints]
 background_color = "#FFD700"
 text_color = "#000000"
 matched_text_color = "#737373" # Matched text color - color for characters that have been typed
 border_color = "#000000"
 
-# Action overlay colors (used when selecting click type)
-action_background_color = "#66CCFF"
-action_text_color = "#000000"
-action_matched_text_color = "#005585"
-action_border_color = "#000000"
+[hints.mouse_down_hints]
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#737373" # Matched text color - color for characters that have been typed
+border_color = "#000000"
 
-# Scroll hints specific colors and opacity
-scroll_hints_background_color = "#2ECC71"
-scroll_hints_text_color = "#000000"
-scroll_hints_matched_text_color = "#145A32"
-scroll_hints_border_color = "#000000"
+[hints.move_mouse_hints]
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#737373" # Matched text color - color for characters that have been typed
+border_color = "#000000"
+
+[hints.scroll_hints]
+background_color = "#2ECC71"
+text_color = "#000000"
+matched_text_color = "#145A32" # Matched text color - color for characters that have been typed
+border_color = "#000000"
+
+[hints.context_menu_hints]
+background_color = "#66CCFF"
+text_color = "#000000"
+matched_text_color = "#005585" # Matched text color - color for characters that have been typed
+border_color = "#000000"
 
 [scroll]
 # Base scroll amount for j/k keys in pixels

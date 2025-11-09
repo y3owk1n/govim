@@ -14,5 +14,7 @@ var launchCmd = &cobra.Command{
 }
 
 func init() {
+	launchCmd.Flags().StringVar(&configPath, "config", "", "config file path")
+
 	rootCmd.AddCommand(launchCmd)
 }

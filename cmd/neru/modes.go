@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/y3owk1n/neru/internal/accessibility"
-	"github.com/y3owk1n/neru/internal/config"
 	"github.com/y3owk1n/neru/internal/hints"
 	"go.uber.org/zap"
 )
@@ -31,6 +30,11 @@ func (a *App) activateHintMode(mode Mode) {
 	a.logger.Info("Activating hint mode", zap.String("mode", modeString))
 
 	a.exitMode() // Exit current mode first
+
+	if modeString == "unknown" {
+		a.logger.Warn("Unknown mode, ignoring")
+		return
+	}
 
 	// Update roles for the current focused app
 	a.updateRolesForCurrentApp()
@@ -84,25 +88,62 @@ func (a *App) setupHints(elements []*accessibility.TreeNode, mode Mode) error {
 }
 
 // getStyleForMode returns the appropriate hint style configuration for the given mode
-func (a *App) getStyleForMode(mode Mode) config.HintsConfig {
-	style := a.config.Hints
+func (a *App) getStyleForMode(mode Mode) hints.StyleMode {
+	style := hints.StyleMode{
+		FontSize:     a.config.Hints.FontSize,
+		FontFamily:   a.config.Hints.FontFamily,
+		BorderRadius: a.config.Hints.BorderRadius,
+		Padding:      a.config.Hints.Padding,
+		BorderWidth:  a.config.Hints.BorderWidth,
+		Opacity:      a.config.Hints.Opacity,
+	}
 
 	switch mode {
-	case ModeHintWithActions:
-		style.BackgroundColor = a.config.Hints.ActionBackgroundColor
-		style.TextColor = a.config.Hints.ActionTextColor
-		style.MatchedTextColor = a.config.Hints.ActionMatchedTextColor
-		style.BorderColor = a.config.Hints.ActionBorderColor
-	case ModeScroll:
-		style.BackgroundColor = a.config.Hints.ScrollHintsBackgroundColor
-		style.TextColor = a.config.Hints.ScrollHintsTextColor
-		style.MatchedTextColor = a.config.Hints.ScrollHintsMatchedTextColor
-		style.BorderColor = a.config.Hints.ScrollHintsBorderColor
-	case ModeHint:
-		style.BackgroundColor = a.config.Hints.BackgroundColor
-		style.TextColor = a.config.Hints.TextColor
-		style.MatchedTextColor = a.config.Hints.MatchedTextColor
-		style.BorderColor = a.config.Hints.BorderColor
+	case ModeHintLeftClick:
+		style.BackgroundColor = a.config.Hints.LeftClickHints.BackgroundColor
+		style.TextColor = a.config.Hints.LeftClickHints.TextColor
+		style.MatchedTextColor = a.config.Hints.LeftClickHints.MatchedTextColor
+		style.BorderColor = a.config.Hints.LeftClickHints.BorderColor
+	case ModeHintRightClick:
+		style.BackgroundColor = a.config.Hints.RightClickHints.BackgroundColor
+		style.TextColor = a.config.Hints.RightClickHints.TextColor
+		style.MatchedTextColor = a.config.Hints.RightClickHints.MatchedTextColor
+		style.BorderColor = a.config.Hints.RightClickHints.BorderColor
+	case ModeHintDoubleClick:
+		style.BackgroundColor = a.config.Hints.DoubleClickHints.BackgroundColor
+		style.TextColor = a.config.Hints.DoubleClickHints.TextColor
+		style.MatchedTextColor = a.config.Hints.DoubleClickHints.MatchedTextColor
+		style.BorderColor = a.config.Hints.DoubleClickHints.BorderColor
+	case ModeHintTripleClick:
+		style.BackgroundColor = a.config.Hints.TripleClickHints.BackgroundColor
+		style.TextColor = a.config.Hints.TripleClickHints.TextColor
+		style.MatchedTextColor = a.config.Hints.TripleClickHints.MatchedTextColor
+		style.BorderColor = a.config.Hints.TripleClickHints.BorderColor
+	case ModeHintMouseUp:
+		style.BackgroundColor = a.config.Hints.MouseUpHints.BackgroundColor
+		style.TextColor = a.config.Hints.MouseUpHints.TextColor
+		style.MatchedTextColor = a.config.Hints.MouseUpHints.MatchedTextColor
+		style.BorderColor = a.config.Hints.MouseUpHints.BorderColor
+	case ModeHintMouseDown:
+		style.BackgroundColor = a.config.Hints.MouseDownHints.BackgroundColor
+		style.TextColor = a.config.Hints.MouseDownHints.TextColor
+		style.MatchedTextColor = a.config.Hints.MouseDownHints.MatchedTextColor
+		style.BorderColor = a.config.Hints.MouseDownHints.BorderColor
+	case ModeHintMoveMouse:
+		style.BackgroundColor = a.config.Hints.MoveMouseHints.BackgroundColor
+		style.TextColor = a.config.Hints.MoveMouseHints.TextColor
+		style.MatchedTextColor = a.config.Hints.MoveMouseHints.MatchedTextColor
+		style.BorderColor = a.config.Hints.MoveMouseHints.BorderColor
+	case ModeHintScroll:
+		style.BackgroundColor = a.config.Hints.ScrollHints.BackgroundColor
+		style.TextColor = a.config.Hints.ScrollHints.TextColor
+		style.MatchedTextColor = a.config.Hints.ScrollHints.MatchedTextColor
+		style.BorderColor = a.config.Hints.ScrollHints.BorderColor
+	case ModeContextMenu:
+		style.BackgroundColor = a.config.Hints.ContextMenuHints.BackgroundColor
+		style.TextColor = a.config.Hints.ContextMenuHints.TextColor
+		style.MatchedTextColor = a.config.Hints.ContextMenuHints.MatchedTextColor
+		style.BorderColor = a.config.Hints.ContextMenuHints.BorderColor
 	}
 
 	return style
@@ -127,25 +168,11 @@ func (a *App) handleKeyPress(key string) {
 		a.logger.Debug("Tab pressed in mode", zap.String("mode", a.getCurrModeString()))
 
 		// If we are not in scroll mode yet, we can tab to scroll the current cursor position directly
-		if a.currentMode == ModeScroll && !a.canScroll {
+		if a.currentMode == ModeHintScroll && !a.canScroll {
 			a.logger.Debug("Switching to scroll mode from scroll hints")
 			a.canScroll = true
 			a.hintOverlay.Clear()
 			a.showScroll()
-			return
-		}
-
-		// If we are in hint mode, we can tab to hint with actions
-		if a.currentMode == ModeHint {
-			a.logger.Debug("Switching to hint with actions mode from hints")
-			a.activateHintMode(ModeHintWithActions)
-			return
-		}
-
-		// If we are in hint with actions mode, we can tab to hint
-		if a.currentMode == ModeHintWithActions && a.selectedHint == nil {
-			a.logger.Debug("Switching to hint mode from hint with actions")
-			a.activateHintMode(ModeHint)
 			return
 		}
 	}
@@ -155,12 +182,10 @@ func (a *App) handleKeyPress(key string) {
 
 // handleHintKey handles key presses in hint mode
 func (a *App) handleHintKey(key string) {
-	// If we have a selected hint (waiting for action), handle action selection
 	if a.selectedHint != nil {
-		a.handleActionKey(key)
+		a.handleContextMenuKey(key)
 		return
 	}
-
 	if a.canScroll {
 		a.handleScrollKey(key)
 		return
@@ -168,22 +193,55 @@ func (a *App) handleHintKey(key string) {
 
 	if hint, ok := a.hintManager.HandleInput(key); ok {
 		switch a.currentMode {
-		case ModeHintWithActions:
-			// Store the hint and wait for action selection
-			a.selectedHint = hint
-			a.logger.Info("Hint selected, choose action", zap.String("label", a.hintManager.GetInput()))
-
-			// Clear all hints and show action menu at the hint location
-			a.hintOverlay.Clear()
-			a.showActionMenu(hint)
-		case ModeHint:
-			// Direct click mode - click immediately
+		case ModeHintLeftClick:
 			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
-			if err := hint.Element.Element.LeftClick(a.config.General.RestorePosAfterLeftClick); err != nil {
+			if err := hint.Element.Element.LeftClick(a.config.Hints.LeftClickHints.RestoreCursor); err != nil {
 				a.logger.Error("Failed to click element", zap.Error(err))
 			}
 			a.exitMode()
-		case ModeScroll:
+		case ModeHintRightClick:
+			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
+			if err := hint.Element.Element.RightClick(a.config.Hints.RightClickHints.RestoreCursor); err != nil {
+				a.logger.Error("Failed to click element", zap.Error(err))
+			}
+			a.exitMode()
+		case ModeHintDoubleClick:
+			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
+			if err := hint.Element.Element.DoubleClick(a.config.Hints.DoubleClickHints.RestoreCursor); err != nil {
+				a.logger.Error("Failed to click element", zap.Error(err))
+			}
+			a.exitMode()
+		case ModeHintTripleClick:
+			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
+			if err := hint.Element.Element.TripleClick(a.config.Hints.TripleClickHints.RestoreCursor); err != nil {
+				a.logger.Error("Failed to click element", zap.Error(err))
+			}
+			a.exitMode()
+		case ModeHintMouseUp:
+			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
+			if err := hint.Element.Element.LeftMouseUp(); err != nil {
+				a.logger.Error("Failed to click element", zap.Error(err))
+			}
+			a.exitMode()
+		case ModeHintMouseDown:
+			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
+			if err := hint.Element.Element.LeftMouseDown(); err != nil {
+				a.logger.Error("Failed to click element", zap.Error(err))
+			}
+			a.exitMode()
+		case ModeHintMiddleClick:
+			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
+			if err := hint.Element.Element.MiddleClick(a.config.Hints.MiddleClickHints.RestoreCursor); err != nil {
+				a.logger.Error("Failed to click element", zap.Error(err))
+			}
+			a.exitMode()
+		case ModeHintMoveMouse:
+			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
+			if err := hint.Element.Element.GoToPosition(); err != nil {
+				a.logger.Error("Failed to click element", zap.Error(err))
+			}
+			a.exitMode()
+		case ModeHintScroll:
 			a.canScroll = true
 			// Enter scroll mode - scroll to element
 			a.logger.Info("Hint selected, start scrolling", zap.String("label", a.hintManager.GetInput()))
@@ -193,6 +251,14 @@ func (a *App) handleHintKey(key string) {
 
 			a.hintOverlay.Clear()
 			a.showScroll()
+		case ModeContextMenu:
+			// Store the hint and wait for action selection
+			a.selectedHint = hint
+			a.logger.Info("Hint selected, choose an action", zap.String("label", a.hintManager.GetInput()))
+
+			// Clear all hints and show action menu at the hint location
+			a.hintOverlay.Clear()
+			a.showContextMenu(hint)
 		}
 		return
 	}
@@ -200,8 +266,8 @@ func (a *App) handleHintKey(key string) {
 	// Otherwise, key was handled by the hint manager
 }
 
-// showActionMenu displays the action selection menu at the hint location
-func (a *App) showActionMenu(hint *hints.Hint) {
+// showContextMenu displays the action selection menu at the hint location
+func (a *App) showContextMenu(hint *hints.Hint) {
 	// Hardcoded action keys (tied to UI labels)
 	actions := []struct {
 		key   string
@@ -222,14 +288,14 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 		formattedActions = append(formattedActions, fmt.Sprintf("[%s]%s", a.key, a.label))
 	}
 
-	stringActions := strings.Join(formattedActions, "\n")
+	menuActions := strings.Join(formattedActions, "\n")
 
 	actionHints := make([]*hints.Hint, 0, len(actions))
 	baseX := hint.Position.X
 	baseY := hint.Position.Y
 
 	actionHint := &hints.Hint{
-		Label:    stringActions,
+		Label:    menuActions,
 		Element:  hint.Element,
 		Position: image.Point{X: baseX, Y: baseY + 5},
 	}
@@ -238,24 +304,23 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 
 	// Draw target indicator dot first
 	dotRadius := 4.0
-	dotColor := a.config.Hints.ActionBackgroundColor
-	dotBorderColor := a.config.Hints.ActionBorderColor
+	dotColor := a.config.Hints.ContextMenuHints.BackgroundColor
+	dotBorderColor := a.config.Hints.ContextMenuHints.BorderColor
 	dotBorderWidth := float64(a.config.Hints.BorderWidth)
 
 	if err := a.hintOverlay.DrawTargetDot(baseX, baseY, dotRadius, dotColor, dotBorderColor, dotBorderWidth); err != nil {
 		a.logger.Error("Failed to draw target dot", zap.Error(err))
 	}
 
-	actionStyle := a.getStyleForMode(ModeHintWithActions)
+	contextMenuStyle := a.getStyleForMode(ModeContextMenu)
 
-	// Draw all action hints without arrows and with custom style
-	if err := a.hintOverlay.DrawHintsWithoutArrow(actionHints, actionStyle); err != nil {
+	if err := a.hintOverlay.DrawHintsWithoutArrow(actionHints, contextMenuStyle); err != nil {
 		a.logger.Error("Failed to draw action menu", zap.Error(err))
 	}
 }
 
-// handleActionKey handles action key presses after a hint is selected
-func (a *App) handleActionKey(key string) {
+// handleContextMenuKey handles action key presses after a hint is selected
+func (a *App) handleContextMenuKey(key string) {
 	if a.selectedHint == nil {
 		return
 	}
@@ -278,16 +343,16 @@ func (a *App) handleActionKey(key string) {
 	switch key {
 	case "l": // Left click
 		a.logger.Info("Performing left click", zap.String("label", hint.Label))
-		err = hint.Element.Element.LeftClick(a.config.General.RestorePosAfterLeftClick)
+		err = hint.Element.Element.LeftClick(a.config.Hints.LeftClickHints.RestoreCursor)
 	case "r": // Right click
 		a.logger.Info("Performing right click", zap.String("label", hint.Label))
-		err = hint.Element.Element.RightClick(a.config.General.RestorePosAfterRightClick)
+		err = hint.Element.Element.RightClick(a.config.Hints.RightClickHints.RestoreCursor)
 	case "d": // Double click
 		a.logger.Info("Performing double click", zap.String("label", hint.Label))
-		err = hint.Element.Element.DoubleClick(a.config.General.RestorePosAfterDoubleClick)
+		err = hint.Element.Element.DoubleClick(a.config.Hints.DoubleClickHints.RestoreCursor)
 	case "t": // Triple click
 		a.logger.Info("Performing triple click", zap.String("label", hint.Label))
-		err = hint.Element.Element.TripleClick(a.config.General.RestorePosAfterDoubleClick)
+		err = hint.Element.Element.TripleClick(a.config.Hints.TripleClickHints.RestoreCursor)
 	case "h": // Hold mouse
 		a.logger.Info("Performing hold mouse", zap.String("label", hint.Label))
 		err = hint.Element.Element.LeftMouseDown()
@@ -296,7 +361,7 @@ func (a *App) handleActionKey(key string) {
 		err = hint.Element.Element.LeftMouseUp()
 	case "m": // Middle click
 		a.logger.Info("Performing middle click", zap.String("label", hint.Label))
-		err = hint.Element.Element.MiddleClick(a.config.General.RestorePosAfterMiddleClick)
+		err = hint.Element.Element.MiddleClick(a.config.Hints.MiddleClickHints.RestoreCursor)
 	case "g": // Move mouse to a position
 		a.logger.Info("Performing go to position", zap.String("label", hint.Label))
 		err = hint.Element.Element.GoToPosition()
@@ -372,7 +437,7 @@ func (a *App) handleScrollKey(key string) {
 		a.lastScrollKey = ""
 	case "\t":
 		a.logger.Info("? key detected - show hint again")
-		a.activateHintMode(ModeScroll)
+		a.activateHintMode(ModeHintScroll)
 	default:
 		a.logger.Debug("Ignoring non-scroll key", zap.String("key", key))
 		a.lastScrollKey = ""
@@ -440,12 +505,26 @@ func getModeString(mode Mode) string {
 	switch mode {
 	case ModeIdle:
 		return "idle"
-	case ModeHint:
-		return "hint"
-	case ModeHintWithActions:
-		return "hint_with_actions"
-	case ModeScroll:
+	case ModeHintLeftClick:
+		return "left_click"
+	case ModeHintRightClick:
+		return "right_click"
+	case ModeHintDoubleClick:
+		return "double_click"
+	case ModeHintTripleClick:
+		return "triple_click"
+	case ModeHintMouseUp:
+		return "mouse_up"
+	case ModeHintMouseDown:
+		return "mouse_down"
+	case ModeHintMiddleClick:
+		return "middle_click"
+	case ModeHintMoveMouse:
+		return "move_mouse"
+	case ModeHintScroll:
 		return "scroll"
+	case ModeContextMenu:
+		return "context_menu"
 	default:
 		return "unknown"
 	}
@@ -453,18 +532,7 @@ func getModeString(mode Mode) string {
 
 // getCurrModeString returns the current mode as a string
 func (a *App) getCurrModeString() string {
-	switch a.currentMode {
-	case ModeIdle:
-		return "idle"
-	case ModeHint:
-		return "hint"
-	case ModeHintWithActions:
-		return "hint_with_actions"
-	case ModeScroll:
-		return "scroll"
-	default:
-		return "unknown"
-	}
+	return getModeString(a.currentMode)
 }
 
 // logModeActivation logs mode-specific activation messages
@@ -472,14 +540,35 @@ func (a *App) logModeActivation(mode Mode) {
 	hintCount := len(a.hintManager.GetHints())
 
 	switch mode {
-	case ModeHintWithActions:
-		a.logger.Info("Hint mode with actions activated", zap.Int("hints", hintCount))
-		a.logger.Info("Type a hint label, then choose action: l=left, r=right, d=double, m=middle")
-	case ModeHint:
-		a.logger.Info("Hint mode activated", zap.Int("hints", hintCount))
+	case ModeHintLeftClick:
+		a.logger.Info("Hint mode with left click activated", zap.Int("hints", hintCount))
 		a.logger.Info("Type a hint label to click the element")
-	case ModeScroll:
+	case ModeHintRightClick:
+		a.logger.Info("Hint mode with right click activated", zap.Int("hints", hintCount))
+		a.logger.Info("Type a hint label to click the element")
+	case ModeHintDoubleClick:
+		a.logger.Info("Hint mode with double click activated", zap.Int("hints", hintCount))
+		a.logger.Info("Type a hint label to click the element")
+	case ModeHintTripleClick:
+		a.logger.Info("Hint mode with triple click activated", zap.Int("hints", hintCount))
+		a.logger.Info("Type a hint label to click the element")
+	case ModeHintMouseUp:
+		a.logger.Info("Hint mode with mouse up activated", zap.Int("hints", hintCount))
+		a.logger.Info("Type a hint label to click the element")
+	case ModeHintMouseDown:
+		a.logger.Info("Hint mode with mouse down activated", zap.Int("hints", hintCount))
+		a.logger.Info("Type a hint label to click the element")
+	case ModeHintMiddleClick:
+		a.logger.Info("Hint mode with middle click activated", zap.Int("hints", hintCount))
+		a.logger.Info("Type a hint label to click the element")
+	case ModeHintMoveMouse:
+		a.logger.Info("Hint mode with move mouse activated", zap.Int("hints", hintCount))
+		a.logger.Info("Type a hint label to click the element")
+	case ModeHintScroll:
 		a.logger.Info("Scroll mode activated", zap.Int("hints", hintCount))
 		a.logger.Info("Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom")
+	case ModeContextMenu:
+		a.logger.Info("Context menu mode activated", zap.Int("hints", hintCount))
+		a.logger.Info("Type a hint label to choose an action")
 	}
 }

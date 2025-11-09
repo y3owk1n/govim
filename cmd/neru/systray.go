@@ -27,20 +27,27 @@ func onReady() {
 
 	// Control actions
 	systray.AddSeparator()
-	mHints := systray.AddMenuItem("Hints Mode", "Show hints")
-	mHintsWithActions := systray.AddMenuItem("Hints Mode with Actions", "Show hints with actions")
-	mScroll := systray.AddMenuItem("Scroll Mode", "Show scroll hints")
+	mHintsLeftClick := systray.AddMenuItem("Left Click", "Show left click hints")
+	mHintsRightClick := systray.AddMenuItem("Right Click", "Show right click hints")
+	mHintsDoubleClick := systray.AddMenuItem("Double Click", "Show double click hints")
+	mHintsTripleClick := systray.AddMenuItem("Triple Click", "Show triple click hints")
+	mHintsMouseUp := systray.AddMenuItem("Mouse Up", "Show mouse up hints")
+	mHintsMouseDown := systray.AddMenuItem("Mouse Down", "Show mouse down hints")
+	mHintsMiddleClick := systray.AddMenuItem("Middle Click", "Show middle click hints")
+	mHintsMoveMouse := systray.AddMenuItem("Move Mouse", "Show move mouse hints")
+	mHintsScroll := systray.AddMenuItem("Scroll", "Show scroll hints")
+	mHintsContextMenu := systray.AddMenuItem("Context Menu", "Show context menu hints")
 
 	// Quit option
 	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit Neru", "Exit the application")
 
 	// Handle clicks in a separate goroutine
-	go handleSystrayEvents(mVersionCopy, mStatus, mToggle, mHints, mHintsWithActions, mScroll, mQuit)
+	go handleSystrayEvents(mVersionCopy, mStatus, mToggle, mHintsLeftClick, mHintsRightClick, mHintsDoubleClick, mHintsTripleClick, mHintsMouseUp, mHintsMouseDown, mHintsMiddleClick, mHintsMoveMouse, mHintsScroll, mHintsContextMenu, mQuit)
 }
 
 func handleSystrayEvents(
-	mVersionCopy, mStatus, mToggle, mHints, mHintsWithActions, mScroll, mQuit *systray.MenuItem,
+	mVersionCopy, mStatus, mToggle, mHintsLeftClick, mHintsRightClick, mHintsDoubleClick, mHintsTripleClick, mHintsMouseUp, mHintsMouseDown, mHintsMiddleClick, mHintsMoveMouse, mHintsScroll, mHintsContextMenu, mQuit *systray.MenuItem,
 ) {
 	for {
 		select {
@@ -48,12 +55,26 @@ func handleSystrayEvents(
 			handleVersionCopy()
 		case <-mToggle.ClickedCh:
 			handleToggleEnable(mStatus, mToggle)
-		case <-mHints.ClickedCh:
-			activateModeFromSystray(ModeHint)
-		case <-mHintsWithActions.ClickedCh:
-			activateModeFromSystray(ModeHintWithActions)
-		case <-mScroll.ClickedCh:
-			activateModeFromSystray(ModeScroll)
+		case <-mHintsLeftClick.ClickedCh:
+			activateModeFromSystray(ModeHintLeftClick)
+		case <-mHintsRightClick.ClickedCh:
+			activateModeFromSystray(ModeHintRightClick)
+		case <-mHintsDoubleClick.ClickedCh:
+			activateModeFromSystray(ModeHintDoubleClick)
+		case <-mHintsTripleClick.ClickedCh:
+			activateModeFromSystray(ModeHintTripleClick)
+		case <-mHintsMouseUp.ClickedCh:
+			activateModeFromSystray(ModeHintMouseUp)
+		case <-mHintsMouseDown.ClickedCh:
+			activateModeFromSystray(ModeHintMouseDown)
+		case <-mHintsMiddleClick.ClickedCh:
+			activateModeFromSystray(ModeHintMiddleClick)
+		case <-mHintsMoveMouse.ClickedCh:
+			activateModeFromSystray(ModeHintMoveMouse)
+		case <-mHintsScroll.ClickedCh:
+			activateModeFromSystray(ModeHintScroll)
+		case <-mHintsContextMenu.ClickedCh:
+			activateModeFromSystray(ModeContextMenu)
 		case <-mQuit.ClickedCh:
 			systray.Quit()
 			return

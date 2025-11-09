@@ -26,11 +26,6 @@ type GeneralConfig struct {
 	AdditionalMenubarHintsTargets []string `toml:"additional_menubar_hints_targets"`
 	IncludeDockHints              bool     `toml:"include_dock_hints"`
 	IncludeNCHints                bool     `toml:"include_nc_hints"`
-	RestorePosAfterLeftClick      bool     `toml:"restore_pos_after_left_click"`
-	RestorePosAfterRightClick     bool     `toml:"restore_pos_after_right_click"`
-	RestorePosAfterMiddleClick    bool     `toml:"restore_pos_after_middle_click"`
-	RestorePosAfterDoubleClick    bool     `toml:"restore_pos_after_double_click"`
-	RestorePosAfterTripleClick    bool     `toml:"restore_pos_after_triple_click"`
 }
 
 type AccessibilityConfig struct {
@@ -68,27 +63,35 @@ type ScrollConfig struct {
 }
 
 type HintsConfig struct {
-	HintCharacters   string  `toml:"hint_characters"`
-	FontSize         int     `toml:"font_size"`
-	FontFamily       string  `toml:"font_family"`
-	BackgroundColor  string  `toml:"background_color"`
-	TextColor        string  `toml:"text_color"`
-	MatchedTextColor string  `toml:"matched_text_color"`
-	BorderRadius     int     `toml:"border_radius"`
-	Padding          int     `toml:"padding"`
-	BorderWidth      int     `toml:"border_width"`
-	BorderColor      string  `toml:"border_color"`
-	Opacity          float64 `toml:"opacity"`
-	// Action overlay specific colors and opacity
-	ActionBackgroundColor  string `toml:"action_background_color"`
-	ActionTextColor        string `toml:"action_text_color"`
-	ActionMatchedTextColor string `toml:"action_matched_text_color"`
-	ActionBorderColor      string `toml:"action_border_color"`
-	// Scroll hints specific colors and opacity
-	ScrollHintsBackgroundColor  string `toml:"scroll_hints_background_color"`
-	ScrollHintsTextColor        string `toml:"scroll_hints_text_color"`
-	ScrollHintsMatchedTextColor string `toml:"scroll_hints_matched_text_color"`
-	ScrollHintsBorderColor      string `toml:"scroll_hints_border_color"`
+	HintCharacters   string                             `toml:"hint_characters"`
+	FontSize         int                                `toml:"font_size"`
+	FontFamily       string                             `toml:"font_family"`
+	BorderRadius     int                                `toml:"border_radius"`
+	Padding          int                                `toml:"padding"`
+	BorderWidth      int                                `toml:"border_width"`
+	Opacity          float64                            `toml:"opacity"`
+	LeftClickHints   HintsActionConfigWithRestoreCursor `toml:"left_click_hints"`
+	RightClickHints  HintsActionConfigWithRestoreCursor `toml:"right_click_hints"`
+	DoubleClickHints HintsActionConfigWithRestoreCursor `toml:"double_click_hints"`
+	TripleClickHints HintsActionConfigWithRestoreCursor `toml:"triple_click_hints"`
+	MiddleClickHints HintsActionConfigWithRestoreCursor `toml:"middle_click_hints"`
+	MouseUpHints     HintsActionConfig                  `toml:"mouse_up_hints"`
+	MouseDownHints   HintsActionConfig                  `toml:"mouse_down_hints"`
+	MoveMouseHints   HintsActionConfig                  `toml:"move_mouse_hints"`
+	ScrollHints      HintsActionConfig                  `toml:"scroll_hints"`
+	ContextMenuHints HintsActionConfig                  `toml:"context_menu_hints"`
+}
+
+type HintsActionConfig struct {
+	BackgroundColor  string `toml:"background_color"`
+	TextColor        string `toml:"text_color"`
+	MatchedTextColor string `toml:"matched_text_color"`
+	BorderColor      string `toml:"border_color"`
+}
+
+type HintsActionConfigWithRestoreCursor struct {
+	HintsActionConfig
+	RestoreCursor bool `toml:"restore_cursor"`
 }
 
 type LoggingConfig struct {
@@ -115,13 +118,8 @@ func DefaultConfig() *Config {
 				"com.apple.controlcenter",
 				"com.apple.systemuiserver",
 			},
-			IncludeDockHints:           false,
-			IncludeNCHints:             false,
-			RestorePosAfterLeftClick:   false,
-			RestorePosAfterRightClick:  false,
-			RestorePosAfterMiddleClick: false,
-			RestorePosAfterDoubleClick: false,
-			RestorePosAfterTripleClick: false,
+			IncludeDockHints: false,
+			IncludeNCHints:   false,
 		},
 		Accessibility: AccessibilityConfig{
 			AccessibilityCheckOnStart: true,
@@ -163,9 +161,9 @@ func DefaultConfig() *Config {
 		},
 		Hotkeys: HotkeysConfig{
 			Bindings: map[string]string{
-				"Cmd+Shift+Space": "hints",
-				"Cmd+Shift+A":     "hints_action",
-				"Cmd+Shift+J":     "scroll",
+				"Cmd+Shift+Space": "hints left_click",
+				"Cmd+Shift+A":     "hints context_menu",
+				"Cmd+Shift+J":     "hints scroll",
 			},
 		},
 		Hints: HintsConfig{
@@ -176,21 +174,81 @@ func DefaultConfig() *Config {
 			Padding:        4,
 			BorderWidth:    1,
 			Opacity:        0.95,
-			// Defaults colors for hints (used when no style is specified, e.g. in normal hint mode)
-			BackgroundColor:  "#FFD700",
-			TextColor:        "#000000",
-			MatchedTextColor: "#737373",
-			BorderColor:      "#000000",
-			// Defaults for action overlay colors to visually differentiate
-			ActionBackgroundColor:  "#66CCFF",
-			ActionTextColor:        "#000000",
-			ActionMatchedTextColor: "#005585",
-			ActionBorderColor:      "#000000",
-			// Defaults for scroll hints colors to visually differentiate
-			ScrollHintsBackgroundColor:  "#2ECC71",
-			ScrollHintsTextColor:        "#000000",
-			ScrollHintsMatchedTextColor: "#145A32",
-			ScrollHintsBorderColor:      "#000000",
+			LeftClickHints: HintsActionConfigWithRestoreCursor{
+				HintsActionConfig: HintsActionConfig{
+					BackgroundColor:  "#FFD700",
+					TextColor:        "#000000",
+					MatchedTextColor: "#737373",
+					BorderColor:      "#000000",
+				},
+				RestoreCursor: false,
+			},
+			RightClickHints: HintsActionConfigWithRestoreCursor{
+				HintsActionConfig: HintsActionConfig{
+					BackgroundColor:  "#FFD700",
+					TextColor:        "#000000",
+					MatchedTextColor: "#737373",
+					BorderColor:      "#000000",
+				},
+				RestoreCursor: false,
+			},
+			DoubleClickHints: HintsActionConfigWithRestoreCursor{
+				HintsActionConfig: HintsActionConfig{
+					BackgroundColor:  "#FFD700",
+					TextColor:        "#000000",
+					MatchedTextColor: "#737373",
+					BorderColor:      "#000000",
+				},
+				RestoreCursor: false,
+			},
+			TripleClickHints: HintsActionConfigWithRestoreCursor{
+				HintsActionConfig: HintsActionConfig{
+					BackgroundColor:  "#FFD700",
+					TextColor:        "#000000",
+					MatchedTextColor: "#737373",
+					BorderColor:      "#000000",
+				},
+				RestoreCursor: false,
+			},
+			MiddleClickHints: HintsActionConfigWithRestoreCursor{
+				HintsActionConfig: HintsActionConfig{
+					BackgroundColor:  "#FFD700",
+					TextColor:        "#000000",
+					MatchedTextColor: "#737373",
+					BorderColor:      "#000000",
+				},
+				RestoreCursor: false,
+			},
+			MouseUpHints: HintsActionConfig{
+				BackgroundColor:  "#FFD700",
+				TextColor:        "#000000",
+				MatchedTextColor: "#737373",
+				BorderColor:      "#000000",
+			},
+			MouseDownHints: HintsActionConfig{
+				BackgroundColor:  "#FFD700",
+				TextColor:        "#000000",
+				MatchedTextColor: "#737373",
+				BorderColor:      "#000000",
+			},
+			MoveMouseHints: HintsActionConfig{
+				BackgroundColor:  "#FFD700",
+				TextColor:        "#000000",
+				MatchedTextColor: "#737373",
+				BorderColor:      "#000000",
+			},
+			ScrollHints: HintsActionConfig{
+				BackgroundColor:  "#2ECC71",
+				TextColor:        "#000000",
+				MatchedTextColor: "#145A32",
+				BorderColor:      "#000000",
+			},
+			ContextMenuHints: HintsActionConfig{
+				BackgroundColor:  "#66CCFF",
+				TextColor:        "#000000",
+				MatchedTextColor: "#005585",
+				BorderColor:      "#000000",
+			},
 		},
 		Scroll: ScrollConfig{
 			ScrollStep:          50,
@@ -307,45 +365,120 @@ func (c *Config) Validate() error {
 	// Hotkeys are validated in the bindings validation section below
 
 	// Validate colors
-	if err := validateColor(c.Hints.BackgroundColor, "hints.background_color"); err != nil {
+	if err := validateColor(c.Hints.LeftClickHints.BackgroundColor, "hints.left_click_hints.background_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.TextColor, "hints.text_color"); err != nil {
+	if err := validateColor(c.Hints.LeftClickHints.TextColor, "hints.left_click_hints.text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.MatchedTextColor, "hints.matched_text_color"); err != nil {
+	if err := validateColor(c.Hints.LeftClickHints.MatchedTextColor, "hints.left_click_hints.matched_text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.BorderColor, "hints.border_color"); err != nil {
+	if err := validateColor(c.Hints.LeftClickHints.BorderColor, "hints.left_click_hints.border_color"); err != nil {
 		return err
 	}
-	// Validate action overlay colors
-	if err := validateColor(c.Hints.ActionBackgroundColor, "hints.action_background_color"); err != nil {
+
+	if err := validateColor(c.Hints.RightClickHints.BackgroundColor, "hints.right_click_hints.background_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.ActionTextColor, "hints.action_text_color"); err != nil {
+	if err := validateColor(c.Hints.RightClickHints.TextColor, "hints.right_click_hints.text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.ActionMatchedTextColor, "hints.action_matched_text_color"); err != nil {
+	if err := validateColor(c.Hints.RightClickHints.MatchedTextColor, "hints.right_click_hints.matched_text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.ActionBorderColor, "hints.action_border_color"); err != nil {
+	if err := validateColor(c.Hints.RightClickHints.BorderColor, "hints.right_click_hints.border_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Scroll.HighlightColor, "scroll.highlight_color"); err != nil {
+
+	if err := validateColor(c.Hints.DoubleClickHints.BackgroundColor, "hints.double_click_hints.background_color"); err != nil {
 		return err
 	}
-	// Validate scroll hints colors
-	if err := validateColor(c.Hints.ScrollHintsBackgroundColor, "hints.scroll_hints_background_color"); err != nil {
+	if err := validateColor(c.Hints.DoubleClickHints.TextColor, "hints.double_click_hints.text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.ScrollHintsTextColor, "hints.scroll_hints_text_color"); err != nil {
+	if err := validateColor(c.Hints.DoubleClickHints.MatchedTextColor, "hints.double_click_hints.matched_text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.ScrollHintsMatchedTextColor, "hints.scroll_hints_matched_text_color"); err != nil {
+	if err := validateColor(c.Hints.DoubleClickHints.BorderColor, "hints.double_click_hints.border_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.ScrollHintsBorderColor, "hints.scroll_hints_border_color"); err != nil {
+
+	if err := validateColor(c.Hints.TripleClickHints.BackgroundColor, "hints.triple_click_hints.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.TripleClickHints.TextColor, "hints.triple_click_hints.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.TripleClickHints.MatchedTextColor, "hints.triple_click_hints.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.TripleClickHints.BorderColor, "hints.triple_click_hints.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Hints.MiddleClickHints.BackgroundColor, "hints.middle_click_hints.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MiddleClickHints.TextColor, "hints.middle_click_hints.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MiddleClickHints.MatchedTextColor, "hints.middle_click_hints.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MiddleClickHints.BorderColor, "hints.middle_click_hints.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Hints.MouseUpHints.BackgroundColor, "hints.mouse_up_hints.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MouseUpHints.TextColor, "hints.mouse_up_hints.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MouseUpHints.MatchedTextColor, "hints.mouse_up_hints.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MouseUpHints.BorderColor, "hints.mouse_up_hints.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Hints.MouseDownHints.BackgroundColor, "hints.mouse_down_hints.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MouseDownHints.TextColor, "hints.mouse_down_hints.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MouseDownHints.MatchedTextColor, "hints.mouse_down_hints.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MouseDownHints.BorderColor, "hints.mouse_down_hints.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Hints.MoveMouseHints.BackgroundColor, "hints.move_mouse_hints.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MoveMouseHints.TextColor, "hints.move_mouse_hints.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MoveMouseHints.MatchedTextColor, "hints.move_mouse_hints.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.MoveMouseHints.BorderColor, "hints.move_mouse_hints.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Hints.ScrollHints.BackgroundColor, "hints.scroll_hints.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.ScrollHints.TextColor, "hints.scroll_hints.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.ScrollHints.MatchedTextColor, "hints.scroll_hints.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Hints.ScrollHints.BorderColor, "hints.scroll_hints.border_color"); err != nil {
 		return err
 	}
 

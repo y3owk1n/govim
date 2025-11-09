@@ -47,8 +47,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "config file path")
-	// Customize version output
 	rootCmd.SetVersionTemplate(fmt.Sprintf("Neru version %s\nGit commit: %s\nBuild date: %s\n", Version, GitCommit, BuildDate))
 }
 
@@ -87,13 +85,14 @@ func launchProgram(cfgPath string) {
 }
 
 // sendCommand sends a command to the running neru instance
-func sendCommand(action string) error {
+func sendCommand(action string, args []string) error {
 	if !ipc.IsServerRunning() {
 		return fmt.Errorf("neru is not running. Start it first with 'neru' or 'neru launch'")
 	}
 
 	client := ipc.NewClient()
-	response, err := client.Send(ipc.Command{Action: action})
+
+	response, err := client.Send(ipc.Command{Action: action, Args: args})
 	if err != nil {
 		return err
 	}
