@@ -317,12 +317,19 @@ func (e *Element) LeftMouseDown() error {
 }
 
 // LeftMouseUp performs a left-mouse-up action on the element
-func (e *Element) LeftMouseUp() error {
+func (e *Element) LeftMouseUp(isExit bool) error {
 	if e.ref == nil {
 		return fmt.Errorf("element is nil")
 	}
 
-	result := C.performLeftMouseUp(e.ref)
+	var result C.int
+
+	if isExit {
+		result = C.performLeftMouseUpWithoutPos()
+	} else {
+		result = C.performLeftMouseUp(e.ref)
+	}
+
 	if result == 0 {
 		return fmt.Errorf("left-mouse-up action failed")
 	}

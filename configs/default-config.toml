@@ -132,7 +132,7 @@ additional_firefox_bundles = []
 # "Ctrl+D" = "hints double_click"
 # "Ctrl+T" = "hints triple_click"
 # "Ctrl+H" = "hints middle_click"
-# "Ctrl+U" = "hints mouse_up"
+# "Ctrl+U" = "hints mouse_up" # you should not need to use this at all, calling mouse_down will call this after hint selection
 # "Ctrl+I" = "hints mouse_down"
 # "Ctrl+M" = "hints move_mouse"
 

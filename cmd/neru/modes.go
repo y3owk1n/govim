@@ -219,7 +219,7 @@ func (a *App) handleHintKey(key string) {
 			a.exitMode()
 		case ModeHintMouseUp:
 			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
-			if err := hint.Element.Element.LeftMouseUp(); err != nil {
+			if err := hint.Element.Element.LeftMouseUp(false); err != nil {
 				a.logger.Error("Failed to click element", zap.Error(err))
 			}
 			a.exitMode()
@@ -229,6 +229,8 @@ func (a *App) handleHintKey(key string) {
 				a.logger.Error("Failed to click element", zap.Error(err))
 			}
 			a.exitMode()
+
+			a.activateHintMode(ModeHintMouseUp)
 		case ModeHintMiddleClick:
 			a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
 			if err := hint.Element.Element.MiddleClick(a.config.Hints.MiddleClickHints.RestoreCursor); err != nil {
@@ -339,6 +341,7 @@ func (a *App) handleContextMenuKey(key string) {
 	a.logger.Info("Action key pressed", zap.String("key", key))
 
 	var err error
+	var successCallback func()
 	// Hardcoded action keys (tied to UI labels)
 	switch key {
 	case "l": // Left click
@@ -356,9 +359,14 @@ func (a *App) handleContextMenuKey(key string) {
 	case "h": // Hold mouse
 		a.logger.Info("Performing hold mouse", zap.String("label", hint.Label))
 		err = hint.Element.Element.LeftMouseDown()
+
+		// Activate mouse up mode straight away
+		successCallback = func() {
+			a.activateHintMode(ModeHintMouseUp)
+		}
 	case "H": // Release mouse
 		a.logger.Info("Performing release hold mouse", zap.String("label", hint.Label))
-		err = hint.Element.Element.LeftMouseUp()
+		err = hint.Element.Element.LeftMouseUp(false)
 	case "m": // Middle click
 		a.logger.Info("Performing middle click", zap.String("label", hint.Label))
 		err = hint.Element.Element.MiddleClick(a.config.Hints.MiddleClickHints.RestoreCursor)
@@ -375,6 +383,10 @@ func (a *App) handleContextMenuKey(key string) {
 	}
 
 	a.exitMode()
+
+	if successCallback != nil {
+		successCallback()
+	}
 }
 
 // showScroll displays the action selection menu at the hint location
@@ -479,6 +491,15 @@ func (a *App) exitMode() {
 	}
 
 	a.logger.Info("Exiting current mode", zap.String("mode", a.getCurrModeString()))
+
+	// If we are in mouse up mode, remove the mouse up action to prevent further draggings
+	if a.currentMode == ModeHintMouseUp {
+		a.logger.Info("Detected MouseUp or MouseDown mode, removing mouse up event...")
+		err := accessibility.GetFrontmostWindow().LeftMouseUp(true)
+		if err != nil {
+			a.logger.Error("Failed to remove mouse up", zap.Error(err))
+		}
+	}
 
 	if a.hintManager != nil {
 		a.hintManager.Reset()

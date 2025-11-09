@@ -682,16 +682,18 @@ neru status    # Show current status (running/paused, current mode, config path)
 neru hints --help  # Show help for hints mode
 
 # Available modes:
-neru hints left_click
-neru hints right_click
-neru hints double_click
-neru hints triple_click
-neru hints mouse_up
-neru hints mouse_down
-neru hints middle_click
-neru hints move_mouse
-neru hints scroll
-neru hints context_menu
+neru hints left_click # Show hints and perform left click action
+neru hints right_click # Show hints and perform right click action
+neru hints double_click # Show hints and perform double click action
+neru hints triple_click # Show hints and perform triple click action
+# Note that you probably will never use `mouse_up` directly, just including in the CLI for completeness
+# `mouse_up` will be called after selected a hint from `mouse_down`.
+neru hints mouse_up # Show hints and perform mouse up action
+neru hints mouse_down # Show hints and perform a mouse down action. After selected a hint, it will call mouse up to select a target to perform the `mouse_up`
+neru hints middle_click # Show hints and perform middle click action
+neru hints move_mouse # Show hints and move the mouse to the position, no clicking
+neru hints scroll # Enter scroll mode
+neru hints context_menu # Show hints and trigger context menu action
 
 # Return to idle state
 neru idle          # Return to idle state
