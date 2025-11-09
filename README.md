@@ -19,7 +19,21 @@
 
 </div>
 
-<https://github.com/user-attachments/assets/6d796898-b780-499d-b3a3-35b9ec537079>
+![preview](https://github.com/user-attachments/assets/71b13850-1b87-40b5-9ac0-93cff1f2e89b)
+
+<https://github.com/user-attachments/assets/4fc33733-d7de-4787-a4c8-c6cc2070e87e>
+
+<https://github.com/user-attachments/assets/d49813e2-045e-4ccb-8120-39e7fbb22ef9>
+
+<https://github.com/user-attachments/assets/ff6305a5-250a-465b-9fc2-45a08c172c4e>
+
+<https://github.com/user-attachments/assets/53e9d63e-d578-45d1-a6b8-d6aec6f39a24>
+
+<https://github.com/user-attachments/assets/bed2f3eb-aa41-4cbd-a18f-eac3916cf076>
+
+<https://github.com/user-attachments/assets/57e9c87c-6b00-4c56-b657-54addf9032cd>
+
+<https://github.com/user-attachments/assets/24b0de50-d17b-4c9b-8eae-41cf3e839dea>
 
 ## About Neru
 
@@ -61,10 +75,8 @@ This is an intentional design choice to keep the project lean, maintainable, and
 
 ### Consideration (NOT roadmap)
 
-- Better UI representation for action menu (maybe auto edge detection like tooltip in browser, that will place itself around the element based on the space available around it)
 - Find a way to auto deduplicate hints that are targeting the same point
 - Homerow supports `continuous clicks`, is that something important?
-- Research if there's a good way to implemet visual hint mode where we can select text? Doing this with accessibility seems a little hard and vague
 - Test suites, but am lazy for it
 - Implements launch agent with `start-service` and `stop-service`? Though I am fine just doing it in my nix config directly
 - Better app icon and menubar icon
