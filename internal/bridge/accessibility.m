@@ -3,41 +3,45 @@
 
 // Check if accessibility permissions are granted
 int checkAccessibilityPermissions() {
-    NSDictionary *options = @{(__bridge id)kAXTrustedCheckOptionPrompt: @YES};
-    Boolean trusted = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
-    return trusted ? 1 : 0;
+    @autoreleasepool {
+        NSDictionary *options = @{(__bridge id)kAXTrustedCheckOptionPrompt: @YES};
+        Boolean trusted = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
+        return trusted ? 1 : 0;
+    }
 }
 
 int setApplicationAttribute(int pid, const char* attribute, int value) {
     if (!attribute) return 0;
-    AXUIElementRef appRef = AXUIElementCreateApplication(pid);
-    if (!appRef) return 0;
 
-    CFStringRef attrName = CFStringCreateWithCString(NULL, attribute, kCFStringEncodingUTF8);
-    if (!attrName) {
-        CFRelease(appRef);
-        return 0;
-    }
+    @autoreleasepool {
+        AXUIElementRef appRef = AXUIElementCreateApplication(pid);
+        if (!appRef) return 0;
 
-    // Check if attribute is settable
-    Boolean isSettable = false;
-    AXError checkError = AXUIElementIsAttributeSettable(appRef, attrName, &isSettable);
-    if (checkError != kAXErrorSuccess || !isSettable) {
+        CFStringRef attrName = CFStringCreateWithCString(NULL, attribute, kCFStringEncodingUTF8);
+        if (!attrName) {
+            CFRelease(appRef);
+            return 0;
+        }
+
+        // Check if attribute is settable
+        Boolean isSettable = false;
+        AXError checkError = AXUIElementIsAttributeSettable(appRef, attrName, &isSettable);
+        if (checkError != kAXErrorSuccess || !isSettable) {
+            CFRelease(attrName);
+            CFRelease(appRef);
+            return 0;
+        }
+
+        CFBooleanRef boolValue = value ? kCFBooleanTrue : kCFBooleanFalse;
+        AXError error = AXUIElementSetAttributeValue(appRef, attrName, boolValue);
         CFRelease(attrName);
         CFRelease(appRef);
-        return 0; // Attribute doesn't exist or isn't settable
+        return (error == kAXErrorSuccess) ? 1 : 0;
     }
-
-    CFBooleanRef boolValue = value ? kCFBooleanTrue : kCFBooleanFalse;
-    AXError error = AXUIElementSetAttributeValue(appRef, attrName, boolValue);
-    CFRelease(attrName);
-    CFRelease(appRef);
-    return (error == kAXErrorSuccess) ? 1 : 0;
 }
 
 // Helper function to check if a point is actually visible (not occluded by other windows)
 static bool isPointVisible(CGPoint point, pid_t elementPid) {
-    // Use AXUIElementCopyElementAtPosition to check what's at this point
     AXUIElementRef systemWide = AXUIElementCreateSystemWide();
     if (!systemWide) return true;
 
@@ -107,34 +111,36 @@ void* getSystemWideElement() {
 
 // Get focused application
 void* getFocusedApplication() {
-    AXUIElementRef systemWide = AXUIElementCreateSystemWide();
-    if (systemWide) {
-        AXUIElementRef focusedApp = NULL;
-        AXError error = AXUIElementCopyAttributeValue(
-            systemWide,
-            kAXFocusedApplicationAttribute,
-            (CFTypeRef*)&focusedApp
-        );
+    @autoreleasepool {
+        AXUIElementRef systemWide = AXUIElementCreateSystemWide();
+        if (systemWide) {
+            AXUIElementRef focusedApp = NULL;
+            AXError error = AXUIElementCopyAttributeValue(
+                systemWide,
+                kAXFocusedApplicationAttribute,
+                (CFTypeRef*)&focusedApp
+            );
 
-        CFRelease(systemWide);
+            CFRelease(systemWide);
 
-        if (error == kAXErrorSuccess && focusedApp) {
-            return (void*)focusedApp;
+            if (error == kAXErrorSuccess && focusedApp) {
+                return (void*)focusedApp;
+            }
         }
-    }
 
-    // Fallback: use NSWorkspace frontmostApplication to obtain an AXUIElement
-    NSRunningApplication* front = [NSWorkspace sharedWorkspace].frontmostApplication;
-    if (!front) return NULL;
-    pid_t pid = front.processIdentifier;
-    AXUIElementRef axApp = AXUIElementCreateApplication(pid);
-    if (!axApp) return NULL;
-    return (void*)axApp;
+        // Fallback: use NSWorkspace frontmostApplication
+        NSRunningApplication* front = [NSWorkspace sharedWorkspace].frontmostApplication;
+        if (!front) return NULL;
+        pid_t pid = front.processIdentifier;
+        AXUIElementRef axApp = AXUIElementCreateApplication(pid);
+        return (void*)axApp;
+    }
 }
 
 // Get the menu bar element of an application
 void* getMenuBar(void* app) {
     if (!app) return NULL;
+
     AXUIElementRef axApp = (AXUIElementRef)app;
     AXUIElementRef menubar = NULL;
     AXError error = AXUIElementCopyAttributeValue(axApp, kAXMenuBarAttribute, (CFTypeRef*)&menubar);
@@ -154,15 +160,17 @@ void* getApplicationByPID(int pid) {
 void* getApplicationByBundleId(const char* bundle_id) {
     if (!bundle_id) return NULL;
 
-    NSString* bundleIdStr = [NSString stringWithUTF8String:bundle_id];
-    NSArray<NSRunningApplication*>* apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdStr];
-    if (apps.count == 0) {
-        return NULL;
+    @autoreleasepool {
+        NSString* bundleIdStr = [NSString stringWithUTF8String:bundle_id];
+        NSArray<NSRunningApplication*>* apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdStr];
+        if (apps.count == 0) {
+            return NULL;
+        }
+        NSRunningApplication* app = apps.firstObject;
+        pid_t pid = app.processIdentifier;
+        AXUIElementRef axApp = AXUIElementCreateApplication(pid);
+        return (void*)axApp;
     }
-    NSRunningApplication* app = apps.firstObject;
-    pid_t pid = app.processIdentifier;
-    AXUIElementRef axApp = AXUIElementCreateApplication(pid);
-    return (void*)axApp;
 }
 
 // Helper function to convert CFStringRef to C string
@@ -172,6 +180,7 @@ char* cfStringToCString(CFStringRef cfStr) {
     CFIndex length = CFStringGetLength(cfStr);
     CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
     char* buffer = (char*)malloc(maxSize);
+    if (!buffer) return NULL;
 
     if (CFStringGetCString(cfStr, buffer, maxSize, kCFStringEncodingUTF8)) {
         return buffer;
@@ -185,81 +194,84 @@ char* cfStringToCString(CFStringRef cfStr) {
 ElementInfo* getElementInfo(void* element) {
     if (!element) return NULL;
 
-    AXUIElementRef axElement = (AXUIElementRef)element;
-    ElementInfo* info = (ElementInfo*)calloc(1, sizeof(ElementInfo));
+    @autoreleasepool {
+        AXUIElementRef axElement = (AXUIElementRef)element;
+        ElementInfo* info = (ElementInfo*)calloc(1, sizeof(ElementInfo));
+        if (!info) return NULL;
 
-    // Get position
-    CFTypeRef positionValue = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXPositionAttribute, &positionValue) == kAXErrorSuccess) {
-        CGPoint point;
-        if (AXValueGetValue(positionValue, kAXValueCGPointType, &point)) {
-            info->position = point;
+        // Get position
+        CFTypeRef positionValue = NULL;
+        if (AXUIElementCopyAttributeValue(axElement, kAXPositionAttribute, &positionValue) == kAXErrorSuccess) {
+            CGPoint point;
+            if (AXValueGetValue(positionValue, kAXValueCGPointType, &point)) {
+                info->position = point;
+            }
+            CFRelease(positionValue);
         }
-        CFRelease(positionValue);
-    }
 
-    // Get size
-    CFTypeRef sizeValue = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXSizeAttribute, &sizeValue) == kAXErrorSuccess) {
-        CGSize size;
-        if (AXValueGetValue(sizeValue, kAXValueCGSizeType, &size)) {
-            info->size = size;
+        // Get size
+        CFTypeRef sizeValue = NULL;
+        if (AXUIElementCopyAttributeValue(axElement, kAXSizeAttribute, &sizeValue) == kAXErrorSuccess) {
+            CGSize size;
+            if (AXValueGetValue(sizeValue, kAXValueCGSizeType, &size)) {
+                info->size = size;
+            }
+            CFRelease(sizeValue);
         }
-        CFRelease(sizeValue);
-    }
 
-    // Get title
-    CFTypeRef titleValue = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXTitleAttribute, &titleValue) == kAXErrorSuccess) {
-        if (CFGetTypeID(titleValue) == CFStringGetTypeID()) {
-            info->title = cfStringToCString((CFStringRef)titleValue);
+        // Get title
+        CFTypeRef titleValue = NULL;
+        if (AXUIElementCopyAttributeValue(axElement, kAXTitleAttribute, &titleValue) == kAXErrorSuccess) {
+            if (CFGetTypeID(titleValue) == CFStringGetTypeID()) {
+                info->title = cfStringToCString((CFStringRef)titleValue);
+            }
+            CFRelease(titleValue);
         }
-        CFRelease(titleValue);
-    }
 
-    // Get role
-    CFTypeRef roleValue = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute, &roleValue) == kAXErrorSuccess) {
-        if (CFGetTypeID(roleValue) == CFStringGetTypeID()) {
-            info->role = cfStringToCString((CFStringRef)roleValue);
+        // Get role
+        CFTypeRef roleValue = NULL;
+        if (AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute, &roleValue) == kAXErrorSuccess) {
+            if (CFGetTypeID(roleValue) == CFStringGetTypeID()) {
+                info->role = cfStringToCString((CFStringRef)roleValue);
+            }
+            CFRelease(roleValue);
         }
-        CFRelease(roleValue);
-    }
 
-    // Get role description
-    CFTypeRef roleDescValue = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXRoleDescriptionAttribute, &roleDescValue) == kAXErrorSuccess) {
-        if (CFGetTypeID(roleDescValue) == CFStringGetTypeID()) {
-            info->roleDescription = cfStringToCString((CFStringRef)roleDescValue);
+        // Get role description
+        CFTypeRef roleDescValue = NULL;
+        if (AXUIElementCopyAttributeValue(axElement, kAXRoleDescriptionAttribute, &roleDescValue) == kAXErrorSuccess) {
+            if (CFGetTypeID(roleDescValue) == CFStringGetTypeID()) {
+                info->roleDescription = cfStringToCString((CFStringRef)roleDescValue);
+            }
+            CFRelease(roleDescValue);
         }
-        CFRelease(roleDescValue);
-    }
 
-    // Get enabled state
-    CFTypeRef enabledValue = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXEnabledAttribute, &enabledValue) == kAXErrorSuccess) {
-        if (CFGetTypeID(enabledValue) == CFBooleanGetTypeID()) {
-            info->isEnabled = CFBooleanGetValue((CFBooleanRef)enabledValue);
+        // Get enabled state
+        CFTypeRef enabledValue = NULL;
+        if (AXUIElementCopyAttributeValue(axElement, kAXEnabledAttribute, &enabledValue) == kAXErrorSuccess) {
+            if (CFGetTypeID(enabledValue) == CFBooleanGetTypeID()) {
+                info->isEnabled = CFBooleanGetValue((CFBooleanRef)enabledValue);
+            }
+            CFRelease(enabledValue);
         }
-        CFRelease(enabledValue);
-    }
 
-    // Get focused state
-    CFTypeRef focusedValue = NULL;
-    if (AXUIElementCopyAttributeValue(axElement, kAXFocusedAttribute, &focusedValue) == kAXErrorSuccess) {
-        if (CFGetTypeID(focusedValue) == CFBooleanGetTypeID()) {
-            info->isFocused = CFBooleanGetValue((CFBooleanRef)focusedValue);
+        // Get focused state
+        CFTypeRef focusedValue = NULL;
+        if (AXUIElementCopyAttributeValue(axElement, kAXFocusedAttribute, &focusedValue) == kAXErrorSuccess) {
+            if (CFGetTypeID(focusedValue) == CFBooleanGetTypeID()) {
+                info->isFocused = CFBooleanGetValue((CFBooleanRef)focusedValue);
+            }
+            CFRelease(focusedValue);
         }
-        CFRelease(focusedValue);
-    }
 
-    // Get PID
-    pid_t pid;
-    if (AXUIElementGetPid(axElement, &pid) == kAXErrorSuccess) {
-        info->pid = pid;
-    }
+        // Get PID
+        pid_t pid;
+        if (AXUIElementGetPid(axElement, &pid) == kAXErrorSuccess) {
+            info->pid = pid;
+        }
 
-    return info;
+        return info;
+    }
 }
 
 // Free element info
@@ -334,6 +346,11 @@ void** getChildren(void* element, int* count) {
     *count = (int)childCount;
 
     void** result = (void**)malloc(childCount * sizeof(void*));
+    if (!result) {
+        CFRelease(childrenValue);
+        *count = 0;
+        return NULL;
+    }
 
     for (CFIndex i = 0; i < childCount; i++) {
         AXUIElementRef child = (AXUIElementRef)CFArrayGetValueAtIndex(children, i);
@@ -351,13 +368,11 @@ void** getVisibleRows(void* element, int* count) {
     AXUIElementRef axElement = (AXUIElementRef)element;
     CFTypeRef rowsValue = NULL;
 
-    // Try to fetch visible rows
     if (AXUIElementCopyAttributeValue(axElement, kAXVisibleRowsAttribute, &rowsValue) != kAXErrorSuccess) {
         *count = 0;
         return NULL;
     }
 
-    // Ensure the result is an array
     if (CFGetTypeID(rowsValue) != CFArrayGetTypeID()) {
         CFRelease(rowsValue);
         *count = 0;
@@ -393,6 +408,7 @@ static CFStringRef kAXVisibleAttribute    = CFSTR("AXVisible");
 // Check if element has click action
 int hasClickAction(void* element) {
     if (!element) return 0;
+
     AXUIElementRef axElement = (AXUIElementRef)element;
 
     // Ignore hidden or disabled elements early
@@ -406,7 +422,7 @@ int hasClickAction(void* element) {
     }
 
     CFBooleanRef enabled = NULL;
-    bool isEnabled = true; // default to true if attribute not present
+    bool isEnabled = true;
     if (AXUIElementCopyAttributeValue(axElement, kAXEnabledAttribute, (CFTypeRef *)&enabled) == kAXErrorSuccess && enabled) {
         isEnabled = CFBooleanGetValue(enabled);
         CFRelease(enabled);
@@ -445,14 +461,12 @@ int hasClickAction(void* element) {
         if (role) CFRelease(role);
         return 1;
     }
-    if (pressDesc) CFRelease(pressDesc);
 
-    // Focusable and enabled controls are clickable (e.g., text fields)
+    // Focusable and enabled controls are clickable
     CFBooleanRef focusable = NULL;
     if (AXUIElementCopyAttributeValue(axElement, kAXFocusableAttribute, (CFTypeRef *)&focusable) == kAXErrorSuccess && focusable) {
         if (CFBooleanGetValue(focusable)) {
             CFRelease(focusable);
-            // Ensure the element has a hittable rect and is not occluded by other apps
             CGPoint center;
             pid_t pid;
             bool visible = true;
@@ -465,7 +479,7 @@ int hasClickAction(void* element) {
         CFRelease(focusable);
     }
 
-    // Role-specific fallback for links: Treat as clickable if they expose a URL
+    // Role-specific fallback for links
     if (role && CFStringCompare(role, kAXLinkRole, 0) == kCFCompareEqualTo) {
         CFTypeRef urlAttr = NULL;
         if (AXUIElementCopyAttributeValue(axElement, kAXURLAttribute, &urlAttr) == kAXErrorSuccess && urlAttr) {
@@ -473,12 +487,11 @@ int hasClickAction(void* element) {
             CFRelease(role);
             return 1;
         }
-        if (urlAttr) CFRelease(urlAttr);
     }
 
     if (role) CFRelease(role);
 
-    // final check, ensure a visible bounding box and not occluded
+    // Final check: visible bounding box and not occluded
     CGPoint center;
     pid_t pid;
     if (getElementCenter((void*)axElement, &center) && AXUIElementGetPid(axElement, &pid) == kAXErrorSuccess) {
@@ -544,9 +557,11 @@ static int performClick(void* element, CGEventType downEvent, CGEventType upEven
     // Save current cursor position if needed
     CGPoint originalPosition = CGPointZero;
     if (restoreCursor) {
-        CGEventRef event = CGEventCreate(NULL);
-        originalPosition = CGEventGetLocation(event);
-        CFRelease(event);
+        CGEventRef currentEvent = CGEventCreate(NULL);
+        if (currentEvent) {
+            originalPosition = CGEventGetLocation(currentEvent);
+            CFRelease(currentEvent);
+        }
     }
 
     moveMouse(clickPoint);
@@ -557,7 +572,6 @@ static int performClick(void* element, CGEventType downEvent, CGEventType upEven
     if (!down || !up) {
         if (down) CFRelease(down);
         if (up) CFRelease(up);
-        // Restore cursor position before returning if needed
         if (restoreCursor) {
             moveMouse(originalPosition);
         }
@@ -571,7 +585,6 @@ static int performClick(void* element, CGEventType downEvent, CGEventType upEven
 
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
 
-    // Restore cursor to original position if needed
     if (restoreCursor) {
         moveMouse(originalPosition);
     }
@@ -604,15 +617,25 @@ int performDoubleClick(void* element, bool restoreCursor) {
     CGPoint originalPos = CGPointZero;
     if (restoreCursor) {
         CGEventRef ev = CGEventCreate(NULL);
-        originalPos = CGEventGetLocation(ev);
-        CFRelease(ev);
+        if (ev) {
+            originalPos = CGEventGetLocation(ev);
+            CFRelease(ev);
+        }
     }
 
     moveMouse(pos);
 
     for (int i = 1; i <= 2; ++i) {
         CGEventRef dn = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, pos, kCGMouseButtonLeft);
-        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp,   pos, kCGMouseButtonLeft);
+        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, pos, kCGMouseButtonLeft);
+
+        if (!dn || !up) {
+            if (dn) CFRelease(dn);
+            if (up) CFRelease(up);
+            if (restoreCursor) moveMouse(originalPos);
+            return 0;
+        }
+
         if (i == 2) {
             CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 2);
             CGEventSetIntegerValueField(up, kCGMouseEventClickState, 2);
@@ -639,15 +662,25 @@ int performTripleClick(void* element, bool restoreCursor) {
     CGPoint originalPos = CGPointZero;
     if (restoreCursor) {
         CGEventRef ev = CGEventCreate(NULL);
-        originalPos = CGEventGetLocation(ev);
-        CFRelease(ev);
+        if (ev) {
+            originalPos = CGEventGetLocation(ev);
+            CFRelease(ev);
+        }
     }
 
     moveMouse(pos);
 
     for (int i = 1; i <= 3; ++i) {
         CGEventRef dn = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, pos, kCGMouseButtonLeft);
-        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp,   pos, kCGMouseButtonLeft);
+        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, pos, kCGMouseButtonLeft);
+
+        if (!dn || !up) {
+            if (dn) CFRelease(dn);
+            if (up) CFRelease(up);
+            if (restoreCursor) moveMouse(originalPos);
+            return 0;
+        }
+
         if (i == 3) {
             CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 3);
             CGEventSetIntegerValueField(up, kCGMouseEventClickState, 3);
@@ -665,8 +698,7 @@ int performTripleClick(void* element, bool restoreCursor) {
 }
 
 // Press the left button down (start drag)
-int performLeftMouseDown(void *element)
-{
+int performLeftMouseDown(void *element) {
     if (!element) return 0;
 
     CGPoint pos;
@@ -675,9 +707,9 @@ int performLeftMouseDown(void *element)
     moveMouse(pos);
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
 
-    CGEventRef down = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown,
-                                              pos, kCGMouseButtonLeft);
+    CGEventRef down = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, pos, kCGMouseButtonLeft);
     if (!down) return 0;
+
     CGEventPost(kCGHIDEventTap, down);
     CFRelease(down);
 
@@ -686,12 +718,14 @@ int performLeftMouseDown(void *element)
 }
 
 // Release the left button without moving
-int performLeftMouseUpWithoutPos(void)
-{
-    CGEventRef up = CGEventCreateMouseEvent(NULL,
-                                            kCGEventLeftMouseUp,
-                                            CGEventGetLocation(CGEventCreate(NULL)),
-                                            kCGMouseButtonLeft);
+int performLeftMouseUpWithoutPos(void) {
+    CGEventRef currentEvent = CGEventCreate(NULL);
+    if (!currentEvent) return 0;
+
+    CGPoint currentPos = CGEventGetLocation(currentEvent);
+    CFRelease(currentEvent);
+
+    CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, currentPos, kCGMouseButtonLeft);
     if (!up) return 0;
 
     CGEventPost(kCGHIDEventTap, up);
@@ -702,8 +736,7 @@ int performLeftMouseUpWithoutPos(void)
 }
 
 // Release the left button (end drag) for a specific element
-int performLeftMouseUp(void *element)
-{
+int performLeftMouseUp(void *element) {
     if (!element) return 0;
 
     CGPoint pos;
@@ -712,7 +745,6 @@ int performLeftMouseUp(void *element)
     moveMouse(pos);
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
 
-    // Use the helper that performs the mouse up
     return performLeftMouseUpWithoutPos();
 }
 
@@ -721,13 +753,11 @@ int performMoveMouseToPosition(void* element) {
     if (!element) return 0;
 
     CGPoint clickPoint;
-
     if (!getElementCenter(element, &clickPoint)) {
         return 0;
     }
 
     moveMouse(clickPoint);
-
     return 1;
 }
 
@@ -748,6 +778,8 @@ char* getElementAttribute(void* element, const char* attribute) {
 
     AXUIElementRef axElement = (AXUIElementRef)element;
     CFStringRef attrName = CFStringCreateWithCString(NULL, attribute, kCFStringEncodingUTF8);
+    if (!attrName) return NULL;
+
     CFTypeRef value = NULL;
     AXError error = AXUIElementCopyAttributeValue(axElement, attrName, &value);
     CFRelease(attrName);
@@ -762,31 +794,35 @@ char* getElementAttribute(void* element, const char* attribute) {
         result = cfStringToCString((CFStringRef)value);
     }
     else if (CFGetTypeID(value) == AXValueGetTypeID()) {
-        // Handle AXValue types (like AXFrame, AXPosition, AXSize)
         AXValueType valueType = AXValueGetType((AXValueRef)value);
 
         if (valueType == kAXValueCGRectType) {
             CGRect rect;
             if (AXValueGetValue((AXValueRef)value, kAXValueCGRectType, &rect)) {
-                // Format as "{{x, y}, {width, height}}"
                 result = malloc(128);
-                snprintf(result, 128, "{{%.1f, %.1f}, {%.1f, %.1f}}",
-                        rect.origin.x, rect.origin.y,
-                        rect.size.width, rect.size.height);
+                if (result) {
+                    snprintf(result, 128, "{{%.1f, %.1f}, {%.1f, %.1f}}",
+                            rect.origin.x, rect.origin.y,
+                            rect.size.width, rect.size.height);
+                }
             }
         }
         else if (valueType == kAXValueCGPointType) {
             CGPoint point;
             if (AXValueGetValue((AXValueRef)value, kAXValueCGPointType, &point)) {
                 result = malloc(64);
-                snprintf(result, 64, "{%.1f, %.1f}", point.x, point.y);
+                if (result) {
+                    snprintf(result, 64, "{%.1f, %.1f}", point.x, point.y);
+                }
             }
         }
         else if (valueType == kAXValueCGSizeType) {
             CGSize size;
             if (AXValueGetValue((AXValueRef)value, kAXValueCGSizeType, &size)) {
                 result = malloc(64);
-                snprintf(result, 64, "{%.1f, %.1f}", size.width, size.height);
+                if (result) {
+                    snprintf(result, 64, "{%.1f, %.1f}", size.width, size.height);
+                }
             }
         }
     }
@@ -811,100 +847,108 @@ void releaseElement(void* element) {
 void** getAllWindows(int* count) {
     if (!count) return NULL;
 
-    AXUIElementRef focusedApp = (AXUIElementRef)getFocusedApplication();
-    if (!focusedApp) {
-        *count = 0;
-        return NULL;
-    }
+    @autoreleasepool {
+        AXUIElementRef focusedApp = (AXUIElementRef)getFocusedApplication();
+        if (!focusedApp) {
+            *count = 0;
+            return NULL;
+        }
 
-    CFTypeRef windowsValue = NULL;
-    if (AXUIElementCopyAttributeValue(focusedApp, kAXWindowsAttribute, &windowsValue) != kAXErrorSuccess) {
-        CFRelease(focusedApp);
-        *count = 0;
-        return NULL;
-    }
+        CFTypeRef windowsValue = NULL;
+        if (AXUIElementCopyAttributeValue(focusedApp, kAXWindowsAttribute, &windowsValue) != kAXErrorSuccess) {
+            CFRelease(focusedApp);
+            *count = 0;
+            return NULL;
+        }
 
-    if (CFGetTypeID(windowsValue) != CFArrayGetTypeID()) {
+        if (CFGetTypeID(windowsValue) != CFArrayGetTypeID()) {
+            CFRelease(windowsValue);
+            CFRelease(focusedApp);
+            *count = 0;
+            return NULL;
+        }
+
+        CFArrayRef windows = (CFArrayRef)windowsValue;
+        CFIndex windowCount = CFArrayGetCount(windows);
+        *count = (int)windowCount;
+
+        void** result = (void**)malloc(windowCount * sizeof(void*));
+        if (!result) {
+            CFRelease(windowsValue);
+            CFRelease(focusedApp);
+            *count = 0;
+            return NULL;
+        }
+
+        for (CFIndex i = 0; i < windowCount; i++) {
+            AXUIElementRef window = (AXUIElementRef)CFArrayGetValueAtIndex(windows, i);
+            CFRetain(window);
+            result[i] = (void*)window;
+        }
+
         CFRelease(windowsValue);
         CFRelease(focusedApp);
-        *count = 0;
-        return NULL;
+        return result;
     }
-
-    CFArrayRef windows = (CFArrayRef)windowsValue;
-    CFIndex windowCount = CFArrayGetCount(windows);
-    *count = (int)windowCount;
-
-    void** result = (void**)malloc(windowCount * sizeof(void*));
-
-    for (CFIndex i = 0; i < windowCount; i++) {
-        AXUIElementRef window = (AXUIElementRef)CFArrayGetValueAtIndex(windows, i);
-        CFRetain(window);
-        result[i] = (void*)window;
-    }
-
-    CFRelease(windowsValue);
-    CFRelease(focusedApp);
-    return result;
 }
 
 // Get frontmost window
 void* getFrontmostWindow() {
-    // Try to get the focused application first
-    AXUIElementRef focusedApp = (AXUIElementRef)getFocusedApplication();
-    AXUIElementRef appRef = focusedApp;
-    bool shouldReleaseAppRef = false;
+    @autoreleasepool {
+        AXUIElementRef focusedApp = (AXUIElementRef)getFocusedApplication();
+        AXUIElementRef appRef = focusedApp;
+        bool shouldReleaseAppRef = false;
 
-    if (!appRef) {
-        // If focused application couldn't be obtained via AX, fall back to NSWorkspace
-        NSRunningApplication* front = [NSWorkspace sharedWorkspace].frontmostApplication;
-        if (!front) return NULL;
-        pid_t pid = front.processIdentifier;
-        appRef = AXUIElementCreateApplication(pid);
-        if (!appRef) return NULL;
-        shouldReleaseAppRef = true;
-    }
+        if (!appRef) {
+            NSRunningApplication* front = [NSWorkspace sharedWorkspace].frontmostApplication;
+            if (!front) return NULL;
+            pid_t pid = front.processIdentifier;
+            appRef = AXUIElementCreateApplication(pid);
+            if (!appRef) return NULL;
+            shouldReleaseAppRef = true;
+        }
 
-    AXUIElementRef window = NULL;
-    AXError error = AXUIElementCopyAttributeValue(appRef, kAXFocusedWindowAttribute, (CFTypeRef*)&window);
+        AXUIElementRef window = NULL;
+        AXError error = AXUIElementCopyAttributeValue(appRef, kAXFocusedWindowAttribute, (CFTypeRef*)&window);
 
-    if (shouldReleaseAppRef && appRef) {
-        CFRelease(appRef);
-    }
+        if (shouldReleaseAppRef && appRef) {
+            CFRelease(appRef);
+        }
 
-    if (error == kAXErrorSuccess && window) {
+        if (error == kAXErrorSuccess && window) {
+            if (focusedApp) {
+                CFRelease(focusedApp);
+            }
+            return (void*)window;
+        }
+
+        // Fallback: try to get the application's windows list
         if (focusedApp) {
+            pid_t pid;
+            if (AXUIElementGetPid(focusedApp, &pid) == kAXErrorSuccess) {
+                AXUIElementRef appFromPid = AXUIElementCreateApplication(pid);
+                if (appFromPid) {
+                    CFTypeRef windowsValue = NULL;
+                    if (AXUIElementCopyAttributeValue(appFromPid, kAXWindowsAttribute, &windowsValue) == kAXErrorSuccess && windowsValue && CFGetTypeID(windowsValue) == CFArrayGetTypeID()) {
+                        CFArrayRef windows = (CFArrayRef)windowsValue;
+                        if (CFArrayGetCount(windows) > 0) {
+                            AXUIElementRef firstWindow = (AXUIElementRef)CFArrayGetValueAtIndex(windows, 0);
+                            CFRetain(firstWindow);
+                            CFRelease(windowsValue);
+                            CFRelease(appFromPid);
+                            CFRelease(focusedApp);
+                            return (void*)firstWindow;
+                        }
+                    }
+                    if (windowsValue) CFRelease(windowsValue);
+                    CFRelease(appFromPid);
+                }
+            }
             CFRelease(focusedApp);
         }
-        return (void*)window;
-    }
 
-    // As a further fallback, try to get the application's windows list and return the main/first window
-    if (focusedApp) {
-        pid_t pid;
-        if (AXUIElementGetPid(focusedApp, &pid) == kAXErrorSuccess) {
-            AXUIElementRef appFromPid = AXUIElementCreateApplication(pid);
-            if (appFromPid) {
-                CFTypeRef windowsValue = NULL;
-                if (AXUIElementCopyAttributeValue(appFromPid, kAXWindowsAttribute, &windowsValue) == kAXErrorSuccess && windowsValue && CFGetTypeID(windowsValue) == CFArrayGetTypeID()) {
-                    CFArrayRef windows = (CFArrayRef)windowsValue;
-                    if (CFArrayGetCount(windows) > 0) {
-                        AXUIElementRef firstWindow = (AXUIElementRef)CFArrayGetValueAtIndex(windows, 0);
-                        CFRetain(firstWindow);
-                        CFRelease(windowsValue);
-                        CFRelease(appFromPid);
-                        CFRelease(focusedApp);
-                        return (void*)firstWindow;
-                    }
-                }
-                if (windowsValue) CFRelease(windowsValue);
-                CFRelease(appFromPid);
-            }
-        }
-        CFRelease(focusedApp);
+        return NULL;
     }
-
-    return NULL;
 }
 
 // Get application name
@@ -931,18 +975,20 @@ char* getApplicationName(void* app) {
 char* getBundleIdentifier(void* app) {
     if (!app) return NULL;
 
-    pid_t pid;
-    if (AXUIElementGetPid((AXUIElementRef)app, &pid) != kAXErrorSuccess) {
-        return NULL;
+    @autoreleasepool {
+        pid_t pid;
+        if (AXUIElementGetPid((AXUIElementRef)app, &pid) != kAXErrorSuccess) {
+            return NULL;
+        }
+
+        NSRunningApplication* runningApp = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
+        if (!runningApp) return NULL;
+
+        NSString* bundleId = [runningApp bundleIdentifier];
+        if (!bundleId) return NULL;
+
+        return cfStringToCString((__bridge CFStringRef)bundleId);
     }
-
-    NSRunningApplication* runningApp = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
-    if (!runningApp) return NULL;
-
-    NSString* bundleId = [runningApp bundleIdentifier];
-    if (!bundleId) return NULL;
-
-    return cfStringToCString((__bridge CFStringRef)bundleId);
 }
 
 // Get scroll bounds
@@ -977,6 +1023,8 @@ CGRect getScrollBounds(void* element) {
 // Scroll at current cursor position only
 int scrollAtCursor(int deltaX, int deltaY) {
     CGEventRef event = CGEventCreate(NULL);
+    if (!event) return 0;
+
     CGPoint cursorPos = CGEventGetLocation(event);
     CFRelease(event);
 
@@ -1004,94 +1052,96 @@ int scrollAtCursor(int deltaX, int deltaY) {
 bool isMissionControlActive() {
     bool result = false;
 
-    CFArrayRef windowList = CGWindowListCopyWindowInfo(
-        kCGWindowListOptionAll,
-        kCGNullWindowID
-    );
-
-    if (!windowList) {
-        return false;
-    }
-
-    // Get screen size
-    NSScreen *mainScreen = [NSScreen mainScreen];
-    if (!mainScreen) {
-        CFRelease(windowList);
-        return false;
-    }
-
-    CGSize screenSize = mainScreen.frame.size;
-    CFIndex count = CFArrayGetCount(windowList);
-    int fullscreenDockWindows = 0;
-    int highLayerDockWindows = 0;
-
-    for (CFIndex i = 0; i < count; i++) {
-        CFDictionaryRef windowInfo = (CFDictionaryRef)CFArrayGetValueAtIndex(windowList, i);
-        if (!windowInfo) continue;
-
-        CFStringRef ownerName = (CFStringRef)CFDictionaryGetValue(
-            windowInfo,
-            kCGWindowOwnerName
+    @autoreleasepool {
+        CFArrayRef windowList = CGWindowListCopyWindowInfo(
+            kCGWindowListOptionAll,
+            kCGNullWindowID
         );
 
-        if (ownerName && CFStringCompare(ownerName, CFSTR("Dock"), 0) == kCFCompareEqualTo) {
-            CFStringRef windowName = (CFStringRef)CFDictionaryGetValue(
+        if (!windowList) {
+            return false;
+        }
+
+        // Get screen size
+        NSScreen *mainScreen = [NSScreen mainScreen];
+        if (!mainScreen) {
+            CFRelease(windowList);
+            return false;
+        }
+
+        CGSize screenSize = mainScreen.frame.size;
+        CFIndex count = CFArrayGetCount(windowList);
+        int fullscreenDockWindows = 0;
+        int highLayerDockWindows = 0;
+
+        for (CFIndex i = 0; i < count; i++) {
+            CFDictionaryRef windowInfo = (CFDictionaryRef)CFArrayGetValueAtIndex(windowList, i);
+            if (!windowInfo) continue;
+
+            CFStringRef ownerName = (CFStringRef)CFDictionaryGetValue(
                 windowInfo,
-                kCGWindowName
+                kCGWindowOwnerName
             );
 
-            CFDictionaryRef bounds = (CFDictionaryRef)CFDictionaryGetValue(
-                windowInfo,
-                kCGWindowBounds
-            );
+            if (ownerName && CFStringCompare(ownerName, CFSTR("Dock"), 0) == kCFCompareEqualTo) {
+                CFStringRef windowName = (CFStringRef)CFDictionaryGetValue(
+                    windowInfo,
+                    kCGWindowName
+                );
 
-            CFNumberRef windowLayer = (CFNumberRef)CFDictionaryGetValue(
-                windowInfo,
-                kCGWindowLayer
-            );
+                CFDictionaryRef bounds = (CFDictionaryRef)CFDictionaryGetValue(
+                    windowInfo,
+                    kCGWindowBounds
+                );
 
-            if (bounds) {
-                double x = 0, y = 0, w = 0, h = 0;
+                CFNumberRef windowLayer = (CFNumberRef)CFDictionaryGetValue(
+                    windowInfo,
+                    kCGWindowLayer
+                );
 
-                CFNumberRef xValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("X"));
-                CFNumberRef yValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("Y"));
-                CFNumberRef wValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("Width"));
-                CFNumberRef hValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("Height"));
+                if (bounds) {
+                    double x = 0, y = 0, w = 0, h = 0;
 
-                if (xValue) CFNumberGetValue(xValue, kCFNumberDoubleType, &x);
-                if (yValue) CFNumberGetValue(yValue, kCFNumberDoubleType, &y);
-                if (wValue) CFNumberGetValue(wValue, kCFNumberDoubleType, &w);
-                if (hValue) CFNumberGetValue(hValue, kCFNumberDoubleType, &h);
+                    CFNumberRef xValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("X"));
+                    CFNumberRef yValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("Y"));
+                    CFNumberRef wValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("Width"));
+                    CFNumberRef hValue = (CFNumberRef)CFDictionaryGetValue(bounds, CFSTR("Height"));
 
-                // check for Y < 0 (works on older macOS... maybe?)
-                if (y < 0) {
-                    result = true;
-                    break;
-                }
+                    if (xValue) CFNumberGetValue(xValue, kCFNumberDoubleType, &x);
+                    if (yValue) CFNumberGetValue(yValue, kCFNumberDoubleType, &y);
+                    if (wValue) CFNumberGetValue(wValue, kCFNumberDoubleType, &w);
+                    if (hValue) CFNumberGetValue(hValue, kCFNumberDoubleType, &h);
 
-                // count fullscreen Dock windows (works on Sequoia 15.1)
-                bool isFullscreen = (w >= screenSize.width * 0.95 && h >= screenSize.height * 0.95);
-                bool hasNoName = (!windowName || CFStringGetLength(windowName) == 0);
+                    // Check for Y < 0 (works on older macOS)
+                    if (y < 0) {
+                        result = true;
+                        break;
+                    }
 
-                if (isFullscreen && hasNoName && windowLayer) {
-                    int layer = 0;
-                    CFNumberGetValue(windowLayer, kCFNumberIntType, &layer);
+                    // Count fullscreen Dock windows (works on Sequoia 15.1)
+                    bool isFullscreen = (w >= screenSize.width * 0.95 && h >= screenSize.height * 0.95);
+                    bool hasNoName = (!windowName || CFStringGetLength(windowName) == 0);
 
-                    fullscreenDockWindows++;
-                    if (layer >= 18 && layer <= 20) {
-                        highLayerDockWindows++;
+                    if (isFullscreen && hasNoName && windowLayer) {
+                        int layer = 0;
+                        CFNumberGetValue(windowLayer, kCFNumberIntType, &layer);
+
+                        fullscreenDockWindows++;
+                        if (layer >= 18 && layer <= 20) {
+                            highLayerDockWindows++;
+                        }
                     }
                 }
             }
         }
+
+        CFRelease(windowList);
+
+        // Return results from old or new OS method
+        if (!result && fullscreenDockWindows >= 2 && highLayerDockWindows >= 2) {
+            result = true;
+        }
+
+        return result;
     }
-
-    CFRelease(windowList);
-
-    // Try to return the results from old or new OS method
-    if (!result && fullscreenDockWindows >= 2 && highLayerDockWindows >= 2) {
-        result = true;
-    }
-
-    return result;
 }

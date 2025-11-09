@@ -490,17 +490,34 @@ void hideOverlayWindow(OverlayWindow window) {
     if (!window) return;
 
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    [controller.window orderOut:nil];
+
+    if ([NSThread isMainThread]) {
+        [controller.window orderOut:nil];
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [controller.window orderOut:nil];
+        });
+    }
 }
 
 void clearOverlay(OverlayWindow window) {
     if (!window) return;
 
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    [controller.overlayView.hints removeAllObjects];
-    controller.overlayView.showScrollHighlight = NO;
-    controller.overlayView.showTargetDot = NO;
-    [controller.overlayView setNeedsDisplay:YES];
+
+    if ([NSThread isMainThread]) {
+        [controller.overlayView.hints removeAllObjects];
+        controller.overlayView.showScrollHighlight = NO;
+        controller.overlayView.showTargetDot = NO;
+        [controller.overlayView setNeedsDisplay:YES];
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [controller.overlayView.hints removeAllObjects];
+            controller.overlayView.showScrollHighlight = NO;
+            controller.overlayView.showTargetDot = NO;
+            [controller.overlayView setNeedsDisplay:YES];
+        });
+    }
 }
 
 void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style) {
@@ -508,28 +525,65 @@ void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style
 
     OverlayWindowController *controller = (OverlayWindowController*)window;
 
-    // Clear existing hints
-    [controller.overlayView.hints removeAllObjects];
+    if ([NSThread isMainThread]) {
+        // Execute directly - original code
+        [controller.overlayView.hints removeAllObjects];
+        [controller.overlayView applyStyle:style];
 
-    // Apply style
-    [controller.overlayView applyStyle:style];
+        for (int i = 0; i < count; i++) {
+            HintData hint = hints[i];
+            NSDictionary *hintDict = @{
+                @"label": @(hint.label),
+                @"position": [NSValue valueWithPoint:NSPointFromCGPoint(hint.position)],
+                @"matchedPrefixLength": @(hint.matchedPrefixLength),
+                @"showArrow": @(style.showArrow)
+            };
+            [controller.overlayView.hints addObject:hintDict];
+        }
 
-    // Add new hints
-    for (int i = 0; i < count; i++) {
-        HintData hint = hints[i];
+        [controller.overlayView setNeedsDisplay:YES];
+    } else {
+        // Need to copy data for async dispatch
+        NSMutableArray *hintDicts = [NSMutableArray arrayWithCapacity:count];
+        for (int i = 0; i < count; i++) {
+            HintData hint = hints[i];
+            NSDictionary *hintDict = @{
+                @"label": @(hint.label),
+                @"position": [NSValue valueWithPoint:NSPointFromCGPoint(hint.position)],
+                @"matchedPrefixLength": @(hint.matchedPrefixLength),
+                @"showArrow": @(style.showArrow)
+            };
+            [hintDicts addObject:hintDict];
+        }
 
-        NSDictionary *hintDict = @{
-            @"label": @(hint.label),
-            @"position": [NSValue valueWithPoint:NSPointFromCGPoint(hint.position)],
-            @"matchedPrefixLength": @(hint.matchedPrefixLength),
-            @"showArrow": @(style.showArrow)
-        };
+        // Deep copy style strings
+        HintStyle styleCopy;
+        styleCopy.fontSize = style.fontSize;
+        styleCopy.borderRadius = style.borderRadius;
+        styleCopy.borderWidth = style.borderWidth;
+        styleCopy.padding = style.padding;
+        styleCopy.opacity = style.opacity;
+        styleCopy.showArrow = style.showArrow;
+        styleCopy.fontFamily = style.fontFamily ? strdup(style.fontFamily) : NULL;
+        styleCopy.backgroundColor = style.backgroundColor ? strdup(style.backgroundColor) : NULL;
+        styleCopy.textColor = style.textColor ? strdup(style.textColor) : NULL;
+        styleCopy.matchedTextColor = style.matchedTextColor ? strdup(style.matchedTextColor) : NULL;
+        styleCopy.borderColor = style.borderColor ? strdup(style.borderColor) : NULL;
 
-        [controller.overlayView.hints addObject:hintDict];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [controller.overlayView.hints removeAllObjects];
+            [controller.overlayView applyStyle:styleCopy];
+            [controller.overlayView.hints addObjectsFromArray:hintDicts];
+            [controller.overlayView setNeedsDisplay:YES];
+
+            // Free copied strings
+            if (styleCopy.fontFamily) free((void*)styleCopy.fontFamily);
+            if (styleCopy.backgroundColor) free((void*)styleCopy.backgroundColor);
+            if (styleCopy.textColor) free((void*)styleCopy.textColor);
+            if (styleCopy.matchedTextColor) free((void*)styleCopy.matchedTextColor);
+            if (styleCopy.borderColor) free((void*)styleCopy.borderColor);
+        });
     }
-
-    // Redraw
-    [controller.overlayView setNeedsDisplay:YES];
 }
 
 void drawScrollHighlight(OverlayWindow window, CGRect bounds, char* color, int width) {
@@ -537,24 +591,49 @@ void drawScrollHighlight(OverlayWindow window, CGRect bounds, char* color, int w
 
     OverlayWindowController *controller = (OverlayWindowController*)window;
 
-    controller.overlayView.scrollHighlight = bounds;
-    controller.overlayView.scrollHighlightWidth = width;
-    controller.overlayView.showScrollHighlight = YES;
+    if ([NSThread isMainThread]) {
+        // Execute directly - original code
+        controller.overlayView.scrollHighlight = bounds;
+        controller.overlayView.scrollHighlightWidth = width;
+        controller.overlayView.showScrollHighlight = YES;
 
-    if (color) {
-        NSString *colorStr = @(color);
-        unsigned rgbValue = 0;
-        NSScanner *scanner = [NSScanner scannerWithString:colorStr];
-        [scanner setScanLocation:1]; // Skip '#'
-        [scanner scanHexInt:&rgbValue];
+        if (color) {
+            NSString *colorStr = @(color);
+            unsigned rgbValue = 0;
+            NSScanner *scanner = [NSScanner scannerWithString:colorStr];
+            [scanner setScanLocation:1];
+            [scanner scanHexInt:&rgbValue];
 
-        controller.overlayView.scrollHighlightColor = [NSColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0
-                                                                      green:((rgbValue & 0xFF00) >> 8)/255.0
-                                                                       blue:(rgbValue & 0xFF)/255.0
-                                                                      alpha:1.0];
+            controller.overlayView.scrollHighlightColor = [NSColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0
+                                                                          green:((rgbValue & 0xFF00) >> 8)/255.0
+                                                                           blue:(rgbValue & 0xFF)/255.0
+                                                                          alpha:1.0];
+        }
+
+        [controller.overlayView setNeedsDisplay:YES];
+    } else {
+        NSString *colorStr = color ? [NSString stringWithUTF8String:color] : nil;
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            controller.overlayView.scrollHighlight = bounds;
+            controller.overlayView.scrollHighlightWidth = width;
+            controller.overlayView.showScrollHighlight = YES;
+
+            if (colorStr) {
+                unsigned rgbValue = 0;
+                NSScanner *scanner = [NSScanner scannerWithString:colorStr];
+                [scanner setScanLocation:1];
+                [scanner scanHexInt:&rgbValue];
+
+                controller.overlayView.scrollHighlightColor = [NSColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0
+                                                                              green:((rgbValue & 0xFF00) >> 8)/255.0
+                                                                               blue:(rgbValue & 0xFF)/255.0
+                                                                              alpha:1.0];
+            }
+
+            [controller.overlayView setNeedsDisplay:YES];
+        });
     }
-
-    [controller.overlayView setNeedsDisplay:YES];
 }
 
 void drawTargetDot(OverlayWindow window, CGPoint center, double radius, const char *colorStr, const char *borderColorStr, double borderWidth) {
@@ -562,33 +641,69 @@ void drawTargetDot(OverlayWindow window, CGPoint center, double radius, const ch
 
     OverlayWindowController *controller = (OverlayWindowController*)window;
 
-    controller.overlayView.targetDotCenter = center;
-    controller.overlayView.targetDotRadius = radius;
-    controller.overlayView.targetDotBorderWidth = borderWidth;
-    controller.overlayView.showTargetDot = YES;
+    if ([NSThread isMainThread]) {
+        // Execute directly - original code
+        controller.overlayView.targetDotCenter = center;
+        controller.overlayView.targetDotRadius = radius;
+        controller.overlayView.targetDotBorderWidth = borderWidth;
+        controller.overlayView.showTargetDot = YES;
 
-    if (colorStr) {
-        NSString *colorString = @(colorStr);
-        controller.overlayView.targetDotBackgroundColor = [controller.overlayView colorFromHex:colorString
-                                                                        defaultColor:[NSColor redColor]];
+        if (colorStr) {
+            NSString *colorString = @(colorStr);
+            controller.overlayView.targetDotBackgroundColor = [controller.overlayView colorFromHex:colorString
+                                                                                    defaultColor:[NSColor redColor]];
+        } else {
+            controller.overlayView.targetDotBackgroundColor = [NSColor redColor];
+        }
+
+        if (borderColorStr) {
+            NSString *borderColorString = @(borderColorStr);
+            controller.overlayView.targetDotBorderColor = [controller.overlayView colorFromHex:borderColorString
+                                                                                 defaultColor:[NSColor blackColor]];
+        } else {
+            controller.overlayView.targetDotBorderColor = nil;
+        }
+
+        [controller.overlayView setNeedsDisplay:YES];
     } else {
-        controller.overlayView.targetDotBackgroundColor = [NSColor redColor];
-    }
+        NSString *colorString = colorStr ? [NSString stringWithUTF8String:colorStr] : nil;
+        NSString *borderColorString = borderColorStr ? [NSString stringWithUTF8String:borderColorStr] : nil;
 
-    if (borderColorStr) {
-        NSString *borderColorString = @(borderColorStr);
-        controller.overlayView.targetDotBorderColor = [controller.overlayView colorFromHex:borderColorString
-                                                                             defaultColor:[NSColor blackColor]];
-    } else {
-        controller.overlayView.targetDotBorderColor = nil;
-    }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            controller.overlayView.targetDotCenter = center;
+            controller.overlayView.targetDotRadius = radius;
+            controller.overlayView.targetDotBorderWidth = borderWidth;
+            controller.overlayView.showTargetDot = YES;
 
-    [controller.overlayView setNeedsDisplay:YES];
+            if (colorString) {
+                controller.overlayView.targetDotBackgroundColor = [controller.overlayView colorFromHex:colorString
+                                                                                        defaultColor:[NSColor redColor]];
+            } else {
+                controller.overlayView.targetDotBackgroundColor = [NSColor redColor];
+            }
+
+            if (borderColorString) {
+                controller.overlayView.targetDotBorderColor = [controller.overlayView colorFromHex:borderColorString
+                                                                                     defaultColor:[NSColor blackColor]];
+            } else {
+                controller.overlayView.targetDotBorderColor = nil;
+            }
+
+            [controller.overlayView setNeedsDisplay:YES];
+        });
+    }
 }
 
 void setOverlayLevel(OverlayWindow window, int level) {
     if (!window) return;
 
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    [controller.window setLevel:level];
+
+    if ([NSThread isMainThread]) {
+        [controller.window setLevel:level];
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [controller.window setLevel:level];
+        });
+    }
 }
