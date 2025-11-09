@@ -685,7 +685,23 @@ int performLeftMouseDown(void *element)
     return 1;
 }
 
-// Release the left button (end drag)
+// Release the left button without moving
+int performLeftMouseUpWithoutPos(void)
+{
+    CGEventRef up = CGEventCreateMouseEvent(NULL,
+                                            kCGEventLeftMouseUp,
+                                            CGEventGetLocation(CGEventCreate(NULL)),
+                                            kCGMouseButtonLeft);
+    if (!up) return 0;
+
+    CGEventPost(kCGHIDEventTap, up);
+    CFRelease(up);
+
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+    return 1;
+}
+
+// Release the left button (end drag) for a specific element
 int performLeftMouseUp(void *element)
 {
     if (!element) return 0;
@@ -696,14 +712,8 @@ int performLeftMouseUp(void *element)
     moveMouse(pos);
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
 
-    CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp,
-                                            pos, kCGMouseButtonLeft);
-    if (!up) return 0;
-    CGEventPost(kCGHIDEventTap, up);
-    CFRelease(up);
-
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
-    return 1;
+    // Use the helper that performs the mouse up
+    return performLeftMouseUpWithoutPos();
 }
 
 // Perform middle click
