@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/y3owk1n/neru/compare/v1.7.0...v1.7.1) (2025-11-09)
+
+
+### Bug Fixes
+
+* ensure less memory leaks and crashes in objc ([#106](https://github.com/y3owk1n/neru/issues/106)) ([75f521d](https://github.com/y3owk1n/neru/commit/75f521d18f94c6d476239084e069154e4a3c7cd3))
+
 ## [1.7.0](https://github.com/y3owk1n/neru/compare/v1.6.0...v1.7.0) (2025-11-09)
 
 
