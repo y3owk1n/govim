@@ -6,6 +6,7 @@ package hints
 #include <stdlib.h>
 */
 import "C"
+
 import (
 	"fmt"
 	"unsafe"
@@ -151,6 +152,27 @@ func (o *Overlay) DrawScrollHighlight(x, y, width, height int, color string, bor
 	defer C.free(unsafe.Pointer(cColor))
 
 	C.drawScrollHighlight(o.window, bounds, cColor, C.int(borderWidth))
+}
+
+// DrawTargetDot draws a small circular dot at the target position
+func (o *Overlay) DrawTargetDot(x, y int, radius float64, color, borderColor string, borderWidth float64) error {
+	center := C.CGPoint{
+		x: C.double(x),
+		y: C.double(y),
+	}
+
+	cColor := C.CString(color)
+	defer C.free(unsafe.Pointer(cColor))
+
+	var cBorderColor *C.char
+	if borderColor != "" {
+		cBorderColor = C.CString(borderColor)
+		defer C.free(unsafe.Pointer(cBorderColor))
+	}
+
+	C.drawTargetDot(o.window, center, C.double(radius), cColor, cBorderColor, C.double(borderWidth))
+
+	return nil
 }
 
 // SetLevel sets the window level

@@ -39,5 +39,6 @@ void clearOverlay(OverlayWindow window);
 void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style);
 void drawScrollHighlight(OverlayWindow window, CGRect bounds, char* color, int width);
 void setOverlayLevel(OverlayWindow window, int level);
+void drawTargetDot(OverlayWindow window, CGPoint center, double radius, const char *color, const char *borderColor, double borderWidth);
 
 #endif // OVERLAY_H

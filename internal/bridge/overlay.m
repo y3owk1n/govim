@@ -15,6 +15,12 @@
 @property (nonatomic, strong) NSColor *scrollHighlightColor;
 @property (nonatomic, assign) int scrollHighlightWidth;
 @property (nonatomic, assign) BOOL showScrollHighlight;
+@property (nonatomic, assign) BOOL showTargetDot;
+@property (nonatomic, assign) CGPoint targetDotCenter;
+@property (nonatomic, assign) CGFloat targetDotRadius;
+@property (nonatomic, strong) NSColor *targetDotBackgroundColor;
+@property (nonatomic, strong) NSColor *targetDotBorderColor;
+@property (nonatomic, assign) CGFloat targetDotBorderWidth;
 - (void)applyStyle:(HintStyle)style;
 - (NSColor *)colorFromHex:(NSString *)hexString defaultColor:(NSColor *)defaultColor;
 @end
@@ -26,6 +32,11 @@
     if (self) {
         _hints = [NSMutableArray array];
         _showScrollHighlight = NO;
+        _showTargetDot = NO;
+        _targetDotRadius = 4.0;
+        _targetDotBorderWidth = 1.0;
+        _targetDotBorderColor = [NSColor blackColor];
+        _targetDotBackgroundColor = [[NSColor colorWithRed:1.0 green:0.84 blue:0.0 alpha:1.0] colorWithAlphaComponent:0.95];
         _hintFont = [NSFont boldSystemFontOfSize:14.0];
         _hintTextColor = [NSColor blackColor];
         _hintMatchedTextColor = [NSColor systemBlueColor];
@@ -48,6 +59,11 @@
     // Draw scroll highlight if enabled
     if (self.showScrollHighlight) {
         [self drawScrollHighlight];
+    }
+
+   // Draw target dot if enabled (draw before hints so hints appear on top)
+    if (self.showTargetDot) {
+        [self drawTargetDot];
     }
 
     // Draw hints
@@ -326,6 +342,39 @@
     [context restoreGraphicsState];
 }
 
+- (void)drawTargetDot {
+    NSGraphicsContext *context = [NSGraphicsContext currentContext];
+    [context saveGraphicsState];
+
+    // Convert coordinates (macOS uses bottom-left origin)
+    NSScreen *mainScreen = [NSScreen mainScreen];
+    CGFloat screenHeight = [mainScreen frame].size.height;
+    CGFloat flippedY = screenHeight - self.targetDotCenter.y;
+
+    CGFloat x = self.targetDotCenter.x - self.targetDotRadius;
+    CGFloat y = flippedY - self.targetDotRadius;
+    CGFloat diameter = self.targetDotRadius * 2;
+
+    NSRect dotRect = NSMakeRect(x, y, diameter, diameter);
+    NSBezierPath *circlePath = [NSBezierPath bezierPathWithOvalInRect:dotRect];
+
+    // Fill the dot
+    if (self.targetDotBackgroundColor) {
+        [self.targetDotBackgroundColor setFill];
+    } else {
+        [[NSColor redColor] setFill];
+    }
+    [circlePath fill];
+
+    if (self.targetDotBorderColor && self.targetDotBorderWidth > 0) {
+        [self.targetDotBorderColor setStroke];
+        [circlePath setLineWidth:self.targetDotBorderWidth];
+        [circlePath stroke];
+    }
+
+    [context restoreGraphicsState];
+}
+
 - (NSColor *)colorFromHex:(NSString *)hexString {
     if (!hexString || [hexString length] == 0) {
         return [NSColor blackColor];
@@ -450,6 +499,7 @@ void clearOverlay(OverlayWindow window) {
     OverlayWindowController *controller = (OverlayWindowController*)window;
     [controller.overlayView.hints removeAllObjects];
     controller.overlayView.showScrollHighlight = NO;
+    controller.overlayView.showTargetDot = NO;
     [controller.overlayView setNeedsDisplay:YES];
 }
 
@@ -502,6 +552,35 @@ void drawScrollHighlight(OverlayWindow window, CGRect bounds, char* color, int w
                                                                       green:((rgbValue & 0xFF00) >> 8)/255.0
                                                                        blue:(rgbValue & 0xFF)/255.0
                                                                       alpha:1.0];
+    }
+
+    [controller.overlayView setNeedsDisplay:YES];
+}
+
+void drawTargetDot(OverlayWindow window, CGPoint center, double radius, const char *colorStr, const char *borderColorStr, double borderWidth) {
+    if (!window) return;
+
+    OverlayWindowController *controller = (OverlayWindowController*)window;
+
+    controller.overlayView.targetDotCenter = center;
+    controller.overlayView.targetDotRadius = radius;
+    controller.overlayView.targetDotBorderWidth = borderWidth;
+    controller.overlayView.showTargetDot = YES;
+
+    if (colorStr) {
+        NSString *colorString = @(colorStr);
+        controller.overlayView.targetDotBackgroundColor = [controller.overlayView colorFromHex:colorString
+                                                                        defaultColor:[NSColor redColor]];
+    } else {
+        controller.overlayView.targetDotBackgroundColor = [NSColor redColor];
+    }
+
+    if (borderColorStr) {
+        NSString *borderColorString = @(borderColorStr);
+        controller.overlayView.targetDotBorderColor = [controller.overlayView colorFromHex:borderColorString
+                                                                             defaultColor:[NSColor blackColor]];
+    } else {
+        controller.overlayView.targetDotBorderColor = nil;
     }
 
     [controller.overlayView setNeedsDisplay:YES];

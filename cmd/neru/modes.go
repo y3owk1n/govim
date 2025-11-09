@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"strings"
 
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/config"
@@ -213,42 +214,36 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 		{"g", "oto pos"},
 	}
 
-	// Create hints for each action, positioned horizontally with consistent gaps
+	var formattedActions []string
+	for _, a := range actions {
+		formattedActions = append(formattedActions, fmt.Sprintf("[%s]%s", a.key, a.label))
+	}
+
+	stringActions := strings.Join(formattedActions, "\n")
+
 	actionHints := make([]*hints.Hint, 0, len(actions))
 	baseX := hint.Position.X
 	baseY := hint.Position.Y
 
-	// Estimate width per character (approximate for monospace font at size 11)
-	charWidth := 7.0
-	gapBetweenHints := 8.0 // Consistent gap between hint boxes
+	actionHint := &hints.Hint{
+		Label:    stringActions,
+		Element:  hint.Element,
+		Position: image.Point{X: baseX, Y: baseY + 5},
+	}
 
-	currentX := float64(baseX)
+	actionHints = append(actionHints, actionHint)
 
-	for _, action := range actions {
-		// Format: [key]label (e.g., "[l]eft")
-		actionLabel := fmt.Sprintf("[%s]%s", action.key, action.label)
+	// Draw target indicator dot first
+	dotRadius := 4.0
+	dotColor := a.config.Hints.ActionBackgroundColor
+	dotBorderColor := a.config.Hints.ActionBorderColor
+	dotBorderWidth := float64(a.config.Hints.BorderWidth)
 
-		actionHint := &hints.Hint{
-			Label:    actionLabel,
-			Element:  hint.Element,
-			Position: image.Point{X: int(currentX), Y: baseY},
-		}
-		actionHints = append(actionHints, actionHint)
-
-		// Calculate width of this hint box (text width + padding * 2)
-		textWidth := float64(len(actionLabel)) * charWidth
-		padding := 3.0 * 2 // padding on both sides
-		hintBoxWidth := textWidth + padding
-
-		// Move to next position (current box width + gap)
-		currentX += hintBoxWidth + gapBetweenHints
+	if err := a.hintOverlay.DrawTargetDot(baseX, baseY, dotRadius, dotColor, dotBorderColor, dotBorderWidth); err != nil {
+		a.logger.Error("Failed to draw target dot", zap.Error(err))
 	}
 
 	actionStyle := a.getStyleForMode(ModeHintWithActions)
-	// Use smaller sizing for action hints
-	actionStyle.FontSize = 11    // Smaller font
-	actionStyle.Padding = 3      // Less padding
-	actionStyle.BorderRadius = 3 // Smaller border radius
 
 	// Draw all action hints without arrows and with custom style
 	if err := a.hintOverlay.DrawHintsWithoutArrow(actionHints, actionStyle); err != nil {
