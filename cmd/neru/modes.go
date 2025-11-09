@@ -210,6 +210,9 @@ func (a *App) showActionMenu(hint *hints.Hint) {
 		{"l", "eft"},
 		{"r", "ight"},
 		{"d", "ouble"},
+		{"t", "riple"},
+		{"h", "old"},
+		{"H", " unhold"},
 		{"m", "iddle"},
 		{"g", "oto pos"},
 	}
@@ -282,6 +285,15 @@ func (a *App) handleActionKey(key string) {
 	case "d": // Double click
 		a.logger.Info("Performing double click", zap.String("label", hint.Label))
 		err = hint.Element.Element.DoubleClick(a.config.General.RestorePosAfterDoubleClick)
+	case "t": // Triple click
+		a.logger.Info("Performing triple click", zap.String("label", hint.Label))
+		err = hint.Element.Element.TripleClick(a.config.General.RestorePosAfterDoubleClick)
+	case "h": // Hold mouse
+		a.logger.Info("Performing hold mouse", zap.String("label", hint.Label))
+		err = hint.Element.Element.LeftMouseDown()
+	case "H": // Release mouse
+		a.logger.Info("Performing release hold mouse", zap.String("label", hint.Label))
+		err = hint.Element.Element.LeftMouseUp()
 	case "m": // Middle click
 		a.logger.Info("Performing middle click", zap.String("label", hint.Label))
 		err = hint.Element.Element.MiddleClick(a.config.General.RestorePosAfterMiddleClick)
@@ -300,7 +312,7 @@ func (a *App) handleActionKey(key string) {
 	a.exitMode()
 }
 
-// showActionMenu displays the action selection menu at the hint location
+// showScroll displays the action selection menu at the hint location
 func (a *App) showScroll() {
 	a.drawScrollHighlightBorder()
 }

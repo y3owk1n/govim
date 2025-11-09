@@ -48,6 +48,8 @@ restore_pos_after_right_click = false
 restore_pos_after_middle_click = false
 # Restore cursor position after double click
 restore_pos_after_double_click = false
+# Restore cursor position after triple click
+restore_pos_after_triple_click = false
 
 [accessibility]
 # Check Accessibility permission on startup; exits with guidance if missing.

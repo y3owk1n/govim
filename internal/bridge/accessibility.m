@@ -598,61 +598,111 @@ int performMiddleClick(void* element, bool restoreCursor) {
 int performDoubleClick(void* element, bool restoreCursor) {
     if (!element) return 0;
 
-    CGPoint position;
-    if (!getElementCenter(element, &position)) {
-        return 0;
-    }
+    CGPoint pos;
+    if (!getElementCenter(element, &pos)) return 0;
 
-    // Save current cursor position if needed
-    CGPoint originalPosition = CGPointZero;
+    CGPoint originalPos = CGPointZero;
     if (restoreCursor) {
-        CGEventRef event = CGEventCreate(NULL);
-        originalPosition = CGEventGetLocation(event);
-        CFRelease(event);
+        CGEventRef ev = CGEventCreate(NULL);
+        originalPos = CGEventGetLocation(ev);
+        CFRelease(ev);
     }
 
-    moveMouse(position);
+    moveMouse(pos);
 
-    CGEventRef down1 = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, position, kCGMouseButtonLeft);
-    CGEventRef up1 = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, position, kCGMouseButtonLeft);
-    CGEventRef down2 = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, position, kCGMouseButtonLeft);
-    CGEventRef up2 = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, position, kCGMouseButtonLeft);
-
-    if (!down1 || !up1 || !down2 || !up2) {
-        if (down1) CFRelease(down1);
-        if (up1) CFRelease(up1);
-        if (down2) CFRelease(down2);
-        if (up2) CFRelease(up2);
-        // Restore cursor position before returning if needed
-        if (restoreCursor) {
-            moveMouse(originalPosition);
+    for (int i = 1; i <= 2; ++i) {
+        CGEventRef dn = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, pos, kCGMouseButtonLeft);
+        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp,   pos, kCGMouseButtonLeft);
+        if (i == 2) {
+            CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 2);
+            CGEventSetIntegerValueField(up, kCGMouseEventClickState, 2);
         }
-        return 0;
+        CGEventPost(kCGHIDEventTap, dn);
+        CGEventPost(kCGHIDEventTap, up);
+        CFRelease(dn);
+        CFRelease(up);
+        if (i < 2) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
     }
-
-    // Set click count to 2 for double-click
-    CGEventSetIntegerValueField(down2, kCGMouseEventClickState, 2);
-    CGEventSetIntegerValueField(up2, kCGMouseEventClickState, 2);
-
-    // Post the events
-    CGEventPost(kCGHIDEventTap, down1);
-    CGEventPost(kCGHIDEventTap, up1);
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false); // 50ms between clicks
-    CGEventPost(kCGHIDEventTap, down2);
-    CGEventPost(kCGHIDEventTap, up2);
-
-    CFRelease(down1);
-    CFRelease(up1);
-    CFRelease(down2);
-    CFRelease(up2);
 
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
+    if (restoreCursor) moveMouse(originalPos);
+    return 1;
+}
 
-    // Restore cursor to original position if needed
+// Triple-click
+int performTripleClick(void* element, bool restoreCursor) {
+    if (!element) return 0;
+
+    CGPoint pos;
+    if (!getElementCenter(element, &pos)) return 0;
+
+    CGPoint originalPos = CGPointZero;
     if (restoreCursor) {
-        moveMouse(originalPosition);
+        CGEventRef ev = CGEventCreate(NULL);
+        originalPos = CGEventGetLocation(ev);
+        CFRelease(ev);
     }
 
+    moveMouse(pos);
+
+    for (int i = 1; i <= 3; ++i) {
+        CGEventRef dn = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, pos, kCGMouseButtonLeft);
+        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp,   pos, kCGMouseButtonLeft);
+        if (i == 3) {
+            CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 3);
+            CGEventSetIntegerValueField(up, kCGMouseEventClickState, 3);
+        }
+        CGEventPost(kCGHIDEventTap, dn);
+        CGEventPost(kCGHIDEventTap, up);
+        CFRelease(dn);
+        CFRelease(up);
+        if (i < 3) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+    }
+
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
+    if (restoreCursor) moveMouse(originalPos);
+    return 1;
+}
+
+// Press the left button down (start drag)
+int performLeftMouseDown(void *element)
+{
+    if (!element) return 0;
+
+    CGPoint pos;
+    if (!getElementCenter(element, &pos)) return 0;
+
+    moveMouse(pos);
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+
+    CGEventRef down = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown,
+                                              pos, kCGMouseButtonLeft);
+    if (!down) return 0;
+    CGEventPost(kCGHIDEventTap, down);
+    CFRelease(down);
+
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+    return 1;
+}
+
+// Release the left button (end drag)
+int performLeftMouseUp(void *element)
+{
+    if (!element) return 0;
+
+    CGPoint pos;
+    if (!getElementCenter(element, &pos)) return 0;
+
+    moveMouse(pos);
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+
+    CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp,
+                                            pos, kCGMouseButtonLeft);
+    if (!up) return 0;
+    CGEventPost(kCGHIDEventTap, up);
+    CFRelease(up);
+
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
     return 1;
 }
 

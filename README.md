@@ -69,6 +69,8 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Implements launch agent with `start-service` and `stop-service`? Though I am fine just doing it in my nix config directly
 - Better app icon and menubar icon
 - Maybe make it a full-fledged vim mode? Just like [Vimnav.spoon](https://github.com/y3owk1n/vimnav.spoon)
+- Hold and unhold action does not work in Finder.app... sobs
+- Implement a text selection mode that focuses on AXStaticText elements
 
 ## 🚀 Installation
 
@@ -272,10 +274,24 @@ Press `tab` to switch to hint mode with actions.
 3. Choose your action:
    - **Left click** (default)
    - **Right click** (context menu)
-   - **Double click**
-   - **Middle click**
+   - **Double click** (useful for opening files in finder)
+   - **Triple click**
+   - **Middle click** (new tab)
    - **Go to a position** (move mouse)
+   - **Hold mouse** (start dragging)
+   - **Release mouse** (stop dragging)
 4. Restore cursor to previous position (if enabled)
+
+Keys:
+
+- l = left click (restoreable cursor)
+- r = right click (restoreable cursor)
+- d = double click (restoreable cursor)
+- t = triple click (restoreable cursor)
+- m = middle click (restoreable cursor)
+- g = go to position
+- h = hold mouse
+- H = release mouse
 
 Press `esc` anytime to quit the hint selection.
 Press `tab` to switch to hint mode.
@@ -376,6 +392,7 @@ restore_pos_after_left_click = true
 restore_pos_after_right_click = true
 restore_pos_after_middle_click = true
 restore_pos_after_double_click = true
+restore_pos_after_triple_click = true
 ```
 
 #### App Exclusion

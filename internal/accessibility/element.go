@@ -290,6 +290,45 @@ func (e *Element) DoubleClick(restoreCursor bool) error {
 	return nil
 }
 
+// TripleClick performs a triple-click action on the element
+func (e *Element) TripleClick(restoreCursor bool) error {
+	if e.ref == nil {
+		return fmt.Errorf("element is nil")
+	}
+
+	result := C.performTripleClick(e.ref, C.bool(restoreCursor))
+	if result == 0 {
+		return fmt.Errorf("triple-click action failed")
+	}
+	return nil
+}
+
+// LeftMouseDown performs a left-mouse-down action on the element
+func (e *Element) LeftMouseDown() error {
+	if e.ref == nil {
+		return fmt.Errorf("element is nil")
+	}
+
+	result := C.performLeftMouseDown(e.ref)
+	if result == 0 {
+		return fmt.Errorf("left-mouse-down action failed")
+	}
+	return nil
+}
+
+// LeftMouseUp performs a left-mouse-up action on the element
+func (e *Element) LeftMouseUp() error {
+	if e.ref == nil {
+		return fmt.Errorf("element is nil")
+	}
+
+	result := C.performLeftMouseUp(e.ref)
+	if result == 0 {
+		return fmt.Errorf("left-mouse-up action failed")
+	}
+	return nil
+}
+
 // MiddleClick performs a middle-click action on the element
 func (e *Element) MiddleClick(restoreCursor bool) error {
 	if e.ref == nil {
