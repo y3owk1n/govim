@@ -30,6 +30,7 @@ type GeneralConfig struct {
 	RestorePosAfterRightClick     bool     `toml:"restore_pos_after_right_click"`
 	RestorePosAfterMiddleClick    bool     `toml:"restore_pos_after_middle_click"`
 	RestorePosAfterDoubleClick    bool     `toml:"restore_pos_after_double_click"`
+	RestorePosAfterTripleClick    bool     `toml:"restore_pos_after_triple_click"`
 }
 
 type AccessibilityConfig struct {
@@ -120,6 +121,7 @@ func DefaultConfig() *Config {
 			RestorePosAfterRightClick:  false,
 			RestorePosAfterMiddleClick: false,
 			RestorePosAfterDoubleClick: false,
+			RestorePosAfterTripleClick: false,
 		},
 		Accessibility: AccessibilityConfig{
 			AccessibilityCheckOnStart: true,

@@ -43,7 +43,9 @@ int performLeftClick(void* element, bool restoreCursor);
 int performRightClick(void* element, bool restoreCursor);
 int performDoubleClick(void* element, bool restoreCursor);
 int performMiddleClick(void* element, bool restoreCursor);
-
+int performTripleClick(void* element, bool restoreCursor);
+int performLeftMouseDown(void* element);
+int performLeftMouseUp(void* element);
 int performMoveMouseToPosition(void* element);
 
 int hasClickAction(void* element);
