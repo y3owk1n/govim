@@ -124,6 +124,6 @@ func SetGlobalManager(m *Manager) {
 //export hotkeyCallbackBridge
 func hotkeyCallbackBridge(hotkeyID C.int, userData unsafe.Pointer) {
 	if globalManager != nil {
-		globalManager.handleCallback(HotkeyID(hotkeyID))
+		go globalManager.handleCallback(HotkeyID(hotkeyID))
 	}
 }

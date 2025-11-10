@@ -565,8 +565,9 @@
                                         NSWindowCollectionBehaviorFullScreenAuxiliary |
                                         NSWindowCollectionBehaviorIgnoresCycle];
 
-    // Create overlay view
-    self.overlayView = [[OverlayView alloc] initWithFrame:screenFrame];
+    // Create overlay view with local coordinates (origin at 0,0)
+    NSRect viewFrame = NSMakeRect(0, 0, screenFrame.size.width, screenFrame.size.height);
+    self.overlayView = [[OverlayView alloc] initWithFrame:viewFrame];
     [self.window setContentView:self.overlayView];
 }
 
@@ -575,8 +576,16 @@
 // C interface implementation
 
 OverlayWindow createOverlayWindow() {
-    OverlayWindowController *controller = [[OverlayWindowController alloc] init];
-    [controller retain]; // Retain for the caller
+    __block OverlayWindowController *controller = nil;
+    if ([NSThread isMainThread]) {
+        controller = [[OverlayWindowController alloc] init];
+        [controller retain]; // Retain for the caller
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            controller = [[OverlayWindowController alloc] init];
+            [controller retain];
+        });
+    }
     return (void*)controller;
 }
 
@@ -584,8 +593,15 @@ void destroyOverlayWindow(OverlayWindow window) {
     if (!window) return;
 
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    [controller.window close];
-    [controller release];
+    if ([NSThread isMainThread]) {
+        [controller.window close];
+        [controller release];
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [controller.window close];
+            [controller release];
+        });
+    }
 }
 
 void showOverlayWindow(OverlayWindow window) {
@@ -651,6 +667,61 @@ void clearOverlay(OverlayWindow window) {
             [controller.overlayView setNeedsDisplay:YES];
         });
     }
+}
+
+void resizeOverlayToMainScreen(OverlayWindow window) {
+    if (!window) return;
+
+    OverlayWindowController *controller = (OverlayWindowController*)window;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSScreen *mainScreen = [NSScreen mainScreen];
+        if (!mainScreen) {
+            return;
+        }
+        NSRect screenFrame = [mainScreen frame];
+        [controller.window setFrame:screenFrame display:YES];
+        
+        // View frame should be in window's coordinate space (origin at 0,0)
+        NSRect viewFrame = NSMakeRect(0, 0, screenFrame.size.width, screenFrame.size.height);
+        [controller.overlayView setFrame:viewFrame];
+        [controller.overlayView setNeedsDisplay:YES];
+    });
+}
+
+void resizeOverlayToActiveScreen(OverlayWindow window) {
+    if (!window) return;
+
+    OverlayWindowController *controller = (OverlayWindowController*)window;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // Get current mouse location
+        NSPoint mouseLoc = [NSEvent mouseLocation];
+        
+        // Find the screen containing the mouse cursor
+        NSScreen *activeScreen = nil;
+        for (NSScreen *screen in [NSScreen screens]) {
+            if (NSPointInRect(mouseLoc, screen.frame)) {
+                activeScreen = screen;
+                break;
+            }
+        }
+        
+        // Fall back to main screen if mouse is somehow not on any screen
+        if (!activeScreen) {
+            activeScreen = [NSScreen mainScreen];
+        }
+        
+        if (!activeScreen) {
+            return;
+        }
+        
+        NSRect screenFrame = [activeScreen frame];
+        [controller.window setFrame:screenFrame display:YES];
+        
+        // View frame should be in window's coordinate space (origin at 0,0)
+        NSRect viewFrame = NSMakeRect(0, 0, screenFrame.size.width, screenFrame.size.height);
+        [controller.overlayView setFrame:viewFrame];
+        [controller.overlayView setNeedsDisplay:YES];
+    });
 }
 
 void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style) {
@@ -827,18 +898,18 @@ void drawTargetDot(OverlayWindow window, CGPoint center, double radius, const ch
     }
 }
 
-void setOverlayLevel(OverlayWindow window, int level) {
-    if (!window) return;
-
-    OverlayWindowController *controller = (OverlayWindowController*)window;
-
-    if ([NSThread isMainThread]) {
-        [controller.window setLevel:level];
-    } else {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [controller.window setLevel:level];
-        });
-    }
+void replaceOverlayWindow(OverlayWindow *pwindow) {
+    if (!pwindow) return;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        OverlayWindowController *oldController = (OverlayWindowController*)(*pwindow);
+        OverlayWindowController *newController = [[OverlayWindowController alloc] init];
+        [newController retain];
+        if (oldController) {
+            [oldController.window close];
+            [oldController release];
+        }
+        *pwindow = (void*)newController;
+    });
 }
 
 void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellStyle style) {
@@ -958,6 +1029,20 @@ void updateGridMatchPrefix(OverlayWindow window, const char* prefix) {
         [controller.overlayView.gridCells addObjectsFromArray:updated];
         [controller.overlayView setNeedsDisplay:YES];
     });
+}
+
+void setOverlayLevel(OverlayWindow window, int level) {
+    if (!window) return;
+
+    OverlayWindowController *controller = (OverlayWindowController*)window;
+
+    if ([NSThread isMainThread]) {
+        [controller.window setLevel:level];
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [controller.window setLevel:level];
+        });
+    }
 }
 
 void setHideUnmatched(OverlayWindow window, int hide) {

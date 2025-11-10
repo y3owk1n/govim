@@ -63,6 +63,9 @@ void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style
 void drawScrollHighlight(OverlayWindow window, CGRect bounds, char* color, int width);
 void setOverlayLevel(OverlayWindow window, int level);
 void drawTargetDot(OverlayWindow window, CGPoint center, double radius, const char *color, const char *borderColor, double borderWidth);
+void replaceOverlayWindow(OverlayWindow *pwindow);
+void resizeOverlayToMainScreen(OverlayWindow window);
+void resizeOverlayToActiveScreen(OverlayWindow window);
 
 // Grid-specific drawing functions
 void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellStyle style);
