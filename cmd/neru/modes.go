@@ -181,15 +181,7 @@ func (a *App) setupGrid(action Action) error {
 	if strings.TrimSpace(characters) == "" {
 		characters = a.config.Hints.HintCharacters
 	}
-	minSize := a.config.Grid.MinCellSize
-	if minSize <= 0 {
-		minSize = 40
-	}
-	maxSize := a.config.Grid.MaxCellSize
-	if maxSize <= 0 {
-		maxSize = 200
-	}
-	gridInstance := grid.NewGrid(characters, minSize, maxSize, bounds)
+	gridInstance := grid.NewGrid(characters, bounds)
 	*a.gridCtx.gridInstance = gridInstance
 
 	// Grid overlay already created in NewApp - update its config and use it

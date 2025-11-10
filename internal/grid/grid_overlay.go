@@ -135,7 +135,7 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell) {
 	for i := 0; i < count; i++ {
 		r := i / cols
 		c := i % cols
-		label := string(chars[i])
+		label := strings.ToUpper(string(chars[i]))
 		labels[i] = C.CString(label)
 		left := xBreaks[c]
 		right := xBreaks[c+1]

@@ -251,16 +251,13 @@ border_color = "#000000"
 # Grid overlay (flat, label-based)
 # Fills the entire screen with uniformly sized cells.
 # Type the label (2/3/4 characters, chosen automatically) to click the cell center.
+# Cell sizes are automatically optimized based on screen resolution and aspect ratio
+# to ensure consistent precision and usability across all display types.
 
 enabled = true
 
 # Characters used to build grid labels
-characters = "asdfghjkl"
-
-# Minimum cell size in pixels (actual size may be slightly larger to evenly fill the screen)
-min_cell_size = 40
-# Maximum cell size in pixels (prevents oversized cells on large/ultra-wide monitors for better precision)
-max_cell_size = 200
+characters = "abcdefghijklmnpqrstuvwxyz"
 
 # Grid label style
 font_size = 12
@@ -283,7 +280,7 @@ subgrid_rows = 3              # Subgrid rows
 subgrid_cols = 3              # Subgrid columns
 hide_unmatched = true        # Hide unmatched cells during typing
 # Sublayer keys used for subgrid selection (at least rows*cols characters)
-sublayer_keys = "asdfghjkl"
+sublayer_keys = "abcdefghijklmnpqrstuvwxyz"
 
 [grid.left_click]
 restore_cursor = false
