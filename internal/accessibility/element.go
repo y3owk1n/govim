@@ -250,119 +250,6 @@ func (e *Element) GetChildren() ([]*Element, error) {
 	return children, nil
 }
 
-// LeftClick performs a click action on the element
-func (e *Element) LeftClick(restoreCursor bool) error {
-	if e.ref == nil {
-		return fmt.Errorf("element is nil")
-	}
-
-	result := C.performLeftClick(e.ref, C.bool(restoreCursor))
-	if result == 1 {
-		return nil
-	}
-
-	return fmt.Errorf("left-click action failed")
-}
-
-// RightClick performs a right-click action on the element
-func (e *Element) RightClick(restoreCursor bool) error {
-	if e.ref == nil {
-		return fmt.Errorf("element is nil")
-	}
-
-	result := C.performRightClick(e.ref, C.bool(restoreCursor))
-	if result == 0 {
-		return fmt.Errorf("right-click action failed")
-	}
-	return nil
-}
-
-// DoubleClick performs a double-click action on the element
-func (e *Element) DoubleClick(restoreCursor bool) error {
-	if e.ref == nil {
-		return fmt.Errorf("element is nil")
-	}
-
-	result := C.performDoubleClick(e.ref, C.bool(restoreCursor))
-	if result == 0 {
-		return fmt.Errorf("double-click action failed")
-	}
-	return nil
-}
-
-// TripleClick performs a triple-click action on the element
-func (e *Element) TripleClick(restoreCursor bool) error {
-	if e.ref == nil {
-		return fmt.Errorf("element is nil")
-	}
-
-	result := C.performTripleClick(e.ref, C.bool(restoreCursor))
-	if result == 0 {
-		return fmt.Errorf("triple-click action failed")
-	}
-	return nil
-}
-
-// LeftMouseDown performs a left-mouse-down action on the element
-func (e *Element) LeftMouseDown() error {
-	if e.ref == nil {
-		return fmt.Errorf("element is nil")
-	}
-
-	result := C.performLeftMouseDown(e.ref)
-	if result == 0 {
-		return fmt.Errorf("left-mouse-down action failed")
-	}
-	return nil
-}
-
-// LeftMouseUp performs a left-mouse-up action on the element
-func (e *Element) LeftMouseUp(isExit bool) error {
-	if e.ref == nil {
-		return fmt.Errorf("element is nil")
-	}
-
-	var result C.int
-
-	if isExit {
-		result = C.performLeftMouseUpWithoutPos()
-	} else {
-		result = C.performLeftMouseUp(e.ref)
-	}
-
-	if result == 0 {
-		return fmt.Errorf("left-mouse-up action failed")
-	}
-	return nil
-}
-
-// MiddleClick performs a middle-click action on the element
-func (e *Element) MiddleClick(restoreCursor bool) error {
-	if e.ref == nil {
-		return fmt.Errorf("element is nil")
-	}
-
-	result := C.performMiddleClick(e.ref, C.bool(restoreCursor))
-	if result == 0 {
-		return fmt.Errorf("middle-click action failed")
-	}
-	return nil
-}
-
-// GoToPosition performs a move mouse action to the element
-func (e *Element) GoToPosition() error {
-	if e.ref == nil {
-		return fmt.Errorf("element is nil")
-	}
-
-	result := C.performMoveMouseToPosition(e.ref)
-	if result == 1 {
-		return nil
-	}
-
-	return fmt.Errorf("left-click action failed")
-}
-
 // SetFocus sets focus to the element
 func (e *Element) SetFocus() error {
 	if e.ref == nil {
@@ -498,6 +385,85 @@ func (e *Element) GetScrollBounds() image.Rectangle {
 			Y: int(rect.origin.y + rect.size.height),
 		},
 	}
+}
+
+// MoveMouseToPoint moves the cursor to a specific screen point
+func MoveMouseToPoint(p image.Point) {
+	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
+	C.moveMouse(pos)
+}
+
+// Point-based actions that do not require an accessibility element
+func LeftClickAtPoint(p image.Point, restoreCursor bool) error {
+	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
+	result := C.performLeftClickAtPosition(pos, C.bool(restoreCursor))
+	if result == 0 {
+		return fmt.Errorf("left-click at point failed")
+	}
+	return nil
+}
+
+func RightClickAtPoint(p image.Point, restoreCursor bool) error {
+	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
+	result := C.performRightClickAtPosition(pos, C.bool(restoreCursor))
+	if result == 0 {
+		return fmt.Errorf("right-click at point failed")
+	}
+	return nil
+}
+
+func MiddleClickAtPoint(p image.Point, restoreCursor bool) error {
+	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
+	result := C.performMiddleClickAtPosition(pos, C.bool(restoreCursor))
+	if result == 0 {
+		return fmt.Errorf("middle-click at point failed")
+	}
+	return nil
+}
+
+func DoubleClickAtPoint(p image.Point, restoreCursor bool) error {
+	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
+	result := C.performDoubleClickAtPosition(pos, C.bool(restoreCursor))
+	if result == 0 {
+		return fmt.Errorf("double-click at point failed")
+	}
+	return nil
+}
+
+func TripleClickAtPoint(p image.Point, restoreCursor bool) error {
+	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
+	result := C.performTripleClickAtPosition(pos, C.bool(restoreCursor))
+	if result == 0 {
+		return fmt.Errorf("triple-click at point failed")
+	}
+	return nil
+}
+
+func LeftMouseDownAtPoint(p image.Point) error {
+	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
+	result := C.performLeftMouseDownAtPosition(pos)
+	if result == 0 {
+		return fmt.Errorf("left-mouse-down at point failed")
+	}
+	return nil
+}
+
+func LeftMouseUpAtPoint(p image.Point) error {
+	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
+	result := C.performLeftMouseUpAtPosition(pos)
+	if result == 0 {
+		return fmt.Errorf("left-mouse-up at point failed")
+	}
+	return nil
+}
+
+// ScrollAtCursor keeps existing behavior for scroll domain
+func LeftMouseUp() error {
+	result := C.performLeftMouseUpAtCursor()
+	if result == 0 {
+		return fmt.Errorf("left-mouse-up failed")
+	}
+	return nil
 }
 
 func ScrollAtCursor(deltaX, deltaY int) error {
