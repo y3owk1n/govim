@@ -75,6 +75,13 @@ func (a *App) activateHintMode(action Action) {
 		return
 	}
 
+	// Resize overlay to the active screen before collecting elements
+	if a.hintOverlay != nil {
+		a.hintOverlay.ResizeToActiveScreen()
+		// Wait for async resize to complete on main thread
+		time.Sleep(100 * time.Millisecond)
+	}
+
 	// Update roles for the current focused app
 	a.updateRolesForCurrentApp()
 
@@ -107,10 +114,40 @@ func (a *App) activateHintMode(action Action) {
 
 // setupHints generates hints and draws them with appropriate styling
 func (a *App) setupHints(elements []*accessibility.TreeNode, action Action) error {
+	// Get active screen bounds to calculate offset for normalization
+	screenBounds := bridge.GetActiveScreenBounds()
+	screenOffsetX := screenBounds.Min.X
+	screenOffsetY := screenBounds.Min.Y
+
+	a.logger.Info("Screen bounds for hints",
+		zap.Int("x", screenBounds.Min.X),
+		zap.Int("y", screenBounds.Min.Y),
+		zap.Int("width", screenBounds.Dx()),
+		zap.Int("height", screenBounds.Dy()))
+
 	// Generate hints
 	hintList, err := a.hintGenerator.Generate(elements)
 	if err != nil {
 		return fmt.Errorf("failed to generate hints: %w", err)
+	}
+
+	if len(hintList) > 0 {
+		a.logger.Info("First hint before normalization",
+			zap.Int("x", hintList[0].Position.X),
+			zap.Int("y", hintList[0].Position.Y))
+	}
+
+	// Normalize hint positions to window-local coordinates
+	// The overlay window is positioned at the screen origin, but the view uses local coordinates
+	for _, hint := range hintList {
+		hint.Position.X -= screenOffsetX
+		hint.Position.Y -= screenOffsetY
+	}
+
+	if len(hintList) > 0 {
+		a.logger.Info("First hint after normalization",
+			zap.Int("x", hintList[0].Position.X),
+			zap.Int("y", hintList[0].Position.Y))
 	}
 
 	// Set up hints in the hint manager

@@ -994,14 +994,26 @@ bool isMissionControlActive() {
             return false;
         }
 
-        // Get screen size
-        NSScreen *mainScreen = [NSScreen mainScreen];
-        if (!mainScreen) {
+        // Get all screens and calculate total bounds
+        NSArray *screens = [NSScreen screens];
+        if (!screens || screens.count == 0) {
             CFRelease(windowList);
             return false;
         }
-
-        CGSize screenSize = mainScreen.frame.size;
+        
+        // Find the largest screen dimensions to use as reference
+        // This prevents false positives on multi-monitor setups
+        CGFloat maxWidth = 0;
+        CGFloat maxHeight = 0;
+        for (NSScreen *screen in screens) {
+            CGSize size = screen.frame.size;
+            if (size.width > maxWidth) maxWidth = size.width;
+            if (size.height > maxHeight) maxHeight = size.height;
+        }
+        
+        CGSize screenSize = CGSizeMake(maxWidth, maxHeight);
+        NSLog(@"[MissionControl] Screen count: %lu, Max dimensions: %.0fx%.0f", (unsigned long)screens.count, maxWidth, maxHeight);
+        
         CFIndex count = CFArrayGetCount(windowList);
         int fullscreenDockWindows = 0;
         int highLayerDockWindows = 0;
@@ -1044,19 +1056,17 @@ bool isMissionControlActive() {
                     if (wValue) CFNumberGetValue(wValue, kCFNumberDoubleType, &w);
                     if (hValue) CFNumberGetValue(hValue, kCFNumberDoubleType, &h);
 
-                    // Check for Y < 0 (works on older macOS)
-                    if (y < 0) {
-                        result = true;
-                        break;
-                    }
-
                     // Count fullscreen Dock windows (works on Sequoia 15.1)
+                    // Note: y < 0 check removed as it causes false positives on multi-monitor setups
+                    // where screens can be positioned above the primary screen
                     bool isFullscreen = (w >= screenSize.width * 0.95 && h >= screenSize.height * 0.95);
                     bool hasNoName = (!windowName || CFStringGetLength(windowName) == 0);
 
                     if (isFullscreen && hasNoName && windowLayer) {
                         int layer = 0;
                         CFNumberGetValue(windowLayer, kCFNumberIntType, &layer);
+                        
+                        NSLog(@"[MissionControl] Dock window: %.0fx%.0f at (%.0f,%.0f), layer=%d, fullscreen=%d", w, h, x, y, layer, isFullscreen);
 
                         fullscreenDockWindows++;
                         if (layer >= 18 && layer <= 20) {
@@ -1071,8 +1081,11 @@ bool isMissionControlActive() {
 
         // Return results from old or new OS method
         if (!result && fullscreenDockWindows >= 2 && highLayerDockWindows >= 2) {
+            NSLog(@"[MissionControl] Detected via fullscreen method: fullscreen=%d, highLayer=%d", fullscreenDockWindows, highLayerDockWindows);
             result = true;
         }
+        
+        NSLog(@"[MissionControl] Result: %d", result);
 
         return result;
     }
@@ -1091,7 +1104,7 @@ CGRect getMainScreenBounds() {
 
 CGRect getActiveScreenBounds() {
     @autoreleasepool {
-        // Get current mouse location
+        // Get current mouse location in screen coordinates
         NSPoint mouseLoc = [NSEvent mouseLocation];
         
         // Find the screen containing the mouse cursor
@@ -1112,7 +1125,21 @@ CGRect getActiveScreenBounds() {
             return CGRectZero;
         }
         
-        NSRect frame = activeScreen.frame;
-        return NSRectToCGRect(frame);
+        // Convert NSScreen frame (bottom-left origin, Y up) to CG coordinates (top-left origin, Y down)
+        // This matches the coordinate system used by accessibility APIs
+        NSRect nsFrame = activeScreen.frame;
+        
+        // Get the primary screen height to flip Y coordinate
+        NSScreen *primaryScreen = [[NSScreen screens] firstObject];
+        CGFloat primaryScreenHeight = primaryScreen.frame.size.height;
+        
+        // Convert to CG coordinates
+        CGRect cgFrame;
+        cgFrame.origin.x = nsFrame.origin.x;
+        cgFrame.origin.y = primaryScreenHeight - (nsFrame.origin.y + nsFrame.size.height);
+        cgFrame.size.width = nsFrame.size.width;
+        cgFrame.size.height = nsFrame.size.height;
+        
+        return cgFrame;
     }
 }
