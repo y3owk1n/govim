@@ -119,22 +119,10 @@ func (a *App) setupHints(elements []*accessibility.TreeNode, action Action) erro
 	screenOffsetX := screenBounds.Min.X
 	screenOffsetY := screenBounds.Min.Y
 
-	a.logger.Info("Screen bounds for hints",
-		zap.Int("x", screenBounds.Min.X),
-		zap.Int("y", screenBounds.Min.Y),
-		zap.Int("width", screenBounds.Dx()),
-		zap.Int("height", screenBounds.Dy()))
-
 	// Generate hints
 	hintList, err := a.hintGenerator.Generate(elements)
 	if err != nil {
 		return fmt.Errorf("failed to generate hints: %w", err)
-	}
-
-	if len(hintList) > 0 {
-		a.logger.Info("First hint before normalization",
-			zap.Int("x", hintList[0].Position.X),
-			zap.Int("y", hintList[0].Position.Y))
 	}
 
 	// Normalize hint positions to window-local coordinates
@@ -142,12 +130,6 @@ func (a *App) setupHints(elements []*accessibility.TreeNode, action Action) erro
 	for _, hint := range hintList {
 		hint.Position.X -= screenOffsetX
 		hint.Position.Y -= screenOffsetY
-	}
-
-	if len(hintList) > 0 {
-		a.logger.Info("First hint after normalization",
-			zap.Int("x", hintList[0].Position.X),
-			zap.Int("y", hintList[0].Position.Y))
 	}
 
 	// Set up hints in the hint manager
@@ -413,69 +395,78 @@ func (a *App) handleKeyPress(key string) {
 		// Complete coordinate entered - perform action
 		if res.Complete {
 			targetPoint := res.TargetPoint
+
+			// Convert from window-local coordinates to absolute screen coordinates
+			// The grid was generated with normalized bounds (0,0 origin) but clicks need absolute coords
+			screenBounds := bridge.GetActiveScreenBounds()
+			absolutePoint := image.Point{
+				X: targetPoint.X + screenBounds.Min.X,
+				Y: targetPoint.Y + screenBounds.Min.Y,
+			}
+
 			switch a.gridCtx.currentAction {
 			case ActionLeftClick:
-				a.logger.Info("Grid left click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.LeftClickAtPoint(targetPoint, a.config.Grid.LeftClick.RestoreCursor); err != nil {
+				a.logger.Info("Grid left click", zap.Int("x", absolutePoint.X), zap.Int("y", absolutePoint.Y))
+				if err := accessibility.LeftClickAtPoint(absolutePoint, a.config.Grid.LeftClick.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionRightClick:
-				a.logger.Info("Grid right click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.RightClickAtPoint(targetPoint, a.config.Grid.RightClick.RestoreCursor); err != nil {
+				a.logger.Info("Grid right click", zap.Int("x", absolutePoint.X), zap.Int("y", absolutePoint.Y))
+				if err := accessibility.RightClickAtPoint(absolutePoint, a.config.Grid.RightClick.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionDoubleClick:
-				a.logger.Info("Grid double click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.DoubleClickAtPoint(targetPoint, a.config.Grid.DoubleClick.RestoreCursor); err != nil {
+				a.logger.Info("Grid double click", zap.Int("x", absolutePoint.X), zap.Int("y", absolutePoint.Y))
+				if err := accessibility.DoubleClickAtPoint(absolutePoint, a.config.Grid.DoubleClick.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionTripleClick:
-				a.logger.Info("Grid triple click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.TripleClickAtPoint(targetPoint, a.config.Grid.TripleClick.RestoreCursor); err != nil {
+				a.logger.Info("Grid triple click", zap.Int("x", absolutePoint.X), zap.Int("y", absolutePoint.Y))
+				if err := accessibility.TripleClickAtPoint(absolutePoint, a.config.Grid.TripleClick.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionMouseDown:
-				a.logger.Info("Grid mouse down", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.LeftMouseDownAtPoint(targetPoint); err != nil {
+				a.logger.Info("Grid mouse down", zap.Int("x", absolutePoint.X), zap.Int("y", absolutePoint.Y))
+				if err := accessibility.LeftMouseDownAtPoint(absolutePoint); err != nil {
 					a.logger.Error("Failed to mouse down", zap.Error(err))
 				}
 				// Immediately switch to mouse up to allow release selection
 				a.exitMode()
 				a.activateMode(ModeGrid, ActionMouseUp)
 			case ActionMouseUp:
-				a.logger.Info("Grid mouse up", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.LeftMouseUpAtPoint(targetPoint); err != nil {
+				a.logger.Info("Grid mouse up", zap.Int("x", absolutePoint.X), zap.Int("y", absolutePoint.Y))
+				if err := accessibility.LeftMouseUpAtPoint(absolutePoint); err != nil {
 					a.logger.Error("Failed to mouse up", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionMiddleClick:
-				a.logger.Info("Grid middle click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.MiddleClickAtPoint(targetPoint, a.config.Grid.MiddleClick.RestoreCursor); err != nil {
+				a.logger.Info("Grid middle click", zap.Int("x", absolutePoint.X), zap.Int("y", absolutePoint.Y))
+				if err := accessibility.MiddleClickAtPoint(absolutePoint, a.config.Grid.MiddleClick.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionMoveMouse:
-				a.logger.Info("Grid move mouse", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				accessibility.MoveMouseToPoint(targetPoint)
+				a.logger.Info("Grid move mouse", zap.Int("x", absolutePoint.X), zap.Int("y", absolutePoint.Y))
+				accessibility.MoveMouseToPoint(absolutePoint)
 				a.exitMode()
 			case ActionScroll:
 				// Grid-specific scroll: move mouse to target and draw scroll border via grid overlay, stay in grid mode
 				a.gridCtx.canScroll = true
-				a.logger.Info("Grid scroll", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				accessibility.MoveMouseToPoint(targetPoint)
+				a.logger.Info("Grid scroll", zap.Int("x", absolutePoint.X), zap.Int("y", absolutePoint.Y))
+				accessibility.MoveMouseToPoint(absolutePoint)
 				a.showGridScroll()
 			case ActionContextMenu:
 				// Show context menu overlay at target point (no hint generation)
-				a.logger.Info("Grid context menu", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				a.logger.Info("Grid context menu", zap.Int("x", absolutePoint.X), zap.Int("y", absolutePoint.Y))
 				// Ensure grid overlay doesn't occlude the menu
 				gridOverlay := *a.gridCtx.gridOverlay
 				gridOverlay.Clear()
 				gridOverlay.Hide()
-				// Draw target indicator dot
+				// Draw target indicator dot (need to normalize back to window-local coordinates for overlay)
 				dotRadius := 4.0
 				dotColor := a.config.Hints.ContextMenuHints.BackgroundColor
 				dotBorderColor := a.config.Hints.ContextMenuHints.BorderColor
@@ -496,9 +487,9 @@ func (a *App) handleKeyPress(key string) {
 				}
 				// Ensure hint overlay is visible
 				a.hintOverlay.Show()
-				// Activate grid context-menu sub-state
+				// Activate grid context-menu sub-state (store absolute point for actions)
 				a.gridCtx.contextMenuActive = true
-				a.gridCtx.selectedPoint = targetPoint
+				a.gridCtx.selectedPoint = absolutePoint
 			}
 			return
 		}

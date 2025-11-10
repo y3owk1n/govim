@@ -1012,7 +1012,6 @@ bool isMissionControlActive() {
         }
         
         CGSize screenSize = CGSizeMake(maxWidth, maxHeight);
-        NSLog(@"[MissionControl] Screen count: %lu, Max dimensions: %.0fx%.0f", (unsigned long)screens.count, maxWidth, maxHeight);
         
         CFIndex count = CFArrayGetCount(windowList);
         int fullscreenDockWindows = 0;
@@ -1065,8 +1064,6 @@ bool isMissionControlActive() {
                     if (isFullscreen && hasNoName && windowLayer) {
                         int layer = 0;
                         CFNumberGetValue(windowLayer, kCFNumberIntType, &layer);
-                        
-                        NSLog(@"[MissionControl] Dock window: %.0fx%.0f at (%.0f,%.0f), layer=%d, fullscreen=%d", w, h, x, y, layer, isFullscreen);
 
                         fullscreenDockWindows++;
                         if (layer >= 18 && layer <= 20) {
@@ -1081,11 +1078,8 @@ bool isMissionControlActive() {
 
         // Return results from old or new OS method
         if (!result && fullscreenDockWindows >= 2 && highLayerDockWindows >= 2) {
-            NSLog(@"[MissionControl] Detected via fullscreen method: fullscreen=%d, highLayer=%d", fullscreenDockWindows, highLayerDockWindows);
             result = true;
         }
-        
-        NSLog(@"[MissionControl] Result: %d", result);
 
         return result;
     }
