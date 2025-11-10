@@ -25,36 +25,44 @@ type Mode int
 
 const (
 	ModeIdle Mode = iota
-	ModeHintLeftClick
-	ModeHintRightClick
-	ModeHintDoubleClick
-	ModeHintTripleClick
-	ModeHintMouseUp
-	ModeHintMouseDown
-	ModeHintMiddleClick
-	ModeHintMoveMouse
-	ModeHintScroll
-	ModeContextMenu
+	ModeHints
+)
+
+// Action represents the current action within hints mode
+type Action int
+
+const (
+	ActionLeftClick Action = iota
+	ActionRightClick
+	ActionDoubleClick
+	ActionTripleClick
+	ActionMouseUp
+	ActionMouseDown
+	ActionMiddleClick
+	ActionMoveMouse
+	ActionScroll
+	ActionContextMenu
 )
 
 // App represents the main application
 type App struct {
-	config            *config.Config
-	ConfigPath        string
-	logger            *zap.Logger
-	hotkeyManager     *hotkeys.Manager
-	hintGenerator     *hints.Generator
-	hintOverlay       *hints.Overlay
-	scrollController  *scroll.Controller
-	eventTap          *eventtap.EventTap
-	ipcServer         *ipc.Server
-	electronManager   *electron.ElectronManager
-	appWatcher        *appwatcher.Watcher
-	currentMode       Mode
-	hintManager       *hints.Manager
-	lastScrollKey     string
-	selectedHint      *hints.Hint
-	canScroll         bool
+	config           *config.Config
+	ConfigPath       string
+	logger           *zap.Logger
+	hotkeyManager    *hotkeys.Manager
+	hintGenerator    *hints.Generator
+	hintOverlay      *hints.Overlay
+	scrollController *scroll.Controller
+	eventTap         *eventtap.EventTap
+	ipcServer        *ipc.Server
+	electronManager  *electron.ElectronManager
+	appWatcher       *appwatcher.Watcher
+	currentMode      Mode
+	currentAction    Action
+	hintsRouter      *hints.Router
+	hintManager      *hints.Manager
+	hintsCtx         *HintsContext
+
 	enabled           bool
 	hotkeysRegistered bool
 }
@@ -123,17 +131,21 @@ func NewApp(cfg *config.Config) (*App, error) {
 		hintOverlay:       hintOverlay,
 		scrollController:  scrollCtrl,
 		currentMode:       ModeIdle,
+		currentAction:     ActionLeftClick,
 		enabled:           true,
 		hotkeysRegistered: false,
 	}
 
 	// Initialize hint managers
-	app.hintManager = hints.NewManager(func(hints []*hints.Hint) {
-		style := app.getStyleForMode(app.currentMode)
-		if err := app.hintOverlay.DrawHintsWithStyle(hints, style); err != nil {
+	app.hintManager = hints.NewManager(func(hs []*hints.Hint) {
+		style := hints.BuildStyleForAction(app.config.Hints, getActionString(app.currentAction))
+		if err := app.hintOverlay.DrawHintsWithStyle(hs, style); err != nil {
 			app.logger.Error("Failed to redraw hints", zap.Error(err))
 		}
 	})
+	// Initialize hints router
+	app.hintsRouter = hints.NewRouter(app.hintManager)
+	app.hintsCtx = &HintsContext{}
 
 	// Create electron manager
 	if cfg.Accessibility.AdditionalAXSupport.Enable {
