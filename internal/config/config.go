@@ -71,6 +71,7 @@ type HintsConfig struct {
 	Padding          int                                `toml:"padding"`
 	BorderWidth      int                                `toml:"border_width"`
 	Opacity          float64                            `toml:"opacity"`
+	Enabled          bool                               `toml:"enabled"`
 	LeftClickHints   HintsActionConfigWithRestoreCursor `toml:"left_click_hints"`
 	RightClickHints  HintsActionConfigWithRestoreCursor `toml:"right_click_hints"`
 	DoubleClickHints HintsActionConfigWithRestoreCursor `toml:"double_click_hints"`
@@ -120,6 +121,7 @@ type GridConfig struct {
 	SubgridEnabled         bool    `toml:"subgrid_enabled"`
 	SubgridRows            int     `toml:"subgrid_rows"`
 	SubgridCols            int     `toml:"subgrid_cols"`
+	Enabled                bool    `toml:"enabled"`
 }
 
 type AdditionalAXSupport struct {
@@ -196,6 +198,7 @@ func DefaultConfig() *Config {
 			Padding:        4,
 			BorderWidth:    1,
 			Opacity:        0.95,
+			Enabled:        true,
 			LeftClickHints: HintsActionConfigWithRestoreCursor{
 				HintsActionConfig: HintsActionConfig{
 					BackgroundColor:  "#FFD700",
@@ -304,6 +307,7 @@ func DefaultConfig() *Config {
 			SubgridEnabled:         true,
 			SubgridRows:            3,
 			SubgridCols:            3,
+			Enabled:                true,
 		},
 	}
 }
@@ -348,12 +352,10 @@ func Load(path string) (*Config, error) {
 			}
 		}
 	}
-
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
-
 	return cfg, nil
 }
 
@@ -381,6 +383,10 @@ func FindConfigFile() string {
 
 // Validate validates the configuration
 func (c *Config) Validate() error {
+	// At least one mode must be enabled
+	if !c.Hints.Enabled && !c.Grid.Enabled {
+		return fmt.Errorf("at least one mode must be enabled: hints.enabled or grid.enabled")
+	}
 	// Validate hint characters
 	if strings.TrimSpace(c.Hints.HintCharacters) == "" {
 		return fmt.Errorf("hint_characters cannot be empty")

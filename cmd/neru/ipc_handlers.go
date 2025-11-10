@@ -60,6 +60,9 @@ func (a *App) handleHints(cmd ipc.Command) ipc.Response {
 	if !a.enabled {
 		return ipc.Response{Success: false, Message: "neru is not running"}
 	}
+	if !a.config.Hints.Enabled {
+		return ipc.Response{Success: false, Message: "hints mode is disabled by config"}
+	}
 
 	// Parse params
 	params := cmd.Args
@@ -96,6 +99,9 @@ func (a *App) handleHints(cmd ipc.Command) ipc.Response {
 func (a *App) handleGrid(cmd ipc.Command) ipc.Response {
 	if !a.enabled {
 		return ipc.Response{Success: false, Message: "neru is not running"}
+	}
+	if !a.config.Grid.Enabled {
+		return ipc.Response{Success: false, Message: "grid mode is disabled by config"}
 	}
 
 	// Parse params

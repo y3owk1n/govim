@@ -30,6 +30,9 @@ func onReady() {
 
 	// Hints submenu
 	mHints := systray.AddMenuItem("Hints", "Hint mode actions")
+	if globalApp != nil && globalApp.config != nil && !globalApp.config.Hints.Enabled {
+		mHints.Hide()
+	}
 	mHintsLeftClick := mHints.AddSubMenuItem("Left Click", "Show left click hints")
 	mHintsRightClick := mHints.AddSubMenuItem("Right Click", "Show right click hints")
 	mHintsDoubleClick := mHints.AddSubMenuItem("Double Click", "Show double click hints")
@@ -43,6 +46,9 @@ func onReady() {
 
 	// Grid submenu
 	mGrid := systray.AddMenuItem("Grid", "Grid mode actions")
+	if globalApp != nil && globalApp.config != nil && !globalApp.config.Grid.Enabled {
+		mGrid.Hide()
+	}
 	mGridLeftClick := mGrid.AddSubMenuItem("Left Click", "Grid left click")
 	mGridRightClick := mGrid.AddSubMenuItem("Right Click", "Grid right click")
 	mGridDoubleClick := mGrid.AddSubMenuItem("Double Click", "Grid double click")

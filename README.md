@@ -416,6 +416,25 @@ See [`configs/default-config.toml`](configs/default-config.toml) for all availab
 
 ### Common Configurations
 
+#### Enable or disable modes
+
+You can disable a mode via configuration. When disabled:
+- Hotkeys for that mode are not registered
+- Menubar submenu for that mode is hidden
+- Overlay rendering and input handling are bypassed
+- Actions for that mode short-circuit with no effect
+
+Changes take effect on app restart.
+
+```toml
+[hints]
+enabled = true
+
+[grid]
+enabled = true
+```
+
+
 #### Change the default keybindings
 
 ```toml

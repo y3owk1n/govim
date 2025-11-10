@@ -53,6 +53,11 @@ func (a *App) activateHintMode(action Action) {
 		a.logger.Debug("Neru is disabled, ignoring hint mode activation")
 		return
 	}
+	// Respect mode enable flag
+	if !a.config.Hints.Enabled {
+		a.logger.Debug("Hints mode disabled by config, ignoring activation")
+		return
+	}
 
 	// Centralized exclusion guard
 	if a.isFocusedAppExcluded() {
@@ -124,6 +129,11 @@ func (a *App) setupHints(elements []*accessibility.TreeNode, action Action) erro
 func (a *App) activateGridMode(action Action) {
 	if !a.enabled {
 		a.logger.Debug("Neru is disabled, ignoring grid mode activation")
+		return
+	}
+	// Respect mode enable flag
+	if !a.config.Grid.Enabled {
+		a.logger.Debug("Grid mode disabled by config, ignoring activation")
 		return
 	}
 

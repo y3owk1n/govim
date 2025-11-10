@@ -152,6 +152,9 @@ additional_firefox_bundles = []
 # "Ctrl+Alt+F" = "exec osascript -e 'display notification \"This is a test notification!\" with title \"Hello from Terminal\" subtitle \"Just testing 🚀\"'"
 
 [hints]
+
+enabled = true
+
 # Characters used to build hint labels for alphabet style.
 # - At least 2 characters; choose distinct, easy-to-type ones.
 hint_characters = "asdfghjkl"
@@ -249,6 +252,8 @@ border_color = "#000000"
 # Fills the entire screen with uniformly sized cells.
 # Type the label (2/3/4 characters, chosen automatically) to click the cell center.
 
+enabled = true
+
 # Characters used to build grid labels
 characters = "asdfghjkl"
 
@@ -276,7 +281,7 @@ live_match_update = true      # Update matched highlight per keystroke without f
 subgrid_enabled = true        # Enable precision sublayer after main label selection
 subgrid_rows = 3              # Subgrid rows
 subgrid_cols = 3              # Subgrid columns
-# Sublayer keys used for subgrid selection (at least 9 characters for 3x3)
+# Sublayer keys used for subgrid selection (at least rows*cols characters)
 sublayer_keys = "asdfghjkl"
 
 [scroll]
