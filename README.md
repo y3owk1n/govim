@@ -804,6 +804,7 @@ live_match_update = true  # Update matched cells in real-time without screen fla
 subgrid_enabled = true    # Enable 3×3 sublayer for precision
 subgrid_rows = 3
 subgrid_cols = 3
+hide_unmatched = true    # Hide unmatched cells during typing to reduce visual clutter
 sublayer_keys = "asdfghjkl"  # Keys for subgrid selection (at least 9 characters for 3×3)
 ```
 

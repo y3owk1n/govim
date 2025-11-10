@@ -50,6 +50,7 @@ typedef struct {
     char* label;
     CGRect bounds;  // Cell rectangle
     int isMatched;  // 1 if cell matches current input, 0 otherwise
+    int isSubgrid;  // 1 if cell is part of subgrid, 0 otherwise
 } GridCell;
 
 // Function declarations
@@ -67,5 +68,6 @@ void drawTargetDot(OverlayWindow window, CGPoint center, double radius, const ch
 void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellStyle style);
 void drawGridLines(OverlayWindow window, CGRect* lines, int count, char* color, int width, double opacity);
 void updateGridMatchPrefix(OverlayWindow window, const char* prefix);
+void setHideUnmatched(OverlayWindow window, int hide);
 
 #endif // OVERLAY_H
