@@ -109,8 +109,6 @@ type LoggingConfig struct {
 type GridConfig struct {
 	Characters             string           `toml:"characters"`
 	SublayerKeys           string           `toml:"sublayer_keys"`
-	MinCellSize            int              `toml:"min_cell_size"`
-	MaxCellSize            int              `toml:"max_cell_size"`
 	FontSize               int              `toml:"font_size"`
 	FontFamily             string           `toml:"font_family"`
 	Opacity                float64          `toml:"opacity"`
@@ -301,8 +299,6 @@ func DefaultConfig() *Config {
 		Grid: GridConfig{
 			Characters:             "asdfghjkl",
 			SublayerKeys:           "",
-			MinCellSize:            40,
-			MaxCellSize:            200,
 			FontSize:               12,
 			FontFamily:             "SF Mono",
 			Opacity:                0.85,
@@ -637,12 +633,6 @@ func (c *Config) Validate() error {
 	}
 	if len(c.Grid.Characters) < 2 {
 		return fmt.Errorf("grid.characters must contain at least 2 characters")
-	}
-	if c.Grid.MinCellSize < 1 {
-		return fmt.Errorf("grid.min_cell_size must be at least 1")
-	}
-	if c.Grid.MaxCellSize > 0 && c.Grid.MaxCellSize < c.Grid.MinCellSize {
-		return fmt.Errorf("grid.max_cell_size must be greater than or equal to min_cell_size")
 	}
 	if c.Grid.FontSize < 6 || c.Grid.FontSize > 72 {
 		return fmt.Errorf("grid.font_size must be between 6 and 72")

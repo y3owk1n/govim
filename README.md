@@ -349,8 +349,11 @@ Grid mode divides your screen into a uniform grid of clickable cells, allowing y
 ```toml
 [grid]
 characters = "asdfghjkl"  # Characters for grid labels
-min_cell_size = 40         # Minimum cell size (prevents cells too small)
-max_cell_size = 200        # Maximum cell size (prevents oversized cells on large monitors)
+# Cell sizes are automatically optimized based on screen resolution:
+#   - Very small screens (<1.5M pixels): 30-60px cells
+#   - Small-medium screens (1.5-2.5M pixels): 30-80px cells
+#   - Medium-large screens (2.5-4M pixels): 40-100px cells
+#   - Very large screens (>4M pixels): 50-120px cells
 sublayer_keys = "asdfghjkl" # Keys for 3×3 subgrid (at least 9 chars)
 
 # Restore cursor after actions (each action can be configured independently)
@@ -781,9 +784,13 @@ highlight_width = 2
 # Characters used to build grid labels
 characters = "asdfghjkl"
 
-# Cell size constraints (in pixels)
-min_cell_size = 40   # Minimum cell size for comfortable clicking
-max_cell_size = 200  # Maximum cell size to maintain precision on large/ultra-wide monitors
+# Cell sizes are automatically optimized based on screen resolution
+# No manual configuration needed - the system adapts to your display:
+#   - Very small screens (<1.5M pixels): 30-60px cells for maximum precision
+#   - Small-medium screens (1.5-2.5M pixels): 30-80px cells
+#   - Medium-large screens (2.5-4M pixels): 40-100px cells
+#   - Very large screens (>4M pixels): 50-120px cells
+# Cells maintain aspect ratios matching your screen for consistent appearance
 
 # Visual styling
 font_size = 12
@@ -811,7 +818,7 @@ sublayer_keys = "asdfghjkl"  # Keys for subgrid selection (at least 9 characters
 **Multi-monitor notes:**
 
 - Grid automatically activates on the screen containing your mouse cursor
-- Cell sizes adapt to screen resolution (smaller cells on larger displays)
+- Cell sizes automatically adapt to each screen's resolution and aspect ratio
 - Works seamlessly on ultra-wide (21:9, 32:9) and vertical monitor setups
 - Switching monitors requires re-activating grid mode to adapt to new screen
 
