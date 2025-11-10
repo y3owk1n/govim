@@ -321,6 +321,7 @@ Press `esc` anytime to quit the hint selection.
 Grid mode divides your screen into a uniform grid of clickable cells, allowing you to click anywhere with precision.
 
 **Features:**
+
 - 🖥️ **Multi-monitor support** - Automatically adapts to the screen containing your mouse
 - 📏 **Smart sizing** - Cell sizes automatically adjust for optimal precision (40-200px default)
 - 🎯 **Sublayer precision** - After selecting a cell, choose from a 3×3 subgrid for pinpoint accuracy
@@ -336,6 +337,7 @@ Grid mode divides your screen into a uniform grid of clickable cells, allowing y
 5. The action (click, scroll, etc.) is performed at the selected point
 
 **Supported actions:**
+
 - Left click, right click, double click, triple click
 - Mouse down/up, middle click
 - Move mouse (no click)
@@ -343,12 +345,29 @@ Grid mode divides your screen into a uniform grid of clickable cells, allowing y
 - Context menu
 
 **Configuration:**
+
 ```toml
 [grid]
 characters = "asdfghjkl"  # Characters for grid labels
 min_cell_size = 40         # Minimum cell size (prevents cells too small)
 max_cell_size = 200        # Maximum cell size (prevents oversized cells on large monitors)
 sublayer_keys = "asdfghjkl" # Keys for 3×3 subgrid (at least 9 chars)
+
+# Restore cursor after actions (each action can be configured independently)
+[grid.left_click]
+restore_cursor = false
+
+[grid.right_click]
+restore_cursor = false
+
+[grid.double_click]
+restore_cursor = false
+
+[grid.triple_click]
+restore_cursor = false
+
+[grid.middle_click]
+restore_cursor = false
 ```
 
 Press `esc` or `delete` anytime to exit grid mode or correct your input.
@@ -419,6 +438,7 @@ See [`configs/default-config.toml`](configs/default-config.toml) for all availab
 #### Enable or disable modes
 
 You can disable a mode via configuration. When disabled:
+
 - Hotkeys for that mode are not registered
 - Menubar submenu for that mode is hidden
 - Overlay rendering and input handling are bypassed
@@ -433,7 +453,6 @@ enabled = true
 [grid]
 enabled = true
 ```
-
 
 #### Change the default keybindings
 
@@ -519,6 +538,27 @@ restore_cursor = true
 restore_cursor = true
 
 [hints.triple_click_hints]
+restore_cursor = true
+```
+
+For grid mode, each action can be configured independently:
+
+```toml
+[grid]
+
+[grid.left_click]
+restore_cursor = true
+
+[grid.right_click]
+restore_cursor = true
+
+[grid.middle_click]
+restore_cursor = true
+
+[grid.double_click]
+restore_cursor = true
+
+[grid.triple_click]
 restore_cursor = true
 ```
 
@@ -768,6 +808,7 @@ sublayer_keys = "asdfghjkl"  # Keys for subgrid selection (at least 9 characters
 ```
 
 **Multi-monitor notes:**
+
 - Grid automatically activates on the screen containing your mouse cursor
 - Cell sizes adapt to screen resolution (smaller cells on larger displays)
 - Works seamlessly on ultra-wide (21:9, 32:9) and vertical monitor setups

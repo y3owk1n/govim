@@ -369,25 +369,25 @@ func (a *App) handleKeyPress(key string) {
 			switch a.gridCtx.currentAction {
 			case ActionLeftClick:
 				a.logger.Info("Grid left click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.LeftClickAtPoint(targetPoint, a.config.Hints.LeftClickHints.RestoreCursor); err != nil {
+				if err := accessibility.LeftClickAtPoint(targetPoint, a.config.Grid.LeftClick.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionRightClick:
 				a.logger.Info("Grid right click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.RightClickAtPoint(targetPoint, a.config.Hints.RightClickHints.RestoreCursor); err != nil {
+				if err := accessibility.RightClickAtPoint(targetPoint, a.config.Grid.RightClick.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionDoubleClick:
 				a.logger.Info("Grid double click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.DoubleClickAtPoint(targetPoint, a.config.Hints.DoubleClickHints.RestoreCursor); err != nil {
+				if err := accessibility.DoubleClickAtPoint(targetPoint, a.config.Grid.DoubleClick.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionTripleClick:
 				a.logger.Info("Grid triple click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.TripleClickAtPoint(targetPoint, a.config.Hints.TripleClickHints.RestoreCursor); err != nil {
+				if err := accessibility.TripleClickAtPoint(targetPoint, a.config.Grid.TripleClick.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click", zap.Error(err))
 				}
 				a.exitMode()
@@ -407,7 +407,7 @@ func (a *App) handleKeyPress(key string) {
 				a.exitMode()
 			case ActionMiddleClick:
 				a.logger.Info("Grid middle click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
-				if err := accessibility.MiddleClickAtPoint(targetPoint, a.config.Hints.MiddleClickHints.RestoreCursor); err != nil {
+				if err := accessibility.MiddleClickAtPoint(targetPoint, a.config.Grid.MiddleClick.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click", zap.Error(err))
 				}
 				a.exitMode()
@@ -813,13 +813,13 @@ func (a *App) handleGridContextMenuKey(key string) {
 	action := hints.ParseContextMenuKey(key)
 	switch action {
 	case "left_click":
-		err = accessibility.LeftClickAtPoint(center, a.config.Hints.LeftClickHints.RestoreCursor)
+		err = accessibility.LeftClickAtPoint(center, a.config.Grid.LeftClick.RestoreCursor)
 	case "right_click":
-		err = accessibility.RightClickAtPoint(center, a.config.Hints.RightClickHints.RestoreCursor)
+		err = accessibility.RightClickAtPoint(center, a.config.Grid.RightClick.RestoreCursor)
 	case "double_click":
-		err = accessibility.DoubleClickAtPoint(center, a.config.Hints.DoubleClickHints.RestoreCursor)
+		err = accessibility.DoubleClickAtPoint(center, a.config.Grid.DoubleClick.RestoreCursor)
 	case "triple_click":
-		err = accessibility.TripleClickAtPoint(center, a.config.Hints.TripleClickHints.RestoreCursor)
+		err = accessibility.TripleClickAtPoint(center, a.config.Grid.TripleClick.RestoreCursor)
 	case "mouse_down":
 		err = accessibility.LeftMouseDownAtPoint(center)
 		// After mouse down, prepare to allow release selection in grid
@@ -831,7 +831,7 @@ func (a *App) handleGridContextMenuKey(key string) {
 	case "mouse_up":
 		err = accessibility.LeftMouseUpAtPoint(center)
 	case "middle_click":
-		err = accessibility.MiddleClickAtPoint(center, a.config.Hints.MiddleClickHints.RestoreCursor)
+		err = accessibility.MiddleClickAtPoint(center, a.config.Grid.MiddleClick.RestoreCursor)
 	case "move_mouse":
 		accessibility.MoveMouseToPoint(center)
 		// no error to report
