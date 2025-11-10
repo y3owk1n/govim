@@ -164,8 +164,9 @@ func (a *App) activateGridMode(action Action) {
 
 // setupGrid generates grid and draws it
 func (a *App) setupGrid(action Action) error {
-	// Create grid with current screen bounds and grid config
-	bounds := bridge.GetMainScreenBounds()
+	// Create grid with active screen bounds (screen containing mouse cursor)
+	// This ensures proper multi-monitor support
+	bounds := bridge.GetActiveScreenBounds()
 	characters := a.config.Grid.Characters
 	if strings.TrimSpace(characters) == "" {
 		characters = a.config.Hints.HintCharacters
@@ -174,7 +175,11 @@ func (a *App) setupGrid(action Action) error {
 	if minSize <= 0 {
 		minSize = 40
 	}
-	gridInstance := grid.NewGrid(characters, minSize, bounds)
+	maxSize := a.config.Grid.MaxCellSize
+	if maxSize <= 0 {
+		maxSize = 200
+	}
+	gridInstance := grid.NewGrid(characters, minSize, maxSize, bounds)
 	*a.gridCtx.gridInstance = gridInstance
 
 	// Grid overlay already created in NewApp - update its config and use it

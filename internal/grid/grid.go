@@ -20,7 +20,8 @@ type Cell struct {
 }
 
 // NewGrid creates a grid with practical cell sizes that completely fill the screen
-func NewGrid(characters string, minCellSize int, bounds image.Rectangle) *Grid {
+// It adapts to different monitor sizes and orientations
+func NewGrid(characters string, minCellSize int, maxCellSize int, bounds image.Rectangle) *Grid {
 	if characters == "" {
 		characters = "asdfghjkl"
 	}
@@ -28,9 +29,12 @@ func NewGrid(characters string, minCellSize int, bounds image.Rectangle) *Grid {
 	chars := []rune(characters)
 	numChars := len(chars)
 
-	// Define minimum comfortable click target size
+	// Define minimum and maximum comfortable click target sizes
 	if minCellSize <= 0 {
-		minCellSize = 40 // default
+		minCellSize = 40 // default minimum
+	}
+	if maxCellSize <= 0 || maxCellSize < minCellSize {
+		maxCellSize = 200 // default maximum to prevent oversized cells on large monitors
 	}
 
 	width := bounds.Max.X - bounds.Min.X
@@ -45,6 +49,20 @@ func NewGrid(characters string, minCellSize int, bounds image.Rectangle) *Grid {
 	if targetRows < 1 {
 		targetRows = 1
 	}
+	// Ensure cells don't exceed maximum size by increasing grid density if needed
+	if width/targetCols > maxCellSize {
+		targetCols = width / maxCellSize
+		if targetCols < 1 {
+			targetCols = 1
+		}
+	}
+	if height/targetRows > maxCellSize {
+		targetRows = height / maxCellSize
+		if targetRows < 1 {
+			targetRows = 1
+		}
+	}
+
 	findDiv := func(total, target, minSize int) int {
 		for d := target; d >= 1; d-- {
 			if total%d == 0 && total/d >= minSize {

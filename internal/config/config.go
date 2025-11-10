@@ -105,6 +105,7 @@ type GridConfig struct {
 	Characters             string  `toml:"characters"`
 	SublayerKeys           string  `toml:"sublayer_keys"`
 	MinCellSize            int     `toml:"min_cell_size"`
+	MaxCellSize            int     `toml:"max_cell_size"`
 	FontSize               int     `toml:"font_size"`
 	FontFamily             string  `toml:"font_family"`
 	Opacity                float64 `toml:"opacity"`
@@ -288,15 +289,16 @@ func DefaultConfig() *Config {
 			Characters:             "asdfghjkl",
 			SublayerKeys:           "",
 			MinCellSize:            40,
+			MaxCellSize:            200,
 			FontSize:               12,
-			FontFamily:             "Menlo",
+			FontFamily:             "SF Mono",
 			Opacity:                0.85,
-			BackgroundColor:        "#ffffff",
-			TextColor:              "#1a1a1a",
-			MatchedTextColor:       "#0066ff",
-			MatchedBackgroundColor: "#0066ff",
-			MatchedBorderColor:     "#0066ff",
-			BorderColor:            "#d0d0d0",
+			BackgroundColor:        "#abe9b3",
+			TextColor:              "#ffffff",
+			MatchedTextColor:       "#ffffff",
+			MatchedBackgroundColor: "#f8bd96",
+			MatchedBorderColor:     "#f8bd96",
+			BorderColor:            "#abe9b3",
 			BorderWidth:            1,
 			LiveMatchUpdate:        true,
 			SubgridEnabled:         true,
@@ -616,6 +618,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Grid.MinCellSize < 1 {
 		return fmt.Errorf("grid.min_cell_size must be at least 1")
+	}
+	if c.Grid.MaxCellSize > 0 && c.Grid.MaxCellSize < c.Grid.MinCellSize {
+		return fmt.Errorf("grid.max_cell_size must be greater than or equal to min_cell_size")
 	}
 	if c.Grid.FontSize < 6 || c.Grid.FontSize > 72 {
 		return fmt.Errorf("grid.font_size must be between 6 and 72")

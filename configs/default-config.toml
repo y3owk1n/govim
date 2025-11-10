@@ -245,6 +245,41 @@ text_color = "#000000"
 matched_text_color = "#005585" # Matched text color - color for characters that have been typed
 border_color = "#000000"
 
+[grid]
+# Grid overlay (flat, label-based)
+# Fills the entire screen with uniformly sized cells.
+# Type the label (2/3/4 characters, chosen automatically) to click the cell center.
+
+# Characters used to build grid labels
+characters = "asdfghjkl"
+
+# Minimum cell size in pixels (actual size may be slightly larger to evenly fill the screen)
+min_cell_size = 40
+# Maximum cell size in pixels (prevents oversized cells on large/ultra-wide monitors for better precision)
+max_cell_size = 200
+
+# Grid label style
+font_size = 12
+font_family = ""
+opacity = 0.5
+
+# Colors
+background_color = "#abe9b3"
+text_color = "#ffffff"
+matched_text_color = "#ffffff"
+matched_background_color = "#f8bd96" # Background color for matched grid cells
+matched_border_color = "#f8bd96"     # Border color for matched grid cells
+border_color = "#abe9b3"
+border_width = 1
+
+# Behavior
+live_match_update = true      # Update matched highlight per keystroke without full redraw
+subgrid_enabled = true        # Enable precision sublayer after main label selection
+subgrid_rows = 3              # Subgrid rows
+subgrid_cols = 3              # Subgrid columns
+# Sublayer keys used for subgrid selection (at least 9 characters for 3x3)
+sublayer_keys = "asdfghjkl"
+
 [scroll]
 # Base scroll amount for j/k keys in pixels
 scroll_step = 50
@@ -281,36 +316,3 @@ structured_logging = true
 # When true, file logs use a structured (JSON) encoder; console remains readable.
 # When false, console uses a development-friendly formatter.
 
-[grid]
-# Grid overlay (flat, label-based)
-# Fills the entire screen with uniformly sized cells.
-# Type the label (2/3/4 characters, chosen automatically) to click the cell center.
-
-# Characters used to build grid labels
-characters = "aoeuidhtns"
-# characters = "asdfghjkl"
-
-# Minimum cell size in pixels (actual size may be slightly larger to evenly fill the screen)
-min_cell_size = 40
-
-# Grid label style
-font_size = 12
-font_family = ""
-opacity = 0.5
-
-# Colors
-background_color = "#abe9b3"
-text_color = "#ffffff"
-matched_text_color = "#ffffff"
-matched_background_color = "#f8bd96" # Background color for matched grid cells
-matched_border_color = "#f8bd96"     # Border color for matched grid cells
-border_color = "#abe9b3"
-border_width = 1
-
-# Behavior
-live_match_update = true      # Update matched highlight per keystroke without full redraw
-subgrid_enabled = true        # Enable precision sublayer after main label selection
-subgrid_rows = 3              # Subgrid rows
-subgrid_cols = 3              # Subgrid columns
-# Sublayer keys used for subgrid selection (at least 9 characters for 3x3)
-sublayer_keys = "aoeuidhtns"
