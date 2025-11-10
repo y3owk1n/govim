@@ -62,6 +62,11 @@ func (o *Overlay) Clear() {
 	C.clearOverlay(o.window)
 }
 
+// ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor
+func (o *Overlay) ResizeToActiveScreen() {
+	C.resizeOverlayToActiveScreen(o.window)
+}
+
 // DrawHintsWithoutArrow draws hints without arrows
 func (o *Overlay) DrawHintsWithoutArrow(hints []*Hint, style StyleMode) error {
 	return o.drawHintsInternal(hints, style, false)
