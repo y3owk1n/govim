@@ -45,6 +45,46 @@ func (a *App) setupAppWatcherCallbacks() {
 	a.appWatcher.OnActivate(func(appName, bundleID string) {
 		a.handleAppActivation(bundleID)
 	})
+	// Watch for display parameter changes (monitor unplug/plug, resolution changes)
+	a.appWatcher.OnScreenParametersChanged(func() {
+		a.handleScreenParametersChange()
+	})
+}
+
+// handleScreenParametersChange handles display changes and resizes/regenerates overlays
+func (a *App) handleScreenParametersChange() {
+	if a.screenChangeProcessing {
+		return
+	}
+	a.screenChangeProcessing = true
+	defer func() { a.screenChangeProcessing = false }()
+
+	a.logger.Info("Screen parameters changed; adjusting overlays")
+	// Only act if grid is enabled
+	if a.config.Grid.Enabled && a.gridCtx != nil && a.gridCtx.gridOverlay != nil {
+		// If grid mode is not active, mark for refresh on next activation
+		if a.currentMode != ModeGrid {
+			a.gridOverlayNeedsRefresh = true
+			return
+		}
+
+		// Grid mode is active - resize the existing overlay window to match new screen bounds
+		gridOverlay := *a.gridCtx.gridOverlay
+
+		// Resize overlay window to current active screen (where mouse is)
+		gridOverlay.ResizeToActiveScreen()
+
+		// Give the UI thread a moment to complete the resize
+		time.Sleep(150 * time.Millisecond)
+
+		// Regenerate the grid cells with updated screen bounds
+		if err := a.setupGrid(a.gridCtx.currentAction); err != nil {
+			a.logger.Error("Failed to refresh grid after screen change", zap.Error(err))
+			return
+		}
+
+		a.logger.Info("Grid overlay resized and regenerated for new screen bounds")
+	}
 }
 
 // handleAppActivation handles application activation events
@@ -52,8 +92,14 @@ func (a *App) handleAppActivation(bundleID string) {
 	a.logger.Debug("App activated", zap.String("bundle_id", bundleID))
 
 	// refresh hotkeys for app
-	go a.refreshHotkeysForAppOrCurrent(bundleID)
-	a.logger.Debug("Handled hotkey refresh")
+	if a.currentMode == ModeIdle {
+		go a.refreshHotkeysForAppOrCurrent(bundleID)
+		a.logger.Debug("Handled hotkey refresh")
+	} else {
+		// Defer hotkey refresh to avoid re-entry during active modes
+		a.hotkeyRefreshPending = true
+		a.logger.Debug("Deferred hotkey refresh due to active mode")
+	}
 
 	if a.config.Hints.Enabled {
 		if a.config.Accessibility.AdditionalAXSupport.Enable {

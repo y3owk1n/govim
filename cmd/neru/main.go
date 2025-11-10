@@ -69,8 +69,11 @@ type App struct {
 	gridRouter       *grid.Router
 	gridCtx          *GridContext
 
-	enabled           bool
-	hotkeysRegistered bool
+	enabled                 bool
+	hotkeysRegistered       bool
+	screenChangeProcessing  bool
+	gridOverlayNeedsRefresh bool
+	hotkeyRefreshPending    bool
 }
 
 // NewApp creates a new application instance

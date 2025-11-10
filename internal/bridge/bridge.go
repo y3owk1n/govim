@@ -59,6 +59,7 @@ type AppWatcher interface {
 	HandleTerminate(appName, bundleID string)
 	HandleActivate(appName, bundleID string)
 	HandleDeactivate(appName, bundleID string)
+	HandleScreenParametersChanged()
 }
 
 // SetAppWatcher sets the application watcher implementation
@@ -103,6 +104,13 @@ func handleAppActivate(cAppName *C.char, cBundleID *C.char) {
 	}
 }
 
+//export handleScreenParametersChanged
+func handleScreenParametersChanged() {
+	if appWatcher != nil {
+		go appWatcher.HandleScreenParametersChanged()
+	}
+}
+
 //export handleAppDeactivate
 func handleAppDeactivate(cAppName *C.char, cBundleID *C.char) {
 	if appWatcher != nil {
@@ -110,17 +118,6 @@ func handleAppDeactivate(cAppName *C.char, cBundleID *C.char) {
 		bundleID := C.GoString(cBundleID)
 		appWatcher.HandleDeactivate(appName, bundleID)
 	}
-}
-
-// GetMainScreenBounds returns the bounds of the main screen
-func GetMainScreenBounds() image.Rectangle {
-	rect := C.getMainScreenBounds()
-	return image.Rect(
-		int(rect.origin.x),
-		int(rect.origin.y),
-		int(rect.origin.x+rect.size.width),
-		int(rect.origin.y+rect.size.height),
-	)
 }
 
 // GetActiveScreenBounds returns the bounds of the screen containing the mouse cursor

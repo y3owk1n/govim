@@ -5,6 +5,7 @@ extern void handleAppLaunch(const char* appName, const char* bundleID);
 extern void handleAppTerminate(const char* appName, const char* bundleID);
 extern void handleAppActivate(const char* appName, const char* bundleID);
 extern void handleAppDeactivate(const char* appName, const char* bundleID);
+extern void handleScreenParametersChanged(void);
 
 @interface AppWatcherDelegate : NSObject
 @end
@@ -108,6 +109,15 @@ extern void handleAppDeactivate(const char* appName, const char* bundleID);
     }
 }
 
+- (void)screenParametersDidChange:(NSNotification *)notification {
+    @autoreleasepool {
+        // Debounce to allow system to settle, then invoke Go handler on watcherQueue (not main thread)
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+            handleScreenParametersChanged();
+        });
+    }
+}
+
 @end
 
 static AppWatcherDelegate *delegate = nil;
@@ -145,6 +155,12 @@ void startAppWatcher(void) {
                       selector:@selector(applicationDidDeactivate:)
                           name:NSWorkspaceDidDeactivateApplicationNotification
                         object:nil];
+
+            // Observe screen parameter changes (display add/remove, resolution changes)
+            [[NSNotificationCenter defaultCenter] addObserver:delegate
+                                                     selector:@selector(screenParametersDidChange:)
+                                                         name:NSApplicationDidChangeScreenParametersNotification
+                                                       object:nil];
         }
     });
 }

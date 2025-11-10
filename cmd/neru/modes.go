@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"strings"
+	"time"
 
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/bridge"
@@ -147,12 +148,18 @@ func (a *App) activateGridMode(action Action) {
 
 	a.exitMode() // Exit current mode first
 
-	if actionString == "unknown" {
-		a.logger.Warn("Unknown action, ignoring")
-		return
+	// Always resize overlay to the active screen (where mouse is) before drawing grid
+	if a.gridCtx != nil && a.gridCtx.gridOverlay != nil {
+		(*a.gridCtx.gridOverlay).ResizeToActiveScreen()
+		// Wait for async resize to complete on main thread
+		time.Sleep(100 * time.Millisecond)
 	}
 
-	// Generate grid cells
+	// If screen changed while grid was inactive, clear the refresh flag
+	if a.gridOverlayNeedsRefresh {
+		a.gridOverlayNeedsRefresh = false
+	}
+
 	if err := a.setupGrid(action); err != nil {
 		a.logger.Error("Failed to setup grid", zap.Error(err), zap.String("action", actionString))
 		return
@@ -176,7 +183,12 @@ func (a *App) activateGridMode(action Action) {
 func (a *App) setupGrid(action Action) error {
 	// Create grid with active screen bounds (screen containing mouse cursor)
 	// This ensures proper multi-monitor support
-	bounds := bridge.GetActiveScreenBounds()
+	screenBounds := bridge.GetActiveScreenBounds()
+
+	// Normalize bounds to window-local coordinates (0,0 origin)
+	// The overlay window is positioned at the screen origin, but the view uses local coordinates
+	bounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
+
 	characters := a.config.Grid.Characters
 	if strings.TrimSpace(characters) == "" {
 		characters = a.config.Hints.HintCharacters
@@ -920,6 +932,12 @@ func (a *App) exitMode() {
 	a.currentAction = ActionLeftClick
 	a.logger.Debug("Mode transition complete",
 		zap.String("to", "idle"))
+
+	// If a hotkey refresh was deferred while in an active mode, perform it now
+	if a.hotkeyRefreshPending {
+		a.hotkeyRefreshPending = false
+		go a.refreshHotkeysForAppOrCurrent("")
+	}
 }
 
 func getModeString(mode Mode) string {

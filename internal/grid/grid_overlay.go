@@ -67,6 +67,21 @@ func (o *GridOverlay) Destroy() {
 	C.destroyOverlayWindow(o.window)
 }
 
+// ReplaceWindow atomically replaces the underlying overlay window on the main thread
+func (o *GridOverlay) ReplaceWindow() {
+	C.replaceOverlayWindow(&o.window)
+}
+
+// ResizeToMainScreen resizes the overlay window to the current main screen
+func (o *GridOverlay) ResizeToMainScreen() {
+	C.resizeOverlayToMainScreen(o.window)
+}
+
+// ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor
+func (o *GridOverlay) ResizeToActiveScreen() {
+	C.resizeOverlayToActiveScreen(o.window)
+}
+
 // Draw renders the flat grid with all 3-char cells visible
 func (o *GridOverlay) Draw(grid *Grid, currentInput string) error {
 	// Clear existing content

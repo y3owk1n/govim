@@ -13,10 +13,11 @@ type AppCallback func(appName string, bundleID string)
 type Watcher struct {
 	mu sync.RWMutex
 	// Callbacks for different events
-	launchCallbacks     []AppCallback
-	terminateCallbacks  []AppCallback
-	activateCallbacks   []AppCallback
-	deactivateCallbacks []AppCallback
+	launchCallbacks       []AppCallback
+	terminateCallbacks    []AppCallback
+	activateCallbacks     []AppCallback
+	deactivateCallbacks   []AppCallback
+	screenChangeCallbacks []func()
 }
 
 func NewWatcher() *Watcher {
@@ -35,11 +36,11 @@ func (w *Watcher) Stop() {
 	bridge.StopAppWatcher()
 }
 
-// OnLaunch registers a callback for application launch events
-func (w *Watcher) OnLaunch(callback AppCallback) {
+// OnScreenParametersChanged registers a callback for screen parameter change events
+func (w *Watcher) OnScreenParametersChanged(callback func()) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	w.launchCallbacks = append(w.launchCallbacks, callback)
+	w.screenChangeCallbacks = append(w.screenChangeCallbacks, callback)
 }
 
 // OnTerminate registers a callback for application termination events
@@ -96,5 +97,14 @@ func (w *Watcher) HandleDeactivate(appName, bundleID string) {
 	defer w.mu.RUnlock()
 	for _, callback := range w.deactivateCallbacks {
 		callback(appName, bundleID)
+	}
+}
+
+// HandleScreenParametersChanged is called from the bridge when display parameters change
+func (w *Watcher) HandleScreenParametersChanged() {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	for _, callback := range w.screenChangeCallbacks {
+		callback()
 	}
 }

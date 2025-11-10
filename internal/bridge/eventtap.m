@@ -238,6 +238,15 @@ EventTap createEventTap(EventTapCallback callback, void* userData) {
 
     context->runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, context->eventTap, 0);
 
+    // Add to main run loop once during creation to avoid re-entry on enable
+    if ([NSThread isMainThread]) {
+        CFRunLoopAddSource(CFRunLoopGetMain(), context->runLoopSource, kCFRunLoopCommonModes);
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            CFRunLoopAddSource(CFRunLoopGetMain(), context->runLoopSource, kCFRunLoopCommonModes);
+        });
+    }
+
     return (EventTap)context;
 }
 
@@ -268,16 +277,13 @@ void enableEventTap(EventTap tap) {
 
     EventTapContext* context = (EventTapContext*)tap;
 
-    // Must run on main thread since we're modifying the main run loop
-    if ([NSThread isMainThread]) {
-        CFRunLoopAddSource(CFRunLoopGetMain(), context->runLoopSource, kCFRunLoopCommonModes);
-        CGEventTapEnable(context->eventTap, true);
-    } else {
-        dispatch_sync(dispatch_get_main_queue(), ^{
-            CFRunLoopAddSource(CFRunLoopGetMain(), context->runLoopSource, kCFRunLoopCommonModes);
+    // Always enable asynchronously to avoid overlap with disable/destroy
+    // Use a short delay to ensure prior disable completes first
+    dispatch_async(dispatch_get_main_queue(), ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             CGEventTapEnable(context->eventTap, true);
         });
-    }
+    });
 }
 
 void disableEventTap(EventTap tap) {
@@ -285,16 +291,10 @@ void disableEventTap(EventTap tap) {
 
     EventTapContext* context = (EventTapContext*)tap;
 
-    // Must run on main thread since we're modifying the main run loop
-    if ([NSThread isMainThread]) {
+    // Always disable asynchronously to avoid overlap with enable/destroy
+    dispatch_async(dispatch_get_main_queue(), ^{
         CGEventTapEnable(context->eventTap, false);
-        CFRunLoopRemoveSource(CFRunLoopGetMain(), context->runLoopSource, kCFRunLoopCommonModes);
-    } else {
-        dispatch_sync(dispatch_get_main_queue(), ^{
-            CGEventTapEnable(context->eventTap, false);
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), context->runLoopSource, kCFRunLoopCommonModes);
-        });
-    }
+    });
 }
 
 void destroyEventTap(EventTap tap) {
@@ -311,7 +311,7 @@ void destroyEventTap(EventTap tap) {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), context->runLoopSource, kCFRunLoopCommonModes);
         }
     } else {
-        dispatch_sync(dispatch_get_main_queue(), ^{
+        dispatch_async(dispatch_get_main_queue(), ^{
             if (context->eventTap) {
                 CGEventTapEnable(context->eventTap, false);
             }
