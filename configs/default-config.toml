@@ -136,7 +136,7 @@ additional_firefox_bundles = []
 # "Ctrl+M" = "hints move_mouse"
 
 # Grid mode hotkeys (grid divides screen into clickable regions)
-# "Cmd+Shift+G" = "grid left_click"  # Activate grid mode with left click
+"Cmd+Shift+G" = "grid left_click"  # Activate grid mode with left click
 # "Cmd+Shift+R" = "grid right_click" # Activate grid mode with right click
 # "Cmd+Shift+M" = "grid move_mouse"  # Activate grid mode to move mouse
 # "Cmd+Shift+D" = "grid double_click" # Grid double click

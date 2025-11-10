@@ -66,6 +66,10 @@ This is an intentional design choice to keep the project lean, maintainable, and
 
 - 🎯 **Hint Mode** - Click any UI element using keyboard shortcuts with visual labels
 - 🎬 **Action Mode** - Choose specific click actions (left, right, double, middle click)
+- 🗺️ **Grid Mode** - Full-screen grid overlay for precise clicking anywhere on screen
+  - Multi-monitor support - automatically adapts to active screen
+  - Smart cell sizing - maintains optimal precision on any display size
+  - Configurable sublayer for pinpoint accuracy
 - 📜 **Scroll Mode** - Vim-style scrolling (`j`/`k`, `gg`/`G`, etc.) in any application
 - 🌐 **Universal Support** - Works with native macOS apps, Electron apps, and Chrome/Firefox
 - ⚡ **Performance** - Built with native macOS APIs for instant response
@@ -83,6 +87,7 @@ This is an intentional design choice to keep the project lean, maintainable, and
 - Maybe make it a full-fledged vim mode? Just like [Vimnav.spoon](https://github.com/y3owk1n/vimnav.spoon)
 - Hold and unhold action does not work in Finder.app... sobs
 - Implement a text selection mode that focuses on AXStaticText elements
+- Grid mode: hide unmatched cells during typing to reduce visual clutter
 
 ## 🚀 Installation
 
@@ -260,6 +265,7 @@ open -a Neru # if you prefer app bundle
 neru launch # if you prefer cli only
 
 # Try hint mode: Press Cmd+Shift+Space
+# Try grid mode: Press Cmd+Shift+G (configurable)
 # Try scroll mode: Press Cmd+Shift+J
 ```
 
@@ -307,6 +313,45 @@ Keys:
 - H = release mouse
 
 Press `esc` anytime to quit the hint selection.
+
+### Grid Mode
+
+**Default hotkey:** `Cmd+Shift+G` (or bind to your preference)
+
+Grid mode divides your screen into a uniform grid of clickable cells, allowing you to click anywhere with precision.
+
+**Features:**
+- 🖥️ **Multi-monitor support** - Automatically adapts to the screen containing your mouse
+- 📏 **Smart sizing** - Cell sizes automatically adjust for optimal precision (40-200px default)
+- 🎯 **Sublayer precision** - After selecting a cell, choose from a 3×3 subgrid for pinpoint accuracy
+- 🔤 **Adaptive labels** - Uses 2, 3, or 4 character labels based on screen size
+- ⚡ **Live matching** - Real-time visual feedback as you type without screen flashing
+
+**How to use:**
+
+1. Press the hotkey to activate grid mode
+2. Type the label of the cell you want to click (e.g., "AS", "ASD", or "ASDF" depending on grid size)
+3. A 3×3 subgrid appears in the selected cell for precision
+4. Type one more character to select the exact position within that cell
+5. The action (click, scroll, etc.) is performed at the selected point
+
+**Supported actions:**
+- Left click, right click, double click, triple click
+- Mouse down/up, middle click
+- Move mouse (no click)
+- Scroll mode (with vim-style keys)
+- Context menu
+
+**Configuration:**
+```toml
+[grid]
+characters = "asdfghjkl"  # Characters for grid labels
+min_cell_size = 40         # Minimum cell size (prevents cells too small)
+max_cell_size = 200        # Maximum cell size (prevents oversized cells on large monitors)
+sublayer_keys = "asdfghjkl" # Keys for 3×3 subgrid (at least 9 chars)
+```
+
+Press `esc` or `delete` anytime to exit grid mode or correct your input.
 
 ### Scroll Mode
 
@@ -379,6 +424,9 @@ See [`configs/default-config.toml`](configs/default-config.toml) for all availab
 "Ctrl+F" = "hints left_click"
 "Ctrl+G" = "hints context_menu"
 "Ctrl+S" = "hints scroll"
+
+# Grid mode
+"Cmd+Shift+G" = "grid left_click"
 ```
 
 #### Add more bindings
@@ -667,6 +715,45 @@ highlight_color = "#FF0000"
 highlight_width = 2
 ```
 
+### Grid configuration
+
+```toml
+[grid]
+# Characters used to build grid labels
+characters = "asdfghjkl"
+
+# Cell size constraints (in pixels)
+min_cell_size = 40   # Minimum cell size for comfortable clicking
+max_cell_size = 200  # Maximum cell size to maintain precision on large/ultra-wide monitors
+
+# Visual styling
+font_size = 12
+font_family = "SF Mono"  # Leave empty for system default
+opacity = 0.85
+
+# Colors (hex format)
+background_color = "#abe9b3"
+text_color = "#ffffff"
+matched_text_color = "#ffffff"          # Text color when cell matches your input
+matched_background_color = "#f8bd96"   # Background color for matched cells
+matched_border_color = "#f8bd96"       # Border color for matched cells
+border_color = "#abe9b3"
+border_width = 1
+
+# Behavior
+live_match_update = true  # Update matched cells in real-time without screen flashing
+subgrid_enabled = true    # Enable 3×3 sublayer for precision
+subgrid_rows = 3
+subgrid_cols = 3
+sublayer_keys = "asdfghjkl"  # Keys for subgrid selection (at least 9 characters for 3×3)
+```
+
+**Multi-monitor notes:**
+- Grid automatically activates on the screen containing your mouse cursor
+- Cell sizes adapt to screen resolution (smaller cells on larger displays)
+- Works seamlessly on ultra-wide (21:9, 32:9) and vertical monitor setups
+- Switching monitors requires re-activating grid mode to adapt to new screen
+
 ## 🖥️ CLI Usage
 
 Neru provides comprehensive CLI commands with IPC (Inter-Process Communication) for controlling the daemon.
@@ -706,6 +793,18 @@ neru hints middle_click # Show hints and perform middle click action
 neru hints move_mouse # Show hints and move the mouse to the position, no clicking
 neru hints scroll # Enter scroll mode
 neru hints context_menu # Show hints and trigger context menu action
+
+# Grid mode (click anywhere on screen with precision)
+neru grid left_click # Activate grid mode with left click
+neru grid right_click # Grid mode with right click
+neru grid double_click # Grid mode with double click
+neru grid triple_click # Grid mode with triple click
+neru grid mouse_down # Grid mode with mouse down (hold)
+neru grid mouse_up # Grid mode with mouse up (release)
+neru grid middle_click # Grid mode with middle click
+neru grid move_mouse # Grid mode to move mouse without clicking
+neru grid scroll # Grid mode with scroll
+neru grid context_menu # Grid mode with context menu
 
 # Return to idle state
 neru idle          # Return to idle state
@@ -841,6 +940,7 @@ neru/
 │   ├── accessibility/  # Accessibility API wrappers
 │   ├── appwatcher/     # App watcher with callbacks
 │   ├── electron/       # Electron manager (includes Chromium and Firefox)
+│   ├── grid/           # Grid mode implementation
 │   ├── hints/          # Hint generation and display logic
 │   ├── scroll/         # Scroll mode implementation
 │   ├── hotkeys/        # Global hotkey management
