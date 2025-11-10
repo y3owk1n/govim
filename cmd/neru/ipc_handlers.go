@@ -24,6 +24,8 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 		return a.handleStop(cmd)
 	case "hints":
 		return a.handleHints(cmd)
+	case "grid":
+		return a.handleGrid(cmd)
 	case "idle":
 		return a.handleIdle(cmd)
 	case "status":
@@ -58,6 +60,9 @@ func (a *App) handleHints(cmd ipc.Command) ipc.Response {
 	if !a.enabled {
 		return ipc.Response{Success: false, Message: "neru is not running"}
 	}
+	if !a.config.Hints.Enabled {
+		return ipc.Response{Success: false, Message: "hints mode is disabled by config"}
+	}
 
 	// Parse params
 	params := cmd.Args
@@ -89,6 +94,46 @@ func (a *App) handleHints(cmd ipc.Command) ipc.Response {
 	}
 
 	return ipc.Response{Success: true, Message: "hint mode activated"}
+}
+
+func (a *App) handleGrid(cmd ipc.Command) ipc.Response {
+	if !a.enabled {
+		return ipc.Response{Success: false, Message: "neru is not running"}
+	}
+	if !a.config.Grid.Enabled {
+		return ipc.Response{Success: false, Message: "grid mode is disabled by config"}
+	}
+
+	// Parse params
+	params := cmd.Args
+	for _, param := range params {
+		switch param {
+		case "left_click":
+			a.activateMode(ModeGrid, ActionLeftClick)
+		case "right_click":
+			a.activateMode(ModeGrid, ActionRightClick)
+		case "double_click":
+			a.activateMode(ModeGrid, ActionDoubleClick)
+		case "triple_click":
+			a.activateMode(ModeGrid, ActionTripleClick)
+		case "mouse_up":
+			a.activateMode(ModeGrid, ActionMouseUp)
+		case "mouse_down":
+			a.activateMode(ModeGrid, ActionMouseDown)
+		case "middle_click":
+			a.activateMode(ModeGrid, ActionMiddleClick)
+		case "move_mouse":
+			a.activateMode(ModeGrid, ActionMoveMouse)
+		case "scroll":
+			a.activateMode(ModeGrid, ActionScroll)
+		case "context_menu":
+			a.activateMode(ModeGrid, ActionContextMenu)
+		default:
+			return ipc.Response{Success: false, Message: fmt.Sprintf("unknown grid action: %s", param)}
+		}
+	}
+
+	return ipc.Response{Success: true, Message: "grid mode activated"}
 }
 
 func (a *App) handleIdle(cmd ipc.Command) ipc.Response {

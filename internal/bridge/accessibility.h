@@ -69,5 +69,7 @@ int performLeftMouseUpAtPosition(CGPoint position);
 int performLeftMouseUpAtCursor(void);
 
 bool isMissionControlActive();
+CGRect getMainScreenBounds();
+CGRect getActiveScreenBounds();
 
 #endif // ACCESSIBILITY_H

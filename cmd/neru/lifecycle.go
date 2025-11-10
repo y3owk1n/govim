@@ -55,8 +55,10 @@ func (a *App) handleAppActivation(bundleID string) {
 	go a.refreshHotkeysForAppOrCurrent(bundleID)
 	a.logger.Debug("Handled hotkey refresh")
 
-	if a.config.Accessibility.AdditionalAXSupport.Enable {
-		a.handleAdditionalAccessibility(bundleID)
+	if a.config.Hints.Enabled {
+		if a.config.Accessibility.AdditionalAXSupport.Enable {
+			a.handleAdditionalAccessibility(bundleID)
+		}
 	}
 
 	a.logger.Debug("Done handling app activation")
@@ -90,6 +92,18 @@ func (a *App) printStartupInfo() {
 	fmt.Println("✓ Neru is running")
 
 	for k, v := range a.config.Hotkeys.Bindings {
+		// Skip showing bindings for disabled modes
+		mode := v
+		if parts := strings.Split(v, " "); len(parts) > 0 {
+			mode = parts[0]
+		}
+		if mode == "hints" && !a.config.Hints.Enabled {
+			continue
+		}
+		if mode == "grid" && !a.config.Grid.Enabled {
+			continue
+		}
+
 		toShow := v
 		if strings.HasPrefix(v, "exec") {
 			runes := []rune(v)

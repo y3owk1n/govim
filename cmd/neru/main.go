@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/accessibility"
@@ -12,6 +13,7 @@ import (
 	"github.com/y3owk1n/neru/internal/config"
 	"github.com/y3owk1n/neru/internal/electron"
 	"github.com/y3owk1n/neru/internal/eventtap"
+	"github.com/y3owk1n/neru/internal/grid"
 	"github.com/y3owk1n/neru/internal/hints"
 	"github.com/y3owk1n/neru/internal/hotkeys"
 	"github.com/y3owk1n/neru/internal/ipc"
@@ -26,6 +28,7 @@ type Mode int
 const (
 	ModeIdle Mode = iota
 	ModeHints
+	ModeGrid
 )
 
 // Action represents the current action within hints mode
@@ -62,6 +65,9 @@ type App struct {
 	hintsRouter      *hints.Router
 	hintManager      *hints.Manager
 	hintsCtx         *HintsContext
+	gridManager      *grid.Manager
+	gridRouter       *grid.Router
+	gridCtx          *GridContext
 
 	enabled           bool
 	hotkeysRegistered bool
@@ -90,16 +96,18 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Set global config
 	config.SetGlobal(cfg)
 
-	// Apply clickable and scrollable roles from config
-	log.Info("Applying clickable roles",
-		zap.Int("count", len(cfg.Accessibility.ClickableRoles)),
-		zap.Strings("roles", cfg.Accessibility.ClickableRoles))
-	accessibility.SetClickableRoles(cfg.Accessibility.ClickableRoles)
+	if cfg.Hints.Enabled {
+		// Apply clickable and scrollable roles from config
+		log.Info("Applying clickable roles",
+			zap.Int("count", len(cfg.Accessibility.ClickableRoles)),
+			zap.Strings("roles", cfg.Accessibility.ClickableRoles))
+		accessibility.SetClickableRoles(cfg.Accessibility.ClickableRoles)
 
-	log.Info("Applying scrollable roles",
-		zap.Int("count", len(cfg.Accessibility.ScrollableRoles)),
-		zap.Strings("roles", cfg.Accessibility.ScrollableRoles))
-	accessibility.SetScrollableRoles(cfg.Accessibility.ScrollableRoles)
+		log.Info("Applying scrollable roles",
+			zap.Int("count", len(cfg.Accessibility.ScrollableRoles)),
+			zap.Strings("roles", cfg.Accessibility.ScrollableRoles))
+		accessibility.SetScrollableRoles(cfg.Accessibility.ScrollableRoles)
+	}
 
 	// Create app watcher
 	appWatcher := appwatcher.NewWatcher()
@@ -108,15 +116,22 @@ func NewApp(cfg *config.Config) (*App, error) {
 	hotkeyMgr := hotkeys.NewManager(log)
 	hotkeys.SetGlobalManager(hotkeyMgr)
 
-	// Create hint generator
-	hintGen := hints.NewGenerator(
-		cfg.Hints.HintCharacters,
-	)
+	// Create hint generator only if hints are enabled
+	var hintGen *hints.Generator
+	if cfg.Hints.Enabled {
+		hintGen = hints.NewGenerator(
+			cfg.Hints.HintCharacters,
+		)
+	}
 
-	// Create hint overlay
-	hintOverlay, err := hints.NewOverlay(cfg.Hints)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create overlay: %w", err)
+	// Create hint overlay if either hints or grid requires overlay drawing
+	var hintOverlay *hints.Overlay
+	if cfg.Hints.Enabled || cfg.Grid.Enabled {
+		var err error
+		hintOverlay, err = hints.NewOverlay(cfg.Hints)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create overlay: %w", err)
+		}
 	}
 
 	// Create scroll controller
@@ -136,20 +151,69 @@ func NewApp(cfg *config.Config) (*App, error) {
 		hotkeysRegistered: false,
 	}
 
-	// Initialize hint managers
-	app.hintManager = hints.NewManager(func(hs []*hints.Hint) {
-		style := hints.BuildStyleForAction(app.config.Hints, getActionString(app.currentAction))
-		if err := app.hintOverlay.DrawHintsWithStyle(hs, style); err != nil {
-			app.logger.Error("Failed to redraw hints", zap.Error(err))
+	// Initialize hints components only if enabled
+	if cfg.Hints.Enabled {
+		app.hintManager = hints.NewManager(func(hs []*hints.Hint) {
+			style := hints.BuildStyleForAction(app.config.Hints, getActionString(app.currentAction))
+			if err := app.hintOverlay.DrawHintsWithStyle(hs, style); err != nil {
+				app.logger.Error("Failed to redraw hints", zap.Error(err))
+			}
+		})
+		// Initialize hints router
+		app.hintsRouter = hints.NewRouter(app.hintManager)
+		app.hintsCtx = &HintsContext{}
+	}
+
+	// Create grid components only if enabled
+	if cfg.Grid.Enabled {
+		// Create grid overlay upfront (like hints overlay) to avoid thread issues
+		gridOverlay := grid.NewGridOverlay(cfg.Grid)
+
+		// Grid instance will be created when activated (screen bounds may change)
+		var gridInstance *grid.Grid
+		// Subgrid config
+		keys := strings.TrimSpace(cfg.Grid.SublayerKeys)
+		if keys == "" {
+			keys = cfg.Grid.Characters
 		}
-	})
-	// Initialize hints router
-	app.hintsRouter = hints.NewRouter(app.hintManager)
-	app.hintsCtx = &HintsContext{}
+		subRows := cfg.Grid.SubgridRows
+		subCols := cfg.Grid.SubgridCols
+		if subRows < 1 {
+			subRows = 3
+		}
+		if subCols < 1 {
+			subCols = 3
+		}
+		app.gridManager = grid.NewManager(nil, subRows, subCols, keys, func() {
+			// Redraw grid overlay when input changes
+			if gridInstance == nil {
+				return
+			}
+			gridOverlay.UpdateMatches(app.gridManager.GetInput())
+		}, func(cell *grid.Cell) {
+			// Show subgrid in selected cell
+			gridOverlay.ShowSubgrid(cell)
+		})
+		// Store grid config for later creation
+		app.gridCtx = &GridContext{
+			currentAction: ActionLeftClick,
+			gridInstance:  &gridInstance,
+			gridOverlay:   &gridOverlay,
+		}
+	} else {
+		// Minimal grid context without overlay/manager
+		var gridInstance *grid.Grid
+		app.gridCtx = &GridContext{
+			currentAction: ActionLeftClick,
+			gridInstance:  &gridInstance,
+		}
+	}
 
 	// Create electron manager
-	if cfg.Accessibility.AdditionalAXSupport.Enable {
-		app.electronManager = electron.NewElectronManager(cfg.Accessibility.AdditionalAXSupport.AdditionalElectronBundles, cfg.Accessibility.AdditionalAXSupport.AdditionalChromiumBundles, cfg.Accessibility.AdditionalAXSupport.AdditionalFirefoxBundles)
+	if cfg.Hints.Enabled {
+		if cfg.Accessibility.AdditionalAXSupport.Enable {
+			app.electronManager = electron.NewElectronManager(cfg.Accessibility.AdditionalAXSupport.AdditionalElectronBundles, cfg.Accessibility.AdditionalAXSupport.AdditionalChromiumBundles, cfg.Accessibility.AdditionalAXSupport.AdditionalFirefoxBundles)
+		}
 	}
 
 	// Create event tap for capturing keys in modes
@@ -158,7 +222,17 @@ func NewApp(cfg *config.Config) (*App, error) {
 		log.Warn("Event tap creation failed - key capture won't work")
 	} else {
 		keys := make([]string, 0, len(cfg.Hotkeys.Bindings))
-		for k := range cfg.Hotkeys.Bindings {
+		for k, v := range cfg.Hotkeys.Bindings {
+			mode := v
+			if parts := strings.Split(v, " "); len(parts) > 0 {
+				mode = parts[0]
+			}
+			if mode == "hints" && !cfg.Hints.Enabled {
+				continue
+			}
+			if mode == "grid" && !cfg.Grid.Enabled {
+				continue
+			}
 			keys = append(keys, k)
 		}
 

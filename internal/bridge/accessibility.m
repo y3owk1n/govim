@@ -1077,3 +1077,42 @@ bool isMissionControlActive() {
         return result;
     }
 }
+
+CGRect getMainScreenBounds() {
+    @autoreleasepool {
+        NSScreen* mainScreen = [NSScreen mainScreen];
+        if (!mainScreen) {
+            return CGRectZero;
+        }
+        NSRect frame = mainScreen.frame;
+        return NSRectToCGRect(frame);
+    }
+}
+
+CGRect getActiveScreenBounds() {
+    @autoreleasepool {
+        // Get current mouse location
+        NSPoint mouseLoc = [NSEvent mouseLocation];
+        
+        // Find the screen containing the mouse cursor
+        NSScreen *activeScreen = nil;
+        for (NSScreen *screen in [NSScreen screens]) {
+            if (NSPointInRect(mouseLoc, screen.frame)) {
+                activeScreen = screen;
+                break;
+            }
+        }
+        
+        // Fall back to main screen if mouse is somehow not on any screen
+        if (!activeScreen) {
+            activeScreen = [NSScreen mainScreen];
+        }
+        
+        if (!activeScreen) {
+            return CGRectZero;
+        }
+        
+        NSRect frame = activeScreen.frame;
+        return NSRectToCGRect(frame);
+    }
+}

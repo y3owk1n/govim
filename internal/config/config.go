@@ -17,6 +17,7 @@ type Config struct {
 	Hotkeys       HotkeysConfig       `toml:"hotkeys"`
 	Scroll        ScrollConfig        `toml:"scroll"`
 	Hints         HintsConfig         `toml:"hints"`
+	Grid          GridConfig          `toml:"grid"`
 	Logging       LoggingConfig       `toml:"logging"`
 }
 
@@ -70,6 +71,7 @@ type HintsConfig struct {
 	Padding          int                                `toml:"padding"`
 	BorderWidth      int                                `toml:"border_width"`
 	Opacity          float64                            `toml:"opacity"`
+	Enabled          bool                               `toml:"enabled"`
 	LeftClickHints   HintsActionConfigWithRestoreCursor `toml:"left_click_hints"`
 	RightClickHints  HintsActionConfigWithRestoreCursor `toml:"right_click_hints"`
 	DoubleClickHints HintsActionConfigWithRestoreCursor `toml:"double_click_hints"`
@@ -98,6 +100,28 @@ type LoggingConfig struct {
 	LogLevel          string `toml:"log_level"`
 	LogFile           string `toml:"log_file"`
 	StructuredLogging bool   `toml:"structured_logging"`
+}
+
+type GridConfig struct {
+	Characters             string  `toml:"characters"`
+	SublayerKeys           string  `toml:"sublayer_keys"`
+	MinCellSize            int     `toml:"min_cell_size"`
+	MaxCellSize            int     `toml:"max_cell_size"`
+	FontSize               int     `toml:"font_size"`
+	FontFamily             string  `toml:"font_family"`
+	Opacity                float64 `toml:"opacity"`
+	BackgroundColor        string  `toml:"background_color"`
+	TextColor              string  `toml:"text_color"`
+	MatchedTextColor       string  `toml:"matched_text_color"`
+	MatchedBackgroundColor string  `toml:"matched_background_color"`
+	MatchedBorderColor     string  `toml:"matched_border_color"`
+	BorderColor            string  `toml:"border_color"`
+	BorderWidth            int     `toml:"border_width"`
+	LiveMatchUpdate        bool    `toml:"live_match_update"`
+	SubgridEnabled         bool    `toml:"subgrid_enabled"`
+	SubgridRows            int     `toml:"subgrid_rows"`
+	SubgridCols            int     `toml:"subgrid_cols"`
+	Enabled                bool    `toml:"enabled"`
 }
 
 type AdditionalAXSupport struct {
@@ -174,6 +198,7 @@ func DefaultConfig() *Config {
 			Padding:        4,
 			BorderWidth:    1,
 			Opacity:        0.95,
+			Enabled:        true,
 			LeftClickHints: HintsActionConfigWithRestoreCursor{
 				HintsActionConfig: HintsActionConfig{
 					BackgroundColor:  "#FFD700",
@@ -263,6 +288,27 @@ func DefaultConfig() *Config {
 			LogFile:           "",
 			StructuredLogging: true,
 		},
+		Grid: GridConfig{
+			Characters:             "asdfghjkl",
+			SublayerKeys:           "",
+			MinCellSize:            40,
+			MaxCellSize:            200,
+			FontSize:               12,
+			FontFamily:             "SF Mono",
+			Opacity:                0.85,
+			BackgroundColor:        "#abe9b3",
+			TextColor:              "#ffffff",
+			MatchedTextColor:       "#ffffff",
+			MatchedBackgroundColor: "#f8bd96",
+			MatchedBorderColor:     "#f8bd96",
+			BorderColor:            "#abe9b3",
+			BorderWidth:            1,
+			LiveMatchUpdate:        true,
+			SubgridEnabled:         true,
+			SubgridRows:            3,
+			SubgridCols:            3,
+			Enabled:                true,
+		},
 	}
 }
 
@@ -306,12 +352,10 @@ func Load(path string) (*Config, error) {
 			}
 		}
 	}
-
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
-
 	return cfg, nil
 }
 
@@ -339,6 +383,10 @@ func FindConfigFile() string {
 
 // Validate validates the configuration
 func (c *Config) Validate() error {
+	// At least one mode must be enabled
+	if !c.Hints.Enabled && !c.Grid.Enabled {
+		return fmt.Errorf("at least one mode must be enabled: hints.enabled or grid.enabled")
+	}
 	// Validate hint characters
 	if strings.TrimSpace(c.Hints.HintCharacters) == "" {
 		return fmt.Errorf("hint_characters cannot be empty")
@@ -564,6 +612,61 @@ func (c *Config) Validate() error {
 			if strings.TrimSpace(role) == "" {
 				return fmt.Errorf("accessibility.app_configs[%d].additional_scrollable_roles cannot contain empty values", i)
 			}
+		}
+	}
+
+	// Validate grid settings
+	if strings.TrimSpace(c.Grid.Characters) == "" {
+		return fmt.Errorf("grid.characters cannot be empty")
+	}
+	if len(c.Grid.Characters) < 2 {
+		return fmt.Errorf("grid.characters must contain at least 2 characters")
+	}
+	if c.Grid.MinCellSize < 1 {
+		return fmt.Errorf("grid.min_cell_size must be at least 1")
+	}
+	if c.Grid.MaxCellSize > 0 && c.Grid.MaxCellSize < c.Grid.MinCellSize {
+		return fmt.Errorf("grid.max_cell_size must be greater than or equal to min_cell_size")
+	}
+	if c.Grid.FontSize < 6 || c.Grid.FontSize > 72 {
+		return fmt.Errorf("grid.font_size must be between 6 and 72")
+	}
+	if c.Grid.BorderWidth < 0 {
+		return fmt.Errorf("grid.border_width must be non-negative")
+	}
+	if c.Grid.Opacity < 0 || c.Grid.Opacity > 1 {
+		return fmt.Errorf("grid.opacity must be between 0 and 1")
+	}
+	if err := validateColor(c.Grid.BackgroundColor, "grid.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.TextColor, "grid.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MatchedTextColor, "grid.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.BorderColor, "grid.border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MatchedBackgroundColor, "grid.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MatchedBorderColor, "grid.matched_border_color"); err != nil {
+		return err
+	}
+	if c.Grid.SubgridEnabled {
+		if c.Grid.SubgridRows < 1 || c.Grid.SubgridCols < 1 {
+			return fmt.Errorf("grid.subgrid_rows and grid.subgrid_cols must be at least 1")
+		}
+		// Validate sublayer keys length (fallback to grid.characters) for rows*cols
+		keys := strings.TrimSpace(c.Grid.SublayerKeys)
+		if keys == "" {
+			keys = c.Grid.Characters
+		}
+		required := c.Grid.SubgridRows * c.Grid.SubgridCols
+		if len([]rune(keys)) < required {
+			return fmt.Errorf("grid.sublayer_keys must contain at least %d characters (rows*cols) for subgrid selection", required)
 		}
 	}
 

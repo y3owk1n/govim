@@ -9,10 +9,13 @@ package bridge
 #include "eventtap.h"
 #include "appwatcher.h"
 #include <stdlib.h>
+
+CGRect getActiveScreenBounds();
 */
 import "C"
 
 import (
+	"image"
 	"sync"
 	"unsafe"
 )
@@ -107,4 +110,26 @@ func handleAppDeactivate(cAppName *C.char, cBundleID *C.char) {
 		bundleID := C.GoString(cBundleID)
 		appWatcher.HandleDeactivate(appName, bundleID)
 	}
+}
+
+// GetMainScreenBounds returns the bounds of the main screen
+func GetMainScreenBounds() image.Rectangle {
+	rect := C.getMainScreenBounds()
+	return image.Rect(
+		int(rect.origin.x),
+		int(rect.origin.y),
+		int(rect.origin.x+rect.size.width),
+		int(rect.origin.y+rect.size.height),
+	)
+}
+
+// GetActiveScreenBounds returns the bounds of the screen containing the mouse cursor
+func GetActiveScreenBounds() image.Rectangle {
+	rect := C.getActiveScreenBounds()
+	return image.Rect(
+		int(rect.origin.x),
+		int(rect.origin.y),
+		int(rect.origin.x+rect.size.width),
+		int(rect.origin.y+rect.size.height),
+	)
 }

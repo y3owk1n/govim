@@ -126,7 +126,6 @@ additional_firefox_bundles = []
 "Cmd+Shift+Space" = "hints left_click" # Same as running `neru left_click` in the terminal
 "Cmd+Shift+A" = "hints context_menu"
 "Cmd+Shift+J" = "hints scroll"
-
 # Add more hotkeys that uses the IPC commands
 # "Ctrl+R" = "hints right_click"
 # "Ctrl+D" = "hints double_click"
@@ -136,11 +135,26 @@ additional_firefox_bundles = []
 # "Ctrl+I" = "hints mouse_down"
 # "Ctrl+M" = "hints move_mouse"
 
+# Grid mode hotkeys (grid divides screen into clickable regions)
+"Cmd+Shift+G" = "grid left_click"  # Activate grid mode with left click
+# "Cmd+Shift+R" = "grid right_click" # Activate grid mode with right click
+# "Cmd+Shift+M" = "grid move_mouse"  # Activate grid mode to move mouse
+# "Cmd+Shift+D" = "grid double_click" # Grid double click
+# "Cmd+Shift+T" = "grid triple_click" # Grid triple click
+# "Cmd+Shift+I" = "grid mouse_down"   # Grid mouse down (hold)
+# "Cmd+Shift+U" = "grid mouse_up"     # Grid mouse up (release)
+# "Cmd+Shift+H" = "grid middle_click" # Grid middle click
+# "Cmd+Shift+S" = "grid scroll"       # Grid scroll mode
+# "Cmd+Shift+C" = "grid context_menu" # Grid context menu
+
 # To run a shell command from a hotkey, prefix the value with `exec `:
 # "Ctrl+Alt+T" = "exec open -a Terminal"
 # "Ctrl+Alt+F" = "exec osascript -e 'display notification \"This is a test notification!\" with title \"Hello from Terminal\" subtitle \"Just testing 🚀\"'"
 
 [hints]
+
+enabled = true
+
 # Characters used to build hint labels for alphabet style.
 # - At least 2 characters; choose distinct, easy-to-type ones.
 hint_characters = "asdfghjkl"
@@ -233,6 +247,43 @@ text_color = "#000000"
 matched_text_color = "#005585" # Matched text color - color for characters that have been typed
 border_color = "#000000"
 
+[grid]
+# Grid overlay (flat, label-based)
+# Fills the entire screen with uniformly sized cells.
+# Type the label (2/3/4 characters, chosen automatically) to click the cell center.
+
+enabled = true
+
+# Characters used to build grid labels
+characters = "asdfghjkl"
+
+# Minimum cell size in pixels (actual size may be slightly larger to evenly fill the screen)
+min_cell_size = 40
+# Maximum cell size in pixels (prevents oversized cells on large/ultra-wide monitors for better precision)
+max_cell_size = 200
+
+# Grid label style
+font_size = 12
+font_family = ""
+opacity = 0.5
+
+# Colors
+background_color = "#abe9b3"
+text_color = "#ffffff"
+matched_text_color = "#ffffff"
+matched_background_color = "#f8bd96" # Background color for matched grid cells
+matched_border_color = "#f8bd96"     # Border color for matched grid cells
+border_color = "#abe9b3"
+border_width = 1
+
+# Behavior
+live_match_update = true      # Update matched highlight per keystroke without full redraw
+subgrid_enabled = true        # Enable precision sublayer after main label selection
+subgrid_rows = 3              # Subgrid rows
+subgrid_cols = 3              # Subgrid columns
+# Sublayer keys used for subgrid selection (at least rows*cols characters)
+sublayer_keys = "asdfghjkl"
+
 [scroll]
 # Base scroll amount for j/k keys in pixels
 scroll_step = 50
@@ -268,3 +319,4 @@ log_file = ""
 structured_logging = true
 # When true, file logs use a structured (JSON) encoder; console remains readable.
 # When false, console uses a development-friendly formatter.
+

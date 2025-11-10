@@ -22,9 +22,19 @@ func (a *App) registerHotkeys() error {
 		if key == "" || action == "" {
 			continue
 		}
+		// Skip registering bindings for disabled modes
+		mode := action
+		if parts := strings.Split(action, " "); len(parts) > 0 {
+			mode = parts[0]
+		}
+		if mode == "hints" && !a.config.Hints.Enabled {
+			continue
+		}
+		if mode == "grid" && !a.config.Grid.Enabled {
+			continue
+		}
 
 		a.logger.Info("Registering hotkey binding", zap.String("key", key), zap.String("action", action))
-
 		// Capture values for closure
 		bindKey := key
 		bindAction := action
