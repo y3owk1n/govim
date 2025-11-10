@@ -3,6 +3,7 @@ package scroll
 import (
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/config"
+	"github.com/y3owk1n/neru/internal/hints"
 	"go.uber.org/zap"
 )
 
@@ -146,4 +147,22 @@ func (c *Controller) ScrollToTop() error {
 // ScrollToBottom scrolls to the bottom (G in Vim)
 func (c *Controller) ScrollToBottom() error {
 	return c.Scroll(DirectionDown, AmountEnd)
+}
+
+// DrawHighlightBorder draws a highlight around the current scroll area
+func (c *Controller) DrawHighlightBorder(overlay *hints.Overlay) {
+	window := accessibility.GetFrontmostWindow()
+	if window == nil {
+		c.logger.Debug("No frontmost window")
+		return
+	}
+	defer window.Release()
+
+	bounds := window.GetScrollBounds()
+	overlay.DrawScrollHighlight(
+		bounds.Min.X, bounds.Min.Y,
+		bounds.Dx(), bounds.Dy(),
+		c.config.HighlightColor,
+		c.config.HighlightWidth,
+	)
 }

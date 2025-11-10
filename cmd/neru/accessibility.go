@@ -66,22 +66,22 @@ func (a *App) isFocusedAppExcluded() bool {
 }
 
 // collectElementsForMode collects UI elements based on the current mode
-func (a *App) collectElementsForMode(mode Mode) []*accessibility.TreeNode {
+func (a *App) collectElementsForAction(action Action) []*accessibility.TreeNode {
 	var elements []*accessibility.TreeNode
 
 	// Check if Mission Control is active - affects what we can scan
 	missionControlActive := accessibility.IsMissionControlActive()
 
 	// Collect primary elements based on mode
-	switch mode {
-	case ModeHintLeftClick, ModeHintRightClick, ModeHintDoubleClick, ModeHintTripleClick, ModeHintMouseUp, ModeHintMouseDown, ModeHintMiddleClick, ModeHintMoveMouse, ModeContextMenu:
+	switch action {
+	case ActionLeftClick, ActionRightClick, ActionDoubleClick, ActionTripleClick, ActionMouseUp, ActionMouseDown, ActionMiddleClick, ActionMoveMouse, ActionContextMenu:
 		elements = a.collectClickableElements(missionControlActive)
-	case ModeHintScroll:
+	case ActionScroll:
 		elements = a.collectScrollableElements(missionControlActive)
 	}
 
 	// Add supplementary elements (menubar, dock, notification center)
-	if mode != ModeHintScroll {
+	if action != ActionScroll {
 		elements = a.addSupplementaryElements(elements, missionControlActive)
 	}
 

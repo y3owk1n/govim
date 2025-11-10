@@ -56,25 +56,25 @@ func handleSystrayEvents(
 		case <-mToggle.ClickedCh:
 			handleToggleEnable(mStatus, mToggle)
 		case <-mHintsLeftClick.ClickedCh:
-			activateModeFromSystray(ModeHintLeftClick)
+			activateModeFromSystray(ModeHints, ActionLeftClick)
 		case <-mHintsRightClick.ClickedCh:
-			activateModeFromSystray(ModeHintRightClick)
+			activateModeFromSystray(ModeHints, ActionRightClick)
 		case <-mHintsDoubleClick.ClickedCh:
-			activateModeFromSystray(ModeHintDoubleClick)
+			activateModeFromSystray(ModeHints, ActionDoubleClick)
 		case <-mHintsTripleClick.ClickedCh:
-			activateModeFromSystray(ModeHintTripleClick)
+			activateModeFromSystray(ModeHints, ActionTripleClick)
 		case <-mHintsMouseUp.ClickedCh:
-			activateModeFromSystray(ModeHintMouseUp)
+			activateModeFromSystray(ModeHints, ActionMouseUp)
 		case <-mHintsMouseDown.ClickedCh:
-			activateModeFromSystray(ModeHintMouseDown)
+			activateModeFromSystray(ModeHints, ActionMouseDown)
 		case <-mHintsMiddleClick.ClickedCh:
-			activateModeFromSystray(ModeHintMiddleClick)
+			activateModeFromSystray(ModeHints, ActionMiddleClick)
 		case <-mHintsMoveMouse.ClickedCh:
-			activateModeFromSystray(ModeHintMoveMouse)
+			activateModeFromSystray(ModeHints, ActionMoveMouse)
 		case <-mHintsScroll.ClickedCh:
-			activateModeFromSystray(ModeHintScroll)
+			activateModeFromSystray(ModeHints, ActionScroll)
 		case <-mHintsContextMenu.ClickedCh:
-			activateModeFromSystray(ModeContextMenu)
+			activateModeFromSystray(ModeHints, ActionContextMenu)
 		case <-mQuit.ClickedCh:
 			systray.Quit()
 			return
@@ -105,9 +105,9 @@ func handleToggleEnable(mStatus, mToggle *systray.MenuItem) {
 	}
 }
 
-func activateModeFromSystray(mode Mode) {
+func activateModeFromSystray(mode Mode, action Action) {
 	if globalApp != nil {
-		globalApp.activateHintMode(mode)
+		globalApp.activateMode(mode, action)
 	}
 }
 

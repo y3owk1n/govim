@@ -9,6 +9,7 @@ import "C"
 
 import (
 	"fmt"
+	"strings"
 	"unsafe"
 
 	"github.com/y3owk1n/neru/internal/config"
@@ -180,9 +181,81 @@ func (o *Overlay) DrawTargetDot(x, y int, radius float64, color, borderColor str
 	return nil
 }
 
-// SetLevel sets the window level
-func (o *Overlay) SetLevel(level int) {
-	C.setOverlayLevel(o.window, C.int(level))
+// BuildStyleForAction returns StyleMode based on action name using the provided config
+func BuildStyleForAction(cfg config.HintsConfig, action string) StyleMode {
+	style := StyleMode{
+		FontSize:     cfg.FontSize,
+		FontFamily:   cfg.FontFamily,
+		BorderRadius: cfg.BorderRadius,
+		Padding:      cfg.Padding,
+		BorderWidth:  cfg.BorderWidth,
+		Opacity:      cfg.Opacity,
+	}
+
+	switch action {
+	case "left_click":
+		style.BackgroundColor = cfg.LeftClickHints.BackgroundColor
+		style.TextColor = cfg.LeftClickHints.TextColor
+		style.MatchedTextColor = cfg.LeftClickHints.MatchedTextColor
+		style.BorderColor = cfg.LeftClickHints.BorderColor
+	case "right_click":
+		style.BackgroundColor = cfg.RightClickHints.BackgroundColor
+		style.TextColor = cfg.RightClickHints.TextColor
+		style.MatchedTextColor = cfg.RightClickHints.MatchedTextColor
+		style.BorderColor = cfg.RightClickHints.BorderColor
+	case "double_click":
+		style.BackgroundColor = cfg.DoubleClickHints.BackgroundColor
+		style.TextColor = cfg.DoubleClickHints.TextColor
+		style.MatchedTextColor = cfg.DoubleClickHints.MatchedTextColor
+		style.BorderColor = cfg.DoubleClickHints.BorderColor
+	case "triple_click":
+		style.BackgroundColor = cfg.TripleClickHints.BackgroundColor
+		style.TextColor = cfg.TripleClickHints.TextColor
+		style.MatchedTextColor = cfg.TripleClickHints.MatchedTextColor
+		style.BorderColor = cfg.TripleClickHints.BorderColor
+	case "mouse_up":
+		style.BackgroundColor = cfg.MouseUpHints.BackgroundColor
+		style.TextColor = cfg.MouseUpHints.TextColor
+		style.MatchedTextColor = cfg.MouseUpHints.MatchedTextColor
+		style.BorderColor = cfg.MouseUpHints.BorderColor
+	case "mouse_down":
+		style.BackgroundColor = cfg.MouseDownHints.BackgroundColor
+		style.TextColor = cfg.MouseDownHints.TextColor
+		style.MatchedTextColor = cfg.MouseDownHints.MatchedTextColor
+		style.BorderColor = cfg.MouseDownHints.BorderColor
+	case "move_mouse":
+		style.BackgroundColor = cfg.MoveMouseHints.BackgroundColor
+		style.TextColor = cfg.MoveMouseHints.TextColor
+		style.MatchedTextColor = cfg.MoveMouseHints.MatchedTextColor
+		style.BorderColor = cfg.MoveMouseHints.BorderColor
+	case "middle_click":
+		style.BackgroundColor = cfg.MiddleClickHints.BackgroundColor
+		style.TextColor = cfg.MiddleClickHints.TextColor
+		style.MatchedTextColor = cfg.MiddleClickHints.MatchedTextColor
+		style.BorderColor = cfg.MiddleClickHints.BorderColor
+	case "scroll":
+		style.BackgroundColor = cfg.ScrollHints.BackgroundColor
+		style.TextColor = cfg.ScrollHints.TextColor
+		style.MatchedTextColor = cfg.ScrollHints.MatchedTextColor
+		style.BorderColor = cfg.ScrollHints.BorderColor
+	case "context_menu":
+		style.BackgroundColor = cfg.ContextMenuHints.BackgroundColor
+		style.TextColor = cfg.ContextMenuHints.TextColor
+		style.MatchedTextColor = cfg.ContextMenuHints.MatchedTextColor
+		style.BorderColor = cfg.ContextMenuHints.BorderColor
+	}
+
+	return style
+}
+
+// BuildContextMenuLabel returns the context menu label block used for hints action menu
+func BuildContextMenuLabel() string {
+	items := ContextMenuItems()
+	var formatted []string
+	for _, it := range items {
+		formatted = append(formatted, fmt.Sprintf("[%s]%s", it.Key, it.Label))
+	}
+	return strings.Join(formatted, "\n")
 }
 
 // Destroy destroys the overlay

@@ -64,25 +64,25 @@ func (a *App) handleHints(cmd ipc.Command) ipc.Response {
 	for _, param := range params {
 		switch param {
 		case "left_click":
-			a.activateHintMode(ModeHintLeftClick)
+			a.activateMode(ModeHints, ActionLeftClick)
 		case "right_click":
-			a.activateHintMode(ModeHintRightClick)
+			a.activateMode(ModeHints, ActionRightClick)
 		case "double_click":
-			a.activateHintMode(ModeHintDoubleClick)
+			a.activateMode(ModeHints, ActionDoubleClick)
 		case "triple_click":
-			a.activateHintMode(ModeHintTripleClick)
+			a.activateMode(ModeHints, ActionTripleClick)
 		case "mouse_up":
-			a.activateHintMode(ModeHintMouseUp)
+			a.activateMode(ModeHints, ActionMouseUp)
 		case "mouse_down":
-			a.activateHintMode(ModeHintMouseDown)
+			a.activateMode(ModeHints, ActionMouseDown)
 		case "middle_click":
-			a.activateHintMode(ModeHintMiddleClick)
+			a.activateMode(ModeHints, ActionMiddleClick)
 		case "move_mouse":
-			a.activateHintMode(ModeHintMoveMouse)
+			a.activateMode(ModeHints, ActionMoveMouse)
 		case "scroll":
-			a.activateHintMode(ModeHintScroll)
+			a.activateMode(ModeHints, ActionScroll)
 		case "context_menu":
-			a.activateHintMode(ModeContextMenu)
+			a.activateMode(ModeHints, ActionContextMenu)
 		default:
 			return ipc.Response{Success: false, Message: fmt.Sprintf("unknown hints mode: %s", param)}
 		}
