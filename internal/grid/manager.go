@@ -14,10 +14,14 @@ type Manager struct {
 	onShowSub    func(cell *Cell)
 	inSubgrid    bool
 	selectedCell *Cell
+	// Subgrid configuration
+	subRows int
+	subCols int
+	subKeys string
 }
 
 // NewManager creates a new grid manager
-func NewManager(grid *Grid, onUpdate func(), onShowSub func(cell *Cell)) *Manager {
+func NewManager(grid *Grid, subRows int, subCols int, subKeys string, onUpdate func(), onShowSub func(cell *Cell)) *Manager {
 	// Determine label length from first cell (if grid exists)
 	labelLength := 3 // Default
 	if grid != nil && len(grid.cells) > 0 {
@@ -29,6 +33,9 @@ func NewManager(grid *Grid, onUpdate func(), onShowSub func(cell *Cell)) *Manage
 		labelLength: labelLength,
 		onUpdate:    onUpdate,
 		onShowSub:   onShowSub,
+		subRows:     subRows,
+		subCols:     subCols,
+		subKeys:     strings.ToUpper(strings.TrimSpace(subKeys)),
 	}
 }
 
@@ -64,21 +71,44 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 
 	// If we're in subgrid selection, next key chooses a subcell
 	if m.inSubgrid && m.selectedCell != nil {
-		idx := strings.Index(m.grid.characters, key)
+		idx := strings.Index(m.subKeys, key)
 		if idx < 0 {
 			return image.Point{}, false
 		}
-		subRows, subCols := 3, 3
-		if idx >= subRows*subCols {
+		if m.subRows < 1 {
+			m.subRows = 3
+		}
+		if m.subCols < 1 {
+			m.subCols = 3
+		}
+		if idx >= m.subRows*m.subCols {
 			return image.Point{}, false
 		}
-		row := idx / subCols
-		col := idx % subCols
+		row := idx / m.subCols
+		col := idx % m.subCols
 		b := m.selectedCell.Bounds
-		cw := b.Dx() / subCols
-		ch := b.Dy() / subRows
-		x := b.Min.X + col*cw + cw/2
-		y := b.Min.Y + row*ch + ch/2
+		// Compute breakpoints to match overlay splitting and cover full bounds
+		xBreaks := make([]int, m.subCols+1)
+		yBreaks := make([]int, m.subRows+1)
+		xBreaks[0] = b.Min.X
+		yBreaks[0] = b.Min.Y
+		for i := 1; i <= m.subCols; i++ {
+			val := float64(i) * float64(b.Dx()) / float64(m.subCols)
+			xBreaks[i] = b.Min.X + int(val+0.5)
+		}
+		for j := 1; j <= m.subRows; j++ {
+			val := float64(j) * float64(b.Dy()) / float64(m.subRows)
+			yBreaks[j] = b.Min.Y + int(val+0.5)
+		}
+		// Ensure exact coverage
+		xBreaks[m.subCols] = b.Max.X
+		yBreaks[m.subRows] = b.Max.Y
+		left := xBreaks[col]
+		right := xBreaks[col+1]
+		top := yBreaks[row]
+		bottom := yBreaks[row+1]
+		x := left + (right-left)/2
+		y := top + (bottom-top)/2
 		m.Reset()
 		return image.Point{X: x, Y: y}, true
 	}

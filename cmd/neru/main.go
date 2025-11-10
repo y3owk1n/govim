@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/accessibility"
@@ -157,14 +158,27 @@ func NewApp(cfg *config.Config) (*App, error) {
 
 	// Grid instance will be created when activated (screen bounds may change)
 	var gridInstance *grid.Grid
-	app.gridManager = grid.NewManager(nil, func() {
+	// Subgrid config
+	keys := strings.TrimSpace(cfg.Grid.SublayerKeys)
+	if keys == "" {
+		keys = cfg.Grid.Characters
+	}
+	subRows := cfg.Grid.SubgridRows
+	subCols := cfg.Grid.SubgridCols
+	if subRows < 1 {
+		subRows = 3
+	}
+	if subCols < 1 {
+		subCols = 3
+	}
+	app.gridManager = grid.NewManager(nil, subRows, subCols, keys, func() {
 		// Redraw grid overlay when input changes
 		if gridInstance == nil {
 			return
 		}
 		gridOverlay.UpdateMatches(app.gridManager.GetInput())
 	}, func(cell *grid.Cell) {
-		// Show 3x3 subgrid in selected cell
+		// Show subgrid in selected cell
 		gridOverlay.ShowSubgrid(cell)
 	})
 	// Store grid config for later creation

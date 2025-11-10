@@ -4,6 +4,9 @@ package grid
 #cgo CFLAGS: -x objective-c
 #include "../bridge/overlay.h"
 #include <stdlib.h>
+
+// Explicit declaration to satisfy cgo name resolution
+void drawScrollHighlight(OverlayWindow window, CGRect bounds, char* color, int width);
 */
 import "C"
 
@@ -100,19 +103,39 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell) {
 	labels := make([]*C.char, count)
 
 	b := cell.Bounds
-	cw := b.Dx() / cols
-	ch := b.Dy() / rows
+	// Build breakpoints that evenly distribute remainders to fully cover the cell
+	xBreaks := make([]int, cols+1)
+	yBreaks := make([]int, rows+1)
+	xBreaks[0] = b.Min.X
+	yBreaks[0] = b.Min.Y
+	for i := 1; i <= cols; i++ {
+		// round(i * width / cols)
+		val := float64(i) * float64(b.Dx()) / float64(cols)
+		xBreaks[i] = b.Min.X + int(val+0.5)
+	}
+	for j := 1; j <= rows; j++ {
+		val := float64(j) * float64(b.Dy()) / float64(rows)
+		yBreaks[j] = b.Min.Y + int(val+0.5)
+	}
+
+	// Ensure last break exactly matches bounds max to avoid 1px drift
+	xBreaks[cols] = b.Max.X
+	yBreaks[rows] = b.Max.Y
 
 	for i := 0; i < count; i++ {
 		r := i / cols
 		c := i % cols
 		label := string(chars[i])
 		labels[i] = C.CString(label)
+		left := xBreaks[c]
+		right := xBreaks[c+1]
+		top := yBreaks[r]
+		bottom := yBreaks[r+1]
 		cells[i] = C.GridCell{
 			label: labels[i],
 			bounds: C.CGRect{
-				origin: C.CGPoint{x: C.double(b.Min.X + c*cw), y: C.double(b.Min.Y + r*ch)},
-				size:   C.CGSize{width: C.double(cw), height: C.double(ch)},
+				origin: C.CGPoint{x: C.double(left), y: C.double(top)},
+				size:   C.CGSize{width: C.double(right - left), height: C.double(bottom - top)},
 			},
 			isMatched: C.int(0),
 		}
@@ -127,17 +150,15 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell) {
 	borderColor := C.CString(o.cfg.BorderColor)
 
 	style := C.GridCellStyle{
-		fontSize:               C.int(o.cfg.FontSize),
-		fontFamily:             fontFamily,
-		backgroundColor:        backgroundColor,
-		textColor:              textColor,
-		matchedTextColor:       matchedTextColor,
-		matchedBackgroundColor: matchedBackgroundColor,
-		matchedBorderColor:     matchedBorderColor,
-		borderColor:            borderColor,
-		borderWidth:            C.int(o.cfg.BorderWidth),
-		backgroundOpacity:      C.double(o.cfg.Opacity),
-		textOpacity:            C.double(1.0),
+		fontSize:          C.int(o.cfg.FontSize),
+		fontFamily:        fontFamily,
+		backgroundColor:   backgroundColor,
+		textColor:         textColor,
+		matchedTextColor:  matchedTextColor,
+		borderColor:       borderColor,
+		borderWidth:       C.int(o.cfg.BorderWidth),
+		backgroundOpacity: C.double(o.cfg.Opacity),
+		textOpacity:       C.double(1.0),
 	}
 
 	C.clearOverlay(o.window)
@@ -159,11 +180,29 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell) {
 func (o *GridOverlay) DrawScrollHighlight(x, y, w, h int, color string, width int) {
 	cColor := C.CString(color)
 	defer C.free(unsafe.Pointer(cColor))
-	rect := C.CGRect{
+	// Build 4 border lines around the rectangle
+	lines := make([]C.CGRect, 4)
+	// Bottom
+	lines[0] = C.CGRect{
 		origin: C.CGPoint{x: C.double(x), y: C.double(y)},
-		size:   C.CGSize{width: C.double(w), height: C.double(h)},
+		size:   C.CGSize{width: C.double(w), height: C.double(width)},
 	}
-	C.drawScrollHighlight(o.window, rect, cColor, C.int(width))
+	// Top
+	lines[1] = C.CGRect{
+		origin: C.CGPoint{x: C.double(x), y: C.double(y + h - width)},
+		size:   C.CGSize{width: C.double(w), height: C.double(width)},
+	}
+	// Left
+	lines[2] = C.CGRect{
+		origin: C.CGPoint{x: C.double(x), y: C.double(y)},
+		size:   C.CGSize{width: C.double(width), height: C.double(h)},
+	}
+	// Right
+	lines[3] = C.CGRect{
+		origin: C.CGPoint{x: C.double(x + w - width), y: C.double(y)},
+		size:   C.CGSize{width: C.double(width), height: C.double(h)},
+	}
+	C.drawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(width), C.double(1.0))
 }
 
 // drawGridCells draws all grid cells with their labels
@@ -201,17 +240,15 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string) {
 	borderColor := C.CString(o.cfg.BorderColor)
 
 	style := C.GridCellStyle{
-		fontSize:               C.int(o.cfg.FontSize),
-		fontFamily:             fontFamily,
-		backgroundColor:        backgroundColor,
-		textColor:              textColor,
-		matchedTextColor:       matchedTextColor,
-		matchedBackgroundColor: matchedBackgroundColor,
-		matchedBorderColor:     matchedBorderColor,
-		borderColor:            borderColor,
-		borderWidth:            C.int(o.cfg.BorderWidth),
-		backgroundOpacity:      C.double(o.cfg.Opacity),
-		textOpacity:            C.double(1.0),
+		fontSize:          C.int(o.cfg.FontSize),
+		fontFamily:        fontFamily,
+		backgroundColor:   backgroundColor,
+		textColor:         textColor,
+		matchedTextColor:  matchedTextColor,
+		borderColor:       borderColor,
+		borderWidth:       C.int(o.cfg.BorderWidth),
+		backgroundOpacity: C.double(o.cfg.Opacity),
+		textOpacity:       C.double(1.0),
 	}
 
 	C.drawGridCells(o.window, &cGridCells[0], C.int(len(cGridCells)), style)

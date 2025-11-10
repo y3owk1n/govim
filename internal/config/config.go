@@ -653,13 +653,14 @@ func (c *Config) Validate() error {
 		if c.Grid.SubgridRows < 1 || c.Grid.SubgridCols < 1 {
 			return fmt.Errorf("grid.subgrid_rows and grid.subgrid_cols must be at least 1")
 		}
-		// Validate sublayer keys length (fallback to grid.characters)
+		// Validate sublayer keys length (fallback to grid.characters) for rows*cols
 		keys := strings.TrimSpace(c.Grid.SublayerKeys)
 		if keys == "" {
 			keys = c.Grid.Characters
 		}
-		if len([]rune(keys)) < 9 {
-			return fmt.Errorf("grid.sublayer_keys must contain at least 9 characters for subgrid selection")
+		required := c.Grid.SubgridRows * c.Grid.SubgridCols
+		if len([]rune(keys)) < required {
+			return fmt.Errorf("grid.sublayer_keys must contain at least %d characters (rows*cols) for subgrid selection", required)
 		}
 	}
 

@@ -27,7 +27,7 @@ func onReady() {
 
 	// Control actions
 	systray.AddSeparator()
-	
+
 	// Hints submenu
 	mHints := systray.AddMenuItem("Hints", "Hint mode actions")
 	mHintsLeftClick := mHints.AddSubMenuItem("Left Click", "Show left click hints")
@@ -40,7 +40,7 @@ func onReady() {
 	mHintsMoveMouse := mHints.AddSubMenuItem("Move Mouse", "Show move mouse hints")
 	mHintsScroll := mHints.AddSubMenuItem("Scroll", "Show scroll hints")
 	mHintsContextMenu := mHints.AddSubMenuItem("Context Menu", "Show context menu hints")
-	
+
 	// Grid submenu
 	mGrid := systray.AddMenuItem("Grid", "Grid mode actions")
 	mGridLeftClick := mGrid.AddSubMenuItem("Left Click", "Grid left click")
