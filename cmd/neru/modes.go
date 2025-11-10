@@ -142,40 +142,47 @@ func (a *App) handleKeyPress(key string) {
 		// Hint input processed by router; if exact match, perform action
 		if res.ExactHint != nil {
 			hint := res.ExactHint
+			info, err := hint.Element.Element.GetInfo()
+			if err != nil {
+				a.logger.Error("Failed to get element info", zap.Error(err))
+				a.exitMode()
+				return
+			}
+			center := image.Point{X: info.Position.X + info.Size.X/2, Y: info.Position.Y + info.Size.Y/2}
 			switch a.currentAction {
 			case ActionLeftClick:
 				a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
-				if err := hint.Element.Element.LeftClick(a.config.Hints.LeftClickHints.RestoreCursor); err != nil {
+				if err := accessibility.LeftClickAtPoint(center, a.config.Hints.LeftClickHints.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click element", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionRightClick:
 				a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
-				if err := hint.Element.Element.RightClick(a.config.Hints.RightClickHints.RestoreCursor); err != nil {
+				if err := accessibility.RightClickAtPoint(center, a.config.Hints.RightClickHints.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click element", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionDoubleClick:
 				a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
-				if err := hint.Element.Element.DoubleClick(a.config.Hints.DoubleClickHints.RestoreCursor); err != nil {
+				if err := accessibility.DoubleClickAtPoint(center, a.config.Hints.DoubleClickHints.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click element", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionTripleClick:
 				a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
-				if err := hint.Element.Element.TripleClick(a.config.Hints.TripleClickHints.RestoreCursor); err != nil {
+				if err := accessibility.TripleClickAtPoint(center, a.config.Hints.TripleClickHints.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click element", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionMouseUp:
 				a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
-				if err := hint.Element.Element.LeftMouseUp(false); err != nil {
+				if err := accessibility.LeftMouseUpAtPoint(center); err != nil {
 					a.logger.Error("Failed to click element", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionMouseDown:
 				a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
-				if err := hint.Element.Element.LeftMouseDown(); err != nil {
+				if err := accessibility.LeftMouseDownAtPoint(center); err != nil {
 					a.logger.Error("Failed to click element", zap.Error(err))
 				}
 				a.exitMode()
@@ -183,23 +190,19 @@ func (a *App) handleKeyPress(key string) {
 				a.activateMode(ModeHints, ActionMouseUp)
 			case ActionMiddleClick:
 				a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
-				if err := hint.Element.Element.MiddleClick(a.config.Hints.MiddleClickHints.RestoreCursor); err != nil {
+				if err := accessibility.MiddleClickAtPoint(center, a.config.Hints.MiddleClickHints.RestoreCursor); err != nil {
 					a.logger.Error("Failed to click element", zap.Error(err))
 				}
 				a.exitMode()
 			case ActionMoveMouse:
 				a.logger.Info("Clicking element", zap.String("label", a.hintManager.GetInput()))
-				if err := hint.Element.Element.GoToPosition(); err != nil {
-					a.logger.Error("Failed to click element", zap.Error(err))
-				}
+				accessibility.MoveMouseToPoint(center)
 				a.exitMode()
 			case ActionScroll:
 				// Enter scroll mode - scroll to element
 				a.hintsCtx.canScroll = true
 				a.logger.Info("Hint selected, start scrolling", zap.String("label", a.hintManager.GetInput()))
-				if err := hint.Element.Element.GoToPosition(); err != nil {
-					a.logger.Error("Failed to scroll to element", zap.Error(err))
-				}
+				accessibility.MoveMouseToPoint(center)
 				a.hintOverlay.Clear()
 				a.showScroll()
 			case ActionContextMenu:
@@ -269,6 +272,12 @@ func (a *App) handleContextMenuKey(key string) {
 	}
 
 	hint := a.hintsCtx.selectedHint
+	info, getErr := hint.Element.Element.GetInfo()
+	if getErr != nil {
+		a.logger.Error("Failed to get element info", zap.Error(getErr))
+		return
+	}
+	center := image.Point{X: info.Position.X + info.Size.X/2, Y: info.Position.Y + info.Size.Y/2}
 	a.logger.Info("Action key pressed", zap.String("key", key))
 
 	var err error
@@ -278,19 +287,19 @@ func (a *App) handleContextMenuKey(key string) {
 	switch action {
 	case "left_click": // Left click
 		a.logger.Info("Performing left click", zap.String("label", hint.Label))
-		err = hint.Element.Element.LeftClick(a.config.Hints.LeftClickHints.RestoreCursor)
+		err = accessibility.LeftClickAtPoint(center, a.config.Hints.LeftClickHints.RestoreCursor)
 	case "right_click": // Right click
 		a.logger.Info("Performing right click", zap.String("label", hint.Label))
-		err = hint.Element.Element.RightClick(a.config.Hints.RightClickHints.RestoreCursor)
+		err = accessibility.RightClickAtPoint(center, a.config.Hints.RightClickHints.RestoreCursor)
 	case "double_click": // Double click
 		a.logger.Info("Performing double click", zap.String("label", hint.Label))
-		err = hint.Element.Element.DoubleClick(a.config.Hints.DoubleClickHints.RestoreCursor)
+		err = accessibility.DoubleClickAtPoint(center, a.config.Hints.DoubleClickHints.RestoreCursor)
 	case "triple_click": // Triple click
 		a.logger.Info("Performing triple click", zap.String("label", hint.Label))
-		err = hint.Element.Element.TripleClick(a.config.Hints.TripleClickHints.RestoreCursor)
+		err = accessibility.TripleClickAtPoint(center, a.config.Hints.TripleClickHints.RestoreCursor)
 	case "mouse_down": // Hold mouse
 		a.logger.Info("Performing hold mouse", zap.String("label", hint.Label))
-		err = hint.Element.Element.LeftMouseDown()
+		err = accessibility.LeftMouseDownAtPoint(center)
 
 		// Activate mouse up mode straight away
 		successCallback = func() {
@@ -298,13 +307,13 @@ func (a *App) handleContextMenuKey(key string) {
 		}
 	case "mouse_up": // Release mouse
 		a.logger.Info("Performing release hold mouse", zap.String("label", hint.Label))
-		err = hint.Element.Element.LeftMouseUp(false)
+		err = accessibility.LeftMouseUpAtPoint(center)
 	case "middle_click": // Middle click
 		a.logger.Info("Performing middle click", zap.String("label", hint.Label))
-		err = hint.Element.Element.MiddleClick(a.config.Hints.MiddleClickHints.RestoreCursor)
+		err = accessibility.MiddleClickAtPoint(center, a.config.Hints.MiddleClickHints.RestoreCursor)
 	case "move_mouse": // Move mouse to a position
 		a.logger.Info("Performing go to position", zap.String("label", hint.Label))
-		err = hint.Element.Element.GoToPosition()
+		accessibility.MoveMouseToPoint(center)
 	default:
 		a.logger.Debug("Unknown action key, ignoring", zap.String("key", key))
 		return
@@ -454,7 +463,7 @@ func (a *App) exitMode() {
 		// If we are in mouse up action, remove the mouse up to prevent further dragging
 		if a.currentAction == ActionMouseUp {
 			a.logger.Info("Detected MouseUp action, removing mouse up event...")
-			err := accessibility.GetFrontmostWindow().LeftMouseUp(true)
+			err := accessibility.LeftMouseUp()
 			if err != nil {
 				a.logger.Error("Failed to remove mouse up", zap.Error(err))
 			}

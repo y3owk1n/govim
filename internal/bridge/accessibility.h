@@ -39,15 +39,6 @@ int getElementCenter(void* element, CGPoint* outPoint);
 void moveMouse(CGPoint position);
 
 // Click functions - perform click actions on accessibility elements and restore cursor position
-int performLeftClick(void* element, bool restoreCursor);
-int performRightClick(void* element, bool restoreCursor);
-int performDoubleClick(void* element, bool restoreCursor);
-int performMiddleClick(void* element, bool restoreCursor);
-int performTripleClick(void* element, bool restoreCursor);
-int performLeftMouseDown(void* element);
-int performLeftMouseUp(void* element);
-int performLeftMouseUpWithoutPos(void);
-int performMoveMouseToPosition(void* element);
 
 int hasClickAction(void* element);
 int setFocus(void* element);
@@ -66,6 +57,16 @@ int setApplicationAttribute(int pid, const char* attribute, int value);
 // Scroll functions
 CGRect getScrollBounds(void* element);
 int scrollAtCursor(int deltaX, int deltaY);
+
+// Point-based mouse actions
+int performLeftClickAtPosition(CGPoint position, bool restoreCursor);
+int performRightClickAtPosition(CGPoint position, bool restoreCursor);
+int performMiddleClickAtPosition(CGPoint position, bool restoreCursor);
+int performDoubleClickAtPosition(CGPoint position, bool restoreCursor);
+int performTripleClickAtPosition(CGPoint position, bool restoreCursor);
+int performLeftMouseDownAtPosition(CGPoint position);
+int performLeftMouseUpAtPosition(CGPoint position);
+int performLeftMouseUpAtCursor(void);
 
 bool isMissionControlActive();
 

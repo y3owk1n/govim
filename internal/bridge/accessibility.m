@@ -545,180 +545,15 @@ void moveMouse(CGPoint position) {
     }
 }
 
-// Generic click function
-static int performClick(void* element, CGEventType downEvent, CGEventType upEvent, CGMouseButton button, bool restoreCursor) {
-    if (!element) return 0;
 
-    CGPoint clickPoint;
-    if (!getElementCenter(element, &clickPoint)) {
-        return 0;
-    }
 
-    // Save current cursor position if needed
-    CGPoint originalPosition = CGPointZero;
-    if (restoreCursor) {
-        CGEventRef currentEvent = CGEventCreate(NULL);
-        if (currentEvent) {
-            originalPosition = CGEventGetLocation(currentEvent);
-            CFRelease(currentEvent);
-        }
-    }
 
-    moveMouse(clickPoint);
 
-    CGEventRef down = CGEventCreateMouseEvent(NULL, downEvent, clickPoint, button);
-    CGEventRef up = CGEventCreateMouseEvent(NULL, upEvent, clickPoint, button);
 
-    if (!down || !up) {
-        if (down) CFRelease(down);
-        if (up) CFRelease(up);
-        if (restoreCursor) {
-            moveMouse(originalPosition);
-        }
-        return 0;
-    }
 
-    CGEventPost(kCGHIDEventTap, down);
-    CGEventPost(kCGHIDEventTap, up);
-    CFRelease(down);
-    CFRelease(up);
-
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
-
-    if (restoreCursor) {
-        moveMouse(originalPosition);
-    }
-
-    return 1;
-}
-
-// Perform left click
-int performLeftClick(void* element, bool restoreCursor) {
-    return performClick(element, kCGEventLeftMouseDown, kCGEventLeftMouseUp, kCGMouseButtonLeft, restoreCursor);
-}
-
-// Perform right click
-int performRightClick(void* element, bool restoreCursor) {
-    return performClick(element, kCGEventRightMouseDown, kCGEventRightMouseUp, kCGMouseButtonRight, restoreCursor);
-}
-
-// Perform middle click
-int performMiddleClick(void* element, bool restoreCursor) {
-    return performClick(element, kCGEventOtherMouseDown, kCGEventOtherMouseUp, kCGMouseButtonCenter, restoreCursor);
-}
-
-// Perform double click
-int performDoubleClick(void* element, bool restoreCursor) {
-    if (!element) return 0;
-
-    CGPoint pos;
-    if (!getElementCenter(element, &pos)) return 0;
-
-    CGPoint originalPos = CGPointZero;
-    if (restoreCursor) {
-        CGEventRef ev = CGEventCreate(NULL);
-        if (ev) {
-            originalPos = CGEventGetLocation(ev);
-            CFRelease(ev);
-        }
-    }
-
-    moveMouse(pos);
-
-    for (int i = 1; i <= 2; ++i) {
-        CGEventRef dn = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, pos, kCGMouseButtonLeft);
-        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, pos, kCGMouseButtonLeft);
-
-        if (!dn || !up) {
-            if (dn) CFRelease(dn);
-            if (up) CFRelease(up);
-            if (restoreCursor) moveMouse(originalPos);
-            return 0;
-        }
-
-        if (i == 2) {
-            CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 2);
-            CGEventSetIntegerValueField(up, kCGMouseEventClickState, 2);
-        }
-        CGEventPost(kCGHIDEventTap, dn);
-        CGEventPost(kCGHIDEventTap, up);
-        CFRelease(dn);
-        CFRelease(up);
-        if (i < 2) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
-    }
-
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
-    if (restoreCursor) moveMouse(originalPos);
-    return 1;
-}
-
-// Triple-click
-int performTripleClick(void* element, bool restoreCursor) {
-    if (!element) return 0;
-
-    CGPoint pos;
-    if (!getElementCenter(element, &pos)) return 0;
-
-    CGPoint originalPos = CGPointZero;
-    if (restoreCursor) {
-        CGEventRef ev = CGEventCreate(NULL);
-        if (ev) {
-            originalPos = CGEventGetLocation(ev);
-            CFRelease(ev);
-        }
-    }
-
-    moveMouse(pos);
-
-    for (int i = 1; i <= 3; ++i) {
-        CGEventRef dn = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, pos, kCGMouseButtonLeft);
-        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, pos, kCGMouseButtonLeft);
-
-        if (!dn || !up) {
-            if (dn) CFRelease(dn);
-            if (up) CFRelease(up);
-            if (restoreCursor) moveMouse(originalPos);
-            return 0;
-        }
-
-        if (i == 3) {
-            CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 3);
-            CGEventSetIntegerValueField(up, kCGMouseEventClickState, 3);
-        }
-        CGEventPost(kCGHIDEventTap, dn);
-        CGEventPost(kCGHIDEventTap, up);
-        CFRelease(dn);
-        CFRelease(up);
-        if (i < 3) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
-    }
-
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
-    if (restoreCursor) moveMouse(originalPos);
-    return 1;
-}
-
-// Press the left button down (start drag)
-int performLeftMouseDown(void *element) {
-    if (!element) return 0;
-
-    CGPoint pos;
-    if (!getElementCenter(element, &pos)) return 0;
-
-    moveMouse(pos);
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
-
-    CGEventRef down = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, pos, kCGMouseButtonLeft);
-    if (!down) return 0;
-
-    CGEventPost(kCGHIDEventTap, down);
-    CFRelease(down);
-
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
-    return 1;
-}
 
 // Release the left button without moving
-int performLeftMouseUpWithoutPos(void) {
+int performLeftMouseUpAtCursor(void) {
     CGEventRef currentEvent = CGEventCreate(NULL);
     if (!currentEvent) return 0;
 
@@ -735,31 +570,128 @@ int performLeftMouseUpWithoutPos(void) {
     return 1;
 }
 
-// Release the left button (end drag) for a specific element
-int performLeftMouseUp(void *element) {
-    if (!element) return 0;
-
-    CGPoint pos;
-    if (!getElementCenter(element, &pos)) return 0;
-
-    moveMouse(pos);
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
-
-    return performLeftMouseUpWithoutPos();
-}
 
 // Perform middle click
-int performMoveMouseToPosition(void* element) {
-    if (!element) return 0;
-
-    CGPoint clickPoint;
-    if (!getElementCenter(element, &clickPoint)) {
-        return 0;
+// Generic click at position
+static int performClickAtPosition(CGPoint pos, CGEventType downEvent, CGEventType upEvent, CGMouseButton button, bool restoreCursor) {
+    CGPoint originalPosition = CGPointZero;
+    if (restoreCursor) {
+        CGEventRef currentEvent = CGEventCreate(NULL);
+        if (currentEvent) {
+            originalPosition = CGEventGetLocation(currentEvent);
+            CFRelease(currentEvent);
+        }
     }
 
-    moveMouse(clickPoint);
+    moveMouse(pos);
+
+    CGEventRef down = CGEventCreateMouseEvent(NULL, downEvent, pos, button);
+    CGEventRef up = CGEventCreateMouseEvent(NULL, upEvent, pos, button);
+    if (!down || !up) {
+        if (down) CFRelease(down);
+        if (up) CFRelease(up);
+        if (restoreCursor) moveMouse(originalPosition);
+        return 0;
+    }
+    CGEventPost(kCGHIDEventTap, down);
+    CGEventPost(kCGHIDEventTap, up);
+    CFRelease(down);
+    CFRelease(up);
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
+    if (restoreCursor) moveMouse(originalPosition);
     return 1;
 }
+
+int performLeftClickAtPosition(CGPoint position, bool restoreCursor) {
+    return performClickAtPosition(position, kCGEventLeftMouseDown, kCGEventLeftMouseUp, kCGMouseButtonLeft, restoreCursor);
+}
+int performRightClickAtPosition(CGPoint position, bool restoreCursor) {
+    return performClickAtPosition(position, kCGEventRightMouseDown, kCGEventRightMouseUp, kCGMouseButtonRight, restoreCursor);
+}
+int performMiddleClickAtPosition(CGPoint position, bool restoreCursor) {
+    return performClickAtPosition(position, kCGEventOtherMouseDown, kCGEventOtherMouseUp, kCGMouseButtonCenter, restoreCursor);
+}
+int performDoubleClickAtPosition(CGPoint position, bool restoreCursor) {
+    CGPoint originalPos = CGPointZero;
+    if (restoreCursor) {
+        CGEventRef ev = CGEventCreate(NULL);
+        if (ev) { originalPos = CGEventGetLocation(ev); CFRelease(ev); }
+    }
+    moveMouse(position);
+    for (int i = 1; i <= 2; ++i) {
+        CGEventRef dn = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, position, kCGMouseButtonLeft);
+        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, position, kCGMouseButtonLeft);
+        if (!dn || !up) {
+            if (dn) CFRelease(dn);
+            if (up) CFRelease(up);
+            if (restoreCursor) moveMouse(originalPos);
+            return 0;
+        }
+        if (i == 2) {
+            CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 2);
+            CGEventSetIntegerValueField(up, kCGMouseEventClickState, 2);
+        }
+        CGEventPost(kCGHIDEventTap, dn);
+        CGEventPost(kCGHIDEventTap, up);
+        CFRelease(dn);
+        CFRelease(up);
+        if (i < 2) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+    }
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
+    if (restoreCursor) moveMouse(originalPos);
+    return 1;
+}
+int performTripleClickAtPosition(CGPoint position, bool restoreCursor) {
+    CGPoint originalPos = CGPointZero;
+    if (restoreCursor) {
+        CGEventRef ev = CGEventCreate(NULL);
+        if (ev) { originalPos = CGEventGetLocation(ev); CFRelease(ev); }
+    }
+    moveMouse(position);
+    for (int i = 1; i <= 3; ++i) {
+        CGEventRef dn = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, position, kCGMouseButtonLeft);
+        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, position, kCGMouseButtonLeft);
+        if (!dn || !up) {
+            if (dn) CFRelease(dn);
+            if (up) CFRelease(up);
+            if (restoreCursor) moveMouse(originalPos);
+            return 0;
+        }
+        if (i == 3) {
+            CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 3);
+            CGEventSetIntegerValueField(up, kCGMouseEventClickState, 3);
+        }
+        CGEventPost(kCGHIDEventTap, dn);
+        CGEventPost(kCGHIDEventTap, up);
+        CFRelease(dn);
+        CFRelease(up);
+        if (i < 3) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+    }
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
+    if (restoreCursor) moveMouse(originalPos);
+    return 1;
+}
+int performLeftMouseDownAtPosition(CGPoint position) {
+    moveMouse(position);
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+    CGEventRef down = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, position, kCGMouseButtonLeft);
+    if (!down) return 0;
+    CGEventPost(kCGHIDEventTap, down);
+    CFRelease(down);
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+    return 1;
+}
+int performLeftMouseUpAtPosition(CGPoint position) {
+    moveMouse(position);
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+    CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, position, kCGMouseButtonLeft);
+    if (!up) return 0;
+    CGEventPost(kCGHIDEventTap, up);
+    CFRelease(up);
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
+    return 1;
+}
+
 
 // Set focus
 int setFocus(void* element) {
