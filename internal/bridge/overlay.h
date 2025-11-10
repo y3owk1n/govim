@@ -30,6 +30,28 @@ typedef struct {
     int matchedPrefixLength;  // Number of matched characters to highlight
 } HintData;
 
+// Grid cell style configuration
+typedef struct {
+    int fontSize;
+    char* fontFamily;
+    char* backgroundColor;
+    char* textColor;
+    char* matchedTextColor;
+    char* matchedBackgroundColor;
+    char* matchedBorderColor;
+    char* borderColor;
+    int borderWidth;
+    double backgroundOpacity;
+    double textOpacity;
+} GridCellStyle;
+
+// Grid cell data
+typedef struct {
+    char* label;
+    CGRect bounds;  // Cell rectangle
+    int isMatched;  // 1 if cell matches current input, 0 otherwise
+} GridCell;
+
 // Function declarations
 OverlayWindow createOverlayWindow();
 void destroyOverlayWindow(OverlayWindow window);
@@ -40,5 +62,10 @@ void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style
 void drawScrollHighlight(OverlayWindow window, CGRect bounds, char* color, int width);
 void setOverlayLevel(OverlayWindow window, int level);
 void drawTargetDot(OverlayWindow window, CGPoint center, double radius, const char *color, const char *borderColor, double borderWidth);
+
+// Grid-specific drawing functions
+void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellStyle style);
+void drawGridLines(OverlayWindow window, CGRect* lines, int count, char* color, int width, double opacity);
+void updateGridMatchPrefix(OverlayWindow window, const char* prefix);
 
 #endif // OVERLAY_H

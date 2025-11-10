@@ -17,6 +17,7 @@ type Config struct {
 	Hotkeys       HotkeysConfig       `toml:"hotkeys"`
 	Scroll        ScrollConfig        `toml:"scroll"`
 	Hints         HintsConfig         `toml:"hints"`
+	Grid          GridConfig          `toml:"grid"`
 	Logging       LoggingConfig       `toml:"logging"`
 }
 
@@ -98,6 +99,26 @@ type LoggingConfig struct {
 	LogLevel          string `toml:"log_level"`
 	LogFile           string `toml:"log_file"`
 	StructuredLogging bool   `toml:"structured_logging"`
+}
+
+type GridConfig struct {
+	Characters             string  `toml:"characters"`
+	SublayerKeys           string  `toml:"sublayer_keys"`
+	MinCellSize            int     `toml:"min_cell_size"`
+	FontSize               int     `toml:"font_size"`
+	FontFamily             string  `toml:"font_family"`
+	Opacity                float64 `toml:"opacity"`
+	BackgroundColor        string  `toml:"background_color"`
+	TextColor              string  `toml:"text_color"`
+	MatchedTextColor       string  `toml:"matched_text_color"`
+	MatchedBackgroundColor string  `toml:"matched_background_color"`
+	MatchedBorderColor     string  `toml:"matched_border_color"`
+	BorderColor            string  `toml:"border_color"`
+	BorderWidth            int     `toml:"border_width"`
+	LiveMatchUpdate        bool    `toml:"live_match_update"`
+	SubgridEnabled         bool    `toml:"subgrid_enabled"`
+	SubgridRows            int     `toml:"subgrid_rows"`
+	SubgridCols            int     `toml:"subgrid_cols"`
 }
 
 type AdditionalAXSupport struct {
@@ -262,6 +283,25 @@ func DefaultConfig() *Config {
 			LogLevel:          "info",
 			LogFile:           "",
 			StructuredLogging: true,
+		},
+		Grid: GridConfig{
+			Characters:             "asdfghjkl",
+			SublayerKeys:           "",
+			MinCellSize:            40,
+			FontSize:               12,
+			FontFamily:             "Menlo",
+			Opacity:                0.85,
+			BackgroundColor:        "#ffffff",
+			TextColor:              "#1a1a1a",
+			MatchedTextColor:       "#0066ff",
+			MatchedBackgroundColor: "#0066ff",
+			MatchedBorderColor:     "#0066ff",
+			BorderColor:            "#d0d0d0",
+			BorderWidth:            1,
+			LiveMatchUpdate:        true,
+			SubgridEnabled:         true,
+			SubgridRows:            3,
+			SubgridCols:            3,
 		},
 	}
 }
@@ -564,6 +604,57 @@ func (c *Config) Validate() error {
 			if strings.TrimSpace(role) == "" {
 				return fmt.Errorf("accessibility.app_configs[%d].additional_scrollable_roles cannot contain empty values", i)
 			}
+		}
+	}
+
+	// Validate grid settings
+	if strings.TrimSpace(c.Grid.Characters) == "" {
+		return fmt.Errorf("grid.characters cannot be empty")
+	}
+	if len(c.Grid.Characters) < 2 {
+		return fmt.Errorf("grid.characters must contain at least 2 characters")
+	}
+	if c.Grid.MinCellSize < 1 {
+		return fmt.Errorf("grid.min_cell_size must be at least 1")
+	}
+	if c.Grid.FontSize < 6 || c.Grid.FontSize > 72 {
+		return fmt.Errorf("grid.font_size must be between 6 and 72")
+	}
+	if c.Grid.BorderWidth < 0 {
+		return fmt.Errorf("grid.border_width must be non-negative")
+	}
+	if c.Grid.Opacity < 0 || c.Grid.Opacity > 1 {
+		return fmt.Errorf("grid.opacity must be between 0 and 1")
+	}
+	if err := validateColor(c.Grid.BackgroundColor, "grid.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.TextColor, "grid.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MatchedTextColor, "grid.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.BorderColor, "grid.border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MatchedBackgroundColor, "grid.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MatchedBorderColor, "grid.matched_border_color"); err != nil {
+		return err
+	}
+	if c.Grid.SubgridEnabled {
+		if c.Grid.SubgridRows < 1 || c.Grid.SubgridCols < 1 {
+			return fmt.Errorf("grid.subgrid_rows and grid.subgrid_cols must be at least 1")
+		}
+		// Validate sublayer keys length (fallback to grid.characters)
+		keys := strings.TrimSpace(c.Grid.SublayerKeys)
+		if keys == "" {
+			keys = c.Grid.Characters
+		}
+		if len([]rune(keys)) < 9 {
+			return fmt.Errorf("grid.sublayer_keys must contain at least 9 characters for subgrid selection")
 		}
 	}
 

@@ -1077,3 +1077,14 @@ bool isMissionControlActive() {
         return result;
     }
 }
+
+CGRect getMainScreenBounds() {
+    @autoreleasepool {
+        NSScreen* mainScreen = [NSScreen mainScreen];
+        if (!mainScreen) {
+            return CGRectZero;
+        }
+        NSRect frame = mainScreen.frame;
+        return NSRectToCGRect(frame);
+    }
+}

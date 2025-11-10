@@ -141,6 +141,11 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 	return nil
 }
 
+// GetWindow returns the underlying C overlay window
+func (o *Overlay) GetWindow() C.OverlayWindow {
+	return o.window
+}
+
 // DrawScrollHighlight draws a highlight around a scroll area
 func (o *Overlay) DrawScrollHighlight(x, y, width, height int, color string, borderWidth int) {
 	bounds := C.CGRect{

@@ -21,6 +21,19 @@
 @property (nonatomic, strong) NSColor *targetDotBackgroundColor;
 @property (nonatomic, strong) NSColor *targetDotBorderColor;
 @property (nonatomic, assign) CGFloat targetDotBorderWidth;
+@property (nonatomic, strong) NSMutableArray *gridCells;  // Grid cells
+@property (nonatomic, strong) NSMutableArray *gridLines;  // Grid lines
+@property (nonatomic, strong) NSFont *gridFont;
+@property (nonatomic, strong) NSColor *gridTextColor;
+@property (nonatomic, strong) NSColor *gridMatchedTextColor;
+@property (nonatomic, strong) NSColor *gridMatchedBackgroundColor;
+@property (nonatomic, strong) NSColor *gridMatchedBorderColor;
+@property (nonatomic, strong) NSColor *gridBackgroundColor;
+@property (nonatomic, strong) NSColor *gridBorderColor;
+@property (nonatomic, assign) CGFloat gridBorderWidth;
+@property (nonatomic, assign) CGFloat gridBackgroundOpacity;
+@property (nonatomic, assign) CGFloat gridTextOpacity;
+@property (nonatomic, assign) BOOL hideUnmatched;
 - (void)applyStyle:(HintStyle)style;
 - (NSColor *)colorFromHex:(NSString *)hexString defaultColor:(NSColor *)defaultColor;
 @end
@@ -31,6 +44,8 @@
     self = [super initWithFrame:frame];
     if (self) {
         _hints = [NSMutableArray array];
+        _gridCells = [NSMutableArray array];
+        _gridLines = [NSMutableArray array];
         _showScrollHighlight = NO;
         _showTargetDot = NO;
         _targetDotRadius = 4.0;
@@ -45,6 +60,17 @@
         _hintBorderRadius = 4.0;
         _hintBorderWidth = 1.0;
         _hintPadding = 4.0;
+        
+        // Grid defaults
+        _gridFont = [NSFont fontWithName:@"Menlo" size:10.0];
+        _gridTextColor = [NSColor colorWithWhite:0.2 alpha:1.0];
+        _gridMatchedTextColor = [NSColor colorWithRed:0.0 green:0.4 blue:1.0 alpha:1.0];
+        _gridBackgroundColor = [NSColor whiteColor];
+        _gridBorderColor = [NSColor colorWithWhite:0.7 alpha:1.0];
+        _gridBorderWidth = 1.0;
+        _gridBackgroundOpacity = 0.85;
+        _gridTextOpacity = 1.0;
+        _hideUnmatched = NO;
     }
     return self;
 }
@@ -55,6 +81,12 @@
     // Clear background
     [[NSColor clearColor] setFill];
     NSRectFill(dirtyRect);
+
+    // Draw grid lines first (behind everything)
+    [self drawGridLines];
+
+    // Draw grid cells
+    [self drawGridCells];
 
     // Draw scroll highlight if enabled
     if (self.showScrollHighlight) {
@@ -393,6 +425,96 @@
                            alpha:1.0];
 }
 
+- (void)drawGridCells {
+    if ([self.gridCells count] == 0) return;
+    
+    NSGraphicsContext *context = [NSGraphicsContext currentContext];
+    [context saveGraphicsState];
+    
+    NSScreen *mainScreen = [NSScreen mainScreen];
+    CGFloat screenHeight = [mainScreen frame].size.height;
+    
+    for (NSDictionary *cellDict in self.gridCells) {
+        NSString *label = cellDict[@"label"];
+        NSValue *boundsValue = cellDict[@"bounds"];
+        BOOL isMatched = [cellDict[@"isMatched"] boolValue];
+        
+        CGRect bounds = [boundsValue rectValue];
+        
+        // Convert coordinates (macOS uses bottom-left origin)
+        CGFloat flippedY = screenHeight - bounds.origin.y - bounds.size.height;
+        NSRect cellRect = NSMakeRect(bounds.origin.x, flippedY, bounds.size.width, bounds.size.height);
+        
+        // Draw cell background with opacity (use matched background color when isMatched)
+        NSColor *bgBase = self.gridBackgroundColor;
+        if (isMatched && self.gridMatchedBackgroundColor) {
+            bgBase = self.gridMatchedBackgroundColor;
+        }
+        NSColor *bgColor = [bgBase colorWithAlphaComponent:self.gridBackgroundOpacity];
+        [bgColor setFill];
+        NSRectFill(cellRect);
+        
+        // Draw cell border (use matched border color when isMatched)
+        NSColor *borderColor = self.gridBorderColor;
+        if (isMatched && self.gridMatchedBorderColor) {
+            borderColor = self.gridMatchedBorderColor;
+        }
+        [borderColor setStroke];
+        NSBezierPath *borderPath = [NSBezierPath bezierPathWithRect:cellRect];
+        [borderPath setLineWidth:self.gridBorderWidth];
+        [borderPath stroke];
+        
+        // Draw text label centered in cell
+        if (label && [label length] > 0) {
+            NSColor *textColor = isMatched ? self.gridMatchedTextColor : self.gridTextColor;
+            textColor = [textColor colorWithAlphaComponent:self.gridTextOpacity];
+            
+            NSDictionary *attributes = @{
+                NSFontAttributeName: self.gridFont,
+                NSForegroundColorAttributeName: textColor
+            };
+            
+            NSSize textSize = [label sizeWithAttributes:attributes];
+            CGFloat textX = cellRect.origin.x + (cellRect.size.width - textSize.width) / 2.0;
+            CGFloat textY = cellRect.origin.y + (cellRect.size.height - textSize.height) / 2.0;
+            
+            [label drawAtPoint:NSMakePoint(textX, textY) withAttributes:attributes];
+        }
+    }
+    
+    [context restoreGraphicsState];
+}
+
+- (void)drawGridLines {
+    if ([self.gridLines count] == 0) return;
+    
+    NSGraphicsContext *context = [NSGraphicsContext currentContext];
+    [context saveGraphicsState];
+    
+    for (NSDictionary *lineDict in self.gridLines) {
+        NSValue *rectValue = lineDict[@"rect"];
+        NSString *colorHex = lineDict[@"color"];
+        NSNumber *widthNum = lineDict[@"width"];
+        NSNumber *opacityNum = lineDict[@"opacity"];
+        
+        CGRect lineRect = [rectValue rectValue];
+        int width = [widthNum intValue];
+        double opacity = [opacityNum doubleValue];
+        
+        NSScreen *mainScreen = [NSScreen mainScreen];
+        CGFloat screenHeight = [mainScreen frame].size.height;
+        CGFloat flippedY = screenHeight - lineRect.origin.y - lineRect.size.height;
+        NSRect rect = NSMakeRect(lineRect.origin.x, flippedY, lineRect.size.width, lineRect.size.height);
+        
+        NSColor *color = [self colorFromHex:colorHex];
+        color = [color colorWithAlphaComponent:opacity];
+        [color setFill];
+        NSRectFill(rect);
+    }
+    
+    [context restoreGraphicsState];
+}
+
 @end
 
 @interface OverlayWindowController : NSObject
@@ -448,6 +570,7 @@
 
 OverlayWindow createOverlayWindow() {
     OverlayWindowController *controller = [[OverlayWindowController alloc] init];
+    [controller retain]; // Retain for the caller
     return (void*)controller;
 }
 
@@ -507,12 +630,16 @@ void clearOverlay(OverlayWindow window) {
 
     if ([NSThread isMainThread]) {
         [controller.overlayView.hints removeAllObjects];
+        [controller.overlayView.gridCells removeAllObjects];
+        [controller.overlayView.gridLines removeAllObjects];
         controller.overlayView.showScrollHighlight = NO;
         controller.overlayView.showTargetDot = NO;
         [controller.overlayView setNeedsDisplay:YES];
     } else {
         dispatch_async(dispatch_get_main_queue(), ^{
             [controller.overlayView.hints removeAllObjects];
+            [controller.overlayView.gridCells removeAllObjects];
+            [controller.overlayView.gridLines removeAllObjects];
             controller.overlayView.showScrollHighlight = NO;
             controller.overlayView.showTargetDot = NO;
             [controller.overlayView setNeedsDisplay:YES];
@@ -706,4 +833,119 @@ void setOverlayLevel(OverlayWindow window, int level) {
             [controller.window setLevel:level];
         });
     }
+}
+
+void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellStyle style) {
+    if (!window || !cells) return;
+    
+    OverlayWindowController *controller = (OverlayWindowController*)window;
+    
+    // Build cell data array
+    NSMutableArray *cellDicts = [NSMutableArray arrayWithCapacity:count];
+    for (int i = 0; i < count; i++) {
+        GridCell cell = cells[i];
+        NSDictionary *cellDict = @{
+            @"label": cell.label ? @(cell.label) : @"",
+            @"bounds": [NSValue valueWithRect:NSRectFromCGRect(cell.bounds)],
+            @"isMatched": @(cell.isMatched)
+        };
+        [cellDicts addObject:cellDict];
+    }
+    
+    // Copy all style strings NOW (before the async block) to avoid use-after-free
+    CGFloat fontSize = style.fontSize > 0 ? style.fontSize : 10.0;
+    NSString *fontFamily = style.fontFamily ? @(style.fontFamily) : nil;
+    NSString *bgHex = style.backgroundColor ? @(style.backgroundColor) : nil;
+    NSString *textHex = style.textColor ? @(style.textColor) : nil;
+    NSString *matchedTextHex = style.matchedTextColor ? @(style.matchedTextColor) : nil;
+    NSString *matchedBgHex = style.matchedBackgroundColor ? @(style.matchedBackgroundColor) : nil;
+    NSString *matchedBorderHex = style.matchedBorderColor ? @(style.matchedBorderColor) : nil;
+    NSString *borderHex = style.borderColor ? @(style.borderColor) : nil;
+    int borderWidth = style.borderWidth;
+    double backgroundOpacity = style.backgroundOpacity;
+    double textOpacity = style.textOpacity;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // Apply style
+        NSFont *font = nil;
+        if (fontFamily && [fontFamily length] > 0) {
+            font = [NSFont fontWithName:fontFamily size:fontSize];
+        }
+        if (!font) {
+            font = [NSFont fontWithName:@"Menlo" size:fontSize];
+        }
+        if (!font) {
+            font = [NSFont systemFontOfSize:fontSize];
+        }
+        controller.overlayView.gridFont = font;
+        
+        controller.overlayView.gridBackgroundColor = [controller.overlayView colorFromHex:bgHex defaultColor:[NSColor whiteColor]];
+        controller.overlayView.gridTextColor = [controller.overlayView colorFromHex:textHex defaultColor:[NSColor blackColor]];
+        controller.overlayView.gridMatchedTextColor = [controller.overlayView colorFromHex:matchedTextHex defaultColor:[NSColor blueColor]];
+        controller.overlayView.gridMatchedBackgroundColor = [controller.overlayView colorFromHex:matchedBgHex defaultColor:controller.overlayView.gridMatchedTextColor];
+        controller.overlayView.gridMatchedBorderColor = [controller.overlayView colorFromHex:matchedBorderHex defaultColor:controller.overlayView.gridMatchedTextColor];
+        controller.overlayView.gridBorderColor = [controller.overlayView colorFromHex:borderHex defaultColor:[NSColor grayColor]];
+        controller.overlayView.gridBorderWidth = borderWidth > 0 ? borderWidth : 1.0;
+        controller.overlayView.gridBackgroundOpacity = (backgroundOpacity >= 0.0 && backgroundOpacity <= 1.0) ? backgroundOpacity : 0.85;
+        controller.overlayView.gridTextOpacity = (textOpacity >= 0.0 && textOpacity <= 1.0) ? textOpacity : 1.0;
+        
+        // Set cells and redraw
+        [controller.overlayView.gridCells removeAllObjects];
+        [controller.overlayView.gridCells addObjectsFromArray:cellDicts];
+        [controller.overlayView setNeedsDisplay:YES];
+    });
+}
+
+void drawGridLines(OverlayWindow window, CGRect* lines, int count, char* color, int width, double opacity) {
+    if (!window || !lines) return;
+    
+    OverlayWindowController *controller = (OverlayWindowController*)window;
+    NSString *colorHex = color ? @(color) : @"#333333";
+    
+    // Build line data array
+    NSMutableArray *lineDicts = [NSMutableArray arrayWithCapacity:count];
+    for (int i = 0; i < count; i++) {
+        NSDictionary *lineDict = @{
+            @"rect": [NSValue valueWithRect:NSRectFromCGRect(lines[i])],
+            @"color": colorHex,
+            @"width": @(width),
+            @"opacity": @(opacity)
+        };
+        [lineDicts addObject:lineDict];
+    }
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [controller.overlayView.gridLines removeAllObjects];
+        [controller.overlayView.gridLines addObjectsFromArray:lineDicts];
+        [controller.overlayView setNeedsDisplay:YES];
+    });
+}
+
+void updateGridMatchPrefix(OverlayWindow window, const char* prefix) {
+    if (!window) return;
+    
+    OverlayWindowController *controller = (OverlayWindowController*)window;
+    
+    NSString *prefixStr = prefix ? @(prefix) : @"";
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // Update matched state for all cells without removing any
+        NSMutableArray *updated = [NSMutableArray arrayWithCapacity:[controller.overlayView.gridCells count]];
+        for (NSDictionary *cellDict in controller.overlayView.gridCells) {
+            NSString *label = cellDict[@"label"] ?: @"";
+            BOOL isMatched = NO;
+            if ([prefixStr length] > 0 && [label length] >= [prefixStr length]) {
+                NSString *lblPrefix = [label substringToIndex:[prefixStr length]];
+                isMatched = [lblPrefix isEqualToString:prefixStr];
+            }
+            // Always include the cell, just update its matched state
+            NSDictionary *newDict = @{ @"label": label,
+                                       @"bounds": cellDict[@"bounds"],
+                                       @"isMatched": @(isMatched) };
+            [updated addObject:newDict];
+        }
+        [controller.overlayView.gridCells removeAllObjects];
+        [controller.overlayView.gridCells addObjectsFromArray:updated];
+        [controller.overlayView setNeedsDisplay:YES];
+    });
 }

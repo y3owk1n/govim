@@ -12,6 +12,7 @@ import (
 	"github.com/y3owk1n/neru/internal/config"
 	"github.com/y3owk1n/neru/internal/electron"
 	"github.com/y3owk1n/neru/internal/eventtap"
+	"github.com/y3owk1n/neru/internal/grid"
 	"github.com/y3owk1n/neru/internal/hints"
 	"github.com/y3owk1n/neru/internal/hotkeys"
 	"github.com/y3owk1n/neru/internal/ipc"
@@ -26,6 +27,7 @@ type Mode int
 const (
 	ModeIdle Mode = iota
 	ModeHints
+	ModeGrid
 )
 
 // Action represents the current action within hints mode
@@ -62,6 +64,9 @@ type App struct {
 	hintsRouter      *hints.Router
 	hintManager      *hints.Manager
 	hintsCtx         *HintsContext
+	gridManager      *grid.Manager
+	gridRouter       *grid.Router
+	gridCtx          *GridContext
 
 	enabled           bool
 	hotkeysRegistered bool
@@ -146,6 +151,28 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Initialize hints router
 	app.hintsRouter = hints.NewRouter(app.hintManager)
 	app.hintsCtx = &HintsContext{}
+
+	// Create grid overlay upfront (like hints overlay) to avoid thread issues
+	gridOverlay := grid.NewGridOverlay(cfg.Grid)
+
+	// Grid instance will be created when activated (screen bounds may change)
+	var gridInstance *grid.Grid
+	app.gridManager = grid.NewManager(nil, func() {
+		// Redraw grid overlay when input changes
+		if gridInstance == nil {
+			return
+		}
+		gridOverlay.UpdateMatches(app.gridManager.GetInput())
+	}, func(cell *grid.Cell) {
+		// Show 3x3 subgrid in selected cell
+		gridOverlay.ShowSubgrid(cell)
+	})
+	// Store grid config for later creation
+	app.gridCtx = &GridContext{
+		currentAction: ActionLeftClick,
+		gridInstance:  &gridInstance,
+		gridOverlay:   &gridOverlay,
+	}
 
 	// Create electron manager
 	if cfg.Accessibility.AdditionalAXSupport.Enable {

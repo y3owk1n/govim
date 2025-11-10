@@ -13,6 +13,7 @@ package bridge
 import "C"
 
 import (
+	"image"
 	"sync"
 	"unsafe"
 )
@@ -107,4 +108,15 @@ func handleAppDeactivate(cAppName *C.char, cBundleID *C.char) {
 		bundleID := C.GoString(cBundleID)
 		appWatcher.HandleDeactivate(appName, bundleID)
 	}
+}
+
+// GetMainScreenBounds returns the bounds of the main screen
+func GetMainScreenBounds() image.Rectangle {
+	rect := C.getMainScreenBounds()
+	return image.Rect(
+		int(rect.origin.x),
+		int(rect.origin.y),
+		int(rect.origin.x+rect.size.width),
+		int(rect.origin.y+rect.size.height),
+	)
 }

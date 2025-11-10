@@ -3,8 +3,11 @@ package main
 import (
 	"fmt"
 	"image"
+	"strings"
 
 	"github.com/y3owk1n/neru/internal/accessibility"
+	"github.com/y3owk1n/neru/internal/bridge"
+	"github.com/y3owk1n/neru/internal/grid"
 	"github.com/y3owk1n/neru/internal/hints"
 	"github.com/y3owk1n/neru/internal/scroll"
 	"go.uber.org/zap"
@@ -16,6 +19,16 @@ type HintsContext struct {
 	lastScrollKey string
 }
 
+type GridContext struct {
+	currentAction     Action
+	gridInstance      **grid.Grid
+	gridOverlay       **grid.GridOverlay
+	canScroll         bool
+	lastScrollKey     string
+	contextMenuActive bool
+	selectedPoint     image.Point
+}
+
 // activateMode activates a mode with a given action (for hints mode)
 func (a *App) activateMode(mode Mode, action Action) {
 	if mode == ModeIdle {
@@ -25,6 +38,10 @@ func (a *App) activateMode(mode Mode, action Action) {
 	}
 	if mode == ModeHints {
 		a.activateHintMode(action)
+		return
+	}
+	if mode == ModeGrid {
+		a.activateGridMode(action)
 		return
 	}
 	// Unknown or unsupported mode
@@ -101,6 +118,84 @@ func (a *App) setupHints(elements []*accessibility.TreeNode, action Action) erro
 	}
 
 	a.hintOverlay.Show()
+	return nil
+}
+
+func (a *App) activateGridMode(action Action) {
+	if !a.enabled {
+		a.logger.Debug("Neru is disabled, ignoring grid mode activation")
+		return
+	}
+
+	// Centralized exclusion guard
+	if a.isFocusedAppExcluded() {
+		return
+	}
+
+	actionString := getActionString(action)
+	a.logger.Info("Activating grid mode", zap.String("action", actionString))
+
+	a.exitMode() // Exit current mode first
+
+	if actionString == "unknown" {
+		a.logger.Warn("Unknown action, ignoring")
+		return
+	}
+
+	// Generate grid cells
+	if err := a.setupGrid(action); err != nil {
+		a.logger.Error("Failed to setup grid", zap.Error(err), zap.String("action", actionString))
+		return
+	}
+
+	// Update mode and enable event tap
+	a.currentMode = ModeGrid
+	a.gridCtx.canScroll = false
+	a.gridCtx.currentAction = action
+
+	// Enable event tap to capture keys
+	if a.eventTap != nil {
+		a.eventTap.Enable()
+	}
+
+	a.logger.Info("Grid mode activated", zap.String("action", actionString))
+	a.logger.Info("Type a grid label to select a location")
+}
+
+// setupGrid generates grid and draws it
+func (a *App) setupGrid(action Action) error {
+	// Create grid with current screen bounds and grid config
+	bounds := bridge.GetMainScreenBounds()
+	characters := a.config.Grid.Characters
+	if strings.TrimSpace(characters) == "" {
+		characters = a.config.Hints.HintCharacters
+	}
+	minSize := a.config.Grid.MinCellSize
+	if minSize <= 0 {
+		minSize = 40
+	}
+	gridInstance := grid.NewGrid(characters, minSize, bounds)
+	*a.gridCtx.gridInstance = gridInstance
+
+	// Grid overlay already created in NewApp - update its config and use it
+	(*a.gridCtx.gridOverlay).UpdateConfig(a.config.Grid)
+
+	// Initialize manager with the new grid
+	a.gridManager = grid.NewManager(gridInstance, func() {
+		// Update matches only (no full redraw)
+		(*a.gridCtx.gridOverlay).UpdateMatches(a.gridManager.GetInput())
+	}, func(cell *grid.Cell) {
+		// Draw 3x3 subgrid inside selected cell
+		(*a.gridCtx.gridOverlay).ShowSubgrid(cell)
+	})
+	a.gridRouter = grid.NewRouter(a.gridManager)
+
+	// Draw initial grid
+	if err := (*a.gridCtx.gridOverlay).Draw(gridInstance, ""); err != nil {
+		return fmt.Errorf("failed to draw grid: %w", err)
+	}
+
+	(*a.gridCtx.gridOverlay).Show()
 	return nil
 }
 
@@ -215,15 +310,127 @@ func (a *App) handleKeyPress(key string) {
 			}
 			return
 		}
-	default:
-		// No router for this mode yet
-		return
+	case ModeGrid:
+		res := a.gridRouter.RouteKey(key, a.gridCtx.canScroll, a.gridCtx.currentAction == ActionScroll)
+		if res.Exit {
+			a.exitMode()
+			return
+		}
+		if res.SwitchToScroll {
+			a.logger.Debug("Switching to scroll mode from scroll grid")
+			a.gridCtx.canScroll = true
+			a.showGridScroll()
+			return
+		}
+
+		// If grid context menu is active, route to context menu handler
+		if a.gridCtx.contextMenuActive {
+			a.handleGridContextMenuKey(key)
+			return
+		}
+		// If grid scroll is active, route to grid scroll handler
+		if a.gridCtx.canScroll {
+			a.handleGridScrollKey(key)
+			return
+		}
+
+		// Complete coordinate entered - perform action
+		if res.Complete {
+			targetPoint := res.TargetPoint
+			switch a.gridCtx.currentAction {
+			case ActionLeftClick:
+				a.logger.Info("Grid left click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				if err := accessibility.LeftClickAtPoint(targetPoint, a.config.Hints.LeftClickHints.RestoreCursor); err != nil {
+					a.logger.Error("Failed to click", zap.Error(err))
+				}
+				a.exitMode()
+			case ActionRightClick:
+				a.logger.Info("Grid right click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				if err := accessibility.RightClickAtPoint(targetPoint, a.config.Hints.RightClickHints.RestoreCursor); err != nil {
+					a.logger.Error("Failed to click", zap.Error(err))
+				}
+				a.exitMode()
+			case ActionDoubleClick:
+				a.logger.Info("Grid double click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				if err := accessibility.DoubleClickAtPoint(targetPoint, a.config.Hints.DoubleClickHints.RestoreCursor); err != nil {
+					a.logger.Error("Failed to click", zap.Error(err))
+				}
+				a.exitMode()
+			case ActionTripleClick:
+				a.logger.Info("Grid triple click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				if err := accessibility.TripleClickAtPoint(targetPoint, a.config.Hints.TripleClickHints.RestoreCursor); err != nil {
+					a.logger.Error("Failed to click", zap.Error(err))
+				}
+				a.exitMode()
+			case ActionMouseDown:
+				a.logger.Info("Grid mouse down", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				if err := accessibility.LeftMouseDownAtPoint(targetPoint); err != nil {
+					a.logger.Error("Failed to mouse down", zap.Error(err))
+				}
+				// Immediately switch to mouse up to allow release selection
+				a.exitMode()
+				a.activateMode(ModeGrid, ActionMouseUp)
+			case ActionMouseUp:
+				a.logger.Info("Grid mouse up", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				if err := accessibility.LeftMouseUpAtPoint(targetPoint); err != nil {
+					a.logger.Error("Failed to mouse up", zap.Error(err))
+				}
+				a.exitMode()
+			case ActionMiddleClick:
+				a.logger.Info("Grid middle click", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				if err := accessibility.MiddleClickAtPoint(targetPoint, a.config.Hints.MiddleClickHints.RestoreCursor); err != nil {
+					a.logger.Error("Failed to click", zap.Error(err))
+				}
+				a.exitMode()
+			case ActionMoveMouse:
+				a.logger.Info("Grid move mouse", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				accessibility.MoveMouseToPoint(targetPoint)
+				a.exitMode()
+			case ActionScroll:
+				// Grid-specific scroll: move mouse to target and draw scroll border via grid overlay, stay in grid mode
+				a.gridCtx.canScroll = true
+				a.logger.Info("Grid scroll", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				accessibility.MoveMouseToPoint(targetPoint)
+				a.showGridScroll()
+			case ActionContextMenu:
+				// Show context menu overlay at target point (no hint generation)
+				a.logger.Info("Grid context menu", zap.Int("x", targetPoint.X), zap.Int("y", targetPoint.Y))
+				// Ensure grid overlay doesn't occlude the menu
+				gridOverlay := *a.gridCtx.gridOverlay
+				gridOverlay.Clear()
+				gridOverlay.Hide()
+				// Draw target indicator dot
+				dotRadius := 4.0
+				dotColor := a.config.Hints.ContextMenuHints.BackgroundColor
+				dotBorderColor := a.config.Hints.ContextMenuHints.BorderColor
+				dotBorderWidth := float64(a.config.Hints.BorderWidth)
+				if err := a.hintOverlay.DrawTargetDot(targetPoint.X, targetPoint.Y, dotRadius, dotColor, dotBorderColor, dotBorderWidth); err != nil {
+					a.logger.Error("Failed to draw target dot", zap.Error(err))
+				}
+				// Build and draw context menu label at the point
+				menuActions := hints.BuildContextMenuLabel()
+				contextMenuStyle := hints.BuildStyleForAction(a.config.Hints, getActionString(ActionContextMenu))
+				actionHints := []*hints.Hint{{
+					Label:    menuActions,
+					Element:  nil,
+					Position: image.Point{X: targetPoint.X, Y: targetPoint.Y + 5},
+				}}
+				if err := a.hintOverlay.DrawHintsWithoutArrow(actionHints, contextMenuStyle); err != nil {
+					a.logger.Error("Failed to draw context menu", zap.Error(err))
+				}
+				// Ensure hint overlay is visible
+				a.hintOverlay.Show()
+				// Activate grid context-menu sub-state
+				a.gridCtx.contextMenuActive = true
+				a.gridCtx.selectedPoint = targetPoint
+			}
+			return
+		}
 	}
 }
 
 // showContextMenu displays the action selection menu at the hint location
 func (a *App) showContextMenu(hint *hints.Hint) {
-
 	menuActions := hints.BuildContextMenuLabel()
 
 	actionHints := make([]*hints.Hint, 0, 1)
@@ -449,6 +656,176 @@ func (a *App) drawScrollHighlightBorder() {
 	a.scrollController.DrawHighlightBorder(a.hintOverlay)
 }
 
+func (a *App) showGridScroll() {
+	win := accessibility.GetFrontmostWindow()
+	if win == nil {
+		return
+	}
+	defer win.Release()
+	bounds := win.GetScrollBounds()
+	gridOverlay := *a.gridCtx.gridOverlay
+
+	gridOverlay.Clear()
+	gridOverlay.DrawScrollHighlight(bounds.Min.X, bounds.Min.Y, bounds.Dx(), bounds.Dy(), a.config.Scroll.HighlightColor, a.config.Scroll.HighlightWidth)
+}
+
+func (a *App) handleGridScrollKey(key string) {
+	// Exit grid scroll with Escape
+	if key == "\x1b" || key == "escape" {
+		a.exitMode()
+		return
+	}
+	var err error
+	// Check for control characters
+	if len(key) == 1 {
+		byteVal := key[0]
+		if byteVal == 4 || byteVal == 21 { // Ctrl+D / Ctrl+U
+			op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
+			if ok {
+				a.gridCtx.lastScrollKey = ""
+				switch op {
+				case "half_down":
+					err = a.scrollController.ScrollDownHalfPage()
+				case "half_up":
+					err = a.scrollController.ScrollUpHalfPage()
+				}
+			}
+		}
+	}
+	if err != nil {
+		a.logger.Error("Scroll failed", zap.Error(err))
+		return
+	}
+	// Regular keys
+	switch key {
+	case "j":
+		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
+		if !ok {
+			return
+		}
+		if op == "down" {
+			err = a.scrollController.ScrollDown()
+		}
+	case "k":
+		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
+		if !ok {
+			return
+		}
+		if op == "up" {
+			err = a.scrollController.ScrollUp()
+		}
+	case "h":
+		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
+		if !ok {
+			return
+		}
+		if op == "left" {
+			err = a.scrollController.ScrollLeft()
+		}
+	case "l":
+		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
+		if !ok {
+			return
+		}
+		if op == "right" {
+			err = a.scrollController.ScrollRight()
+		}
+	case "g":
+		op, newLast, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
+		if !ok {
+			a.gridCtx.lastScrollKey = newLast
+			return
+		}
+		if op == "top" {
+			err = a.scrollController.ScrollToTop()
+			a.gridCtx.lastScrollKey = ""
+		}
+	case "G":
+		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
+		if ok && op == "bottom" {
+			err = a.scrollController.ScrollToBottom()
+			a.gridCtx.lastScrollKey = ""
+		}
+	case "\t":
+		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
+		if ok && op == "tab" {
+			a.logger.Info("Tab key detected - show grid again")
+			a.activateMode(ModeGrid, ActionScroll)
+		}
+	default:
+		a.gridCtx.lastScrollKey = ""
+		return
+	}
+
+	// Reset last key for most commands
+	a.gridCtx.lastScrollKey = ""
+
+	if err != nil {
+		a.logger.Error("Scroll failed", zap.Error(err))
+	}
+}
+
+func (a *App) handleGridContextMenuKey(key string) {
+	// Exit context menu with Escape
+	if key == "\x1b" || key == "escape" {
+		// Clear menu overlay
+		a.hintOverlay.Clear()
+		// Leave grid mode
+		a.exitMode()
+		return
+	}
+
+	center := a.gridCtx.selectedPoint
+	var err error
+	var successCallback func()
+
+	a.logger.Info("Grid context menu key pressed", zap.String("key", key))
+
+	action := hints.ParseContextMenuKey(key)
+	switch action {
+	case "left_click":
+		err = accessibility.LeftClickAtPoint(center, a.config.Hints.LeftClickHints.RestoreCursor)
+	case "right_click":
+		err = accessibility.RightClickAtPoint(center, a.config.Hints.RightClickHints.RestoreCursor)
+	case "double_click":
+		err = accessibility.DoubleClickAtPoint(center, a.config.Hints.DoubleClickHints.RestoreCursor)
+	case "triple_click":
+		err = accessibility.TripleClickAtPoint(center, a.config.Hints.TripleClickHints.RestoreCursor)
+	case "mouse_down":
+		err = accessibility.LeftMouseDownAtPoint(center)
+		// After mouse down, prepare to allow release selection in grid
+		successCallback = func() {
+			// Clear menu overlay then switch to grid mouse up mode
+			a.hintOverlay.Clear()
+			a.activateMode(ModeGrid, ActionMouseUp)
+		}
+	case "mouse_up":
+		err = accessibility.LeftMouseUpAtPoint(center)
+	case "middle_click":
+		err = accessibility.MiddleClickAtPoint(center, a.config.Hints.MiddleClickHints.RestoreCursor)
+	case "move_mouse":
+		accessibility.MoveMouseToPoint(center)
+		// no error to report
+		goto done
+	default:
+		a.logger.Debug("Unknown grid context action", zap.String("key", key))
+		return
+	}
+
+	if err != nil {
+		a.logger.Error("Failed to perform action", zap.Error(err))
+	}
+
+done:
+	// Exit grid mode and clear overlay
+	a.hintOverlay.Clear()
+	a.exitMode()
+
+	if successCallback != nil {
+		successCallback()
+	}
+}
+
 // exitMode exits the current mode
 func (a *App) exitMode() {
 	if a.currentMode == ModeIdle {
@@ -478,6 +855,30 @@ func (a *App) exitMode() {
 		// Clear and hide overlay for hints
 		a.hintOverlay.Clear()
 		a.hintOverlay.Hide()
+	case ModeGrid:
+		// If we are in mouse up action, remove the mouse up to prevent further dragging
+		if a.currentAction == ActionMouseUp {
+			a.logger.Info("Detected MouseUp action, removing mouse up event...")
+			err := accessibility.LeftMouseUp()
+			if err != nil {
+				a.logger.Error("Failed to remove mouse up", zap.Error(err))
+			}
+		}
+		if a.gridManager != nil {
+			a.gridManager.Reset()
+		}
+		// Reset grid sub-states
+		if a.gridCtx != nil {
+			a.gridCtx.canScroll = false
+			a.gridCtx.lastScrollKey = ""
+			a.gridCtx.contextMenuActive = false
+		}
+		// Hide overlays
+		if a.gridCtx != nil && a.gridCtx.gridOverlay != nil && *a.gridCtx.gridOverlay != nil {
+			(*a.gridCtx.gridOverlay).Hide()
+		}
+		// Also clear any context menu drawn on hint overlay
+		a.hintOverlay.Clear()
 	default:
 		// No domain-specific cleanup for other modes yet
 	}
@@ -500,6 +901,8 @@ func getModeString(mode Mode) string {
 		return "idle"
 	case ModeHints:
 		return "hints"
+	case ModeGrid:
+		return "grid"
 	default:
 		return "unknown"
 	}
