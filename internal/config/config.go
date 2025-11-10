@@ -96,6 +96,10 @@ type HintsActionConfigWithRestoreCursor struct {
 	RestoreCursor bool `toml:"restore_cursor"`
 }
 
+type GridActionConfig struct {
+	RestoreCursor bool `toml:"restore_cursor"`
+}
+
 type LoggingConfig struct {
 	LogLevel          string `toml:"log_level"`
 	LogFile           string `toml:"log_file"`
@@ -103,25 +107,30 @@ type LoggingConfig struct {
 }
 
 type GridConfig struct {
-	Characters             string  `toml:"characters"`
-	SublayerKeys           string  `toml:"sublayer_keys"`
-	MinCellSize            int     `toml:"min_cell_size"`
-	MaxCellSize            int     `toml:"max_cell_size"`
-	FontSize               int     `toml:"font_size"`
-	FontFamily             string  `toml:"font_family"`
-	Opacity                float64 `toml:"opacity"`
-	BackgroundColor        string  `toml:"background_color"`
-	TextColor              string  `toml:"text_color"`
-	MatchedTextColor       string  `toml:"matched_text_color"`
-	MatchedBackgroundColor string  `toml:"matched_background_color"`
-	MatchedBorderColor     string  `toml:"matched_border_color"`
-	BorderColor            string  `toml:"border_color"`
-	BorderWidth            int     `toml:"border_width"`
-	LiveMatchUpdate        bool    `toml:"live_match_update"`
-	SubgridEnabled         bool    `toml:"subgrid_enabled"`
-	SubgridRows            int     `toml:"subgrid_rows"`
-	SubgridCols            int     `toml:"subgrid_cols"`
-	Enabled                bool    `toml:"enabled"`
+	Characters             string           `toml:"characters"`
+	SublayerKeys           string           `toml:"sublayer_keys"`
+	MinCellSize            int              `toml:"min_cell_size"`
+	MaxCellSize            int              `toml:"max_cell_size"`
+	FontSize               int              `toml:"font_size"`
+	FontFamily             string           `toml:"font_family"`
+	Opacity                float64          `toml:"opacity"`
+	BackgroundColor        string           `toml:"background_color"`
+	TextColor              string           `toml:"text_color"`
+	MatchedTextColor       string           `toml:"matched_text_color"`
+	MatchedBackgroundColor string           `toml:"matched_background_color"`
+	MatchedBorderColor     string           `toml:"matched_border_color"`
+	BorderColor            string           `toml:"border_color"`
+	BorderWidth            int              `toml:"border_width"`
+	LiveMatchUpdate        bool             `toml:"live_match_update"`
+	SubgridEnabled         bool             `toml:"subgrid_enabled"`
+	SubgridRows            int              `toml:"subgrid_rows"`
+	SubgridCols            int              `toml:"subgrid_cols"`
+	Enabled                bool             `toml:"enabled"`
+	LeftClick              GridActionConfig `toml:"left_click"`
+	RightClick             GridActionConfig `toml:"right_click"`
+	DoubleClick            GridActionConfig `toml:"double_click"`
+	TripleClick            GridActionConfig `toml:"triple_click"`
+	MiddleClick            GridActionConfig `toml:"middle_click"`
 }
 
 type AdditionalAXSupport struct {
@@ -308,6 +317,11 @@ func DefaultConfig() *Config {
 			SubgridRows:            3,
 			SubgridCols:            3,
 			Enabled:                true,
+			LeftClick:              GridActionConfig{RestoreCursor: false},
+			RightClick:             GridActionConfig{RestoreCursor: false},
+			DoubleClick:            GridActionConfig{RestoreCursor: false},
+			TripleClick:            GridActionConfig{RestoreCursor: false},
+			MiddleClick:            GridActionConfig{RestoreCursor: false},
 		},
 	}
 }

@@ -284,6 +284,21 @@ subgrid_cols = 3              # Subgrid columns
 # Sublayer keys used for subgrid selection (at least rows*cols characters)
 sublayer_keys = "asdfghjkl"
 
+[grid.left_click]
+restore_cursor = false
+
+[grid.right_click]
+restore_cursor = false
+
+[grid.double_click]
+restore_cursor = false
+
+[grid.triple_click]
+restore_cursor = false
+
+[grid.middle_click]
+restore_cursor = false
+
 [scroll]
 # Base scroll amount for j/k keys in pixels
 scroll_step = 50
