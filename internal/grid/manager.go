@@ -118,6 +118,23 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 		return image.Point{}, false
 	}
 
+	// Check if this key could potentially lead to a valid coordinate
+	// by checking if there's any cell that starts with currentInput + key
+	potentialInput := m.currentInput + key
+	validPrefix := false
+	for _, cell := range m.grid.cells {
+		if len(cell.Coordinate) >= len(potentialInput) &&
+			strings.HasPrefix(cell.Coordinate, potentialInput) {
+			validPrefix = true
+			break
+		}
+	}
+
+	// If this key doesn't lead to any valid coordinate, ignore it
+	if !validPrefix {
+		return image.Point{}, false
+	}
+
 	m.currentInput += key
 
 	// After reaching label length, show subgrid inside the selected cell
