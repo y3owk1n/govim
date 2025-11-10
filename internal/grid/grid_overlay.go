@@ -4,9 +4,6 @@ package grid
 #cgo CFLAGS: -x objective-c
 #include "../bridge/overlay.h"
 #include <stdlib.h>
-
-// Explicit declaration to satisfy cgo name resolution
-void drawScrollHighlight(OverlayWindow window, CGRect bounds, char* color, int width);
 */
 import "C"
 
@@ -35,6 +32,19 @@ func NewGridOverlay(cfg config.GridConfig) *GridOverlay {
 // UpdateConfig updates the overlay's config (e.g., after config reload)
 func (o *GridOverlay) UpdateConfig(cfg config.GridConfig) {
 	o.cfg = cfg
+}
+
+// SetHideUnmatched sets whether to hide unmatched cells
+func (o *GridOverlay) SetHideUnmatched(hide bool) {
+	C.setHideUnmatched(o.window, C.int(boolToInt(hide)))
+}
+
+// boolToInt converts a boolean to an integer (1 for true, 0 for false)
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // Show displays the grid overlay
@@ -138,6 +148,7 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell) {
 				size:   C.CGSize{width: C.double(right - left), height: C.double(bottom - top)},
 			},
 			isMatched: C.int(0),
+			isSubgrid: C.int(1), // Mark as subgrid cell
 		}
 	}
 
@@ -150,15 +161,17 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell) {
 	borderColor := C.CString(o.cfg.BorderColor)
 
 	style := C.GridCellStyle{
-		fontSize:          C.int(o.cfg.FontSize),
-		fontFamily:        fontFamily,
-		backgroundColor:   backgroundColor,
-		textColor:         textColor,
-		matchedTextColor:  matchedTextColor,
-		borderColor:       borderColor,
-		borderWidth:       C.int(o.cfg.BorderWidth),
-		backgroundOpacity: C.double(o.cfg.Opacity),
-		textOpacity:       C.double(1.0),
+		fontSize:               C.int(o.cfg.FontSize),
+		fontFamily:             fontFamily,
+		backgroundColor:        backgroundColor,
+		textColor:              textColor,
+		matchedTextColor:       matchedTextColor,
+		matchedBackgroundColor: matchedBackgroundColor,
+		matchedBorderColor:     matchedBorderColor,
+		borderColor:            borderColor,
+		borderWidth:            C.int(o.cfg.BorderWidth),
+		backgroundOpacity:      C.double(o.cfg.Opacity),
+		textOpacity:            C.double(1.0),
 	}
 
 	C.clearOverlay(o.window)
@@ -228,6 +241,7 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string) {
 				size:   C.CGSize{width: C.double(cell.Bounds.Dx()), height: C.double(cell.Bounds.Dy())},
 			},
 			isMatched: C.int(isMatched),
+			isSubgrid: C.int(0), // Mark as regular grid cell
 		}
 	}
 
@@ -240,15 +254,17 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string) {
 	borderColor := C.CString(o.cfg.BorderColor)
 
 	style := C.GridCellStyle{
-		fontSize:          C.int(o.cfg.FontSize),
-		fontFamily:        fontFamily,
-		backgroundColor:   backgroundColor,
-		textColor:         textColor,
-		matchedTextColor:  matchedTextColor,
-		borderColor:       borderColor,
-		borderWidth:       C.int(o.cfg.BorderWidth),
-		backgroundOpacity: C.double(o.cfg.Opacity),
-		textOpacity:       C.double(1.0),
+		fontSize:               C.int(o.cfg.FontSize),
+		fontFamily:             fontFamily,
+		backgroundColor:        backgroundColor,
+		textColor:              textColor,
+		matchedTextColor:       matchedTextColor,
+		matchedBackgroundColor: matchedBackgroundColor,
+		matchedBorderColor:     matchedBorderColor,
+		borderColor:            borderColor,
+		borderWidth:            C.int(o.cfg.BorderWidth),
+		backgroundOpacity:      C.double(o.cfg.Opacity),
+		textOpacity:            C.double(1.0),
 	}
 
 	C.drawGridCells(o.window, &cGridCells[0], C.int(len(cGridCells)), style)

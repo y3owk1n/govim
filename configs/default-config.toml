@@ -265,12 +265,12 @@ max_cell_size = 200
 # Grid label style
 font_size = 12
 font_family = ""
-opacity = 0.5
+opacity = 0.7
 
 # Colors
 background_color = "#abe9b3"
-text_color = "#ffffff"
-matched_text_color = "#ffffff"
+text_color = "#000000"
+matched_text_color = "#000000"
 matched_background_color = "#f8bd96" # Background color for matched grid cells
 matched_border_color = "#f8bd96"     # Border color for matched grid cells
 border_color = "#abe9b3"
@@ -281,6 +281,7 @@ live_match_update = true      # Update matched highlight per keystroke without f
 subgrid_enabled = true        # Enable precision sublayer after main label selection
 subgrid_rows = 3              # Subgrid rows
 subgrid_cols = 3              # Subgrid columns
+hide_unmatched = true        # Hide unmatched cells during typing
 # Sublayer keys used for subgrid selection (at least rows*cols characters)
 sublayer_keys = "asdfghjkl"
 

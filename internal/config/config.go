@@ -126,6 +126,7 @@ type GridConfig struct {
 	SubgridRows            int              `toml:"subgrid_rows"`
 	SubgridCols            int              `toml:"subgrid_cols"`
 	Enabled                bool             `toml:"enabled"`
+	HideUnmatched          bool             `toml:"hide_unmatched"`
 	LeftClick              GridActionConfig `toml:"left_click"`
 	RightClick             GridActionConfig `toml:"right_click"`
 	DoubleClick            GridActionConfig `toml:"double_click"`
@@ -306,8 +307,8 @@ func DefaultConfig() *Config {
 			FontFamily:             "SF Mono",
 			Opacity:                0.85,
 			BackgroundColor:        "#abe9b3",
-			TextColor:              "#ffffff",
-			MatchedTextColor:       "#ffffff",
+			TextColor:              "#000000",
+			MatchedTextColor:       "#000000",
 			MatchedBackgroundColor: "#f8bd96",
 			MatchedBorderColor:     "#f8bd96",
 			BorderColor:            "#abe9b3",
@@ -317,6 +318,7 @@ func DefaultConfig() *Config {
 			SubgridRows:            3,
 			SubgridCols:            3,
 			Enabled:                true,
+			HideUnmatched:          true,
 			LeftClick:              GridActionConfig{RestoreCursor: false},
 			RightClick:             GridActionConfig{RestoreCursor: false},
 			DoubleClick:            GridActionConfig{RestoreCursor: false},

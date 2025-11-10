@@ -438,6 +438,12 @@
         NSString *label = cellDict[@"label"];
         NSValue *boundsValue = cellDict[@"bounds"];
         BOOL isMatched = [cellDict[@"isMatched"] boolValue];
+        BOOL isSubgrid = [cellDict[@"isSubgrid"] boolValue];
+        
+        // Skip drawing unmatched cells if hideUnmatched is enabled AND it's not a subgrid cell
+        if (self.hideUnmatched && !isMatched && !isSubgrid) {
+            continue;
+        }
         
         CGRect bounds = [boundsValue rectValue];
         
@@ -847,7 +853,8 @@ void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellSty
         NSDictionary *cellDict = @{
             @"label": cell.label ? @(cell.label) : @"",
             @"bounds": [NSValue valueWithRect:NSRectFromCGRect(cell.bounds)],
-            @"isMatched": @(cell.isMatched)
+            @"isMatched": @(cell.isMatched),
+            @"isSubgrid": @(cell.isSubgrid)
         };
         [cellDicts addObject:cellDict];
     }
@@ -882,8 +889,8 @@ void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellSty
         controller.overlayView.gridBackgroundColor = [controller.overlayView colorFromHex:bgHex defaultColor:[NSColor whiteColor]];
         controller.overlayView.gridTextColor = [controller.overlayView colorFromHex:textHex defaultColor:[NSColor blackColor]];
         controller.overlayView.gridMatchedTextColor = [controller.overlayView colorFromHex:matchedTextHex defaultColor:[NSColor blueColor]];
-        controller.overlayView.gridMatchedBackgroundColor = [controller.overlayView colorFromHex:matchedBgHex defaultColor:controller.overlayView.gridMatchedTextColor];
-        controller.overlayView.gridMatchedBorderColor = [controller.overlayView colorFromHex:matchedBorderHex defaultColor:controller.overlayView.gridMatchedTextColor];
+        controller.overlayView.gridMatchedBackgroundColor = [controller.overlayView colorFromHex:matchedBgHex defaultColor:[NSColor blueColor]];
+        controller.overlayView.gridMatchedBorderColor = [controller.overlayView colorFromHex:matchedBorderHex defaultColor:[NSColor blueColor]];
         controller.overlayView.gridBorderColor = [controller.overlayView colorFromHex:borderHex defaultColor:[NSColor grayColor]];
         controller.overlayView.gridBorderWidth = borderWidth > 0 ? borderWidth : 1.0;
         controller.overlayView.gridBackgroundOpacity = (backgroundOpacity >= 0.0 && backgroundOpacity <= 1.0) ? backgroundOpacity : 0.85;
@@ -939,13 +946,27 @@ void updateGridMatchPrefix(OverlayWindow window, const char* prefix) {
                 isMatched = [lblPrefix isEqualToString:prefixStr];
             }
             // Always include the cell, just update its matched state
+            // Preserve the isSubgrid field
+            BOOL isSubgrid = [cellDict[@"isSubgrid"] boolValue];
             NSDictionary *newDict = @{ @"label": label,
                                        @"bounds": cellDict[@"bounds"],
-                                       @"isMatched": @(isMatched) };
+                                       @"isMatched": @(isMatched),
+                                       @"isSubgrid": @(isSubgrid) };
             [updated addObject:newDict];
         }
         [controller.overlayView.gridCells removeAllObjects];
         [controller.overlayView.gridCells addObjectsFromArray:updated];
+        [controller.overlayView setNeedsDisplay:YES];
+    });
+}
+
+void setHideUnmatched(OverlayWindow window, int hide) {
+    if (!window) return;
+    
+    OverlayWindowController *controller = (OverlayWindowController*)window;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        controller.overlayView.hideUnmatched = hide ? YES : NO;
         [controller.overlayView setNeedsDisplay:YES];
     });
 }

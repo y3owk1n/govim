@@ -212,7 +212,13 @@ func (a *App) setupGrid(action Action) error {
 	// Initialize manager with the new grid
 	a.gridManager = grid.NewManager(gridInstance, subRows, subCols, keys, func() {
 		// Update matches only (no full redraw)
-		(*a.gridCtx.gridOverlay).UpdateMatches(a.gridManager.GetInput())
+		input := a.gridManager.GetInput()
+
+		// Set hideUnmatched based on whether we have input and the config setting
+		hideUnmatched := a.config.Grid.HideUnmatched && len(input) > 0
+		(*a.gridCtx.gridOverlay).SetHideUnmatched(hideUnmatched)
+
+		(*a.gridCtx.gridOverlay).UpdateMatches(input)
 	}, func(cell *grid.Cell) {
 		// Draw 3x3 subgrid inside selected cell
 		(*a.gridCtx.gridOverlay).ShowSubgrid(cell)
