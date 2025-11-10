@@ -126,19 +126,6 @@ additional_firefox_bundles = []
 "Cmd+Shift+Space" = "hints left_click" # Same as running `neru left_click` in the terminal
 "Cmd+Shift+A" = "hints context_menu"
 "Cmd+Shift+J" = "hints scroll"
-
-# Grid mode hotkeys (grid divides screen into clickable regions)
-"Cmd+Shift+G" = "grid left_click"  # Activate grid mode with left click
-"Cmd+Shift+R" = "grid right_click" # Activate grid mode with right click
-"Cmd+Shift+M" = "grid move_mouse"  # Activate grid mode to move mouse
-"Cmd+Shift+D" = "grid double_click" # Grid double click
-"Cmd+Shift+T" = "grid triple_click" # Grid triple click
-"Cmd+Shift+I" = "grid mouse_down"   # Grid mouse down (hold)
-"Cmd+Shift+U" = "grid mouse_up"     # Grid mouse up (release)
-"Cmd+Shift+H" = "grid middle_click" # Grid middle click
-"Cmd+Shift+S" = "grid scroll"       # Grid scroll mode
-"Cmd+Shift+C" = "grid context_menu" # Grid context menu
-
 # Add more hotkeys that uses the IPC commands
 # "Ctrl+R" = "hints right_click"
 # "Ctrl+D" = "hints double_click"
@@ -147,6 +134,18 @@ additional_firefox_bundles = []
 # "Ctrl+U" = "hints mouse_up" # you should not need to use this at all, calling mouse_down will call this after hint selection
 # "Ctrl+I" = "hints mouse_down"
 # "Ctrl+M" = "hints move_mouse"
+
+# Grid mode hotkeys (grid divides screen into clickable regions)
+# "Cmd+Shift+G" = "grid left_click"  # Activate grid mode with left click
+# "Cmd+Shift+R" = "grid right_click" # Activate grid mode with right click
+# "Cmd+Shift+M" = "grid move_mouse"  # Activate grid mode to move mouse
+# "Cmd+Shift+D" = "grid double_click" # Grid double click
+# "Cmd+Shift+T" = "grid triple_click" # Grid triple click
+# "Cmd+Shift+I" = "grid mouse_down"   # Grid mouse down (hold)
+# "Cmd+Shift+U" = "grid mouse_up"     # Grid mouse up (release)
+# "Cmd+Shift+H" = "grid middle_click" # Grid middle click
+# "Cmd+Shift+S" = "grid scroll"       # Grid scroll mode
+# "Cmd+Shift+C" = "grid context_menu" # Grid context menu
 
 # To run a shell command from a hotkey, prefix the value with `exec `:
 # "Ctrl+Alt+T" = "exec open -a Terminal"
