@@ -167,15 +167,17 @@ func (a *App) activateGridMode(action Action) {
 
 	a.exitMode() // Exit current mode first
 
-	// Always resize overlay to the active screen (where mouse is) before drawing grid
-	if a.gridCtx != nil && a.gridCtx.gridOverlay != nil {
-		(*a.gridCtx.gridOverlay).ResizeToActiveScreen()
-		// Wait for async resize to complete on main thread
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	// If screen changed while grid was inactive, clear the refresh flag
 	if a.gridOverlayNeedsRefresh {
+		if a.gridCtx != nil && a.gridCtx.gridOverlay != nil {
+			gridOverlay := *a.gridCtx.gridOverlay
+
+			// Resize overlay window to current active screen (where mouse is)
+			gridOverlay.ResizeToActiveScreen()
+
+			// Give the UI thread a moment to complete the resize
+			time.Sleep(150 * time.Millisecond)
+		}
+
 		a.gridOverlayNeedsRefresh = false
 	}
 
