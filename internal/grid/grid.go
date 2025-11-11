@@ -2,6 +2,7 @@ package grid
 
 import (
 	"image"
+	"math"
 	"strings"
 )
 
@@ -33,14 +34,31 @@ type Cell struct {
 // consistent rectangular proportions across all monitors.
 func NewGrid(characters string, bounds image.Rectangle) *Grid {
 	if characters == "" {
-		characters = "asdfghjkl"
+		characters = "abcdefghijklmnopqrstuvwxyz"
 	}
 	characters = strings.ToUpper(characters)
 	chars := []rune(characters)
 	numChars := len(chars)
 
+	// Ensure we have valid characters
+	if numChars < 2 {
+		characters = "abcdefghijklmnopqrstuvwxyz"
+		chars = []rune(characters)
+		numChars = len(chars)
+	}
+
 	width := bounds.Max.X - bounds.Min.X
 	height := bounds.Max.Y - bounds.Min.Y
+
+	// Validate bounds before processing
+	if width <= 0 || height <= 0 {
+		// Return minimal grid
+		return &Grid{
+			characters: characters,
+			bounds:     bounds,
+			cells:      []*Cell{},
+		}
+	}
 
 	// Automatically determine optimal cell size constraints based on screen characteristics
 	// This ensures consistent precision and usability across all display types
@@ -66,27 +84,10 @@ func NewGrid(characters string, bounds image.Rectangle) *Grid {
 		maxCellSize = 120
 	}
 
-	// Calculate target grid dimensions based on optimal cell sizes
-	targetCols := width / minCellSize
-	targetRows := height / minCellSize
-	if targetCols < 1 {
-		targetCols = 1
-	}
-	if targetRows < 1 {
-		targetRows = 1
-	}
-	// Ensure cells don't exceed maximum size by increasing grid density
-	if width/targetCols > maxCellSize {
-		targetCols = width / maxCellSize
-		if targetCols < 1 {
-			targetCols = 1
-		}
-	}
-	if height/targetRows > maxCellSize {
-		targetRows = height / maxCellSize
-		if targetRows < 1 {
-			targetRows = 1
-		}
+	// Adjust cell size constraints for extreme aspect ratios
+	// Ultra-wide monitors (32:9) or portrait tablets (9:16) need larger cells
+	if screenAspect > 2.5 || screenAspect < 0.4 {
+		maxCellSize = int(float64(maxCellSize) * 1.2) // 20% larger
 	}
 
 	// Find all valid grid configurations and pick the one with best aspect ratio match
@@ -98,15 +99,34 @@ func NewGrid(characters string, bounds image.Rectangle) *Grid {
 
 	var candidates []candidate
 
+	// Calculate search ranges - search more thoroughly
+	minCols := width / maxCellSize
+	if minCols < 1 {
+		minCols = 1
+	}
+	maxCols := width / minCellSize
+	if maxCols < 1 {
+		maxCols = 1
+	}
+
+	minRows := height / maxCellSize
+	if minRows < 1 {
+		minRows = 1
+	}
+	maxRows := height / minCellSize
+	if maxRows < 1 {
+		maxRows = 1
+	}
+
 	// Search through all valid grid configurations
-	// Don't require exact divisibility - use integer division for best fit
-	for c := targetCols; c >= 1; c-- {
+	// Search both up and down from target to find all possibilities
+	for c := maxCols; c >= minCols && c >= 1; c-- {
 		cellW := width / c
 		if cellW < minCellSize || cellW > maxCellSize {
 			continue
 		}
 
-		for r := targetRows; r >= 1; r-- {
+		for r := maxRows; r >= minRows && r >= 1; r-- {
 			cellH := height / r
 			if cellH < minCellSize || cellH > maxCellSize {
 				continue
@@ -115,15 +135,19 @@ func NewGrid(characters string, bounds image.Rectangle) *Grid {
 			// Calculate cell aspect ratio
 			cellAspect := float64(cellW) / float64(cellH)
 
-			// Score based on how close cell aspect matches screen aspect
-			// Lower score is better
-			aspectDiff := cellAspect - screenAspect
+			// Score based on how close cell is to being square
+			aspectDiff := cellAspect - 1.0
 			if aspectDiff < 0 {
 				aspectDiff = -aspectDiff
 			}
 
-			// Normalize by screen aspect to make it scale-independent
-			aspectScore := aspectDiff / screenAspect
+			// Also consider cell count - prefer more cells for better precision
+			// when aspect ratios are similar (smaller weight)
+			totalCells := float64(c * r)
+			maxCells := float64(maxCols * maxRows)
+			cellScore := (maxCells - totalCells) / maxCells * 0.1 // 10% weight
+
+			aspectScore := aspectDiff + cellScore
 
 			candidates = append(candidates, candidate{
 				cols:  c,
@@ -147,21 +171,44 @@ func NewGrid(characters string, bounds image.Rectangle) *Grid {
 		gridCols = best.cols
 		gridRows = best.rows
 	} else {
-		// Fallback: use simple divisor finding if no valid candidates
-		findDiv := func(total, target, minSize int) int {
-			for d := target; d >= 1; d-- {
-				if total%d == 0 && total/d >= minSize {
-					return d
-				}
+		// Fallback: if no valid candidates, use simple best-fit approach
+		findBestFit := func(dimension, minSize, maxSize int) int {
+			// Start with minSize and find how many fit
+			count := max(dimension/minSize, 1)
+			// Make sure cell size doesn't exceed maxSize
+			for dimension/count > maxSize {
+				count++
 			}
-			return 1
+			return count
 		}
-		gridCols = findDiv(width, targetCols, minCellSize)
-		gridRows = findDiv(height, targetRows, minCellSize)
+		gridCols = findBestFit(width, minCellSize, maxCellSize)
+		gridRows = findBestFit(height, minCellSize, maxCellSize)
+	}
+
+	// Safety check: ensure we always have at least a 2x2 grid
+	if gridCols < 2 {
+		gridCols = 2
+	}
+	if gridRows < 2 {
+		gridRows = 2
 	}
 
 	// Calculate total cells needed to fill screen
 	totalCells := gridRows * gridCols
+
+	// Calculate maximum possible cells we can label
+	maxPossibleCells := numChars * numChars * numChars * numChars // 4-char max
+
+	// Cap totalCells to what we can actually label
+	if totalCells > maxPossibleCells {
+		// Need to increase cell size to reduce cell count
+		totalCells = maxPossibleCells
+		// Recalculate grid dimensions to fit within label capacity
+		gridCols = max(int(math.Sqrt(float64(totalCells)*float64(width)/float64(height))), 1)
+		gridRows = max(totalCells/gridCols, 1)
+		// Recalculate totalCells after adjustment
+		totalCells = gridRows * gridCols
+	}
 
 	// Determine optimal label length based on total cells
 	// numChars^2 = 2-char labels (e.g., 9^2 = 81)
