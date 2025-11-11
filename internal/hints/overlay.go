@@ -104,10 +104,11 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	hintCallbackLock.Unlock()
 
 	// Pass ID as context (safe - no Go pointers)
+	// Note: uintptr conversion must happen in same expression to satisfy go vet
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
 		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeCompletionCallback)),
-		(unsafe.Pointer)(uintptr(id)), //nolint:govet // Intentional: passing numeric ID, not Go pointer
+		*(*unsafe.Pointer)(unsafe.Pointer(&id)),
 	)
 
 	<-done
