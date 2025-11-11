@@ -121,8 +121,6 @@ type GridConfig struct {
 	BorderWidth            int              `toml:"border_width"`
 	LiveMatchUpdate        bool             `toml:"live_match_update"`
 	SubgridEnabled         bool             `toml:"subgrid_enabled"`
-	SubgridRows            int              `toml:"subgrid_rows"`
-	SubgridCols            int              `toml:"subgrid_cols"`
 	Enabled                bool             `toml:"enabled"`
 	HideUnmatched          bool             `toml:"hide_unmatched"`
 	LeftClick              GridActionConfig `toml:"left_click"`
@@ -312,8 +310,6 @@ func DefaultConfig() *Config {
 			BorderWidth:            1,
 			LiveMatchUpdate:        true,
 			SubgridEnabled:         true,
-			SubgridRows:            3,
-			SubgridCols:            3,
 			Enabled:                true,
 			HideUnmatched:          true,
 			LeftClick:              GridActionConfig{RestoreCursor: false},
@@ -663,17 +659,15 @@ func (c *Config) Validate() error {
 		return err
 	}
 	if c.Grid.SubgridEnabled {
-		if c.Grid.SubgridRows < 1 || c.Grid.SubgridCols < 1 {
-			return fmt.Errorf("grid.subgrid_rows and grid.subgrid_cols must be at least 1")
-		}
-		// Validate sublayer keys length (fallback to grid.characters) for rows*cols
+		// Validate sublayer keys length (fallback to grid.characters) for 3x3 subgrid
 		keys := strings.TrimSpace(c.Grid.SublayerKeys)
 		if keys == "" {
 			keys = c.Grid.Characters
 		}
-		required := c.Grid.SubgridRows * c.Grid.SubgridCols
+		// Subgrid is always 3x3, requiring at least 9 characters
+		const required = 9
 		if len([]rune(keys)) < required {
-			return fmt.Errorf("grid.sublayer_keys must contain at least %d characters (rows*cols) for subgrid selection", required)
+			return fmt.Errorf("grid.sublayer_keys must contain at least %d characters for 3x3 subgrid selection", required)
 		}
 	}
 

@@ -18,8 +18,13 @@ Neru searches for configuration in the following order:
 
 - [Hotkeys](#hotkeys)
 - [General Settings](#general-settings)
-- [Hint Appearance](#hint-appearance)
-- [Per-Action Hint Customization](#per-action-hint-customization)
+- [Hint Mode Configuration](#hint-mode-configuration)
+  - [Hint Appearance](#hint-appearance)
+  - [Per-Action Hint Customization](#per-action-hint-customization)
+- [Grid Mode Configuration](#grid-mode-configuration)
+  - [Grid Appearance](#grid-appearance)
+  - [Grid Behavior](#grid-behavior)
+  - [Per-Action Grid Customization](#per-action-grid-customization)
 - [Scroll Configuration](#scroll-configuration)
 - [Accessibility](#accessibility)
 - [Logging](#logging)
@@ -36,25 +41,33 @@ Bind global hotkeys to Neru actions. Set to `""` or comment out to disable.
 # Hint modes
 "Cmd+Shift+Space" = "hints left_click"
 "Cmd+Shift+A" = "hints context_menu"  # Action selection mode
-"Cmd+Shift+J" = "hints scroll"          # Select hint location, then scroll there
-"Cmd+Shift+R" = "hints right_click"
-"Cmd+Shift+D" = "hints double_click"
-"Cmd+Shift+T" = "hints triple_click"
-"Cmd+Shift+H" = "hints middle_click"
-"Cmd+Shift+M" = "hints move_mouse"
+"Cmd+Shift+J" = "action scroll"        # Standalone scroll (Vim-style scrolling at cursor)
+
+# Additional hint action hotkeys (uncomment to enable)
+# "Ctrl+R" = "hints right_click"
+# "Ctrl+D" = "hints double_click"
+# "Ctrl+T" = "hints triple_click"
+# "Ctrl+H" = "hints middle_click"
+# "Ctrl+M" = "hints move_mouse"
+# "Ctrl+S" = "hints scroll"    # Select hint location, then scroll there
 
 # Grid mode
-"Cmd+Shift+Space" = "grid left_click"
-"Cmd+Shift+A" = "grid context_menu"  # Action selection mode
-"Cmd+Shift+J" = "grid scroll"        # Select grid location, then scroll there
-"Cmd+Shift+R" = "grid right_click"
-"Cmd+Shift+D" = "grid double_click"
-"Cmd+Shift+T" = "grid triple_click"
-"Cmd+Shift+H" = "grid middle_click"
-"Cmd+Shift+M" = "grid move_mouse"
+"Cmd+Shift+G" = "grid left_click"
 
-# Standalone scroll at cursor (no hint/grid selection)
-# "Cmd+Shift+S" = "action scroll"
+# Additional grid action hotkeys (uncomment to enable)
+# "Cmd+Shift+R" = "grid right_click"   # Grid right click
+# "Cmd+Shift+M" = "grid move_mouse"    # Grid move mouse
+# "Cmd+Shift+D" = "grid double_click"  # Grid double click
+# "Cmd+Shift+T" = "grid triple_click"  # Grid triple click
+# "Cmd+Shift+I" = "grid mouse_down"    # Grid mouse down (hold)
+# "Cmd+Shift+U" = "grid mouse_up"      # Grid mouse up (release)
+# "Cmd+Shift+H" = "grid middle_click"  # Grid middle click
+# "Cmd+Shift+S" = "grid scroll"        # Grid scroll - select grid location, then scroll there
+# "Cmd+Shift+C" = "grid context_menu"  # Grid context menu
+
+# Additional action commands (direct actions at cursor position)
+# "Cmd+Shift+L" = "action left_click"   # Left click at current cursor position
+# "Cmd+Shift+K" = "action right_click"  # Right click at current cursor position
 
 # Execute shell commands
 "Cmd+Alt+T" = "exec open -a Terminal"
@@ -127,21 +140,21 @@ excluded_apps = [
 # The following are all hints based configuration, ignore them if you're just using grid mode
 
 # Show hints in menubar
-include_menubar_hints = true
+include_menubar_hints = false
 
 # Additional menubar apps to target (requires include_menubar_hints = true)
 additional_menubar_hints_targets = [
     "com.apple.TextInputMenuAgent",    # Input menu
     "com.apple.controlcenter",          # Control Center
     "com.apple.systemuiserver",         # System UI (Siri, etc.)
-    "net.kovidgoyal.kitty",             # Example: Kitty terminal
+    # "net.kovidgoyal.kitty",           # Example: Kitty terminal
 ]
 
 # Show hints in Dock (also includes Mission Control)
-include_dock_hints = true
+include_dock_hints = false
 
 # Show hints in notification popups
-include_nc_hints = true
+include_nc_hints = false
 ```
 
 ### Finding Bundle IDs
@@ -157,12 +170,17 @@ osascript -e 'id of app "VS Code"'      # com.microsoft.VSCode
 
 ---
 
-## Hint Appearance
+## Hint Mode Configuration
+
+### Hint Appearance
 
 Configure the visual appearance of hints globally.
 
 ```toml
 [hints]
+# Enable/disable hints mode
+enabled = true
+
 # Characters used for hint labels (at least 2 distinct characters)
 hint_characters = "asdfghjkl"
 
@@ -281,6 +299,88 @@ When `restore_cursor = true`, the cursor returns to its original position after 
 
 ---
 
+## Grid Mode Configuration
+
+Grid mode provides a universal, accessibility-independent way to click anywhere on screen. It overlays a labeled grid where you type coordinates to select locations.
+
+### Grid Appearance
+
+```toml
+[grid]
+# Enable/disable grid mode
+enabled = true
+
+# Characters used to build grid labels
+characters = "abcdefghijklmnpqrstuvwxyz"
+
+# Font settings
+font_size = 12
+font_family = ""            # Empty string = system default
+
+# Visual styling
+opacity = 0.7               # Range: 0.0-1.0
+
+# Colors
+background_color = "#abe9b3"            # Default cell background
+text_color = "#000000"                   # Label text color
+matched_text_color = "#000000"           # Text color when typing matches
+matched_background_color = "#f8bd96"     # Background when typing matches
+matched_border_color = "#f8bd96"         # Border when typing matches
+border_color = "#abe9b3"                 # Default cell border
+border_width = 1                         # Border width in pixels
+```
+
+**Grid cell sizing:**
+Cell sizes are automatically optimized based on screen resolution and aspect ratio to ensure consistent precision across all display types. The system uses square cells and automatically determines the optimal 2, 3, or 4-character labeling scheme.
+
+### Grid Behavior
+
+```toml
+[grid]
+# Behavior settings
+live_match_update = true    # Update matched highlight per keystroke without full redraw
+subgrid_enabled = true      # Enable 3x3 precision sublayer after main label selection
+hide_unmatched = true       # Hide unmatched cells during typing
+
+# Sublayer keys used for 3x3 subgrid selection (at least 9 characters)
+sublayer_keys = "abcdefghijklmnpqrstuvwxyz"
+```
+
+**Subgrid feature:**
+When enabled, after selecting a main grid cell, a 3x3 subgrid appears within that cell for precision clicking. The subgrid is always 3x3 and uses the first 9 characters from `sublayer_keys`.
+
+**Workflow:**
+1. Press grid hotkey (e.g., `Cmd+Shift+G`)
+2. Type main grid coordinate (2-4 characters)
+3. If `subgrid_enabled = true`, type subgrid coordinate (1 character, a-i)
+4. Action executes at selected location
+
+### Per-Action Grid Customization
+
+Configure cursor restoration behavior for each grid action type:
+
+```toml
+[grid.left_click]
+restore_cursor = false      # Restore cursor to original position after click
+
+[grid.right_click]
+restore_cursor = false
+
+[grid.double_click]
+restore_cursor = false
+
+[grid.triple_click]
+restore_cursor = false
+
+[grid.middle_click]
+restore_cursor = false
+```
+
+**Cursor Restoration:**
+When `restore_cursor = true`, the cursor returns to its original position after the grid action completes. Useful for maintaining cursor context in workflows.
+
+---
+
 ## Scroll Configuration
 
 Configure Vim-style scrolling behavior. Scroll can be used standalone (at cursor position) or within hints/grid modes (after selecting a location).
@@ -344,6 +444,10 @@ Configure which UI elements Neru can interact with.
 
 ```toml
 [accessibility]
+# Check Accessibility permission on startup; exits with guidance if missing
+accessibility_check_on_start = true
+
+# Global accessibility roles that are treated as clickable
 clickable_roles = [
     "AXButton",
     "AXComboBox",
@@ -361,6 +465,18 @@ clickable_roles = [
     "AXMenuItem",
     "AXCell",
     "AXRow",
+]
+
+# Global accessibility roles that are treated as scrollable
+scrollable_roles = [
+    "AXWebArea",
+    "AXScrollArea",
+    "AXTable",
+    "AXRow",
+    "AXColumn",
+    "AXOutline",
+    "AXList",
+    "AXGroup",
 ]
 
 # Skip role checking (all elements become clickable)
@@ -481,9 +597,18 @@ Configure logging verbosity for debugging.
 [logging]
 # Log levels: "debug", "info", "warn", "error"
 log_level = "info"
+
+# Log file location (empty for default: ~/Library/Logs/neru/app.log)
+# Set a custom path to redirect logs elsewhere; directories are created as needed
+log_file = ""
+
+# Enable structured logging
+structured_logging = true
+# When true, file logs use a structured (JSON) encoder; console remains readable
+# When false, console uses a development-friendly formatter
 ```
 
-**Log location:** `~/Library/Logs/neru/app.log`
+**Default log location:** `~/Library/Logs/neru/app.log`
 
 **Enable debug logging:**
 
@@ -509,11 +634,10 @@ A full configuration example combining common settings:
 
 # Hotkeys
 [hotkeys]
-"Ctrl+F" = "hints left_click"
-"Ctrl+G" = "hints context_menu"
-"Ctrl+S" = "hints scroll"
-"Ctrl+R" = "hints right_click"
-"Ctrl+D" = "hints double_click"
+"Cmd+Shift+Space" = "hints left_click"
+"Cmd+Shift+A" = "hints context_menu"
+"Cmd+Shift+J" = "action scroll"
+"Cmd+Shift+G" = "grid left_click"
 "Ctrl+Alt+T" = "exec open -a Terminal"
 
 # General
@@ -522,17 +646,24 @@ excluded_apps = [
     "com.apple.Terminal",
     "com.googlecode.iterm2",
 ]
-include_menubar_hints = true
-additional_menubar_hints_targets = ["net.kovidgoyal.kitty"]
-include_dock_hints = true
-include_nc_hints = true
+include_menubar_hints = false
+additional_menubar_hints_targets = [
+    "com.apple.TextInputMenuAgent",
+    "com.apple.controlcenter",
+    "com.apple.systemuiserver",
+]
+include_dock_hints = false
+include_nc_hints = false
 
-# Hint appearance
+# Hint mode
 [hints]
+enabled = true
 hint_characters = "asdfghjkl"
 font_size = 14
+font_family = ""
 border_radius = 6
 padding = 5
+border_width = 1
 opacity = 0.9
 
 # Left click hints
@@ -541,24 +672,59 @@ background_color = "#FFD700"
 text_color = "#000000"
 matched_text_color = "#737373"
 border_color = "#000000"
-restore_cursor = true
+restore_cursor = false
+
+# Grid mode
+[grid]
+enabled = true
+characters = "abcdefghijklmnpqrstuvwxyz"
+font_size = 12
+font_family = ""
+opacity = 0.7
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+border_width = 1
+live_match_update = true
+subgrid_enabled = true
+hide_unmatched = true
+sublayer_keys = "abcdefghijklmnpqrstuvwxyz"
+
+[grid.left_click]
+restore_cursor = false
 
 # Scroll configuration
 [scroll]
 scroll_step = 60
 scroll_step_half = 400
+scroll_step_full = 1000000
 highlight_scroll_area = true
 highlight_color = "#00FF00"
 highlight_width = 3
 
 # Accessibility
 [accessibility]
+accessibility_check_on_start = true
 clickable_roles = [
     "AXButton",
     "AXLink",
     "AXTextField",
     "AXCheckBox",
 ]
+scrollable_roles = [
+    "AXWebArea",
+    "AXScrollArea",
+    "AXTable",
+    "AXRow",
+    "AXColumn",
+    "AXOutline",
+    "AXList",
+    "AXGroup",
+]
+ignore_clickable_check = false
 
 [[accessibility.app_configs]]
 bundle_id = "com.google.Chrome"
@@ -566,11 +732,16 @@ additional_clickable_roles = ["AXTabGroup"]
 
 # Electron/Chromium support
 [accessibility.additional_ax_support]
-enable = true
+enable = false
+additional_electron_bundles = []
+additional_chromium_bundles = []
+additional_firefox_bundles = []
 
 # Logging
 [logging]
 log_level = "info"
+log_file = ""
+structured_logging = true
 ```
 
 ---

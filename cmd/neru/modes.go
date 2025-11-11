@@ -216,19 +216,13 @@ func (a *App) setupGrid(action Action) error {
 	// Grid overlay already created in NewApp - update its config and use it
 	(*a.gridCtx.gridOverlay).UpdateConfig(a.config.Grid)
 
-	// Subgrid configuration and keys (fallback to grid characters)
+	// Subgrid configuration and keys (fallback to grid characters): always 3x3
 	keys := strings.TrimSpace(a.config.Grid.SublayerKeys)
 	if keys == "" {
 		keys = a.config.Grid.Characters
 	}
-	subRows := a.config.Grid.SubgridRows
-	subCols := a.config.Grid.SubgridCols
-	if subRows < 1 {
-		subRows = 3
-	}
-	if subCols < 1 {
-		subCols = 3
-	}
+	const subRows = 3
+	const subCols = 3
 
 	// Initialize manager with the new grid
 	a.gridManager = grid.NewManager(gridInstance, subRows, subCols, keys, func() {

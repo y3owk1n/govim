@@ -159,15 +159,12 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell) {
 		keys = o.cfg.Characters
 	}
 	chars := []rune(keys)
-	rows, cols := o.cfg.SubgridRows, o.cfg.SubgridCols
-	if rows < 1 {
-		rows = 3
-	}
-	if cols < 1 {
-		cols = 3
-	}
-	count := rows * cols
+	// Subgrid is always 3x3
+	const rows = 3
+	const cols = 3
+	count := 9
 	if len(chars) < count {
+		// If not enough characters, adjust count to available characters
 		count = len(chars)
 	}
 

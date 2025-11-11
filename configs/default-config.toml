@@ -283,11 +283,9 @@ border_width = 1
 
 # Behavior
 live_match_update = true      # Update matched highlight per keystroke without full redraw
-subgrid_enabled = true        # Enable precision sublayer after main label selection
-subgrid_rows = 3              # Subgrid rows
-subgrid_cols = 3              # Subgrid columns
+subgrid_enabled = true        # Enable precision sublayer after main label selection (always 3x3)
 hide_unmatched = true        # Hide unmatched cells during typing
-# Sublayer keys used for subgrid selection (at least rows*cols characters)
+# Sublayer keys used for subgrid selection (at least 9 characters for 3x3 subgrid)
 sublayer_keys = "abcdefghijklmnpqrstuvwxyz"
 
 [grid.left_click]
