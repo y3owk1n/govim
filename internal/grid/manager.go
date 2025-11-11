@@ -75,13 +75,8 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 		if idx < 0 {
 			return image.Point{}, false
 		}
-		if m.subRows < 1 {
-			m.subRows = 3
-		}
-		if m.subCols < 1 {
-			m.subCols = 3
-		}
-		if idx >= m.subRows*m.subCols {
+		// Subgrid is always 3x3
+		if idx >= 9 {
 			return image.Point{}, false
 		}
 		row := idx / m.subCols
