@@ -4,11 +4,20 @@
 
 Navigate macOS without touching your mouse - keyboard-driven productivity at its finest 🖱️⌨️
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<div align="left">
+
+[![License](https://img.shields.io/github/license/y3owk1n/neru)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+![Go Version](https://img.shields.io/github/go-mod/go-version/y3owk1n/neru)
+[![Latest Release](https://img.shields.io/github/v/release/y3owk1n/neru)](https://github.com/y3owk1n/neru/releases)
+
+</div>
 
 [Installation](#installation) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Contributing](#contributing)
 
-<https://github.com/user-attachments/assets/left-click-demo.mov>
+![preview](https://github.com/user-attachments/assets/71b13850-1b87-40b5-9ac0-93cff1f2e89b)
+
+[Hints demo](demos/hints.md)
 
 ---
 
