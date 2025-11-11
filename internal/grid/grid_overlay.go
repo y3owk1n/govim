@@ -122,7 +122,7 @@ func (o *GridOverlay) ResizeToActiveScreenSync() {
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
 		(C.ResizeCompletionCallback)(unsafe.Pointer(C.gridResizeCompletionCallback)),
-		unsafe.Pointer(uintptr(id)),
+		(unsafe.Pointer)(uintptr(id)), //nolint:govet // Intentional: passing numeric ID, not Go pointer
 	)
 
 	<-done
