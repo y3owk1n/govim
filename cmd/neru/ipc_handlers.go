@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/config"
 	"github.com/y3owk1n/neru/internal/ipc"
 	"go.uber.org/zap"
@@ -26,6 +27,8 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 		return a.handleHints(cmd)
 	case "grid":
 		return a.handleGrid(cmd)
+	case "action":
+		return a.handleAction(cmd)
 	case "idle":
 		return a.handleIdle(cmd)
 	case "status":
@@ -134,6 +137,68 @@ func (a *App) handleGrid(cmd ipc.Command) ipc.Response {
 	}
 
 	return ipc.Response{Success: true, Message: "grid mode activated"}
+}
+
+func (a *App) handleAction(cmd ipc.Command) ipc.Response {
+	if !a.enabled {
+		return ipc.Response{Success: false, Message: "neru is not running"}
+	}
+
+	// Parse params
+	params := cmd.Args
+	if len(params) == 0 {
+		return ipc.Response{Success: false, Message: "no action specified"}
+	}
+
+	// Get the current cursor position
+	cursorPos := accessibility.GetCurrentCursorPosition()
+
+	for _, param := range params {
+		var err error
+		switch param {
+		case "left_click":
+			err = accessibility.LeftClickAtPoint(cursorPos, false)
+		case "right_click":
+			err = accessibility.RightClickAtPoint(cursorPos, false)
+		case "double_click":
+			err = accessibility.DoubleClickAtPoint(cursorPos, false)
+		case "triple_click":
+			err = accessibility.TripleClickAtPoint(cursorPos, false)
+		case "mouse_up":
+			err = accessibility.LeftMouseUpAtPoint(cursorPos)
+		case "mouse_down":
+			err = accessibility.LeftMouseDownAtPoint(cursorPos)
+		case "middle_click":
+			err = accessibility.MiddleClickAtPoint(cursorPos, false)
+		case "scroll":
+			// Enable event tap and let user scroll interactively at current position
+			// Resize overlay to active screen for multi-monitor support
+			a.hintOverlay.ResizeToActiveScreen()
+
+			// Draw highlight border if enabled
+			if a.config.Scroll.HighlightScrollArea {
+				a.drawScrollHighlightBorder()
+				a.hintOverlay.Show()
+			}
+
+			// Enable event tap for scroll key handling
+			if a.eventTap != nil {
+				a.eventTap.Enable()
+			}
+
+			a.logger.Info("Interactive scroll activated")
+			a.logger.Info("Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom, Esc to exit")
+			return ipc.Response{Success: true, Message: "scroll mode activated"}
+		default:
+			return ipc.Response{Success: false, Message: fmt.Sprintf("unknown action: %s", param)}
+		}
+
+		if err != nil {
+			return ipc.Response{Success: false, Message: fmt.Sprintf("action failed: %v", err)}
+		}
+	}
+
+	return ipc.Response{Success: true, Message: "action performed at cursor"}
 }
 
 func (a *App) handleIdle(cmd ipc.Command) ipc.Response {

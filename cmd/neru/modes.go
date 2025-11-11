@@ -257,8 +257,22 @@ func (a *App) setupGrid(action Action) error {
 
 // handleActiveKey dispatches key events by current mode
 func (a *App) handleKeyPress(key string) {
-	// Only handle keys when in an active mode
+	// If in idle mode, check if we should handle scroll keys
 	if a.currentMode == ModeIdle {
+		// Handle escape to exit standalone scroll
+		if key == "\x1b" || key == "escape" {
+			a.logger.Info("Exiting standalone scroll mode")
+			a.hintOverlay.Clear()
+			a.hintOverlay.Hide()
+			if a.eventTap != nil {
+				a.eventTap.Disable()
+			}
+			a.idleScrollLastKey = "" // Reset scroll state
+			return
+		}
+		// Try to handle scroll keys with generic handler using persistent state
+		// If it's not a scroll key, it will just be ignored
+		a.handleGenericScrollKey(key, &a.idleScrollLastKey)
 		return
 	}
 
@@ -607,8 +621,23 @@ func (a *App) showScroll() {
 	a.drawScrollHighlightBorder()
 }
 
-// handleScrollKey handles key presses in scroll mode
+// handleScrollKey handles key presses in scroll mode (hints context)
 func (a *App) handleScrollKey(key string) {
+	if a.handleGenericScrollKey(key, &a.hintsCtx.lastScrollKey) {
+		// Exit was requested
+		a.exitMode()
+	}
+}
+
+// handleGenericScrollKey handles scroll keys in a generic way
+// Returns true if exit was requested
+func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
+	// Local storage for scroll state if not provided
+	var localLastKey string
+	if lastScrollKey == nil {
+		lastScrollKey = &localLastKey
+	}
+
 	// Log every byte for debugging
 	bytes := []byte(key)
 	a.logger.Info("Scroll key pressed",
@@ -623,11 +652,11 @@ func (a *App) handleScrollKey(key string) {
 	if len(key) == 1 {
 		byteVal := key[0]
 		a.logger.Info("Checking control char", zap.Uint8("byte", byteVal))
-		// Only handle Ctrl+D / Ctrl+U here; let other single keys fall through
+		// Only handle Ctrl+D / Ctrl+U here; let Tab (9) and other keys fall through to switch
 		if byteVal == 4 || byteVal == 21 {
-			op, _, ok := scroll.ParseKey(key, a.hintsCtx.lastScrollKey)
+			op, _, ok := scroll.ParseKey(key, *lastScrollKey)
 			if ok {
-				a.hintsCtx.lastScrollKey = ""
+				*lastScrollKey = ""
 				switch op {
 				case "half_down":
 					a.logger.Info("Ctrl+D detected - half page down")
@@ -643,81 +672,122 @@ func (a *App) handleScrollKey(key string) {
 	}
 
 	// Regular keys
+	a.logger.Debug("Entering switch statement", zap.String("key", key), zap.String("keyHex", fmt.Sprintf("%#v", key)))
 	switch key {
 	case "j":
-		op, _, ok := scroll.ParseKey(key, a.hintsCtx.lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
 		if !ok {
-			return
+			return false
 		}
 		if op == "down" {
 			err = a.scrollController.ScrollDown()
 		}
 	case "k":
-		op, _, ok := scroll.ParseKey(key, a.hintsCtx.lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
 		if !ok {
-			return
+			return false
 		}
 		if op == "up" {
 			err = a.scrollController.ScrollUp()
 		}
 	case "h":
-		op, _, ok := scroll.ParseKey(key, a.hintsCtx.lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
 		if !ok {
-			return
+			return false
 		}
 		if op == "left" {
 			err = a.scrollController.ScrollLeft()
 		}
 	case "l":
-		op, _, ok := scroll.ParseKey(key, a.hintsCtx.lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
 		if !ok {
-			return
+			return false
 		}
 		if op == "right" {
 			err = a.scrollController.ScrollRight()
 		}
 	case "g": // gg for top (need to press twice)
-		op, newLast, ok := scroll.ParseKey(key, a.hintsCtx.lastScrollKey)
+		op, newLast, ok := scroll.ParseKey(key, *lastScrollKey)
 		if !ok {
 			a.logger.Info("First g pressed, press again for top")
-			a.hintsCtx.lastScrollKey = newLast
-			return
+			*lastScrollKey = newLast
+			return false
 		}
 		if op == "top" {
 			a.logger.Info("gg detected - scroll to top")
 			err = a.scrollController.ScrollToTop()
-			a.hintsCtx.lastScrollKey = ""
+			*lastScrollKey = ""
 			goto done
 		}
 	case "G": // Shift+G for bottom
-		op, _, ok := scroll.ParseKey(key, a.hintsCtx.lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
 		if ok && op == "bottom" {
 			a.logger.Info("G key detected - scroll to bottom")
 			err = a.scrollController.ScrollToBottom()
-			a.hintsCtx.lastScrollKey = ""
+			*lastScrollKey = ""
 		}
 	case "\t":
-		op, _, ok := scroll.ParseKey(key, a.hintsCtx.lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
+		a.logger.Info("Tab case matched", zap.String("op", op), zap.Bool("ok", ok))
 		if ok && op == "tab" {
-			a.logger.Info("Tab key detected - show hint again")
-			a.activateMode(ModeHints, ActionScroll)
+			// Only switch overlays if we're in scroll action within a mode
+			var inScrollAction bool
+			switch a.currentMode {
+			case ModeHints:
+				inScrollAction = a.currentAction == ActionScroll
+			case ModeGrid:
+				inScrollAction = a.gridCtx.currentAction == ActionScroll
+			default:
+				inScrollAction = false
+			}
+
+			a.logger.Info("Checking mode and action", zap.String("currentMode", getModeString(a.currentMode)), zap.Bool("inScrollAction", inScrollAction))
+			if a.currentMode != ModeIdle && inScrollAction {
+				a.logger.Info("Tab key detected - switch back to overlay mode")
+				switch a.currentMode {
+				case ModeHints:
+					// Reset scroll state and re-show hints overlay
+					a.hintsCtx.canScroll = false
+					a.hintOverlay.Clear()
+					// Redraw hints with current elements
+					elements := a.collectElementsForAction(a.currentAction)
+					if err := a.setupHints(elements, a.currentAction); err != nil {
+						a.logger.Error("Failed to re-show hints", zap.Error(err))
+					}
+				case ModeGrid:
+					// Reset scroll state and re-show grid overlay
+					a.gridCtx.canScroll = false
+					// Grid overlay should already be visible, just clear scroll highlight
+					gridOverlay := *a.gridCtx.gridOverlay
+					gridOverlay.Clear()
+					gridInstance := *a.gridCtx.gridInstance
+					if err := gridOverlay.Draw(gridInstance, a.gridManager.GetInput()); err != nil {
+						a.logger.Error("Failed to re-show grid", zap.Error(err))
+					}
+					gridOverlay.Show()
+				}
+			}
+			return false
 		}
 	default:
 		a.logger.Debug("Ignoring non-scroll key", zap.String("key", key))
-		a.hintsCtx.lastScrollKey = ""
-		return
+		*lastScrollKey = ""
+		return false
 	}
 
 	// Reset last key for most commands
-	a.hintsCtx.lastScrollKey = ""
+	*lastScrollKey = ""
 
 done:
 	if err != nil {
 		a.logger.Error("Scroll failed", zap.Error(err))
 	}
+	return false
 }
 
 func (a *App) drawScrollHighlightBorder() {
+	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
+	a.hintOverlay.ResizeToActiveScreen()
 	a.scrollController.DrawHighlightBorder(a.hintOverlay)
 }
 
@@ -727,11 +797,28 @@ func (a *App) showGridScroll() {
 		return
 	}
 	defer win.Release()
-	bounds := win.GetScrollBounds()
+
+	// Resize grid overlay to active screen (where mouse cursor is) for multi-monitor support
 	gridOverlay := *a.gridCtx.gridOverlay
+	gridOverlay.ResizeToActiveScreen()
+
+	// Get scroll bounds in absolute screen coordinates
+	bounds := win.GetScrollBounds()
+
+	// Get active screen bounds to normalize coordinates
+	screenBounds := bridge.GetActiveScreenBounds()
+
+	// Convert absolute bounds to window-local coordinates
+	// The overlay window is positioned at the screen origin, but the view uses local coordinates
+	localBounds := image.Rect(
+		bounds.Min.X-screenBounds.Min.X,
+		bounds.Min.Y-screenBounds.Min.Y,
+		bounds.Max.X-screenBounds.Min.X,
+		bounds.Max.Y-screenBounds.Min.Y,
+	)
 
 	gridOverlay.Clear()
-	gridOverlay.DrawScrollHighlight(bounds.Min.X, bounds.Min.Y, bounds.Dx(), bounds.Dy(), a.config.Scroll.HighlightColor, a.config.Scroll.HighlightWidth)
+	gridOverlay.DrawScrollHighlight(localBounds.Min.X, localBounds.Min.Y, localBounds.Dx(), localBounds.Dy(), a.config.Scroll.HighlightColor, a.config.Scroll.HighlightWidth)
 }
 
 func (a *App) handleGridScrollKey(key string) {
@@ -740,94 +827,8 @@ func (a *App) handleGridScrollKey(key string) {
 		a.exitMode()
 		return
 	}
-	var err error
-	// Check for control characters
-	if len(key) == 1 {
-		byteVal := key[0]
-		if byteVal == 4 || byteVal == 21 { // Ctrl+D / Ctrl+U
-			op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
-			if ok {
-				a.gridCtx.lastScrollKey = ""
-				switch op {
-				case "half_down":
-					err = a.scrollController.ScrollDownHalfPage()
-				case "half_up":
-					err = a.scrollController.ScrollUpHalfPage()
-				}
-			}
-		}
-	}
-	if err != nil {
-		a.logger.Error("Scroll failed", zap.Error(err))
-		return
-	}
-	// Regular keys
-	switch key {
-	case "j":
-		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
-		if !ok {
-			return
-		}
-		if op == "down" {
-			err = a.scrollController.ScrollDown()
-		}
-	case "k":
-		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
-		if !ok {
-			return
-		}
-		if op == "up" {
-			err = a.scrollController.ScrollUp()
-		}
-	case "h":
-		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
-		if !ok {
-			return
-		}
-		if op == "left" {
-			err = a.scrollController.ScrollLeft()
-		}
-	case "l":
-		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
-		if !ok {
-			return
-		}
-		if op == "right" {
-			err = a.scrollController.ScrollRight()
-		}
-	case "g":
-		op, newLast, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
-		if !ok {
-			a.gridCtx.lastScrollKey = newLast
-			return
-		}
-		if op == "top" {
-			err = a.scrollController.ScrollToTop()
-			a.gridCtx.lastScrollKey = ""
-		}
-	case "G":
-		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
-		if ok && op == "bottom" {
-			err = a.scrollController.ScrollToBottom()
-			a.gridCtx.lastScrollKey = ""
-		}
-	case "\t":
-		op, _, ok := scroll.ParseKey(key, a.gridCtx.lastScrollKey)
-		if ok && op == "tab" {
-			a.logger.Info("Tab key detected - show grid again")
-			a.activateMode(ModeGrid, ActionScroll)
-		}
-	default:
-		a.gridCtx.lastScrollKey = ""
-		return
-	}
-
-	// Reset last key for most commands
-	a.gridCtx.lastScrollKey = ""
-
-	if err != nil {
-		a.logger.Error("Scroll failed", zap.Error(err))
-	}
+	// Use generic scroll handler
+	a.handleGenericScrollKey(key, &a.gridCtx.lastScrollKey)
 }
 
 func (a *App) handleGridContextMenuKey(key string) {

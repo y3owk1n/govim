@@ -55,7 +55,7 @@ Neru is a capable replacement for:
 
 - 🎯 **Grid-based hints** - Click any visible element using keyboard labels
 - 🎬 **Action mode** - Choose click type: left, right, double, middle, drag
-- 📜 **Scroll mode** - Vim-style scrolling (`j`/`k`, `gg`/`G`) in any application
+- 📜 **Vim-style scrolling** - Scroll anywhere with `j`/`k`, `gg`/`G`, Ctrl+D/U - works standalone or within hints/grid modes
 - 🌐 **Universal support** - Native apps, Electron, Chrome, Firefox, menubar, Dock, Mission Control
 - ⚡ **Native performance** - Built with Objective-C and Go for instant response
 - 🛠️ **Highly customizable** - Configure everything via TOML
@@ -110,7 +110,7 @@ neru launch   # CLI
 # Try the default hotkeys:
 # Cmd+Shift+Space - Hint mode (left click)
 # Cmd+Shift+A     - Hints with Action mode (choose click type)
-# Cmd+Shift+J     - Scroll mode
+# Cmd+Shift+J     - Standalone scroll (Vim-style scrolling at cursor)
 # Cmd+Shift+G     - Grid mode (left click)
 ```
 

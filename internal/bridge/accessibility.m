@@ -563,6 +563,8 @@ int performLeftMouseUpAtCursor(void) {
     CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, currentPos, kCGMouseButtonLeft);
     if (!up) return 0;
 
+    // Clear all modifier flags to ensure clean mouse up
+    CGEventSetFlags(up, 0);
     CGEventPost(kCGHIDEventTap, up);
     CFRelease(up);
 
@@ -593,6 +595,10 @@ static int performClickAtPosition(CGPoint pos, CGEventType downEvent, CGEventTyp
         if (restoreCursor) moveMouse(originalPosition);
         return 0;
     }
+    // Clear all modifier flags to ensure clean click without Cmd/Shift/etc
+    CGEventSetFlags(down, 0);
+    CGEventSetFlags(up, 0);
+    
     CGEventPost(kCGHIDEventTap, down);
     CGEventPost(kCGHIDEventTap, up);
     CFRelease(down);
@@ -627,6 +633,10 @@ int performDoubleClickAtPosition(CGPoint position, bool restoreCursor) {
             if (restoreCursor) moveMouse(originalPos);
             return 0;
         }
+        // Clear all modifier flags to ensure clean click
+        CGEventSetFlags(dn, 0);
+        CGEventSetFlags(up, 0);
+        
         if (i == 2) {
             CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 2);
             CGEventSetIntegerValueField(up, kCGMouseEventClickState, 2);
@@ -657,6 +667,10 @@ int performTripleClickAtPosition(CGPoint position, bool restoreCursor) {
             if (restoreCursor) moveMouse(originalPos);
             return 0;
         }
+        // Clear all modifier flags to ensure clean click
+        CGEventSetFlags(dn, 0);
+        CGEventSetFlags(up, 0);
+        
         if (i == 3) {
             CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 3);
             CGEventSetIntegerValueField(up, kCGMouseEventClickState, 3);
@@ -676,6 +690,8 @@ int performLeftMouseDownAtPosition(CGPoint position) {
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
     CGEventRef down = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, position, kCGMouseButtonLeft);
     if (!down) return 0;
+    // Clear all modifier flags to ensure clean mouse down
+    CGEventSetFlags(down, 0);
     CGEventPost(kCGHIDEventTap, down);
     CFRelease(down);
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
@@ -686,6 +702,8 @@ int performLeftMouseUpAtPosition(CGPoint position) {
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
     CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, position, kCGMouseButtonLeft);
     if (!up) return 0;
+    // Clear all modifier flags to ensure clean mouse up
+    CGEventSetFlags(up, 0);
     CGEventPost(kCGHIDEventTap, up);
     CFRelease(up);
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
@@ -1135,5 +1153,19 @@ CGRect getActiveScreenBounds() {
         cgFrame.size.height = nsFrame.size.height;
         
         return cgFrame;
+    }
+}
+
+CGPoint getCurrentCursorPosition() {
+    @autoreleasepool {
+        CGEventRef event = CGEventCreate(NULL);
+        if (!event) {
+            return CGPointZero;
+        }
+        
+        CGPoint position = CGEventGetLocation(event);
+        CFRelease(event);
+        
+        return position;
     }
 }

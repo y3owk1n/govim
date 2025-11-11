@@ -36,7 +36,7 @@ Bind global hotkeys to Neru actions. Set to `""` or comment out to disable.
 # Hint modes
 "Cmd+Shift+Space" = "hints left_click"
 "Cmd+Shift+A" = "hints context_menu"  # Action selection mode
-"Cmd+Shift+J" = "hints scroll"
+"Cmd+Shift+J" = "hints scroll"          # Select hint location, then scroll there
 "Cmd+Shift+R" = "hints right_click"
 "Cmd+Shift+D" = "hints double_click"
 "Cmd+Shift+T" = "hints triple_click"
@@ -46,12 +46,15 @@ Bind global hotkeys to Neru actions. Set to `""` or comment out to disable.
 # Grid mode
 "Cmd+Shift+Space" = "grid left_click"
 "Cmd+Shift+A" = "grid context_menu"  # Action selection mode
-"Cmd+Shift+J" = "grid scroll"
+"Cmd+Shift+J" = "grid scroll"        # Select grid location, then scroll there
 "Cmd+Shift+R" = "grid right_click"
 "Cmd+Shift+D" = "grid double_click"
 "Cmd+Shift+T" = "grid triple_click"
 "Cmd+Shift+H" = "grid middle_click"
 "Cmd+Shift+M" = "grid move_mouse"
+
+# Standalone scroll at cursor (no hint/grid selection)
+# "Cmd+Shift+S" = "action scroll"
 
 # Execute shell commands
 "Cmd+Alt+T" = "exec open -a Terminal"
@@ -280,7 +283,7 @@ When `restore_cursor = true`, the cursor returns to its original position after 
 
 ## Scroll Configuration
 
-Configure Vim-style scrolling behavior.
+Configure Vim-style scrolling behavior. Scroll can be used standalone (at cursor position) or within hints/grid modes (after selecting a location).
 
 ```toml
 [scroll]
@@ -302,15 +305,31 @@ highlight_width = 2             # Border width in pixels
 
 ### Scroll Keys
 
-Once in scroll mode:
+Once scrolling (either standalone or after selecting a hint/grid location):
 
 - `j` / `k` - Scroll down/up by `scroll_step`
 - `h` / `l` - Scroll left/right by `scroll_step`
 - `Ctrl+d` / `Ctrl+u` - Half-page down/up
-- `gg` - Jump to top
+- `gg` - Jump to top (press `g` twice)
 - `G` - Jump to bottom
+- `Tab` - Switch back to hint/grid overlay (only available in hints/grid scroll mode)
 - `Esc` - Exit scroll mode
-- `Tab` - Toggle between direct scroll and hint/grid selection
+
+### Scroll Modes
+
+**Standalone scroll** (via `neru action scroll` or hotkey):
+- Scrolls at current cursor position
+- No hint/grid selection required
+- Only `Esc` exits (no `Tab` key)
+- Useful for quick scrolling without selecting a location
+
+**Hints/Grid scroll** (via `neru hints scroll` or `neru grid scroll`):
+- Shows hints/grid overlay first
+- Select a location to scroll
+- Use scroll keys (`j`/`k`/`gg`/`G`, etc.)
+- Press `Tab` to return to hint/grid overlay and select a different location
+- Press `Esc` to exit completely
+- Useful for scrolling specific elements or windows
 
 ---
 

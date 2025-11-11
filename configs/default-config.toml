@@ -123,10 +123,12 @@ additional_firefox_bundles = []
 
 [hotkeys]
 # all hotkeys can be disabled by setting the key to ""
-"Cmd+Shift+Space" = "hints left_click" # Same as running `neru left_click` in the terminal
-"Cmd+Shift+A" = "hints context_menu"
-"Cmd+Shift+J" = "hints scroll"
-# Add more hotkeys that uses the IPC commands
+"Cmd+Shift+Space" = "hints left_click" # Hint mode (left click)
+"Cmd+Shift+A" = "hints context_menu"    # Hints with Action mode (choose click type)
+"Cmd+Shift+J" = "action scroll"         # Standalone scroll (Vim-style scrolling at cursor)
+"Cmd+Shift+G" = "grid left_click"       # Grid mode (left click)
+
+# Additional hint action hotkeys (uncomment to enable)
 # "Ctrl+R" = "hints right_click"
 # "Ctrl+D" = "hints double_click"
 # "Ctrl+T" = "hints triple_click"
@@ -134,18 +136,24 @@ additional_firefox_bundles = []
 # "Ctrl+U" = "hints mouse_up" # you should not need to use this at all, calling mouse_down will call this after hint selection
 # "Ctrl+I" = "hints mouse_down"
 # "Ctrl+M" = "hints move_mouse"
+# "Ctrl+S" = "hints scroll"    # Select hint location, then scroll there
 
-# Grid mode hotkeys (grid divides screen into clickable regions)
-"Cmd+Shift+G" = "grid left_click"  # Activate grid mode with left click
-# "Cmd+Shift+R" = "grid right_click" # Activate grid mode with right click
-# "Cmd+Shift+M" = "grid move_mouse"  # Activate grid mode to move mouse
-# "Cmd+Shift+D" = "grid double_click" # Grid double click
-# "Cmd+Shift+T" = "grid triple_click" # Grid triple click
-# "Cmd+Shift+I" = "grid mouse_down"   # Grid mouse down (hold)
-# "Cmd+Shift+U" = "grid mouse_up"     # Grid mouse up (release)
-# "Cmd+Shift+H" = "grid middle_click" # Grid middle click
-# "Cmd+Shift+S" = "grid scroll"       # Grid scroll mode
-# "Cmd+Shift+C" = "grid context_menu" # Grid context menu
+# Additional grid action hotkeys (uncomment to enable)
+# "Cmd+Shift+R" = "grid right_click"   # Grid right click
+# "Cmd+Shift+M" = "grid move_mouse"    # Grid move mouse
+# "Cmd+Shift+D" = "grid double_click"  # Grid double click
+# "Cmd+Shift+T" = "grid triple_click"  # Grid triple click
+# "Cmd+Shift+I" = "grid mouse_down"    # Grid mouse down (hold)
+# "Cmd+Shift+U" = "grid mouse_up"      # Grid mouse up (release)
+# "Cmd+Shift+H" = "grid middle_click"  # Grid middle click
+# "Cmd+Shift+S" = "grid scroll"        # Grid scroll - select grid location, then scroll there
+# "Cmd+Shift+C" = "grid context_menu"  # Grid context menu
+
+# Additional action commands (direct actions at cursor position)
+# "Cmd+Shift+L" = "action left_click"   # Left click at current cursor position
+# "Cmd+Shift+K" = "action right_click"  # Right click at current cursor position
+# There are more that can be added, see `docs/CLI.md` for details
+# Note: "Cmd+Shift+J" = "action scroll" is already set above as default
 
 # To run a shell command from a hotkey, prefix the value with `exec `:
 # "Ctrl+Alt+T" = "exec open -a Terminal"
