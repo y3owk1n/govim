@@ -1,0 +1,51 @@
+# Neru Configuration - Hybrid Mode (Grid for Move + Actions for Everything Else)
+#
+# This configuration uses:
+# - Grid mode ONLY for move_mouse (precise cursor positioning)
+# - Action commands for all click operations (left, right, double, etc.)
+# - Hints mode is disabled
+#
+# This approach combines the best of both worlds:
+# - Grid's precision for cursor positioning without hint selection overhead
+# - Direct action commands for instant clicks at current cursor position
+# - No need for hint/grid selection for simple click operations
+#
+# Workflow:
+# 1. Use grid to move cursor to desired location
+# 2. Use action hotkeys to perform clicks directly at cursor position
+# 3. No intermediate hint selection step required
+#
+# Copy to:
+#   - macOS: ~/Library/Application Support/neru/config.toml
+#   - XDG:   ~/.config/neru/config.toml
+# Or use: neru launch --config /path/to/this/config.toml
+
+[general]
+# Applications to exclude from Neru functionality
+excluded_apps = []
+
+[hotkeys]
+# Grid mode - ONLY for move_mouse (cursor positioning)
+"Cmd+Shift+M" = "grid move_mouse"
+
+# Action commands - direct clicks at current cursor position
+"Cmd+Shift+Space" = "action left_click"      # Left click at cursor
+"Cmd+Shift+R" = "action right_click"          # Right click at cursor
+"Cmd+Shift+D" = "action double_click"         # Double click at cursor
+"Cmd+Shift+T" = "action triple_click"         # Triple click at cursor
+"Cmd+Shift+H" = "action middle_click"         # Middle click at cursor
+"Cmd+Shift+I" = "action mouse_down"           # Mouse down at cursor
+"Cmd+Shift+S" = "action scroll"               # Scroll at cursor position
+
+# Hints mode - DISABLED (no hotkeys assigned)
+
+# Shell command examples
+# "Cmd+Alt+T" = "exec open -a Terminal"
+
+[hints]
+# Hints mode - DISABLED
+enabled = false
+
+[grid]
+# Grid mode - ENABLED only for move_mouse
+enabled = true

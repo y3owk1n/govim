@@ -195,7 +195,8 @@ func DefaultConfig() *Config {
 			Bindings: map[string]string{
 				"Cmd+Shift+Space": "hints left_click",
 				"Cmd+Shift+A":     "hints context_menu",
-				"Cmd+Shift+J":     "hints scroll",
+				"Cmd+Shift+J":     "action scroll",
+				"Cmd+Shift+G":     "grid left_click",
 			},
 		},
 		Hints: HintsConfig{

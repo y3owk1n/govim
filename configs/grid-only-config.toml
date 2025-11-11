@@ -1,0 +1,70 @@
+# Neru Configuration - Grid Only Mode
+#
+# This configuration enables ONLY grid mode with all grid-related features turned on.
+# Hints mode is completely disabled.
+#
+# Grid mode provides universal compatibility - works everywhere including:
+# - Electron apps (VS Code, Slack, Obsidian)
+# - Chromium browsers (Chrome, Brave, Arc)
+# - Firefox browsers
+# - Menubar items
+# - Dock and Mission Control
+# - All native macOS apps
+#
+# Copy to:
+#   - macOS: ~/Library/Application Support/neru/config.toml
+#   - XDG:   ~/.config/neru/config.toml
+# Or use: neru launch --config /path/to/this/config.toml
+
+[general]
+# Applications to exclude from Neru functionality
+excluded_apps = []
+
+[hotkeys]
+# Grid mode hotkeys - all actions available
+"Cmd+Shift+Space" = "grid left_click"
+"Cmd+Shift+R" = "grid right_click"
+"Cmd+Shift+D" = "grid double_click"
+"Cmd+Shift+T" = "grid triple_click"
+"Cmd+Shift+H" = "grid middle_click"
+"Cmd+Shift+M" = "grid move_mouse"
+"Cmd+Shift+I" = "grid mouse_down"
+"Cmd+Shift+U" = "grid mouse_up"
+"Cmd+Shift+S" = "grid scroll"
+"Cmd+Shift+C" = "grid context_menu"
+
+# Hints mode - DISABLED (no hotkeys assigned)
+
+# Shell command examples
+# "Cmd+Alt+T" = "exec open -a Terminal"
+
+[hints]
+# Hints mode - DISABLED
+enabled = false
+
+[grid]
+# Grid mode - ENABLED with all features
+enabled = true
+
+# Characters for grid labels
+characters = "abcdefghijklmnpqrstuvwxyz"
+
+[grid.left_click]
+# Restore cursor to original position after click (enable it if you want)
+restore_cursor = false
+
+[grid.right_click]
+# Restore cursor to original position after click (enable it if you want)
+restore_cursor = false
+
+[grid.double_click]
+# Restore cursor to original position after click (enable it if you want)
+restore_cursor = false
+
+[grid.triple_click]
+# Restore cursor to original position after click (enable it if you want)
+restore_cursor = false
+
+[grid.middle_click]
+# Restore cursor to original position after click (enable it if you want)
+restore_cursor = false

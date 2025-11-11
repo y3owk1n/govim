@@ -75,6 +75,7 @@ type App struct {
 	gridOverlayNeedsRefresh bool
 	hintOverlayNeedsRefresh bool
 	hotkeyRefreshPending    bool
+	idleScrollLastKey       string // Track last scroll key in idle mode for gg support
 }
 
 // NewApp creates a new application instance

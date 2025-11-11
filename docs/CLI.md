@@ -16,6 +16,7 @@ The Neru CLI communicates with the daemon via IPC (Inter-Process Communication) 
 ## Table of Contents
 
 - [Daemon Management](#daemon-management)
+- [Action Commands](#action-commands)
 - [Hint Commands](#hint-commands)
 - [Status and Info](#status-and-info)
 - [Shell Completions](#shell-completions)
@@ -80,6 +81,47 @@ neru idle
 
 ---
 
+## Action Commands
+
+Perform actions directly at the current cursor position without selecting a hint or grid location.
+
+### General Syntax
+
+```bash
+neru action [action_type]
+```
+
+**Available actions:**
+
+- `left_click` - Left click at cursor position
+- `right_click` - Right click at cursor position
+- `double_click` - Double click at cursor position
+- `triple_click` - Triple click at cursor position
+- `middle_click` - Middle click at cursor position
+- `mouse_down` - Hold mouse button at cursor position
+- `scroll` - Scroll at cursor position (Vim-style)
+
+### Examples
+
+```bash
+# Click at current cursor position
+neru action left_click
+neru action right_click
+neru action double_click
+
+# Scroll at current cursor position
+neru action scroll
+# Use j/k/gg/G/Ctrl+D/U to scroll, Esc to exit
+```
+
+**Use cases:**
+
+- Quick actions without hint selection
+- Scripting mouse actions at specific coordinates (after moving cursor)
+- Scrolling without selecting a location first
+
+---
+
 ## Hint / Grid Commands
 
 ### General Syntax
@@ -99,7 +141,7 @@ neru grid [action]
 - `move_mouse` - Show hints and move cursor (no click)
 - `mouse_down` - Show hints and hold mouse button (for dragging)
 - `mouse_up` - Release mouse button (typically called after mouse_down)
-- `scroll` - Enter scroll mode
+- `scroll` - Show hints/grid, then select element to scroll at that position
 - `context_menu` - Show hints and open context menu (action selection)
 
 ### Examples
@@ -125,7 +167,9 @@ neru grid middle_click
 neru hints move_mouse
 neru grid move_mouse
 
-# Enter scroll mode
+# Scroll at selected position
+# After selecting a hint/grid location, you can scroll there with j/k/gg/G/Ctrl+D/U
+# Press Tab to return to hint/grid selection, or Esc to exit
 neru hints scroll
 neru grid scroll
 
@@ -146,6 +190,45 @@ When using `context_menu`, after selecting a hint you can choose:
 - `g` - Go to position (move cursor)
 - `h` - Hold mouse (start drag)
 - `H` - Release mouse (end drag)
+
+### Scroll Actions
+
+When using the `scroll` action with hints or grid mode:
+
+1. Select a hint/grid location where you want to scroll
+2. Once selected, use Vim-style keys to scroll:
+   - `j` / `k` - Scroll down/up
+   - `h` / `l` - Scroll left/right
+   - `Ctrl+d` / `Ctrl+u` - Half-page down/up
+   - `gg` - Jump to top
+   - `G` - Jump to bottom
+   - `Tab` - Return to hint/grid selection overlay
+   - `Esc` - Exit scroll mode
+
+**Workflow example:**
+
+```bash
+# Start scroll mode with hints
+neru hints scroll
+
+# 1. Type hint label (e.g., "aa") to select scroll location
+# 2. Cursor moves to that position
+# 3. Use j/k/gg/G/Ctrl+D/U to scroll
+# 4. Press Tab to select a different hint
+# 5. Press Esc to exit
+```
+
+**Standalone scroll at cursor:**
+
+You can also scroll directly at the current cursor position without selecting a hint:
+
+```bash
+neru action scroll
+
+# Scrolls at current cursor position
+# Use j/k/gg/G/Ctrl+D/U to scroll
+# Press Esc to exit (no Tab option since there's no overlay)
+```
 
 ---
 
@@ -175,9 +258,9 @@ Neru Status:
 
 **Possible modes:**
 
-- `idle` - No active hint mode
+- `idle` - No active hint/grid mode
 - `hints` - Hint mode active
-- `scroll` - Scroll mode active
+- `grid` - Grid mode active
 
 ### Version
 

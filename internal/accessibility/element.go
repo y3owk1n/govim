@@ -474,6 +474,12 @@ func ScrollAtCursor(deltaX, deltaY int) error {
 	return nil
 }
 
+// GetCurrentCursorPosition returns the current cursor position in screen coordinates
+func GetCurrentCursorPosition() image.Point {
+	pos := C.getCurrentCursorPosition()
+	return image.Point{X: int(pos.x), Y: int(pos.y)}
+}
+
 // IsClickable checks if the element is clickable
 func (e *Element) IsClickable() bool {
 	if e.ref == nil {
