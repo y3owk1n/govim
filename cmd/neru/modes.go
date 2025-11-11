@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"strings"
-	"time"
 
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/bridge"
@@ -75,11 +74,12 @@ func (a *App) activateHintMode(action Action) {
 		return
 	}
 
-	// Resize overlay to the active screen before collecting elements
+	// Always resize overlay to the active screen (where mouse is) before collecting elements
+	// This ensures proper positioning when switching between multiple displays
 	if a.hintOverlay != nil {
-		a.hintOverlay.ResizeToActiveScreen()
-		// Wait for async resize to complete on main thread
-		time.Sleep(100 * time.Millisecond)
+		// Use synchronous resize with callback - no artificial delay needed
+		a.hintOverlay.ResizeToActiveScreenSync()
+		a.hintOverlayNeedsRefresh = false
 	}
 
 	// Update roles for the current focused app
@@ -167,17 +167,13 @@ func (a *App) activateGridMode(action Action) {
 
 	a.exitMode() // Exit current mode first
 
-	if a.gridOverlayNeedsRefresh {
-		if a.gridCtx != nil && a.gridCtx.gridOverlay != nil {
-			gridOverlay := *a.gridCtx.gridOverlay
+	// Always resize overlay to the active screen (where mouse is) before drawing grid
+	// This ensures proper positioning when switching between multiple displays
+	if a.gridCtx != nil && a.gridCtx.gridOverlay != nil {
+		gridOverlay := *a.gridCtx.gridOverlay
 
-			// Resize overlay window to current active screen (where mouse is)
-			gridOverlay.ResizeToActiveScreen()
-
-			// Give the UI thread a moment to complete the resize
-			time.Sleep(150 * time.Millisecond)
-		}
-
+		// Use synchronous resize with callback - no artificial delay needed
+		gridOverlay.ResizeToActiveScreenSync()
 		a.gridOverlayNeedsRefresh = false
 	}
 

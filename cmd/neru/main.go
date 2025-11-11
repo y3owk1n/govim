@@ -73,6 +73,7 @@ type App struct {
 	hotkeysRegistered       bool
 	screenChangeProcessing  bool
 	gridOverlayNeedsRefresh bool
+	hintOverlayNeedsRefresh bool
 	hotkeyRefreshPending    bool
 }
 

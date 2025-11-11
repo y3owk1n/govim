@@ -4,15 +4,39 @@ package grid
 #cgo CFLAGS: -x objective-c
 #include "../bridge/overlay.h"
 #include <stdlib.h>
+
+// Callback function that Go can reference
+extern void gridResizeCompletionCallback(void* context);
 */
 import "C"
 
 import (
 	"strings"
+	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	"github.com/y3owk1n/neru/internal/config"
 )
+
+var (
+	gridCallbackID   uint64
+	gridCallbackMap  = make(map[uint64]chan struct{})
+	gridCallbackLock sync.Mutex
+)
+
+//export gridResizeCompletionCallback
+func gridResizeCompletionCallback(context unsafe.Pointer) {
+	// Convert context to callback ID
+	id := uint64(uintptr(context))
+
+	gridCallbackLock.Lock()
+	if done, ok := gridCallbackMap[id]; ok {
+		close(done)
+		delete(gridCallbackMap, id)
+	}
+	gridCallbackLock.Unlock()
+}
 
 // GridOverlay manages grid-specific overlay rendering
 type GridOverlay struct {
@@ -80,6 +104,28 @@ func (o *GridOverlay) ResizeToMainScreen() {
 // ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor
 func (o *GridOverlay) ResizeToActiveScreen() {
 	C.resizeOverlayToActiveScreen(o.window)
+}
+
+// ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification
+func (o *GridOverlay) ResizeToActiveScreenSync() {
+	done := make(chan struct{})
+
+	// Generate unique ID for this callback
+	id := atomic.AddUint64(&gridCallbackID, 1)
+
+	// Store channel in map
+	gridCallbackLock.Lock()
+	gridCallbackMap[id] = done
+	gridCallbackLock.Unlock()
+
+	// Pass ID as context (safe - no Go pointers)
+	C.resizeOverlayToActiveScreenWithCallback(
+		o.window,
+		(C.ResizeCompletionCallback)(unsafe.Pointer(C.gridResizeCompletionCallback)),
+		unsafe.Pointer(uintptr(id)),
+	)
+
+	<-done
 }
 
 // Draw renders the flat grid with all 3-char cells visible

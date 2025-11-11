@@ -4,16 +4,40 @@ package hints
 #cgo CFLAGS: -x objective-c
 #include "../bridge/overlay.h"
 #include <stdlib.h>
+
+// Callback function that Go can reference
+extern void resizeCompletionCallback(void* context);
 */
 import "C"
 
 import (
 	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	"github.com/y3owk1n/neru/internal/config"
 )
+
+var (
+	hintCallbackID   uint64
+	hintCallbackMap  = make(map[uint64]chan struct{})
+	hintCallbackLock sync.Mutex
+)
+
+//export resizeCompletionCallback
+func resizeCompletionCallback(context unsafe.Pointer) {
+	// Convert context to callback ID
+	id := uint64(uintptr(context))
+
+	hintCallbackLock.Lock()
+	if done, ok := hintCallbackMap[id]; ok {
+		close(done)
+		delete(hintCallbackMap, id)
+	}
+	hintCallbackLock.Unlock()
+}
 
 // Overlay manages the hint overlay window
 type Overlay struct {
@@ -65,6 +89,28 @@ func (o *Overlay) Clear() {
 // ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor
 func (o *Overlay) ResizeToActiveScreen() {
 	C.resizeOverlayToActiveScreen(o.window)
+}
+
+// ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification
+func (o *Overlay) ResizeToActiveScreenSync() {
+	done := make(chan struct{})
+
+	// Generate unique ID for this callback
+	id := atomic.AddUint64(&hintCallbackID, 1)
+
+	// Store channel in map
+	hintCallbackLock.Lock()
+	hintCallbackMap[id] = done
+	hintCallbackLock.Unlock()
+
+	// Pass ID as context (safe - no Go pointers)
+	C.resizeOverlayToActiveScreenWithCallback(
+		o.window,
+		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeCompletionCallback)),
+		unsafe.Pointer(uintptr(id)),
+	)
+
+	<-done
 }
 
 // DrawHintsWithoutArrow draws hints without arrows
