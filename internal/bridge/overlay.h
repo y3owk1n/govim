@@ -53,6 +53,9 @@ typedef struct {
     int isSubgrid;  // 1 if cell is part of subgrid, 0 otherwise
 } GridCell;
 
+// Callback type for async operations
+typedef void (*ResizeCompletionCallback)(void* context);
+
 // Function declarations
 OverlayWindow createOverlayWindow();
 void destroyOverlayWindow(OverlayWindow window);
@@ -66,6 +69,7 @@ void drawTargetDot(OverlayWindow window, CGPoint center, double radius, const ch
 void replaceOverlayWindow(OverlayWindow *pwindow);
 void resizeOverlayToMainScreen(OverlayWindow window);
 void resizeOverlayToActiveScreen(OverlayWindow window);
+void resizeOverlayToActiveScreenWithCallback(OverlayWindow window, ResizeCompletionCallback callback, void* context);
 
 // Grid-specific drawing functions
 void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellStyle style);

@@ -724,6 +724,51 @@ void resizeOverlayToActiveScreen(OverlayWindow window) {
     });
 }
 
+void resizeOverlayToActiveScreenWithCallback(OverlayWindow window, ResizeCompletionCallback callback, void* context) {
+    if (!window) {
+        if (callback) callback(context);
+        return;
+    }
+
+    OverlayWindowController *controller = (OverlayWindowController*)window;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // Get current mouse location
+        NSPoint mouseLoc = [NSEvent mouseLocation];
+        
+        // Find the screen containing the mouse cursor
+        NSScreen *activeScreen = nil;
+        for (NSScreen *screen in [NSScreen screens]) {
+            if (NSPointInRect(mouseLoc, screen.frame)) {
+                activeScreen = screen;
+                break;
+            }
+        }
+        
+        // Fall back to main screen if mouse is somehow not on any screen
+        if (!activeScreen) {
+            activeScreen = [NSScreen mainScreen];
+        }
+        
+        if (!activeScreen) {
+            if (callback) callback(context);
+            return;
+        }
+        
+        NSRect screenFrame = [activeScreen frame];
+        [controller.window setFrame:screenFrame display:YES];
+        
+        // View frame should be in window's coordinate space (origin at 0,0)
+        NSRect viewFrame = NSMakeRect(0, 0, screenFrame.size.width, screenFrame.size.height);
+        [controller.overlayView setFrame:viewFrame];
+        [controller.overlayView setNeedsDisplay:YES];
+        
+        // Call completion callback
+        if (callback) {
+            callback(context);
+        }
+    });
+}
+
 void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style) {
     if (!window || !hints) return;
 

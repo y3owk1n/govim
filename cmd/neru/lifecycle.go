@@ -60,30 +60,52 @@ func (a *App) handleScreenParametersChange() {
 	defer func() { a.screenChangeProcessing = false }()
 
 	a.logger.Info("Screen parameters changed; adjusting overlays")
-	// Only act if grid is enabled
+
+	// Handle grid overlay
 	if a.config.Grid.Enabled && a.gridCtx != nil && a.gridCtx.gridOverlay != nil {
 		// If grid mode is not active, mark for refresh on next activation
 		if a.currentMode != ModeGrid {
 			a.gridOverlayNeedsRefresh = true
-			return
+		} else {
+			// Grid mode is active - resize the existing overlay window to match new screen bounds
+			gridOverlay := *a.gridCtx.gridOverlay
+
+			// Resize overlay window to current active screen (where mouse is)
+			gridOverlay.ResizeToActiveScreenSync()
+
+			// Regenerate the grid cells with updated screen bounds
+			if err := a.setupGrid(a.gridCtx.currentAction); err != nil {
+				a.logger.Error("Failed to refresh grid after screen change", zap.Error(err))
+				return
+			}
+
+			a.logger.Info("Grid overlay resized and regenerated for new screen bounds")
 		}
+	}
 
-		// Grid mode is active - resize the existing overlay window to match new screen bounds
-		gridOverlay := *a.gridCtx.gridOverlay
+	// Handle hint overlay
+	if a.config.Hints.Enabled && a.hintOverlay != nil {
+		// If hints mode is not active, mark for refresh on next activation
+		if a.currentMode != ModeHints {
+			a.hintOverlayNeedsRefresh = true
+		} else {
+			// Hints mode is active - resize the overlay and regenerate hints
+			a.hintOverlay.ResizeToActiveScreenSync()
 
-		// Resize overlay window to current active screen (where mouse is)
-		gridOverlay.ResizeToActiveScreen()
-
-		// Give the UI thread a moment to complete the resize
-		time.Sleep(150 * time.Millisecond)
-
-		// Regenerate the grid cells with updated screen bounds
-		if err := a.setupGrid(a.gridCtx.currentAction); err != nil {
-			a.logger.Error("Failed to refresh grid after screen change", zap.Error(err))
-			return
+			// Regenerate hints for current action
+			a.updateRolesForCurrentApp()
+			elements := a.collectElementsForAction(a.currentAction)
+			if len(elements) > 0 {
+				if err := a.setupHints(elements, a.currentAction); err != nil {
+					a.logger.Error("Failed to refresh hints after screen change", zap.Error(err))
+					return
+				}
+				a.logger.Info("Hint overlay resized and regenerated for new screen bounds")
+			} else {
+				a.logger.Warn("No elements found after screen change")
+				a.exitMode()
+			}
 		}
-
-		a.logger.Info("Grid overlay resized and regenerated for new screen bounds")
 	}
 }
 
