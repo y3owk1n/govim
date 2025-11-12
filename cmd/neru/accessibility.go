@@ -12,8 +12,8 @@ func (a *App) updateRolesForCurrentApp() {
 	if focusedApp == nil {
 		a.logger.Debug("No focused application, using global roles only")
 		// Use global roles
-		accessibility.SetClickableRoles(a.config.Accessibility.ClickableRoles)
-		accessibility.SetScrollableRoles(a.config.Accessibility.ScrollableRoles)
+		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles)   // Changed from a.config.Accessibility.ClickableRoles
+		accessibility.SetScrollableRoles(a.config.Hints.ScrollableRoles) // Changed from a.config.Accessibility.ScrollableRoles
 		return
 	}
 	defer focusedApp.Release()
@@ -23,8 +23,8 @@ func (a *App) updateRolesForCurrentApp() {
 	if bundleID == "" {
 		a.logger.Debug("Could not get bundle ID, using global roles only")
 		// Use global roles
-		accessibility.SetClickableRoles(a.config.Accessibility.ClickableRoles)
-		accessibility.SetScrollableRoles(a.config.Accessibility.ScrollableRoles)
+		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles)   // Changed from a.config.Accessibility.ClickableRoles
+		accessibility.SetScrollableRoles(a.config.Hints.ScrollableRoles) // Changed from a.config.Accessibility.ScrollableRoles
 		return
 	}
 
@@ -152,7 +152,7 @@ func (a *App) addSupplementaryElements(elements []*accessibility.TreeNode, missi
 
 // addMenubarElements adds menubar clickable elements
 func (a *App) addMenubarElements(elements []*accessibility.TreeNode) []*accessibility.TreeNode {
-	if !a.config.General.IncludeMenubarHints {
+	if !a.config.Hints.IncludeMenubarHints { // Changed from a.config.General.IncludeMenubarHints
 		return elements
 	}
 
@@ -167,7 +167,7 @@ func (a *App) addMenubarElements(elements []*accessibility.TreeNode) []*accessib
 	}
 
 	// Add additional menubar elements from specific bundle IDs
-	for _, bundleID := range a.config.General.AdditionalMenubarHintsTargets {
+	for _, bundleID := range a.config.Hints.AdditionalMenubarHintsTargets { // Changed from a.config.General.AdditionalMenubarHintsTargets
 		if additionalElems, err := accessibility.GetClickableElementsFromBundleID(bundleID); err == nil {
 			elements = append(elements, additionalElems...)
 			a.logger.Debug("Included additional menubar elements",
@@ -185,7 +185,7 @@ func (a *App) addMenubarElements(elements []*accessibility.TreeNode) []*accessib
 
 // addDockElements adds dock clickable elements
 func (a *App) addDockElements(elements []*accessibility.TreeNode) []*accessibility.TreeNode {
-	if !a.config.General.IncludeDockHints {
+	if !a.config.Hints.IncludeDockHints { // Changed from a.config.General.IncludeDockHints
 		return elements
 	}
 
@@ -201,7 +201,7 @@ func (a *App) addDockElements(elements []*accessibility.TreeNode) []*accessibili
 
 // addNotificationCenterElements adds notification center clickable elements
 func (a *App) addNotificationCenterElements(elements []*accessibility.TreeNode) []*accessibility.TreeNode {
-	if !a.config.General.IncludeNCHints {
+	if !a.config.Hints.IncludeNCHints { // Changed from a.config.General.IncludeNCHints
 		return elements
 	}
 

@@ -490,10 +490,10 @@ func (e *Element) IsClickable() bool {
 
 	if cfg != nil {
 		// Check if the app has an app-specific ignore_clickable_check
-		if cfg.Accessibility.AppConfigs != nil {
-			if len(cfg.Accessibility.AppConfigs) > 0 {
+		if cfg.Hints.AppConfigs != nil {
+			if len(cfg.Hints.AppConfigs) > 0 {
 				bundleID := e.GetBundleIdentifier()
-				for _, appConfig := range cfg.Accessibility.AppConfigs {
+				for _, appConfig := range cfg.Hints.AppConfigs {
 					if appConfig.BundleID == bundleID {
 						if appConfig.IgnoreClickableCheck {
 							return true
@@ -504,7 +504,7 @@ func (e *Element) IsClickable() bool {
 		}
 
 		// If ignore_clickable_check is enabled in config, return true
-		if cfg.Accessibility.IgnoreClickableCheck {
+		if cfg.Hints.IgnoreClickableCheck {
 			return true
 		}
 	}

@@ -12,6 +12,30 @@
 # Applications to exclude from Neru functionality
 excluded_apps = []
 
+# Check Accessibility permission on startup; exits with guidance if missing.
+accessibility_check_on_start = true
+
+[hotkeys]
+# Hints mode hotkeys - all actions available
+"Cmd+Shift+Space" = "hints left_click"
+"Cmd+Shift+R" = "hints right_click"
+"Cmd+Shift+D" = "hints double_click"
+"Cmd+Shift+T" = "hints triple_click"
+"Cmd+Shift+H" = "hints middle_click"
+"Cmd+Shift+M" = "hints move_mouse"
+"Cmd+Shift+I" = "hints mouse_down"
+"Cmd+Shift+U" = "hints mouse_up"
+"Cmd+Shift+J" = "hints scroll"
+"Cmd+Shift+A" = "hints context_menu"
+
+# Grid mode - DISABLED (no hotkeys assigned)
+
+# Shell command examples
+# "Cmd+Alt+T" = "exec open -a Terminal"
+
+[hints]
+enabled = true
+
 # Hints-specific settings - all enabled for maximum hint coverage
 include_menubar_hints = true    # Show hints on menubar
 include_dock_hints = true        # Show hints on Dock and Mission Control
@@ -23,9 +47,6 @@ additional_menubar_hints_targets = [
   "com.apple.controlcenter",
   "com.apple.systemuiserver",
 ]
-
-[accessibility]
-accessibility_check_on_start = true
 
 # Global clickable roles for hints
 clickable_roles = [
@@ -62,11 +83,11 @@ scrollable_roles = [
 ]
 
 # Example per-app customization for Chrome
-# [[accessibility.app_configs]]
+# [[hints.app_configs]]
 # bundle_id = "com.google.Chrome"
 # additional_clickable_roles = ["AXTabGroup"]
 
-[accessibility.additional_ax_support]
+[hints.additional_ax_support]
 # Enable enhanced accessibility for Electron, Chromium, and Firefox apps
 # Recommended for better hint detection in these apps
 enable = true
@@ -74,27 +95,6 @@ enable = true
 additional_electron_bundles = []
 additional_chromium_bundles = []
 additional_firefox_bundles = []
-
-[hotkeys]
-# Hints mode hotkeys - all actions available
-"Cmd+Shift+Space" = "hints left_click"
-"Cmd+Shift+R" = "hints right_click"
-"Cmd+Shift+D" = "hints double_click"
-"Cmd+Shift+T" = "hints triple_click"
-"Cmd+Shift+H" = "hints middle_click"
-"Cmd+Shift+M" = "hints move_mouse"
-"Cmd+Shift+I" = "hints mouse_down"
-"Cmd+Shift+U" = "hints mouse_up"
-"Cmd+Shift+J" = "hints scroll"
-"Cmd+Shift+A" = "hints context_menu"
-
-# Grid mode - DISABLED (no hotkeys assigned)
-
-# Shell command examples
-# "Cmd+Alt+T" = "exec open -a Terminal"
-
-[hints]
-enabled = true
 
 [hints.left_click_hints]
 # Restore cursor to original position after click (enable it if you want)

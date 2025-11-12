@@ -124,7 +124,7 @@ func (a *App) handleAppActivation(bundleID string) {
 	}
 
 	if a.config.Hints.Enabled {
-		if a.config.Accessibility.AdditionalAXSupport.Enable {
+		if a.config.Hints.AdditionalAXSupport.Enable {
 			a.handleAdditionalAccessibility(bundleID)
 		}
 	}
@@ -134,7 +134,7 @@ func (a *App) handleAppActivation(bundleID string) {
 
 // handleAdditionalAccessibility handles electron/chromium/firefox accessibility
 func (a *App) handleAdditionalAccessibility(bundleID string) {
-	cfg := a.config.Accessibility.AdditionalAXSupport
+	cfg := a.config.Hints.AdditionalAXSupport
 
 	// handle electrons
 	if electron.ShouldEnableElectronSupport(bundleID, cfg.AdditionalElectronBundles) {

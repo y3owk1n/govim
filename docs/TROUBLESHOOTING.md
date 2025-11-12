@@ -178,7 +178,7 @@ tail -f ~/Library/Logs/neru/app.log
 Edit `~/.config/neru/config.toml`:
 
 ```toml
-[accessibility.additional_ax_support]
+[hints.additional_ax_support]
 enable = true
 
 # If your app isn't auto-detected, add it:
@@ -211,7 +211,7 @@ Enabling accessibility support for Chrome/Firefox can interfere with tiling wind
 **If you DON'T use a tiling window manager:**
 
 ```toml
-[accessibility.additional_ax_support]
+[hints.additional_ax_support]
 enable = true
 
 # For custom Chromium browsers:
@@ -235,7 +235,7 @@ Keep `enable = false` and rely on Neru's grid-based approach instead. The grid m
 **Solution:**
 
 ```toml
-[general]
+[hints]
 include_menubar_hints = true
 include_dock_hints = true
 

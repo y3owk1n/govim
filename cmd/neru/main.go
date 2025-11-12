@@ -88,7 +88,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	log := logger.Get()
 
 	// Check accessibility permissions
-	if cfg.Accessibility.AccessibilityCheckOnStart {
+	if cfg.General.AccessibilityCheckOnStart { // Changed from cfg.Accessibility.AccessibilityCheckOnStart
 		if !accessibility.CheckAccessibilityPermissions() {
 			log.Warn("Accessibility permissions not granted. Please grant permissions in System Settings.")
 			fmt.Println("⚠️  Neru requires Accessibility permissions to function.")
@@ -104,14 +104,14 @@ func NewApp(cfg *config.Config) (*App, error) {
 	if cfg.Hints.Enabled {
 		// Apply clickable and scrollable roles from config
 		log.Info("Applying clickable roles",
-			zap.Int("count", len(cfg.Accessibility.ClickableRoles)),
-			zap.Strings("roles", cfg.Accessibility.ClickableRoles))
-		accessibility.SetClickableRoles(cfg.Accessibility.ClickableRoles)
+			zap.Int("count", len(cfg.Hints.ClickableRoles)), // Changed from cfg.Accessibility.ClickableRoles
+			zap.Strings("roles", cfg.Hints.ClickableRoles))  // Changed from cfg.Accessibility.ClickableRoles
+		accessibility.SetClickableRoles(cfg.Hints.ClickableRoles) // Changed from cfg.Accessibility.ClickableRoles
 
 		log.Info("Applying scrollable roles",
-			zap.Int("count", len(cfg.Accessibility.ScrollableRoles)),
-			zap.Strings("roles", cfg.Accessibility.ScrollableRoles))
-		accessibility.SetScrollableRoles(cfg.Accessibility.ScrollableRoles)
+			zap.Int("count", len(cfg.Hints.ScrollableRoles)), // Changed from cfg.Accessibility.ScrollableRoles
+			zap.Strings("roles", cfg.Hints.ScrollableRoles))  // Changed from cfg.Accessibility.ScrollableRoles
+		accessibility.SetScrollableRoles(cfg.Hints.ScrollableRoles) // Changed from cfg.Accessibility.ScrollableRoles
 	}
 
 	// Create app watcher
@@ -210,8 +210,8 @@ func NewApp(cfg *config.Config) (*App, error) {
 
 	// Create electron manager
 	if cfg.Hints.Enabled {
-		if cfg.Accessibility.AdditionalAXSupport.Enable {
-			app.electronManager = electron.NewElectronManager(cfg.Accessibility.AdditionalAXSupport.AdditionalElectronBundles, cfg.Accessibility.AdditionalAXSupport.AdditionalChromiumBundles, cfg.Accessibility.AdditionalAXSupport.AdditionalFirefoxBundles)
+		if cfg.Hints.AdditionalAXSupport.Enable { // Changed from cfg.Accessibility.AdditionalAXSupport.Enable
+			app.electronManager = electron.NewElectronManager(cfg.Hints.AdditionalAXSupport.AdditionalElectronBundles, cfg.Hints.AdditionalAXSupport.AdditionalChromiumBundles, cfg.Hints.AdditionalAXSupport.AdditionalFirefoxBundles) // Changed from cfg.Accessibility.AdditionalAXSupport
 		}
 	}
 
