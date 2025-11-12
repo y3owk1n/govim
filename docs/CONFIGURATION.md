@@ -28,7 +28,7 @@ Neru searches for configuration in the following order:
 
 ## Hotkeys
 
-Bind global hotkeys to Neru actions. Set to `""` or comment out to disable.
+Bind global hotkeys to Neru actions. Comment out to disable.
 
 ```toml
 [hotkeys]
@@ -47,8 +47,8 @@ Bind global hotkeys to Neru actions. Set to `""` or comment out to disable.
 # "Cmd+Shift+S" = "grid scroll"
 
 # Execute shell commands
-"Cmd+Alt+T" = "exec open -a Terminal"
-"Cmd+Alt+N" = "exec osascript -e 'display notification \"Hello!\" with title \"Neru\"'"
+# "Cmd+Alt+T" = "exec open -a Terminal"
+# "Cmd+Alt+N" = "exec osascript -e 'display notification \"Hello!\" with title \"Neru\"'"
 ```
 
 ### Hotkey Syntax
@@ -286,14 +286,6 @@ font_size = 12
 font_family = ""
 opacity = 0.7
 border_width = 1
-
-# Colors
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
 ```
 
 **Cell sizing:** Automatically optimized based on screen resolution. Uses 2-4 character labels with square cells.
@@ -322,14 +314,88 @@ sublayer_keys = "abcdefghijklmnpqrstuvwxyz"
 ```toml
 [grid.left_click]
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [grid.right_click]
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [grid.double_click]
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
-# Additional actions: triple_click, middle_click
+[grid.triple_click]
+restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.middle_click]
+restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.mouse_up]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.mouse_down]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.move_mouse]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.scroll]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.context_menu]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 ```
 
 ---

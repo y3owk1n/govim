@@ -216,6 +216,10 @@ func (a *App) setupGrid(action Action) error {
 	// Grid overlay already created in NewApp - update its config and use it
 	(*a.gridCtx.gridOverlay).UpdateConfig(a.config.Grid)
 
+	// Get style for current action
+	actionString := getActionString(action)
+	gridStyle := grid.BuildStyleForAction(a.config.Grid, actionString)
+
 	// Subgrid configuration and keys (fallback to grid characters): always 3x3
 	keys := strings.TrimSpace(a.config.Grid.SublayerKeys)
 	if keys == "" {
@@ -236,12 +240,12 @@ func (a *App) setupGrid(action Action) error {
 		(*a.gridCtx.gridOverlay).UpdateMatches(input)
 	}, func(cell *grid.Cell) {
 		// Draw 3x3 subgrid inside selected cell
-		(*a.gridCtx.gridOverlay).ShowSubgrid(cell)
+		(*a.gridCtx.gridOverlay).ShowSubgrid(cell, gridStyle)
 	})
 	a.gridRouter = grid.NewRouter(a.gridManager)
 
 	// Draw initial grid
-	if err := (*a.gridCtx.gridOverlay).Draw(gridInstance, ""); err != nil {
+	if err := (*a.gridCtx.gridOverlay).Draw(gridInstance, "", gridStyle); err != nil {
 		return fmt.Errorf("failed to draw grid: %w", err)
 	}
 
@@ -755,11 +759,15 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 					gridOverlay := *a.gridCtx.gridOverlay
 					gridOverlay.Clear()
 					gridInstance := *a.gridCtx.gridInstance
-					if err := gridOverlay.Draw(gridInstance, a.gridManager.GetInput()); err != nil {
+					// Get style for current action
+					actionString := getActionString(a.gridCtx.currentAction)
+					gridStyle := grid.BuildStyleForAction(a.config.Grid, actionString)
+					if err := gridOverlay.Draw(gridInstance, a.gridManager.GetInput(), gridStyle); err != nil {
 						a.logger.Error("Failed to re-show grid", zap.Error(err))
 					}
 					gridOverlay.Show()
 				}
+
 			}
 			return false
 		}
