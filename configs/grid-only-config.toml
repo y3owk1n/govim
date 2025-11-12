@@ -20,6 +20,9 @@
 # Applications to exclude from Neru functionality
 excluded_apps = []
 
+# Check Accessibility permission on startup; exits with guidance if missing.
+accessibility_check_on_start = true
+
 [hotkeys]
 # Grid mode hotkeys - all actions available
 "Cmd+Shift+Space" = "grid left_click"

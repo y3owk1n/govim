@@ -24,6 +24,9 @@
 # Applications to exclude from Neru functionality
 excluded_apps = []
 
+# Check Accessibility permission on startup; exits with guidance if missing.
+accessibility_check_on_start = true
+
 [hotkeys]
 # Grid mode - ONLY for move_mouse (cursor positioning)
 "Cmd+Shift+M" = "grid move_mouse"

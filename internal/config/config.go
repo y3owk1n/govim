@@ -12,30 +12,17 @@ import (
 
 // Config represents the complete application configuration
 type Config struct {
-	General       GeneralConfig       `toml:"general"`
-	Accessibility AccessibilityConfig `toml:"accessibility"`
-	Hotkeys       HotkeysConfig       `toml:"hotkeys"`
-	Scroll        ScrollConfig        `toml:"scroll"`
-	Hints         HintsConfig         `toml:"hints"`
-	Grid          GridConfig          `toml:"grid"`
-	Logging       LoggingConfig       `toml:"logging"`
+	General GeneralConfig `toml:"general"`
+	Hotkeys HotkeysConfig `toml:"hotkeys"`
+	Hints   HintsConfig   `toml:"hints"`
+	Grid    GridConfig    `toml:"grid"`
+	Scroll  ScrollConfig  `toml:"scroll"`
+	Logging LoggingConfig `toml:"logging"`
 }
 
 type GeneralConfig struct {
-	ExcludedApps                  []string `toml:"excluded_apps"`
-	IncludeMenubarHints           bool     `toml:"include_menubar_hints"`
-	AdditionalMenubarHintsTargets []string `toml:"additional_menubar_hints_targets"`
-	IncludeDockHints              bool     `toml:"include_dock_hints"`
-	IncludeNCHints                bool     `toml:"include_nc_hints"`
-}
-
-type AccessibilityConfig struct {
-	AccessibilityCheckOnStart bool                `toml:"accessibility_check_on_start"`
-	ClickableRoles            []string            `toml:"clickable_roles"`
-	ScrollableRoles           []string            `toml:"scrollable_roles"`
-	IgnoreClickableCheck      bool                `toml:"ignore_clickable_check"`
-	AdditionalAXSupport       AdditionalAXSupport `toml:"additional_ax_support"`
-	AppConfigs                []AppConfig         `toml:"app_configs"`
+	ExcludedApps              []string `toml:"excluded_apps"`
+	AccessibilityCheckOnStart bool     `toml:"accessibility_check_on_start"` // Moved from AccessibilityConfig
 }
 
 type AppConfig struct {
@@ -64,14 +51,34 @@ type ScrollConfig struct {
 }
 
 type HintsConfig struct {
-	HintCharacters   string                             `toml:"hint_characters"`
-	FontSize         int                                `toml:"font_size"`
-	FontFamily       string                             `toml:"font_family"`
-	BorderRadius     int                                `toml:"border_radius"`
-	Padding          int                                `toml:"padding"`
-	BorderWidth      int                                `toml:"border_width"`
-	Opacity          float64                            `toml:"opacity"`
-	Enabled          bool                               `toml:"enabled"`
+	// General configurations
+	Enabled        bool    `toml:"enabled"`
+	HintCharacters string  `toml:"hint_characters"`
+	FontSize       int     `toml:"font_size"`
+	FontFamily     string  `toml:"font_family"`
+	BorderRadius   int     `toml:"border_radius"`
+	Padding        int     `toml:"padding"`
+	BorderWidth    int     `toml:"border_width"`
+	Opacity        float64 `toml:"opacity"`
+
+	// Addidiotanl hints
+	IncludeMenubarHints           bool     `toml:"include_menubar_hints"`
+	AdditionalMenubarHintsTargets []string `toml:"additional_menubar_hints_targets"`
+	IncludeDockHints              bool     `toml:"include_dock_hints"`
+	IncludeNCHints                bool     `toml:"include_nc_hints"`
+
+	// Roles and clicks
+	ClickableRoles       []string `toml:"clickable_roles"`
+	ScrollableRoles      []string `toml:"scrollable_roles"`
+	IgnoreClickableCheck bool     `toml:"ignore_clickable_check"`
+
+	// App specific configs for roles and clicks
+	AppConfigs []AppConfig `toml:"app_configs"`
+
+	// AX support
+	AdditionalAXSupport AdditionalAXSupport `toml:"additional_ax_support"`
+
+	// Action configurations
 	LeftClickHints   HintsActionConfigWithRestoreCursor `toml:"left_click_hints"`
 	RightClickHints  HintsActionConfigWithRestoreCursor `toml:"right_click_hints"`
 	DoubleClickHints HintsActionConfigWithRestoreCursor `toml:"double_click_hints"`
@@ -107,27 +114,36 @@ type LoggingConfig struct {
 }
 
 type GridConfig struct {
-	Characters             string           `toml:"characters"`
-	SublayerKeys           string           `toml:"sublayer_keys"`
-	FontSize               int              `toml:"font_size"`
-	FontFamily             string           `toml:"font_family"`
-	Opacity                float64          `toml:"opacity"`
-	BackgroundColor        string           `toml:"background_color"`
-	TextColor              string           `toml:"text_color"`
-	MatchedTextColor       string           `toml:"matched_text_color"`
-	MatchedBackgroundColor string           `toml:"matched_background_color"`
-	MatchedBorderColor     string           `toml:"matched_border_color"`
-	BorderColor            string           `toml:"border_color"`
-	BorderWidth            int              `toml:"border_width"`
-	LiveMatchUpdate        bool             `toml:"live_match_update"`
-	SubgridEnabled         bool             `toml:"subgrid_enabled"`
-	Enabled                bool             `toml:"enabled"`
-	HideUnmatched          bool             `toml:"hide_unmatched"`
-	LeftClick              GridActionConfig `toml:"left_click"`
-	RightClick             GridActionConfig `toml:"right_click"`
-	DoubleClick            GridActionConfig `toml:"double_click"`
-	TripleClick            GridActionConfig `toml:"triple_click"`
-	MiddleClick            GridActionConfig `toml:"middle_click"`
+	// General configurations
+	Enabled        bool `toml:"enabled"`
+	SubgridEnabled bool `toml:"subgrid_enabled"`
+
+	// Keys and characters
+	Characters   string `toml:"characters"`
+	SublayerKeys string `toml:"sublayer_keys"`
+
+	// Appearance
+	FontSize               int     `toml:"font_size"`
+	FontFamily             string  `toml:"font_family"`
+	Opacity                float64 `toml:"opacity"`
+	BackgroundColor        string  `toml:"background_color"`
+	TextColor              string  `toml:"text_color"`
+	MatchedTextColor       string  `toml:"matched_text_color"`
+	MatchedBackgroundColor string  `toml:"matched_background_color"`
+	MatchedBorderColor     string  `toml:"matched_border_color"`
+	BorderColor            string  `toml:"border_color"`
+	BorderWidth            int     `toml:"border_width"`
+
+	// Behavior
+	LiveMatchUpdate bool `toml:"live_match_update"`
+	HideUnmatched   bool `toml:"hide_unmatched"`
+
+	// Actions
+	LeftClick   GridActionConfig `toml:"left_click"`
+	RightClick  GridActionConfig `toml:"right_click"`
+	DoubleClick GridActionConfig `toml:"double_click"`
+	TripleClick GridActionConfig `toml:"triple_click"`
+	MiddleClick GridActionConfig `toml:"middle_click"`
 }
 
 type AdditionalAXSupport struct {
@@ -141,7 +157,27 @@ type AdditionalAXSupport struct {
 func DefaultConfig() *Config {
 	return &Config{
 		General: GeneralConfig{
-			ExcludedApps:        []string{},
+			ExcludedApps:              []string{},
+			AccessibilityCheckOnStart: true,
+		},
+		Hotkeys: HotkeysConfig{
+			Bindings: map[string]string{
+				"Cmd+Shift+Space": "hints left_click",
+				"Cmd+Shift+A":     "hints context_menu",
+				"Cmd+Shift+J":     "action scroll",
+				"Cmd+Shift+G":     "grid left_click",
+			},
+		},
+		Hints: HintsConfig{
+			Enabled:        true,
+			HintCharacters: "asdfghjkl",
+			FontSize:       12,
+			FontFamily:     "SF Mono",
+			BorderRadius:   4,
+			Padding:        4,
+			BorderWidth:    1,
+			Opacity:        0.95,
+
 			IncludeMenubarHints: false,
 			AdditionalMenubarHintsTargets: []string{
 				"com.apple.TextInputMenuAgent",
@@ -150,9 +186,7 @@ func DefaultConfig() *Config {
 			},
 			IncludeDockHints: false,
 			IncludeNCHints:   false,
-		},
-		Accessibility: AccessibilityConfig{
-			AccessibilityCheckOnStart: true,
+
 			ClickableRoles: []string{
 				"AXButton",
 				"AXComboBox",
@@ -182,30 +216,16 @@ func DefaultConfig() *Config {
 				"AXGroup",
 			},
 			IgnoreClickableCheck: false,
+
+			AppConfigs: []AppConfig{}, // Moved from AccessibilityConfig
+
 			AdditionalAXSupport: AdditionalAXSupport{
 				Enable:                    false,
 				AdditionalElectronBundles: []string{},
 				AdditionalChromiumBundles: []string{},
 				AdditionalFirefoxBundles:  []string{},
 			},
-		},
-		Hotkeys: HotkeysConfig{
-			Bindings: map[string]string{
-				"Cmd+Shift+Space": "hints left_click",
-				"Cmd+Shift+A":     "hints context_menu",
-				"Cmd+Shift+J":     "action scroll",
-				"Cmd+Shift+G":     "grid left_click",
-			},
-		},
-		Hints: HintsConfig{
-			HintCharacters: "asdfghjkl",
-			FontSize:       12,
-			FontFamily:     "SF Mono",
-			BorderRadius:   4,
-			Padding:        4,
-			BorderWidth:    1,
-			Opacity:        0.95,
-			Enabled:        true,
+
 			LeftClickHints: HintsActionConfigWithRestoreCursor{
 				HintsActionConfig: HintsActionConfig{
 					BackgroundColor:  "#FFD700",
@@ -282,6 +302,33 @@ func DefaultConfig() *Config {
 				BorderColor:      "#000000",
 			},
 		},
+		Grid: GridConfig{
+			Enabled:        true,
+			SubgridEnabled: true,
+
+			Characters:   "abcdefghijklmnpqrstuvwxyz",
+			SublayerKeys: "abcdefghijklmnpqrstuvwxyz",
+
+			FontSize:               12,
+			FontFamily:             "SF Mono",
+			Opacity:                0.7,
+			BackgroundColor:        "#abe9b3",
+			TextColor:              "#000000",
+			MatchedTextColor:       "#000000",
+			MatchedBackgroundColor: "#f8bd96",
+			MatchedBorderColor:     "#f8bd96",
+			BorderColor:            "#abe9b3",
+			BorderWidth:            1,
+
+			LiveMatchUpdate: true,
+			HideUnmatched:   true,
+
+			LeftClick:   GridActionConfig{RestoreCursor: false},
+			RightClick:  GridActionConfig{RestoreCursor: false},
+			DoubleClick: GridActionConfig{RestoreCursor: false},
+			TripleClick: GridActionConfig{RestoreCursor: false},
+			MiddleClick: GridActionConfig{RestoreCursor: false},
+		},
 		Scroll: ScrollConfig{
 			ScrollStep:          50,
 			ScrollStepHalf:      500,
@@ -294,29 +341,6 @@ func DefaultConfig() *Config {
 			LogLevel:          "info",
 			LogFile:           "",
 			StructuredLogging: true,
-		},
-		Grid: GridConfig{
-			Characters:             "abcdefghijklmnpqrstuvwxyz",
-			SublayerKeys:           "abcdefghijklmnpqrstuvwxyz",
-			FontSize:               12,
-			FontFamily:             "SF Mono",
-			Opacity:                0.7,
-			BackgroundColor:        "#abe9b3",
-			TextColor:              "#000000",
-			MatchedTextColor:       "#000000",
-			MatchedBackgroundColor: "#f8bd96",
-			MatchedBorderColor:     "#f8bd96",
-			BorderColor:            "#abe9b3",
-			BorderWidth:            1,
-			LiveMatchUpdate:        true,
-			SubgridEnabled:         true,
-			Enabled:                true,
-			HideUnmatched:          true,
-			LeftClick:              GridActionConfig{RestoreCursor: false},
-			RightClick:             GridActionConfig{RestoreCursor: false},
-			DoubleClick:            GridActionConfig{RestoreCursor: false},
-			TripleClick:            GridActionConfig{RestoreCursor: false},
-			MiddleClick:            GridActionConfig{RestoreCursor: false},
 		},
 	}
 }
@@ -564,40 +588,40 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("hints.border_width must be non-negative")
 	}
 
-	for _, role := range c.Accessibility.ClickableRoles {
+	for _, role := range c.Hints.ClickableRoles { // Changed from c.Accessibility.ClickableRoles
 		if strings.TrimSpace(role) == "" {
-			return fmt.Errorf("accessibility.clickable_roles cannot contain empty values")
+			return fmt.Errorf("hints.clickable_roles cannot contain empty values")
 		}
 	}
 
-	for _, role := range c.Accessibility.ScrollableRoles {
+	for _, role := range c.Hints.ScrollableRoles { // Changed from c.Accessibility.ScrollableRoles
 		if strings.TrimSpace(role) == "" {
-			return fmt.Errorf("accessibility.scrollable_roles cannot contain empty values")
+			return fmt.Errorf("hints.scrollable_roles cannot contain empty values")
 		}
 	}
 
-	for _, bundle := range c.Accessibility.AdditionalAXSupport.AdditionalElectronBundles {
+	for _, bundle := range c.Hints.AdditionalAXSupport.AdditionalElectronBundles { // Changed from c.Accessibility.AdditionalAXSupport.AdditionalElectronBundles
 		if strings.TrimSpace(bundle) == "" {
-			return fmt.Errorf("accessibility.electron_support.additional_electron_bundles cannot contain empty values")
+			return fmt.Errorf("hints.electron_support.additional_electron_bundles cannot contain empty values")
 		}
 	}
 
-	for _, bundle := range c.Accessibility.AdditionalAXSupport.AdditionalChromiumBundles {
+	for _, bundle := range c.Hints.AdditionalAXSupport.AdditionalChromiumBundles { // Changed from c.Accessibility.AdditionalAXSupport.AdditionalChromiumBundles
 		if strings.TrimSpace(bundle) == "" {
-			return fmt.Errorf("accessibility.electron_support.additional_chromium_bundles cannot contain empty values")
+			return fmt.Errorf("hints.electron_support.additional_chromium_bundles cannot contain empty values")
 		}
 	}
 
-	for _, bundle := range c.Accessibility.AdditionalAXSupport.AdditionalFirefoxBundles {
+	for _, bundle := range c.Hints.AdditionalAXSupport.AdditionalFirefoxBundles { // Changed from c.Accessibility.AdditionalAXSupport.AdditionalFirefoxBundles
 		if strings.TrimSpace(bundle) == "" {
-			return fmt.Errorf("accessibility.electron_support.additional_firefox_bundles cannot contain empty values")
+			return fmt.Errorf("hints.electron_support.additional_firefox_bundles cannot contain empty values")
 		}
 	}
 
 	// Validate app configs
-	for i, appConfig := range c.Accessibility.AppConfigs {
+	for i, appConfig := range c.Hints.AppConfigs { // Changed from c.Accessibility.AppConfigs
 		if strings.TrimSpace(appConfig.BundleID) == "" {
-			return fmt.Errorf("accessibility.app_configs[%d].bundle_id cannot be empty", i)
+			return fmt.Errorf("hints.app_configs[%d].bundle_id cannot be empty", i)
 		}
 
 		// Validate hotkey bindings
@@ -614,12 +638,12 @@ func (c *Config) Validate() error {
 		}
 		for _, role := range appConfig.AdditionalClickable {
 			if strings.TrimSpace(role) == "" {
-				return fmt.Errorf("accessibility.app_configs[%d].additional_clickable_roles cannot contain empty values", i)
+				return fmt.Errorf("hints.app_configs[%d].additional_clickable_roles cannot contain empty values", i)
 			}
 		}
 		for _, role := range appConfig.AdditionalScrollable {
 			if strings.TrimSpace(role) == "" {
-				return fmt.Errorf("accessibility.app_configs[%d].additional_scrollable_roles cannot contain empty values", i)
+				return fmt.Errorf("hints.app_configs[%d].additional_scrollable_roles cannot contain empty values", i)
 			}
 		}
 	}
@@ -679,7 +703,7 @@ func (c *Config) Validate() error {
 func (c *Config) GetClickableRolesForApp(bundleID string) []string {
 	// Start with global roles
 	rolesMap := make(map[string]struct{})
-	for _, role := range c.Accessibility.ClickableRoles {
+	for _, role := range c.Hints.ClickableRoles { // Changed from c.Accessibility.ClickableRoles
 		trimmed := strings.TrimSpace(role)
 		if trimmed != "" {
 			rolesMap[trimmed] = struct{}{}
@@ -687,7 +711,7 @@ func (c *Config) GetClickableRolesForApp(bundleID string) []string {
 	}
 
 	// Add app-specific roles
-	for _, appConfig := range c.Accessibility.AppConfigs {
+	for _, appConfig := range c.Hints.AppConfigs { // Changed from c.Accessibility.AppConfigs
 		if appConfig.BundleID == bundleID {
 			for _, role := range appConfig.AdditionalClickable {
 				trimmed := strings.TrimSpace(role)
@@ -700,12 +724,12 @@ func (c *Config) GetClickableRolesForApp(bundleID string) []string {
 	}
 
 	// Add menubar roles if enabled
-	if c.General.IncludeMenubarHints {
+	if c.Hints.IncludeMenubarHints { // Changed from c.General.IncludeMenubarHints
 		rolesMap["AXMenuBarItem"] = struct{}{}
 	}
 
 	// Add dock roles if enabled
-	if c.General.IncludeDockHints {
+	if c.Hints.IncludeDockHints { // Changed from c.General.IncludeDockHints
 		rolesMap["AXDockItem"] = struct{}{}
 	}
 
@@ -722,7 +746,7 @@ func (c *Config) GetClickableRolesForApp(bundleID string) []string {
 func (c *Config) GetScrollableRolesForApp(bundleID string) []string {
 	// Start with global roles
 	rolesMap := make(map[string]struct{})
-	for _, role := range c.Accessibility.ScrollableRoles {
+	for _, role := range c.Hints.ScrollableRoles { // Changed from c.Accessibility.ScrollableRoles
 		trimmed := strings.TrimSpace(role)
 		if trimmed != "" {
 			rolesMap[trimmed] = struct{}{}
@@ -730,7 +754,7 @@ func (c *Config) GetScrollableRolesForApp(bundleID string) []string {
 	}
 
 	// Add app-specific roles
-	for _, appConfig := range c.Accessibility.AppConfigs {
+	for _, appConfig := range c.Hints.AppConfigs { // Changed from c.Accessibility.AppConfigs
 		if appConfig.BundleID == bundleID {
 			for _, role := range appConfig.AdditionalScrollable {
 				trimmed := strings.TrimSpace(role)
