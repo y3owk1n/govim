@@ -4,6 +4,8 @@ import (
 	"image"
 	"math"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 // Grid represents a flat 3-character coordinate grid (all positions visible at once)
@@ -32,7 +34,12 @@ type Cell struct {
 //
 // The algorithm ensures cells maintain aspect ratios matching the screen to provide
 // consistent rectangular proportions across all monitors.
-func NewGrid(characters string, bounds image.Rectangle) *Grid {
+func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Grid {
+	logger.Debug("Creating new grid",
+		zap.String("characters", characters),
+		zap.Int("bounds_width", bounds.Dx()),
+		zap.Int("bounds_height", bounds.Dy()))
+
 	if characters == "" {
 		characters = "abcdefghijklmnopqrstuvwxyz"
 	}
@@ -50,8 +57,15 @@ func NewGrid(characters string, bounds image.Rectangle) *Grid {
 	width := bounds.Max.X - bounds.Min.X
 	height := bounds.Max.Y - bounds.Min.Y
 
+	logger.Debug("Grid dimensions calculated",
+		zap.Int("width", width),
+		zap.Int("height", height))
+
 	// Validate bounds before processing
 	if width <= 0 || height <= 0 {
+		logger.Warn("Invalid grid bounds, creating minimal grid",
+			zap.Int("width", width),
+			zap.Int("height", height))
 		// Return minimal grid
 		return &Grid{
 			characters: characters,
@@ -289,6 +303,11 @@ func NewGrid(characters string, bounds image.Rectangle) *Grid {
 			idx++
 		}
 	}
+
+	logger.Debug("Grid created successfully",
+		zap.Int("cell_count", len(cells)),
+		zap.Int("grid_cols", gridCols),
+		zap.Int("grid_rows", gridRows))
 
 	return &Grid{
 		characters: characters,

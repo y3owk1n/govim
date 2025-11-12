@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/y3owk1n/neru/internal/logger"
 )
 
 var stopCmd = &cobra.Command{
@@ -12,6 +13,7 @@ var stopCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Stopping/pausing program")
 		return sendCommand("stop", args)
 	},
 }

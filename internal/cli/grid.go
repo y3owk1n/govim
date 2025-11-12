@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/y3owk1n/neru/internal/logger"
 )
 
 var gridCmd = &cobra.Command{
@@ -21,6 +22,7 @@ var gridLeftClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching grid mode with left click action")
 		var params []string
 		params = append(params, "left_click")
 		return sendCommand("grid", params)
@@ -35,6 +37,7 @@ var gridRightClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching grid mode with right click action")
 		var params []string
 		params = append(params, "right_click")
 		return sendCommand("grid", params)
@@ -49,6 +52,7 @@ var gridDoubleClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching grid mode with double click action")
 		var params []string
 		params = append(params, "double_click")
 		return sendCommand("grid", params)
@@ -63,6 +67,7 @@ var gridTripleClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching grid mode with triple click action")
 		var params []string
 		params = append(params, "triple_click")
 		return sendCommand("grid", params)
@@ -77,6 +82,7 @@ var gridMouseUpCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching grid mode with mouse up action")
 		var params []string
 		params = append(params, "mouse_up")
 		return sendCommand("grid", params)
@@ -91,6 +97,7 @@ var gridMouseDownCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching grid mode with mouse down action")
 		var params []string
 		params = append(params, "mouse_down")
 		return sendCommand("grid", params)
@@ -105,6 +112,7 @@ var gridMiddleClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching grid mode with middle click action")
 		var params []string
 		params = append(params, "middle_click")
 		return sendCommand("grid", params)
@@ -119,6 +127,7 @@ var gridMoveMouseCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching grid mode with move mouse action")
 		var params []string
 		params = append(params, "move_mouse")
 		return sendCommand("grid", params)
@@ -133,6 +142,7 @@ var gridScrollCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching grid mode with scroll action")
 		var params []string
 		params = append(params, "scroll")
 		return sendCommand("grid", params)
@@ -147,6 +157,7 @@ var gridContextMenuCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching grid mode with context menu action")
 		var params []string
 		params = append(params, "context_menu")
 		return sendCommand("grid", params)

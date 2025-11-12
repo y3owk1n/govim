@@ -17,6 +17,7 @@ import (
 	"unsafe"
 
 	"github.com/y3owk1n/neru/internal/config"
+	"go.uber.org/zap"
 )
 
 var (
@@ -42,14 +43,16 @@ func gridResizeCompletionCallback(context unsafe.Pointer) {
 type GridOverlay struct {
 	window C.OverlayWindow
 	cfg    config.GridConfig
+	logger *zap.Logger
 }
 
 // NewGridOverlay creates a new grid overlay with its own window
-func NewGridOverlay(cfg config.GridConfig) *GridOverlay {
+func NewGridOverlay(cfg config.GridConfig, logger *zap.Logger) *GridOverlay {
 	window := C.createOverlayWindow()
 	return &GridOverlay{
 		window: window,
 		cfg:    cfg,
+		logger: logger,
 	}
 }
 
@@ -131,29 +134,45 @@ func (o *GridOverlay) ResizeToActiveScreenSync() {
 
 // Draw renders the flat grid with all 3-char cells visible
 func (o *GridOverlay) Draw(grid *Grid, currentInput string, style GridStyle) error {
+	o.logger.Debug("Drawing grid overlay",
+		zap.Int("cell_count", len(grid.GetAllCells())),
+		zap.String("current_input", currentInput))
+
 	// Clear existing content
 	o.Clear()
 
 	cells := grid.GetAllCells()
 	if len(cells) == 0 {
+		o.logger.Debug("No cells to draw in grid overlay")
 		return nil
 	}
 
 	// Draw grid cells with labels (no grid lines for dense flat view)
 	o.drawGridCells(cells, currentInput, style)
 
+	o.logger.Debug("Grid overlay drawn successfully")
 	return nil
 }
 
 // UpdateMatches updates matched state without redrawing all cells
 func (o *GridOverlay) UpdateMatches(prefix string) {
+	o.logger.Debug("Updating grid matches", zap.String("prefix", prefix))
+
 	cPrefix := C.CString(prefix)
 	defer C.free(unsafe.Pointer(cPrefix))
 	C.updateGridMatchPrefix(o.window, cPrefix)
+
+	o.logger.Debug("Grid matches updated successfully")
 }
 
 // ShowSubgrid draws a 3x3 subgrid inside the selected cell
 func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
+	o.logger.Debug("Showing subgrid",
+		zap.Int("cell_x", cell.Bounds.Min.X),
+		zap.Int("cell_y", cell.Bounds.Min.Y),
+		zap.Int("cell_width", cell.Bounds.Dx()),
+		zap.Int("cell_height", cell.Bounds.Dy()))
+
 	keys := o.cfg.SublayerKeys
 	if strings.TrimSpace(keys) == "" {
 		keys = o.cfg.Characters
@@ -246,6 +265,8 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
 	C.free(unsafe.Pointer(matchedBackgroundColor))
 	C.free(unsafe.Pointer(matchedBorderColor))
 	C.free(unsafe.Pointer(borderColor))
+
+	o.logger.Debug("Subgrid shown successfully")
 }
 
 // DrawScrollHighlight draws a scroll highlight
@@ -279,9 +300,14 @@ func (o *GridOverlay) DrawScrollHighlight(x, y, w, h int, color string, width in
 
 // drawGridCells draws all grid cells with their labels
 func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style GridStyle) {
+	o.logger.Debug("Drawing grid cells",
+		zap.Int("cell_count", len(cellsGo)),
+		zap.String("current_input", currentInput))
+
 	cGridCells := make([]C.GridCell, len(cellsGo))
 	cLabels := make([]*C.char, len(cellsGo))
 
+	matchedCount := 0
 	for i, cell := range cellsGo {
 		cLabels[i] = C.CString(cell.Coordinate)
 
@@ -290,6 +316,7 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 			cellPrefix := cell.Coordinate[:len(currentInput)]
 			if cellPrefix == currentInput {
 				isMatched = 1
+				matchedCount++
 			}
 		}
 
@@ -303,6 +330,10 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 			isSubgrid: C.int(0), // Mark as regular grid cell
 		}
 	}
+
+	o.logger.Debug("Grid cell match statistics",
+		zap.Int("total_cells", len(cellsGo)),
+		zap.Int("matched_cells", matchedCount))
 
 	fontFamily := C.CString(style.FontFamily)
 	backgroundColor := C.CString(style.BackgroundColor)
@@ -338,6 +369,8 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 	C.free(unsafe.Pointer(matchedBackgroundColor))
 	C.free(unsafe.Pointer(matchedBorderColor))
 	C.free(unsafe.Pointer(borderColor))
+
+	o.logger.Debug("Grid cells drawn successfully")
 }
 
 // GridStyle represents the visual style for grid cells

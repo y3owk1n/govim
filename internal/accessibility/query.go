@@ -5,6 +5,9 @@ import (
 	"image"
 	"sync"
 	"time"
+
+	"github.com/y3owk1n/neru/internal/logger"
+	"go.uber.org/zap"
 )
 
 var (
@@ -41,12 +44,15 @@ func PrintTree(node *TreeNode, depth int) {
 
 // GetClickableElements returns all clickable elements in the frontmost window
 func GetClickableElements() ([]*TreeNode, error) {
+	logger.Debug("Getting clickable elements for frontmost window")
+
 	cacheOnce.Do(func() {
 		globalCache = NewInfoCache(5 * time.Second)
 	})
 
 	window := GetFrontmostWindow()
 	if window == nil {
+		logger.Warn("No frontmost window found")
 		return nil, fmt.Errorf("no frontmost window")
 	}
 	defer window.Release()
@@ -56,20 +62,26 @@ func GetClickableElements() ([]*TreeNode, error) {
 
 	tree, err := BuildTree(window, opts)
 	if err != nil {
+		logger.Error("Failed to build tree for frontmost window", zap.Error(err))
 		return nil, err
 	}
 
-	return tree.FindClickableElements(), nil
+	elements := tree.FindClickableElements()
+	logger.Debug("Found clickable elements", zap.Int("count", len(elements)))
+	return elements, nil
 }
 
 // GetScrollableElements returns all scrollable elements in the frontmost window
 func GetScrollableElements() ([]*TreeNode, error) {
+	logger.Debug("Getting scrollable elements for frontmost window")
+
 	cacheOnce.Do(func() {
 		globalCache = NewInfoCache(5 * time.Second)
 	})
 
 	window := GetFrontmostWindow()
 	if window == nil {
+		logger.Warn("No frontmost window found")
 		return nil, fmt.Errorf("no frontmost window")
 	}
 	defer window.Release()
@@ -79,26 +91,33 @@ func GetScrollableElements() ([]*TreeNode, error) {
 
 	tree, err := BuildTree(window, opts)
 	if err != nil {
+		logger.Error("Failed to build tree for frontmost window", zap.Error(err))
 		return nil, err
 	}
 
-	return tree.FindScrollableElements(), nil
+	elements := tree.FindScrollableElements()
+	logger.Debug("Found scrollable elements", zap.Int("count", len(elements)))
+	return elements, nil
 }
 
 // GetMenuBarClickableElements returns clickable elements from the focused app's menu bar
 func GetMenuBarClickableElements() ([]*TreeNode, error) {
+	logger.Debug("Getting clickable elements for menu bar")
+
 	cacheOnce.Do(func() {
 		globalCache = NewInfoCache(5 * time.Second)
 	})
 
 	app := GetFocusedApplication()
 	if app == nil {
+		logger.Debug("No focused application found")
 		return []*TreeNode{}, nil
 	}
 	defer app.Release()
 
 	menubar := app.GetMenuBar()
 	if menubar == nil {
+		logger.Debug("No menu bar found")
 		return []*TreeNode{}, nil
 	}
 	defer menubar.Release()
@@ -108,21 +127,29 @@ func GetMenuBarClickableElements() ([]*TreeNode, error) {
 
 	tree, err := BuildTree(menubar, opts)
 	if err != nil {
+		logger.Error("Failed to build tree for menu bar", zap.Error(err))
 		return nil, err
 	}
 	if tree == nil {
+		logger.Debug("No tree built for menu bar")
 		return []*TreeNode{}, nil
 	}
-	return tree.FindClickableElements(), nil
+
+	elements := tree.FindClickableElements()
+	logger.Debug("Found menu bar clickable elements", zap.Int("count", len(elements)))
+	return elements, nil
 }
 
 func GetClickableElementsFromBundleID(bundleID string) ([]*TreeNode, error) {
+	logger.Debug("Getting clickable elements for bundle ID", zap.String("bundle_id", bundleID))
+
 	cacheOnce.Do(func() {
 		globalCache = NewInfoCache(5 * time.Second)
 	})
 
 	app := GetApplicationByBundleID(bundleID)
 	if app == nil {
+		logger.Debug("Application not found for bundle ID", zap.String("bundle_id", bundleID))
 		return []*TreeNode{}, nil
 	}
 	defer app.Release()
@@ -133,10 +160,19 @@ func GetClickableElementsFromBundleID(bundleID string) ([]*TreeNode, error) {
 
 	tree, err := BuildTree(app, opts)
 	if err != nil {
+		logger.Error("Failed to build tree for application",
+			zap.String("bundle_id", bundleID),
+			zap.Error(err))
 		return nil, err
 	}
 	if tree == nil {
+		logger.Debug("No tree built for application", zap.String("bundle_id", bundleID))
 		return []*TreeNode{}, nil
 	}
-	return tree.FindClickableElements(), nil
+
+	elements := tree.FindClickableElements()
+	logger.Debug("Found clickable elements for application",
+		zap.String("bundle_id", bundleID),
+		zap.Int("count", len(elements)))
+	return elements, nil
 }

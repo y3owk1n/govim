@@ -445,8 +445,11 @@ func Load(path string) (*Config, error) {
 		path = FindConfigFile()
 	}
 
+	fmt.Printf("Loading config from: %s\n", path)
+
 	// If config file doesn't exist, return default config
 	if _, err := os.Stat(path); os.IsNotExist(err) {
+		fmt.Println("Config file not found, using default configuration")
 		return cfg, nil
 	}
 
@@ -480,6 +483,8 @@ func Load(path string) (*Config, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
+
+	fmt.Println("Configuration loaded successfully")
 	return cfg, nil
 }
 
@@ -493,15 +498,18 @@ func FindConfigFile() string {
 	// Try ~/.config/neru/config.toml
 	configPath := filepath.Join(homeDir, ".config", "neru", "config.toml")
 	if _, err := os.Stat(configPath); err == nil {
+		fmt.Printf("Found config at: %s\n", configPath)
 		return configPath
 	}
 
 	// Try ~/Library/Application Support/neru/config.toml
 	configPath = filepath.Join(homeDir, "Library", "Application Support", "neru", "config.toml")
 	if _, err := os.Stat(configPath); err == nil {
+		fmt.Printf("Found config at: %s\n", configPath)
 		return configPath
 	}
 
+	fmt.Println("No config file found in default locations")
 	return ""
 }
 

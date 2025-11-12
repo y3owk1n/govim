@@ -3,6 +3,8 @@ package appwatcher
 import (
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/y3owk1n/neru/internal/bridge"
 )
 
@@ -18,10 +20,13 @@ type Watcher struct {
 	activateCallbacks     []AppCallback
 	deactivateCallbacks   []AppCallback
 	screenChangeCallbacks []func()
+	logger                *zap.Logger
 }
 
-func NewWatcher() *Watcher {
-	w := &Watcher{}
+func NewWatcher(logger *zap.Logger) *Watcher {
+	w := &Watcher{
+		logger: logger,
+	}
 
 	bridge.SetAppWatcher(bridge.AppWatcher(w))
 
@@ -29,10 +34,12 @@ func NewWatcher() *Watcher {
 }
 
 func (w *Watcher) Start() {
+	w.logger.Debug("App watcher: Starting")
 	bridge.StartAppWatcher()
 }
 
 func (w *Watcher) Stop() {
+	w.logger.Debug("App watcher: Stopping")
 	bridge.StopAppWatcher()
 }
 
@@ -66,6 +73,9 @@ func (w *Watcher) OnDeactivate(callback AppCallback) {
 
 // handleLaunch is called from the bridge when an application launches
 func (w *Watcher) HandleLaunch(appName, bundleID string) {
+	w.logger.Debug("App watcher: Application launched",
+		zap.String("app_name", appName),
+		zap.String("bundle_id", bundleID))
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	for _, callback := range w.launchCallbacks {
@@ -75,6 +85,9 @@ func (w *Watcher) HandleLaunch(appName, bundleID string) {
 
 // handleTerminate is called from the bridge when an application terminates
 func (w *Watcher) HandleTerminate(appName, bundleID string) {
+	w.logger.Debug("App watcher: Application terminated",
+		zap.String("app_name", appName),
+		zap.String("bundle_id", bundleID))
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	for _, callback := range w.terminateCallbacks {
@@ -84,6 +97,9 @@ func (w *Watcher) HandleTerminate(appName, bundleID string) {
 
 // handleActivate is called from the bridge when an application is activated
 func (w *Watcher) HandleActivate(appName, bundleID string) {
+	w.logger.Debug("App watcher: Application activated",
+		zap.String("app_name", appName),
+		zap.String("bundle_id", bundleID))
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	for _, callback := range w.activateCallbacks {
@@ -93,6 +109,9 @@ func (w *Watcher) HandleActivate(appName, bundleID string) {
 
 // handleDeactivate is called from the bridge when an application is deactivated
 func (w *Watcher) HandleDeactivate(appName, bundleID string) {
+	w.logger.Debug("App watcher: Application deactivated",
+		zap.String("app_name", appName),
+		zap.String("bundle_id", bundleID))
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	for _, callback := range w.deactivateCallbacks {
@@ -102,6 +121,7 @@ func (w *Watcher) HandleDeactivate(appName, bundleID string) {
 
 // HandleScreenParametersChanged is called from the bridge when display parameters change
 func (w *Watcher) HandleScreenParametersChanged() {
+	w.logger.Debug("App watcher: Screen parameters changed")
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	for _, callback := range w.screenChangeCallbacks {

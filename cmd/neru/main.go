@@ -8,7 +8,7 @@ import (
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/appwatcher"
-	_ "github.com/y3owk1n/neru/internal/bridge" // Import for CGo compilation
+	"github.com/y3owk1n/neru/internal/bridge"
 	"github.com/y3owk1n/neru/internal/cli"
 	"github.com/y3owk1n/neru/internal/config"
 	"github.com/y3owk1n/neru/internal/electron"
@@ -87,6 +87,9 @@ func NewApp(cfg *config.Config) (*App, error) {
 
 	log := logger.Get()
 
+	// Initialize bridge logger
+	bridge.InitializeLogger(log)
+
 	// Check accessibility permissions
 	if cfg.General.AccessibilityCheckOnStart { // Changed from cfg.Accessibility.AccessibilityCheckOnStart
 		if !accessibility.CheckAccessibilityPermissions() {
@@ -115,7 +118,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	}
 
 	// Create app watcher
-	appWatcher := appwatcher.NewWatcher()
+	appWatcher := appwatcher.NewWatcher(log)
 
 	// Create hotkey manager
 	hotkeyMgr := hotkeys.NewManager(log)
@@ -133,7 +136,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	var hintOverlay *hints.Overlay
 	if cfg.Hints.Enabled || cfg.Grid.Enabled {
 		var err error
-		hintOverlay, err = hints.NewOverlay(cfg.Hints)
+		hintOverlay, err = hints.NewOverlay(cfg.Hints, log)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create overlay: %w", err)
 		}
@@ -163,16 +166,16 @@ func NewApp(cfg *config.Config) (*App, error) {
 			if err := app.hintOverlay.DrawHintsWithStyle(hs, style); err != nil {
 				app.logger.Error("Failed to redraw hints", zap.Error(err))
 			}
-		})
+		}, app.logger)
 		// Initialize hints router
-		app.hintsRouter = hints.NewRouter(app.hintManager)
+		app.hintsRouter = hints.NewRouter(app.hintManager, app.logger)
 		app.hintsCtx = &HintsContext{}
 	}
 
 	// Create grid components only if enabled
 	if cfg.Grid.Enabled {
 		// Create grid overlay upfront (like hints overlay) to avoid thread issues
-		gridOverlay := grid.NewGridOverlay(cfg.Grid)
+		gridOverlay := grid.NewGridOverlay(cfg.Grid, log)
 
 		// Grid instance will be created when activated (screen bounds may change)
 		var gridInstance *grid.Grid
@@ -194,7 +197,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 			// Use default left_click style during initialization
 			gridStyle := grid.BuildStyleForAction(cfg.Grid, "left_click")
 			gridOverlay.ShowSubgrid(cell, gridStyle)
-		})
+		}, log)
 
 		// Store grid config for later creation
 		app.gridCtx = &GridContext{

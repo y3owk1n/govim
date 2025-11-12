@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/y3owk1n/neru/internal/logger"
 )
 
 var hintsCmd = &cobra.Command{
@@ -21,6 +22,7 @@ var hintsLeftClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching hints mode with left click action")
 		var params []string
 		params = append(params, "left_click")
 		return sendCommand("hints", params)
@@ -35,6 +37,7 @@ var hintsRightClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching hints mode with right click action")
 		var params []string
 		params = append(params, "right_click")
 		return sendCommand("hints", params)
@@ -49,6 +52,7 @@ var hintsDoubleClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching hints mode with double click action")
 		var params []string
 		params = append(params, "double_click")
 		return sendCommand("hints", params)
@@ -63,6 +67,7 @@ var hintsTripleClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching hints mode with triple click action")
 		var params []string
 		params = append(params, "triple_click")
 		return sendCommand("hints", params)
@@ -77,6 +82,7 @@ var hintsMouseUpCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching hints mode with mouse up action")
 		var params []string
 		params = append(params, "mouse_up")
 		return sendCommand("hints", params)
@@ -91,6 +97,7 @@ var hintsMouseDownCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching hints mode with mouse down action")
 		var params []string
 		params = append(params, "mouse_down")
 		return sendCommand("hints", params)
@@ -105,6 +112,7 @@ var hintsMiddleClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching hints mode with middle click action")
 		var params []string
 		params = append(params, "middle_click")
 		return sendCommand("hints", params)
@@ -119,6 +127,7 @@ var hintsMoveMouseCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching hints mode with move mouse action")
 		var params []string
 		params = append(params, "move_mouse")
 		return sendCommand("hints", params)
@@ -133,6 +142,7 @@ var hintsScrollCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching hints mode with scroll action")
 		var params []string
 		params = append(params, "scroll")
 		return sendCommand("hints", params)
@@ -147,6 +157,7 @@ var hintsContextMenuCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Launching hints mode with context menu action")
 		var params []string
 		params = append(params, "context_menu")
 		return sendCommand("hints", params)

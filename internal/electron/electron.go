@@ -85,6 +85,10 @@ func EnsureElectronAccessibility(bundleID string) bool {
 	electronPIDsMu.Lock()
 	electronEnabledPIDs[pid] = struct{}{}
 	electronPIDsMu.Unlock()
+
+	logger.Debug("Successfully enabled Electron accessibility",
+		zap.Int("pid", pid),
+		zap.String("bundle_id", bundleID))
 	return true
 }
 
@@ -131,6 +135,10 @@ func EnsureChromiumAccessibility(bundleID string) bool {
 	chromiumPIDsMu.Lock()
 	chromiumEnabledPIDs[pid] = struct{}{}
 	chromiumPIDsMu.Unlock()
+
+	logger.Debug("Successfully enabled Chromium accessibility",
+		zap.Int("pid", pid),
+		zap.String("bundle_id", bundleID))
 	return true
 }
 
@@ -177,6 +185,10 @@ func EnsureFirefoxAccessibility(bundleID string) bool {
 	firefoxPIDsMu.Lock()
 	firefoxEnabledPIDs[pid] = struct{}{}
 	firefoxPIDsMu.Unlock()
+
+	logger.Debug("Successfully enabled Firefox accessibility",
+		zap.Int("pid", pid),
+		zap.String("bundle_id", bundleID))
 	return true
 }
 
@@ -210,10 +222,15 @@ func ShouldEnableElectronSupport(bundleID string, additionalBundles []string) bo
 	}
 
 	if matchesAdditionalBundle(bundleID, additionalBundles) {
+		logger.Debug("Bundle matches additional Electron bundles", zap.String("bundle_id", bundleID))
 		return true
 	}
 
-	return IsLikelyElectronBundle(bundleID)
+	result := IsLikelyElectronBundle(bundleID)
+	if result {
+		logger.Debug("Bundle identified as likely Electron", zap.String("bundle_id", bundleID))
+	}
+	return result
 }
 
 func ShouldEnableChromiumSupport(bundleID string, additionalBundles []string) bool {
@@ -222,10 +239,15 @@ func ShouldEnableChromiumSupport(bundleID string, additionalBundles []string) bo
 	}
 
 	if matchesAdditionalBundle(bundleID, additionalBundles) {
+		logger.Debug("Bundle matches additional Chromium bundles", zap.String("bundle_id", bundleID))
 		return true
 	}
 
-	return IsLikelyChromiumBundle(bundleID)
+	result := IsLikelyChromiumBundle(bundleID)
+	if result {
+		logger.Debug("Bundle identified as likely Chromium", zap.String("bundle_id", bundleID))
+	}
+	return result
 }
 
 func ShouldEnableFirefoxSupport(bundleID string, additionalBundles []string) bool {
@@ -234,10 +256,15 @@ func ShouldEnableFirefoxSupport(bundleID string, additionalBundles []string) boo
 	}
 
 	if matchesAdditionalBundle(bundleID, additionalBundles) {
+		logger.Debug("Bundle matches additional Firefox bundles", zap.String("bundle_id", bundleID))
 		return true
 	}
 
-	return IsLikelyFirefoxBundle(bundleID)
+	result := IsLikelyFirefoxBundle(bundleID)
+	if result {
+		logger.Debug("Bundle identified as likely Firefox", zap.String("bundle_id", bundleID))
+	}
+	return result
 }
 
 // IsLikelyElectronBundle returns true if the provided bundle identifier
@@ -301,9 +328,15 @@ func matchesAdditionalBundle(bundleID string, additionalBundles []string) bool {
 		if strings.HasSuffix(trimmed, "*") {
 			prefix := strings.TrimSuffix(trimmed, "*")
 			if strings.HasPrefix(lower, prefix) {
+				logger.Debug("Bundle matches wildcard pattern",
+					zap.String("bundle_id", bundleID),
+					zap.String("pattern", trimmed))
 				return true
 			}
 		} else if lower == trimmed {
+			logger.Debug("Bundle matches exact pattern",
+				zap.String("bundle_id", bundleID),
+				zap.String("pattern", trimmed))
 			return true
 		}
 	}
