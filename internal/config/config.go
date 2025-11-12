@@ -105,12 +105,24 @@ type HintsActionConfigWithRestoreCursor struct {
 
 type GridActionConfig struct {
 	RestoreCursor bool `toml:"restore_cursor"`
+
+	// Appearance settings
+	BackgroundColor        string `toml:"background_color"`
+	TextColor              string `toml:"text_color"`
+	MatchedTextColor       string `toml:"matched_text_color"`
+	MatchedBackgroundColor string `toml:"matched_background_color"`
+	MatchedBorderColor     string `toml:"matched_border_color"`
+	BorderColor            string `toml:"border_color"`
 }
 
-type LoggingConfig struct {
-	LogLevel          string `toml:"log_level"`
-	LogFile           string `toml:"log_file"`
-	StructuredLogging bool   `toml:"structured_logging"`
+type GridActionConfigWithoutRestoreCursor struct {
+	// Appearance settings
+	BackgroundColor        string `toml:"background_color"`
+	TextColor              string `toml:"text_color"`
+	MatchedTextColor       string `toml:"matched_text_color"`
+	MatchedBackgroundColor string `toml:"matched_background_color"`
+	MatchedBorderColor     string `toml:"matched_border_color"`
+	BorderColor            string `toml:"border_color"`
 }
 
 type GridConfig struct {
@@ -123,27 +135,32 @@ type GridConfig struct {
 	SublayerKeys string `toml:"sublayer_keys"`
 
 	// Appearance
-	FontSize               int     `toml:"font_size"`
-	FontFamily             string  `toml:"font_family"`
-	Opacity                float64 `toml:"opacity"`
-	BackgroundColor        string  `toml:"background_color"`
-	TextColor              string  `toml:"text_color"`
-	MatchedTextColor       string  `toml:"matched_text_color"`
-	MatchedBackgroundColor string  `toml:"matched_background_color"`
-	MatchedBorderColor     string  `toml:"matched_border_color"`
-	BorderColor            string  `toml:"border_color"`
-	BorderWidth            int     `toml:"border_width"`
+	FontSize    int     `toml:"font_size"`
+	FontFamily  string  `toml:"font_family"`
+	Opacity     float64 `toml:"opacity"`
+	BorderWidth int     `toml:"border_width"`
 
 	// Behavior
 	LiveMatchUpdate bool `toml:"live_match_update"`
 	HideUnmatched   bool `toml:"hide_unmatched"`
 
-	// Actions
-	LeftClick   GridActionConfig `toml:"left_click"`
-	RightClick  GridActionConfig `toml:"right_click"`
-	DoubleClick GridActionConfig `toml:"double_click"`
-	TripleClick GridActionConfig `toml:"triple_click"`
-	MiddleClick GridActionConfig `toml:"middle_click"`
+	// Action configurations
+	LeftClick   GridActionConfig                     `toml:"left_click"`
+	RightClick  GridActionConfig                     `toml:"right_click"`
+	DoubleClick GridActionConfig                     `toml:"double_click"`
+	TripleClick GridActionConfig                     `toml:"triple_click"`
+	MiddleClick GridActionConfig                     `toml:"middle_click"`
+	MouseUp     GridActionConfigWithoutRestoreCursor `toml:"mouse_up"`
+	MouseDown   GridActionConfigWithoutRestoreCursor `toml:"mouse_down"`
+	MoveMouse   GridActionConfigWithoutRestoreCursor `toml:"move_mouse"`
+	Scroll      GridActionConfigWithoutRestoreCursor `toml:"scroll"`
+	ContextMenu GridActionConfigWithoutRestoreCursor `toml:"context_menu"`
+}
+
+type LoggingConfig struct {
+	LogLevel          string `toml:"log_level"`
+	LogFile           string `toml:"log_file"`
+	StructuredLogging bool   `toml:"structured_logging"`
 }
 
 type AdditionalAXSupport struct {
@@ -309,25 +326,99 @@ func DefaultConfig() *Config {
 			Characters:   "abcdefghijklmnpqrstuvwxyz",
 			SublayerKeys: "abcdefghijklmnpqrstuvwxyz",
 
-			FontSize:               12,
-			FontFamily:             "SF Mono",
-			Opacity:                0.7,
-			BackgroundColor:        "#abe9b3",
-			TextColor:              "#000000",
-			MatchedTextColor:       "#000000",
-			MatchedBackgroundColor: "#f8bd96",
-			MatchedBorderColor:     "#f8bd96",
-			BorderColor:            "#abe9b3",
-			BorderWidth:            1,
+			FontSize:    12,
+			FontFamily:  "SF Mono",
+			Opacity:     0.7,
+			BorderWidth: 1,
 
 			LiveMatchUpdate: true,
 			HideUnmatched:   true,
 
-			LeftClick:   GridActionConfig{RestoreCursor: false},
-			RightClick:  GridActionConfig{RestoreCursor: false},
-			DoubleClick: GridActionConfig{RestoreCursor: false},
-			TripleClick: GridActionConfig{RestoreCursor: false},
-			MiddleClick: GridActionConfig{RestoreCursor: false},
+			LeftClick: GridActionConfig{
+				RestoreCursor:          false,
+				BackgroundColor:        "#abe9b3",
+				TextColor:              "#000000",
+				MatchedTextColor:       "#000000",
+				MatchedBackgroundColor: "#f8bd96",
+				MatchedBorderColor:     "#f8bd96",
+				BorderColor:            "#abe9b3",
+			},
+			RightClick: GridActionConfig{
+				RestoreCursor:          false,
+				BackgroundColor:        "#abe9b3",
+				TextColor:              "#000000",
+				MatchedTextColor:       "#000000",
+				MatchedBackgroundColor: "#f8bd96",
+				MatchedBorderColor:     "#f8bd96",
+				BorderColor:            "#abe9b3",
+			},
+			DoubleClick: GridActionConfig{
+				RestoreCursor:          false,
+				BackgroundColor:        "#abe9b3",
+				TextColor:              "#000000",
+				MatchedTextColor:       "#000000",
+				MatchedBackgroundColor: "#f8bd96",
+				MatchedBorderColor:     "#f8bd96",
+				BorderColor:            "#abe9b3",
+			},
+			TripleClick: GridActionConfig{
+				RestoreCursor:          false,
+				BackgroundColor:        "#abe9b3",
+				TextColor:              "#000000",
+				MatchedTextColor:       "#000000",
+				MatchedBackgroundColor: "#f8bd96",
+				MatchedBorderColor:     "#f8bd96",
+				BorderColor:            "#abe9b3",
+			},
+			MiddleClick: GridActionConfig{
+				RestoreCursor:          false,
+				BackgroundColor:        "#abe9b3",
+				TextColor:              "#000000",
+				MatchedTextColor:       "#000000",
+				MatchedBackgroundColor: "#f8bd96",
+				MatchedBorderColor:     "#f8bd96",
+				BorderColor:            "#abe9b3",
+			},
+			MouseUp: GridActionConfigWithoutRestoreCursor{
+				BackgroundColor:        "#abe9b3",
+				TextColor:              "#000000",
+				MatchedTextColor:       "#000000",
+				MatchedBackgroundColor: "#f8bd96",
+				MatchedBorderColor:     "#f8bd96",
+				BorderColor:            "#abe9b3",
+			},
+			MouseDown: GridActionConfigWithoutRestoreCursor{
+				BackgroundColor:        "#abe9b3",
+				TextColor:              "#000000",
+				MatchedTextColor:       "#000000",
+				MatchedBackgroundColor: "#f8bd96",
+				MatchedBorderColor:     "#f8bd96",
+				BorderColor:            "#abe9b3",
+			},
+			MoveMouse: GridActionConfigWithoutRestoreCursor{
+				BackgroundColor:        "#abe9b3",
+				TextColor:              "#000000",
+				MatchedTextColor:       "#000000",
+				MatchedBackgroundColor: "#f8bd96",
+				MatchedBorderColor:     "#f8bd96",
+				BorderColor:            "#abe9b3",
+			},
+			Scroll: GridActionConfigWithoutRestoreCursor{
+				BackgroundColor:        "#abe9b3",
+				TextColor:              "#000000",
+				MatchedTextColor:       "#000000",
+				MatchedBackgroundColor: "#f8bd96",
+				MatchedBorderColor:     "#f8bd96",
+				BorderColor:            "#abe9b3",
+			},
+			ContextMenu: GridActionConfigWithoutRestoreCursor{
+				BackgroundColor:        "#abe9b3",
+				TextColor:              "#000000",
+				MatchedTextColor:       "#000000",
+				MatchedBackgroundColor: "#f8bd96",
+				MatchedBorderColor:     "#f8bd96",
+				BorderColor:            "#abe9b3",
+			},
 		},
 		Scroll: ScrollConfig{
 			ScrollStep:          50,
@@ -664,24 +755,198 @@ func (c *Config) Validate() error {
 	if c.Grid.Opacity < 0 || c.Grid.Opacity > 1 {
 		return fmt.Errorf("grid.opacity must be between 0 and 1")
 	}
-	if err := validateColor(c.Grid.BackgroundColor, "grid.background_color"); err != nil {
+
+	// Validate per-action grid colors
+	if err := validateColor(c.Grid.LeftClick.BackgroundColor, "grid.left_click.background_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.TextColor, "grid.text_color"); err != nil {
+	if err := validateColor(c.Grid.LeftClick.TextColor, "grid.left_click.text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.MatchedTextColor, "grid.matched_text_color"); err != nil {
+	if err := validateColor(c.Grid.LeftClick.MatchedTextColor, "grid.left_click.matched_text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.BorderColor, "grid.border_color"); err != nil {
+	if err := validateColor(c.Grid.LeftClick.MatchedBackgroundColor, "grid.left_click.matched_background_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.MatchedBackgroundColor, "grid.matched_background_color"); err != nil {
+	if err := validateColor(c.Grid.LeftClick.MatchedBorderColor, "grid.left_click.matched_border_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.MatchedBorderColor, "grid.matched_border_color"); err != nil {
+	if err := validateColor(c.Grid.LeftClick.BorderColor, "grid.left_click.border_color"); err != nil {
 		return err
 	}
+
+	if err := validateColor(c.Grid.RightClick.BackgroundColor, "grid.right_click.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.RightClick.TextColor, "grid.right_click.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.RightClick.MatchedTextColor, "grid.right_click.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.RightClick.MatchedBackgroundColor, "grid.right_click.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.RightClick.MatchedBorderColor, "grid.right_click.matched_border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.RightClick.BorderColor, "grid.right_click.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Grid.DoubleClick.BackgroundColor, "grid.double_click.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.DoubleClick.TextColor, "grid.double_click.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.DoubleClick.MatchedTextColor, "grid.double_click.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.DoubleClick.MatchedBackgroundColor, "grid.double_click.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.DoubleClick.MatchedBorderColor, "grid.double_click.matched_border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.DoubleClick.BorderColor, "grid.double_click.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Grid.TripleClick.BackgroundColor, "grid.triple_click.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.TripleClick.TextColor, "grid.triple_click.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.TripleClick.MatchedTextColor, "grid.triple_click.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.TripleClick.MatchedBackgroundColor, "grid.triple_click.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.TripleClick.MatchedBorderColor, "grid.triple_click.matched_border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.TripleClick.BorderColor, "grid.triple_click.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Grid.MiddleClick.BackgroundColor, "grid.middle_click.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MiddleClick.TextColor, "grid.middle_click.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MiddleClick.MatchedTextColor, "grid.middle_click.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MiddleClick.MatchedBackgroundColor, "grid.middle_click.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MiddleClick.MatchedBorderColor, "grid.middle_click.matched_border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MiddleClick.BorderColor, "grid.middle_click.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Grid.MouseUp.BackgroundColor, "grid.mouse_up.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MouseUp.TextColor, "grid.mouse_up.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MouseUp.MatchedTextColor, "grid.mouse_up.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MouseUp.MatchedBackgroundColor, "grid.mouse_up.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MouseUp.MatchedBorderColor, "grid.mouse_up.matched_border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MouseUp.BorderColor, "grid.mouse_up.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Grid.MouseDown.BackgroundColor, "grid.mouse_down.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MouseDown.TextColor, "grid.mouse_down.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MouseDown.MatchedTextColor, "grid.mouse_down.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MouseDown.MatchedBackgroundColor, "grid.mouse_down.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MouseDown.MatchedBorderColor, "grid.mouse_down.matched_border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MouseDown.BorderColor, "grid.mouse_down.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Grid.MoveMouse.BackgroundColor, "grid.move_mouse.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MoveMouse.TextColor, "grid.move_mouse.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MoveMouse.MatchedTextColor, "grid.move_mouse.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MoveMouse.MatchedBackgroundColor, "grid.move_mouse.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MoveMouse.MatchedBorderColor, "grid.move_mouse.matched_border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.MoveMouse.BorderColor, "grid.move_mouse.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Grid.Scroll.BackgroundColor, "grid.scroll.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.Scroll.TextColor, "grid.scroll.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.Scroll.MatchedTextColor, "grid.scroll.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.Scroll.MatchedBackgroundColor, "grid.scroll.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.Scroll.MatchedBorderColor, "grid.scroll.matched_border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.Scroll.BorderColor, "grid.scroll.border_color"); err != nil {
+		return err
+	}
+
+	if err := validateColor(c.Grid.ContextMenu.BackgroundColor, "grid.context_menu.background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.ContextMenu.TextColor, "grid.context_menu.text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.ContextMenu.MatchedTextColor, "grid.context_menu.matched_text_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.ContextMenu.MatchedBackgroundColor, "grid.context_menu.matched_background_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.ContextMenu.MatchedBorderColor, "grid.context_menu.matched_border_color"); err != nil {
+		return err
+	}
+	if err := validateColor(c.Grid.ContextMenu.BorderColor, "grid.context_menu.border_color"); err != nil {
+		return err
+	}
+
 	if c.Grid.SubgridEnabled {
 		// Validate sublayer keys length (fallback to grid.characters) for 3x3 subgrid
 		keys := strings.TrimSpace(c.Grid.SublayerKeys)

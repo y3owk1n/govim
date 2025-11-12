@@ -191,8 +191,11 @@ func NewApp(cfg *config.Config) (*App, error) {
 			gridOverlay.UpdateMatches(app.gridManager.GetInput())
 		}, func(cell *grid.Cell) {
 			// Show subgrid in selected cell
-			gridOverlay.ShowSubgrid(cell)
+			// Use default left_click style during initialization
+			gridStyle := grid.BuildStyleForAction(cfg.Grid, "left_click")
+			gridOverlay.ShowSubgrid(cell, gridStyle)
 		})
+
 		// Store grid config for later creation
 		app.gridCtx = &GridContext{
 			currentAction: ActionLeftClick,

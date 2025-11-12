@@ -8,7 +8,7 @@
 # Conventions
 # - Colors: `#RGB`, `#RRGGBB`, or `#RRGGBBAA`.
 # - Hotkeys: `Modifier+...+Key` with modifiers `Cmd`, `Ctrl`, `Alt`, `Shift`, `Option`.
-#   Examples: `Cmd+Shift+Space`, `Ctrl+D`. Set to "" to disable.
+#   Examples: `Cmd+Shift+Space`, `Ctrl+D`.
 [general]
 # Applications to exclude from Neru functionality
 # Neru will do nothing when these applications are focused and pass through everything back to the os
@@ -276,33 +276,94 @@ font_size = 12
 font_family = ""
 opacity = 0.7
 
-# Colors
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96" # Background color for matched grid cells
-matched_border_color = "#f8bd96"     # Border color for matched grid cells
-border_color = "#abe9b3"
-border_width = 1
-
 # Behavior
 live_match_update = true      # Update matched highlight per keystroke without full redraw
 hide_unmatched = true        # Hide unmatched cells during typing
 
 [grid.left_click]
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [grid.right_click]
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [grid.double_click]
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [grid.triple_click]
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [grid.middle_click]
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.mouse_up]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.mouse_down]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.move_mouse]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.scroll]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.context_menu]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [scroll]
 # Base scroll amount for j/k keys in pixels

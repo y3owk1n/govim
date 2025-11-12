@@ -55,19 +55,89 @@ characters = "abcdefghijklmnpqrstuvwxyz"
 [grid.left_click]
 # Restore cursor to original position after click (enable it if you want)
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [grid.right_click]
 # Restore cursor to original position after click (enable it if you want)
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [grid.double_click]
 # Restore cursor to original position after click (enable it if you want)
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [grid.triple_click]
 # Restore cursor to original position after click (enable it if you want)
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 [grid.middle_click]
 # Restore cursor to original position after click (enable it if you want)
 restore_cursor = false
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.mouse_up]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.mouse_down]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.move_mouse]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.scroll]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
+
+[grid.context_menu]
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#000000"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
