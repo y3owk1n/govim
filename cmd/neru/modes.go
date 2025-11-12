@@ -210,7 +210,7 @@ func (a *App) setupGrid(action Action) error {
 	if strings.TrimSpace(characters) == "" {
 		characters = a.config.Hints.HintCharacters
 	}
-	gridInstance := grid.NewGrid(characters, bounds)
+	gridInstance := grid.NewGrid(characters, bounds, a.logger)
 	*a.gridCtx.gridInstance = gridInstance
 
 	// Grid overlay already created in NewApp - update its config and use it
@@ -241,8 +241,8 @@ func (a *App) setupGrid(action Action) error {
 	}, func(cell *grid.Cell) {
 		// Draw 3x3 subgrid inside selected cell
 		(*a.gridCtx.gridOverlay).ShowSubgrid(cell, gridStyle)
-	})
-	a.gridRouter = grid.NewRouter(a.gridManager)
+	}, a.logger)
+	a.gridRouter = grid.NewRouter(a.gridManager, a.logger)
 
 	// Draw initial grid
 	if err := (*a.gridCtx.gridOverlay).Draw(gridInstance, "", gridStyle); err != nil {
@@ -652,7 +652,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 		a.logger.Info("Checking control char", zap.Uint8("byte", byteVal))
 		// Only handle Ctrl+D / Ctrl+U here; let Tab (9) and other keys fall through to switch
 		if byteVal == 4 || byteVal == 21 {
-			op, _, ok := scroll.ParseKey(key, *lastScrollKey)
+			op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 			if ok {
 				*lastScrollKey = ""
 				switch op {
@@ -673,7 +673,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 	a.logger.Debug("Entering switch statement", zap.String("key", key), zap.String("keyHex", fmt.Sprintf("%#v", key)))
 	switch key {
 	case "j":
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
 			return false
 		}
@@ -681,7 +681,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 			err = a.scrollController.ScrollDown()
 		}
 	case "k":
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
 			return false
 		}
@@ -689,7 +689,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 			err = a.scrollController.ScrollUp()
 		}
 	case "h":
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
 			return false
 		}
@@ -697,7 +697,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 			err = a.scrollController.ScrollLeft()
 		}
 	case "l":
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
 			return false
 		}
@@ -705,7 +705,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 			err = a.scrollController.ScrollRight()
 		}
 	case "g": // gg for top (need to press twice)
-		op, newLast, ok := scroll.ParseKey(key, *lastScrollKey)
+		op, newLast, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
 			a.logger.Info("First g pressed, press again for top")
 			*lastScrollKey = newLast
@@ -718,14 +718,14 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 			goto done
 		}
 	case "G": // Shift+G for bottom
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if ok && op == "bottom" {
 			a.logger.Info("G key detected - scroll to bottom")
 			err = a.scrollController.ScrollToBottom()
 			*lastScrollKey = ""
 		}
 	case "\t":
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey)
+		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		a.logger.Info("Tab case matched", zap.String("op", op), zap.Bool("ok", ok))
 		if ok && op == "tab" {
 			// Only switch overlays if we're in scroll action within a mode

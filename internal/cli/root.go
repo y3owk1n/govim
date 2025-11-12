@@ -8,6 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/y3owk1n/neru/internal/ipc"
+	"github.com/y3owk1n/neru/internal/logger"
+	"go.uber.org/zap"
 )
 
 var (
@@ -69,16 +71,21 @@ func isRunningFromAppBundle() bool {
 
 // launchProgram launches the main neru program
 func launchProgram(cfgPath string) {
+	logger.Debug("Launching program", zap.String("config_path", cfgPath))
+
 	// Check if already running
 	if ipc.IsServerRunning() {
+		logger.Info("Neru is already running")
 		fmt.Println("Neru is already running")
 		os.Exit(0)
 	}
 
 	// Call the launch function set by main
 	if LaunchFunc != nil {
+		logger.Debug("Calling launch function")
 		LaunchFunc(cfgPath)
 	} else {
+		logger.Error("Launch function not initialized")
 		fmt.Fprintln(os.Stderr, "Error: Launch function not initialized")
 		os.Exit(1)
 	}
@@ -86,7 +93,12 @@ func launchProgram(cfgPath string) {
 
 // sendCommand sends a command to the running neru instance
 func sendCommand(action string, args []string) error {
+	logger.Debug("Sending command",
+		zap.String("action", action),
+		zap.Strings("args", args))
+
 	if !ipc.IsServerRunning() {
+		logger.Warn("Neru is not running")
 		return fmt.Errorf("neru is not running. Start it first with 'neru' or 'neru launch'")
 	}
 
@@ -94,12 +106,22 @@ func sendCommand(action string, args []string) error {
 
 	response, err := client.Send(ipc.Command{Action: action, Args: args})
 	if err != nil {
+		logger.Error("Failed to send command",
+			zap.String("action", action),
+			zap.Error(err))
 		return err
 	}
 
 	if !response.Success {
+		logger.Warn("Command failed",
+			zap.String("action", action),
+			zap.String("message", response.Message))
 		return fmt.Errorf("%s", response.Message)
 	}
+
+	logger.Debug("Command succeeded",
+		zap.String("action", action),
+		zap.String("message", response.Message))
 
 	fmt.Println(response.Message)
 	return nil
@@ -107,10 +129,14 @@ func sendCommand(action string, args []string) error {
 
 // requiresRunningInstance checks if neru is running and exits with error if not
 func requiresRunningInstance() error {
+	logger.Debug("Checking if Neru is running")
 	if !ipc.IsServerRunning() {
+		logger.Warn("Neru is not running")
 		fmt.Fprintln(os.Stderr, "Error: neru is not running")
 		fmt.Fprintln(os.Stderr, "Start it first with: neru launch")
 		os.Exit(1)
 	}
+
+	logger.Debug("Neru is running")
 	return nil
 }

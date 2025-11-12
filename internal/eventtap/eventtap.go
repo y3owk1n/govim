@@ -49,14 +49,21 @@ func NewEventTap(callback Callback, logger *zap.Logger) *EventTap {
 
 // Enable enables the event tap
 func (et *EventTap) Enable() {
+	et.logger.Debug("Enabling event tap")
 	if et.handle != nil {
 		C.enableEventTap(et.handle)
+		et.logger.Debug("Event tap enabled")
+	} else {
+		et.logger.Warn("Cannot enable nil event tap")
 	}
 }
 
 // SetHotkeys configures which hotkey combinations should pass through to the system
 func (et *EventTap) SetHotkeys(hotkeys []string) {
+	et.logger.Debug("Setting event tap hotkeys", zap.Int("count", len(hotkeys)))
+
 	if et.handle == nil {
+		et.logger.Warn("Cannot set hotkeys on nil event tap")
 		return
 	}
 
@@ -66,6 +73,7 @@ func (et *EventTap) SetHotkeys(hotkeys []string) {
 		if hotkey != "" {
 			cHotkeys[i] = C.CString(hotkey)
 			defer C.free(unsafe.Pointer(cHotkeys[i]))
+			et.logger.Debug("Adding hotkey", zap.String("hotkey", hotkey))
 		} else {
 			cHotkeys[i] = nil
 		}
@@ -78,18 +86,23 @@ func (et *EventTap) SetHotkeys(hotkeys []string) {
 	}
 
 	C.setEventTapHotkeys(et.handle, cHotkeysPtr, C.int(len(cHotkeys)))
+	et.logger.Debug("Event tap hotkeys set")
 }
 
 // Disable disables the event tap
 func (et *EventTap) Disable() {
+	et.logger.Debug("Disabling event tap")
 	if et.handle != nil {
 		C.disableEventTap(et.handle)
 		et.logger.Debug("Event tap disabled")
+	} else {
+		et.logger.Warn("Cannot disable nil event tap")
 	}
 }
 
 // Destroy destroys the event tap
 func (et *EventTap) Destroy() {
+	et.logger.Debug("Destroying event tap")
 	if et.handle != nil {
 		// Disable first to prevent any pending callbacks
 		et.Disable()
@@ -107,6 +120,10 @@ func (et *EventTap) Destroy() {
 			globalEventTap = nil
 		}
 		globalEventTapMu.Unlock()
+
+		et.logger.Debug("Event tap destroyed")
+	} else {
+		et.logger.Warn("Cannot destroy nil event tap")
 	}
 }
 
@@ -115,7 +132,10 @@ func (et *EventTap) handleCallback(key string) {
 	et.logger.Debug("Key pressed", zap.String("key", key))
 
 	if et.callback != nil {
+		et.logger.Debug("Calling event tap callback")
 		et.callback(key)
+	} else {
+		et.logger.Debug("No callback registered for event tap")
 	}
 }
 

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/y3owk1n/neru/internal/logger"
 )
 
 var actionCmd = &cobra.Command{
@@ -21,6 +22,7 @@ var actionLeftClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Executing left click action at current cursor position")
 		var params []string
 		params = append(params, "left_click")
 		return sendCommand("action", params)
@@ -35,6 +37,7 @@ var actionRightClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Executing right click action at current cursor position")
 		var params []string
 		params = append(params, "right_click")
 		return sendCommand("action", params)
@@ -49,6 +52,7 @@ var actionDoubleClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Executing double click action at current cursor position")
 		var params []string
 		params = append(params, "double_click")
 		return sendCommand("action", params)
@@ -63,6 +67,7 @@ var actionTripleClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Executing triple click action at current cursor position")
 		var params []string
 		params = append(params, "triple_click")
 		return sendCommand("action", params)
@@ -77,6 +82,7 @@ var actionMouseUpCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Executing mouse up action at current cursor position")
 		var params []string
 		params = append(params, "mouse_up")
 		return sendCommand("action", params)
@@ -91,6 +97,7 @@ var actionMouseDownCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Executing mouse down action at current cursor position")
 		var params []string
 		params = append(params, "mouse_down")
 		return sendCommand("action", params)
@@ -105,6 +112,7 @@ var actionMiddleClickCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Executing middle click action at current cursor position")
 		var params []string
 		params = append(params, "middle_click")
 		return sendCommand("action", params)
@@ -119,6 +127,7 @@ var actionScrollCmd = &cobra.Command{
 		return requiresRunningInstance()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Debug("Entering scroll mode at current cursor position")
 		var params []string
 		params = append(params, "scroll")
 		return sendCommand("action", params)

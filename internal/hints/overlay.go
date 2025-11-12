@@ -18,6 +18,7 @@ import (
 	"unsafe"
 
 	"github.com/y3owk1n/neru/internal/config"
+	"go.uber.org/zap"
 )
 
 var (
@@ -43,6 +44,7 @@ func resizeCompletionCallback(context unsafe.Pointer) {
 type Overlay struct {
 	window C.OverlayWindow
 	config config.HintsConfig
+	logger *zap.Logger
 }
 
 type StyleMode struct {
@@ -59,7 +61,7 @@ type StyleMode struct {
 }
 
 // NewOverlay creates a new overlay
-func NewOverlay(cfg config.HintsConfig) (*Overlay, error) {
+func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	window := C.createOverlayWindow()
 	if window == nil {
 		return nil, fmt.Errorf("failed to create overlay window")
@@ -68,22 +70,29 @@ func NewOverlay(cfg config.HintsConfig) (*Overlay, error) {
 	return &Overlay{
 		window: window,
 		config: cfg,
+		logger: logger,
 	}, nil
 }
 
 // Show shows the overlay
 func (o *Overlay) Show() {
+	o.logger.Debug("Showing hint overlay")
 	C.showOverlayWindow(o.window)
+	o.logger.Debug("Hint overlay shown successfully")
 }
 
 // Hide hides the overlay
 func (o *Overlay) Hide() {
+	o.logger.Debug("Hiding hint overlay")
 	C.hideOverlayWindow(o.window)
+	o.logger.Debug("Hint overlay hidden successfully")
 }
 
 // Clear clears all hints from the overlay
 func (o *Overlay) Clear() {
+	o.logger.Debug("Clearing hint overlay")
 	C.clearOverlay(o.window)
+	o.logger.Debug("Hint overlay cleared successfully")
 }
 
 // ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor
@@ -126,8 +135,13 @@ func (o *Overlay) DrawHintsWithStyle(hints []*Hint, style StyleMode) error {
 
 // drawHintsInternal is the internal implementation for drawing hints
 func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bool) error {
+	o.logger.Debug("Drawing hints internally",
+		zap.Int("hint_count", len(hints)),
+		zap.Bool("show_arrow", showArrow))
+
 	if len(hints) == 0 {
 		o.Clear()
+		o.logger.Debug("No hints to draw, cleared overlay")
 		return nil
 	}
 
@@ -135,6 +149,7 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 	cHints := make([]C.HintData, len(hints))
 	cLabels := make([]*C.char, len(hints))
 
+	matchedCount := 0
 	for i, hint := range hints {
 		cLabels[i] = C.CString(hint.Label)
 		cHints[i] = C.HintData{
@@ -149,7 +164,15 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 			},
 			matchedPrefixLength: C.int(len(hint.MatchedPrefix)),
 		}
+
+		if len(hint.MatchedPrefix) > 0 {
+			matchedCount++
+		}
 	}
+
+	o.logger.Debug("Hint match statistics",
+		zap.Int("total_hints", len(hints)),
+		zap.Int("matched_hints", matchedCount))
 
 	// Create style
 	cFontFamily := C.CString(style.FontFamily)
@@ -190,6 +213,7 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 	C.free(unsafe.Pointer(cMatchedTextColor))
 	C.free(unsafe.Pointer(cBorderColor))
 
+	o.logger.Debug("Hints drawn successfully")
 	return nil
 }
 

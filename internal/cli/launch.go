@@ -2,6 +2,8 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/y3owk1n/neru/internal/logger"
+	"go.uber.org/zap"
 )
 
 var launchCmd = &cobra.Command{
@@ -9,6 +11,7 @@ var launchCmd = &cobra.Command{
 	Short: "Launch the neru program",
 	Long:  `Launch the neru program. Same as running 'neru' without any subcommand.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		logger.Debug("Launching program", zap.String("config_path", configPath))
 		launchProgram(configPath)
 	},
 }

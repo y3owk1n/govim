@@ -37,6 +37,11 @@ type Controller struct {
 
 // NewController creates a new scroll controller
 func NewController(cfg config.ScrollConfig, logger *zap.Logger) *Controller {
+	logger.Debug("Scroll controller: Initializing",
+		zap.Int("scroll_step", cfg.ScrollStep),
+		zap.Int("scroll_step_half", cfg.ScrollStepHalf),
+		zap.Int("scroll_step_full", cfg.ScrollStepFull))
+
 	return &Controller{
 		config: &cfg,
 		logger: logger,
@@ -49,6 +54,7 @@ func (c *Controller) Scroll(dir Direction, amount ScrollAmount) error {
 
 	c.logger.Debug("Scrolling",
 		zap.String("direction", c.directionString(dir)),
+		zap.String("amount", c.amountString(amount)),
 		zap.Int("deltaX", deltaX),
 		zap.Int("deltaY", deltaY))
 
@@ -56,6 +62,12 @@ func (c *Controller) Scroll(dir Direction, amount ScrollAmount) error {
 		c.logger.Error("Scroll failed", zap.Error(err))
 		return err
 	}
+
+	c.logger.Info("Scroll completed successfully",
+		zap.String("direction", c.directionString(dir)),
+		zap.String("amount", c.amountString(amount)),
+		zap.Int("deltaX", deltaX),
+		zap.Int("deltaY", deltaY))
 
 	return nil
 }
@@ -91,6 +103,13 @@ func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount) (int, in
 		deltaX = -baseScroll // Negative for right
 	}
 
+	c.logger.Debug("Calculated scroll delta",
+		zap.String("direction", c.directionString(dir)),
+		zap.String("amount", c.amountString(amount)),
+		zap.Int("base_scroll", baseScroll),
+		zap.Int("deltaX", deltaX),
+		zap.Int("deltaY", deltaY))
+
 	return deltaX, deltaY
 }
 
@@ -110,50 +129,73 @@ func (c *Controller) directionString(dir Direction) string {
 	}
 }
 
+// amountString converts scroll amount to string
+func (c *Controller) amountString(amount ScrollAmount) string {
+	switch amount {
+	case AmountChar:
+		return "character"
+	case AmountHalfPage:
+		return "half_page"
+	case AmountEnd:
+		return "end"
+	default:
+		return "unknown"
+	}
+}
+
 // ScrollUp scrolls up by character
 func (c *Controller) ScrollUp() error {
+	c.logger.Debug("ScrollUp called")
 	// Use positive delta for up (scroll wheel convention)
 	return c.Scroll(DirectionUp, AmountChar)
 }
 
 // ScrollDown scrolls down by character
 func (c *Controller) ScrollDown() error {
+	c.logger.Debug("ScrollDown called")
 	// Use negative delta for down (scroll wheel convention)
 	return c.Scroll(DirectionDown, AmountChar)
 }
 
 // ScrollLeft scrolls left by character
 func (c *Controller) ScrollLeft() error {
+	c.logger.Debug("ScrollLeft called")
 	return c.Scroll(DirectionLeft, AmountChar)
 }
 
 // ScrollRight scrolls right by character
 func (c *Controller) ScrollRight() error {
+	c.logger.Debug("ScrollRight called")
 	return c.Scroll(DirectionRight, AmountChar)
 }
 
 // ScrollUpHalfPage scrolls up by half page (Ctrl+U in Vim)
 func (c *Controller) ScrollUpHalfPage() error {
+	c.logger.Debug("ScrollUpHalfPage called")
 	return c.Scroll(DirectionUp, AmountHalfPage)
 }
 
 // ScrollDownHalfPage scrolls down by half page (Ctrl+D in Vim)
 func (c *Controller) ScrollDownHalfPage() error {
+	c.logger.Debug("ScrollDownHalfPage called")
 	return c.Scroll(DirectionDown, AmountHalfPage)
 }
 
 // ScrollToTop scrolls to the top (gg in Vim)
 func (c *Controller) ScrollToTop() error {
+	c.logger.Debug("ScrollToTop called")
 	return c.Scroll(DirectionUp, AmountEnd)
 }
 
 // ScrollToBottom scrolls to the bottom (G in Vim)
 func (c *Controller) ScrollToBottom() error {
+	c.logger.Debug("ScrollToBottom called")
 	return c.Scroll(DirectionDown, AmountEnd)
 }
 
 // DrawHighlightBorder draws a highlight around the current scroll area
 func (c *Controller) DrawHighlightBorder(overlay *hints.Overlay) {
+	c.logger.Debug("DrawHighlightBorder called")
 	window := accessibility.GetFrontmostWindow()
 	if window == nil {
 		c.logger.Debug("No frontmost window")
@@ -175,6 +217,12 @@ func (c *Controller) DrawHighlightBorder(overlay *hints.Overlay) {
 		bounds.Max.X-screenBounds.Min.X,
 		bounds.Max.Y-screenBounds.Min.Y,
 	)
+
+	c.logger.Debug("Drawing scroll highlight",
+		zap.Int("x", localBounds.Min.X),
+		zap.Int("y", localBounds.Min.Y),
+		zap.Int("width", localBounds.Dx()),
+		zap.Int("height", localBounds.Dy()))
 
 	overlay.DrawScrollHighlight(
 		localBounds.Min.X, localBounds.Min.Y,
