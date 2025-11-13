@@ -9,13 +9,14 @@ import (
 
 // Manager handles variable-length grid input (2, 3, or 4 characters)
 type Manager struct {
-	grid         *Grid
-	currentInput string
-	labelLength  int // Length of labels (2, 3, or 4)
-	onUpdate     func()
-	onShowSub    func(cell *Cell)
-	inSubgrid    bool
-	selectedCell *Cell
+	grid          *Grid
+	currentInput  string
+	mainGridInput string            // This variable is just to restore the captured keys to subgrid when needed
+	labelLength   int               // Length of labels (2, 3, or 4)
+	onUpdate      func(redraw bool) // redraw is only used for exiting subgrid
+	onShowSub     func(cell *Cell)
+	inSubgrid     bool
+	selectedCell  *Cell
 	// Subgrid configuration
 	subRows int
 	subCols int
@@ -24,7 +25,7 @@ type Manager struct {
 }
 
 // NewManager creates a new grid manager
-func NewManager(grid *Grid, subRows int, subCols int, subKeys string, onUpdate func(), onShowSub func(cell *Cell), logger *zap.Logger) *Manager {
+func NewManager(grid *Grid, subRows int, subCols int, subKeys string, onUpdate func(redraw bool), onShowSub func(cell *Cell), logger *zap.Logger) *Manager {
 	// Determine label length from first cell (if grid exists)
 	labelLength := 3 // Default
 	if grid != nil && len(grid.cells) > 0 {
@@ -54,17 +55,25 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 			m.currentInput = m.currentInput[:len(m.currentInput)-1]
 			m.logger.Debug("Grid manager: Backspace processed", zap.String("new_input", m.currentInput))
 			if m.onUpdate != nil {
-				m.onUpdate()
+				m.onUpdate(false)
 			}
 			return image.Point{}, false
 		}
-		// If in subgrid, backspace exits subgrid
+		// If in subgrid, backspace exits subgrid and back to main grid
 		if m.inSubgrid {
 			m.logger.Debug("Grid manager: Exiting subgrid on backspace")
 			m.inSubgrid = false
 			m.selectedCell = nil
+			// Restore main grid input
+			if len(m.mainGridInput) > 0 {
+				// remove the last character
+				m.currentInput = m.mainGridInput[:len(m.mainGridInput)-1]
+			} else {
+				// just in case
+				m.currentInput = ""
+			}
 			if m.onUpdate != nil {
-				m.onUpdate()
+				m.onUpdate(true)
 			}
 		}
 		return image.Point{}, false
@@ -157,6 +166,8 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 			if cell != nil {
 				m.inSubgrid = true
 				m.selectedCell = cell
+				// Save the main grid input for restoring after subgrid
+				m.mainGridInput = m.currentInput
 				m.currentInput = ""
 				m.logger.Debug("Grid manager: Showing subgrid for cell", zap.String("coordinate", coord))
 				if m.onShowSub != nil {
@@ -173,7 +184,7 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 
 	// Update overlay to show matched cells
 	if m.onUpdate != nil {
-		m.onUpdate()
+		m.onUpdate(false)
 	}
 	return image.Point{}, false
 }
@@ -191,11 +202,12 @@ func (m *Manager) GetCurrentGrid() *Grid {
 // Reset resets the input state
 func (m *Manager) Reset() {
 	m.currentInput = ""
+	m.mainGridInput = ""
 	m.inSubgrid = false
 	m.selectedCell = nil
 	m.logger.Debug("Grid manager: Resetting input state")
 	if m.onUpdate != nil {
-		m.onUpdate()
+		m.onUpdate(false)
 	}
 }
 

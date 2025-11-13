@@ -186,7 +186,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 		}
 		const subRows = 3
 		const subCols = 3
-		app.gridManager = grid.NewManager(nil, subRows, subCols, keys, func() {
+		app.gridManager = grid.NewManager(nil, subRows, subCols, keys, func(forceRedraw bool) {
 			// Redraw grid overlay when input changes
 			if gridInstance == nil {
 				return
