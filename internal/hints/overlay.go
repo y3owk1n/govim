@@ -24,11 +24,13 @@ import (
 )
 
 var (
-	hintCallbackID   uint64
-	hintCallbackMap  = make(map[uint64]chan struct{})
-	hintCallbackLock sync.Mutex
-	hintDataPool     sync.Pool
-	cLabelSlicePool  sync.Pool
+	hintCallbackID    uint64
+	hintCallbackMap   = make(map[uint64]chan struct{})
+	hintCallbackLock  sync.Mutex
+	hintDataPool      sync.Pool
+	cLabelSlicePool   sync.Pool
+	contextMenuOnce   sync.Once
+	contextMenuCached string
 )
 
 //export resizeCompletionCallback
@@ -393,12 +395,15 @@ func BuildStyleForAction(cfg config.HintsConfig, action string) StyleMode {
 
 // BuildContextMenuLabel returns the context menu label block used for hints action menu
 func BuildContextMenuLabel() string {
-	items := ContextMenuItems()
-	var formatted []string
-	for _, it := range items {
-		formatted = append(formatted, fmt.Sprintf("[%s]%s", it.Key, it.Label))
-	}
-	return strings.Join(formatted, "\n")
+	contextMenuOnce.Do(func() {
+		items := ContextMenuItems()
+		var formatted []string
+		for _, it := range items {
+			formatted = append(formatted, fmt.Sprintf("[%s]%s", it.Key, it.Label))
+		}
+		contextMenuCached = strings.Join(formatted, "\n")
+	})
+	return contextMenuCached
 }
 
 // Destroy destroys the overlay

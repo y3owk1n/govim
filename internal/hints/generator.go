@@ -300,16 +300,35 @@ func (h *Hint) IsVisible(screenBounds image.Rectangle) bool {
 
 // HintCollection manages a collection of hints
 type HintCollection struct {
-	hints  []*Hint
-	active bool
+	hints   []*Hint
+	active  bool
+	byLabel map[string]*Hint
+	prefix1 map[byte][]*Hint
+	prefix2 map[string][]*Hint
 }
 
 // NewHintCollection creates a new hint collection
 func NewHintCollection(hints []*Hint) *HintCollection {
-	return &HintCollection{
-		hints:  hints,
-		active: true,
+	hc := &HintCollection{
+		hints:   hints,
+		active:  true,
+		byLabel: make(map[string]*Hint, len(hints)),
+		prefix1: make(map[byte][]*Hint),
+		prefix2: make(map[string][]*Hint),
 	}
+	for _, h := range hints {
+		lbl := strings.ToUpper(h.Label)
+		hc.byLabel[lbl] = h
+		if len(lbl) >= 1 {
+			b := lbl[0]
+			hc.prefix1[b] = append(hc.prefix1[b], h)
+		}
+		if len(lbl) >= 2 {
+			p2 := lbl[:2]
+			hc.prefix2[p2] = append(hc.prefix2[p2], h)
+		}
+	}
+	return hc
 }
 
 // GetHints returns all hints
@@ -319,11 +338,37 @@ func (hc *HintCollection) GetHints() []*Hint {
 
 // FindByLabel finds a hint by label
 func (hc *HintCollection) FindByLabel(label string) *Hint {
-	return FindHintByLabel(hc.hints, label)
+	return hc.byLabel[strings.ToUpper(label)]
 }
 
 // FilterByPrefix filters hints by prefix
 func (hc *HintCollection) FilterByPrefix(prefix string) []*Hint {
+	if prefix == "" {
+		return hc.hints
+	}
+	p := strings.ToUpper(prefix)
+	if len(p) == 1 {
+		b := p[0]
+		bucket := hc.prefix1[b]
+		if len(bucket) == 0 {
+			return []*Hint{}
+		}
+		out := make([]*Hint, 0, len(bucket))
+		out = append(out, bucket...)
+		return out
+	}
+	if len(p) >= 2 {
+		if bucket, ok := hc.prefix2[p[:2]]; ok {
+			out := make([]*Hint, 0, len(bucket))
+			for _, h := range bucket {
+				if strings.HasPrefix(h.Label, p) {
+					out = append(out, h)
+				}
+			}
+			return out
+		}
+		return []*Hint{}
+	}
 	return FilterHintsByPrefix(hc.hints, prefix)
 }
 

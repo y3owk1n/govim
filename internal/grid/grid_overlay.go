@@ -24,11 +24,13 @@ import (
 )
 
 var (
-	gridCallbackID     uint64
-	gridCallbackMap    = make(map[uint64]chan struct{})
-	gridCallbackLock   sync.Mutex
-	gridCellSlicePool  sync.Pool
-	gridLabelSlicePool sync.Pool
+	gridCallbackID        uint64
+	gridCallbackMap       = make(map[uint64]chan struct{})
+	gridCallbackLock      sync.Mutex
+	gridCellSlicePool     sync.Pool
+	gridLabelSlicePool    sync.Pool
+	subgridCellSlicePool  sync.Pool
+	subgridLabelSlicePool sync.Pool
 )
 
 //export gridResizeCompletionCallback
@@ -56,6 +58,8 @@ func NewGridOverlay(cfg config.GridConfig, logger *zap.Logger) *GridOverlay {
 	window := C.createOverlayWindow()
 	gridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
 	gridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	subgridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
+	subgridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
 	chars := cfg.Characters
 	if strings.TrimSpace(chars) == "" {
 		chars = cfg.Characters
@@ -247,8 +251,22 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
 		count = len(chars)
 	}
 
-	cells := make([]C.GridCell, count)
-	labels := make([]*C.char, count)
+	cellsPtr := subgridCellSlicePool.Get().(*[]C.GridCell)
+	if cap(*cellsPtr) < count {
+		s := make([]C.GridCell, count)
+		cellsPtr = &s
+	} else {
+		*cellsPtr = (*cellsPtr)[:count]
+	}
+	cells := *cellsPtr
+	labelsPtr := subgridLabelSlicePool.Get().(*[]*C.char)
+	if cap(*labelsPtr) < count {
+		s := make([]*C.char, count)
+		labelsPtr = &s
+	} else {
+		*labelsPtr = (*labelsPtr)[:count]
+	}
+	labels := *labelsPtr
 
 	b := cell.Bounds
 	// Build breakpoints that evenly distribute remainders to fully cover the cell
@@ -321,6 +339,10 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
 	for i := range labels {
 		C.free(unsafe.Pointer(labels[i]))
 	}
+	*cellsPtr = (*cellsPtr)[:0]
+	*labelsPtr = (*labelsPtr)[:0]
+	subgridCellSlicePool.Put(cellsPtr)
+	subgridLabelSlicePool.Put(labelsPtr)
 	C.free(unsafe.Pointer(fontFamily))
 	C.free(unsafe.Pointer(backgroundColor))
 	C.free(unsafe.Pointer(textColor))
@@ -390,13 +412,10 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 
 		isMatched := 0
 		matchedPrefixLength := 0
-		if currentInput != "" && len(cell.Coordinate) >= len(currentInput) {
-			cellPrefix := cell.Coordinate[:len(currentInput)]
-			if cellPrefix == currentInput {
-				isMatched = 1
-				matchedCount++
-				matchedPrefixLength = len(currentInput)
-			}
+		if currentInput != "" && strings.HasPrefix(cell.Coordinate, currentInput) {
+			isMatched = 1
+			matchedCount++
+			matchedPrefixLength = len(currentInput)
 		}
 
 		var cGridCell C.GridCell
