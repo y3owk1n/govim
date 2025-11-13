@@ -40,17 +40,17 @@ type Cell struct {
 //   - Medium-large screens (2.5-4M pixels): 40-100px cells
 //   - Very large screens (>4M pixels): 50-120px cells
 func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Grid {
-	logger.Debug("Creating new grid",
-		zap.String("characters", characters),
-		zap.Int("bounds_width", bounds.Dx()),
-		zap.Int("bounds_height", bounds.Dy()))
+    logger.Debug("Creating new grid",
+        zap.String("characters", characters),
+        zap.Int("bounds_width", bounds.Dx()),
+        zap.Int("bounds_height", bounds.Dy()))
 
-	if characters == "" {
-		characters = "abcdefghijklmnopqrstuvwxyz"
-	}
-	characters = strings.ToUpper(characters)
-	chars := []rune(characters)
-	numChars := len(chars)
+    if characters == "" {
+        characters = "abcdefghijklmnopqrstuvwxyz"
+    }
+    characters = strings.ToUpper(characters)
+    chars := []rune(characters)
+    numChars := len(chars)
 
 	// Ensure we have valid characters
 	if numChars < 2 {
@@ -66,17 +66,25 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 		zap.Int("width", width),
 		zap.Int("height", height))
 
-	// Validate bounds before processing
-	if width <= 0 || height <= 0 {
-		logger.Warn("Invalid grid bounds, creating minimal grid",
-			zap.Int("width", width),
-			zap.Int("height", height))
-		return &Grid{
-			characters: characters,
-			bounds:     bounds,
-			cells:      []*Cell{},
-		}
-	}
+    if gridCacheEnabled {
+        if cells, ok := gridCache.get(characters, bounds); ok {
+        logger.Debug("Grid cache hit",
+            zap.Int("cell_count", len(cells)))
+        return &Grid{characters: characters, bounds: bounds, cells: cells}
+        }
+        logger.Debug("Grid cache miss")
+    }
+
+    if width <= 0 || height <= 0 {
+        logger.Warn("Invalid grid bounds, creating minimal grid",
+            zap.Int("width", width),
+            zap.Int("height", height))
+        return &Grid{
+            characters: characters,
+            bounds:     bounds,
+            cells:      []*Cell{},
+        }
+    }
 
 	// Automatically determine optimal cell size constraints based on screen characteristics
 	screenArea := width * height
@@ -237,17 +245,23 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 	cells := generateCellsWithRegions(chars, numChars, gridCols, gridRows, labelLength,
 		bounds, baseCellWidth, baseCellHeight, remainderWidth, remainderHeight, logger)
 
-	logger.Debug("Grid created successfully",
-		zap.Int("cell_count", len(cells)),
-		zap.Int("grid_cols", gridCols),
-		zap.Int("grid_rows", gridRows),
-		zap.Int("label_length", labelLength))
+    logger.Debug("Grid created successfully",
+        zap.Int("cell_count", len(cells)),
+        zap.Int("grid_cols", gridCols),
+        zap.Int("grid_rows", gridRows),
+        zap.Int("label_length", labelLength))
 
-	return &Grid{
-		characters: characters,
-		bounds:     bounds,
-		cells:      cells,
-	}
+    if gridCacheEnabled {
+        gridCache.put(characters, bounds, cells)
+        logger.Debug("Grid cache store",
+            zap.Int("cell_count", len(cells)))
+    }
+
+    return &Grid{
+        characters: characters,
+        bounds:     bounds,
+        cells:      cells,
+    }
 }
 
 // generateCellsWithRegions creates cells using spatial region logic
