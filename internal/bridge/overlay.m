@@ -21,8 +21,8 @@
 @property (nonatomic, strong) NSColor *targetDotBackgroundColor;
 @property (nonatomic, strong) NSColor *targetDotBorderColor;
 @property (nonatomic, assign) CGFloat targetDotBorderWidth;
-@property (nonatomic, strong) NSMutableArray *gridCells;  // Grid cells
-@property (nonatomic, strong) NSMutableArray *gridLines;  // Grid lines
+@property (nonatomic, strong) NSMutableArray *gridCells;
+@property (nonatomic, strong) NSMutableArray *gridLines;
 @property (nonatomic, strong) NSFont *gridFont;
 @property (nonatomic, strong) NSColor *gridTextColor;
 @property (nonatomic, strong) NSColor *gridMatchedTextColor;
@@ -60,7 +60,7 @@
         _hintBorderRadius = 4.0;
         _hintBorderWidth = 1.0;
         _hintPadding = 4.0;
-        
+
         // Grid defaults
         _gridFont = [NSFont fontWithName:@"Menlo" size:10.0];
         _gridTextColor = [NSColor colorWithWhite:0.2 alpha:1.0];
@@ -192,7 +192,7 @@
     CGFloat arrowTipX = elementCenterX;
     CGFloat arrowTipY = elementCenterY;
     CGFloat arrowBaseY = bodyRect.origin.y + bodyRect.size.height;
-    CGFloat arrowWidth = arrowSize * 2.5;  // Make arrow wider for better visibility
+    CGFloat arrowWidth = arrowSize * 2.5;
     CGFloat arrowLeft = arrowTipX - arrowWidth / 2;
     CGFloat arrowRight = arrowTipX + arrowWidth / 2;
 
@@ -201,7 +201,7 @@
     CGFloat tooltipRight = bodyRect.origin.x + bodyRect.size.width - self.hintBorderRadius;
     arrowLeft = MAX(arrowLeft, tooltipLeft);
     arrowRight = MIN(arrowRight, tooltipRight);
-    arrowTipX = (arrowLeft + arrowRight) / 2;  // Recenter if clamped
+    arrowTipX = (arrowLeft + arrowRight) / 2;
 
     // Start from top-left corner
     [path moveToPoint:NSMakePoint(bodyRect.origin.x + self.hintBorderRadius, bodyRect.origin.y)];
@@ -278,7 +278,7 @@
 
         // Calculate hint box size (include arrow space if needed)
         CGFloat padding = self.hintPadding;
-        CGFloat arrowHeight = showArrow ? 2.0 : 0.0;  // Arrow height only if enabled
+        CGFloat arrowHeight = showArrow ? 2.0 : 0.0;
 
         // Calculate dimensions - ensure box is at least square
         CGFloat contentWidth = textSize.width + (padding * 2);
@@ -289,14 +289,13 @@
         CGFloat boxHeight = contentHeight + arrowHeight;
 
         // Position tooltip above element with arrow pointing down to element center
-        // Element center is at (position.x + size.x/2, position.y + size.y/2)
         CGFloat elementCenterX = position.x + (hint[@"size"] ? [hint[@"size"] sizeValue].width : 0) / 2.0;
         CGFloat elementCenterY = position.y + (hint[@"size"] ? [hint[@"size"] sizeValue].height : 0) / 2.0;
 
         // Position tooltip body above element (arrow points down)
-        CGFloat gap = 3.0;  // Small gap between arrow tip and element
-        CGFloat tooltipX = elementCenterX - boxWidth / 2.0;  // Center tooltip horizontally on element
-        CGFloat tooltipY = elementCenterY + arrowHeight + gap;  // Position tooltip body above element
+        CGFloat gap = 3.0;
+        CGFloat tooltipX = elementCenterX - boxWidth / 2.0;
+        CGFloat tooltipY = elementCenterY + arrowHeight + gap;
 
         // Convert coordinates (macOS uses bottom-left origin, we need top-left)
         NSScreen *mainScreen = [NSScreen mainScreen];
@@ -314,13 +313,11 @@
         // Draw tooltip background
         NSBezierPath *path;
         if (showArrow) {
-            // Draw with arrow pointing to element center
             path = [self createTooltipPath:hintRect
                                 arrowSize:arrowHeight
                            elementCenterX:elementCenterX
                           elementCenterY:flippedElementCenterY];
         } else {
-            // Draw simple rounded rectangle without arrow
             path = [NSBezierPath bezierPathWithRoundedRect:hintRect
                                                    xRadius:self.hintBorderRadius
                                                    yRadius:self.hintBorderRadius];
@@ -334,7 +331,7 @@
         [path stroke];
 
         // Draw text (centered in tooltip body)
-        CGFloat textX = hintRect.origin.x + (boxWidth - textSize.width) / 2.0;  // Center horizontally
+        CGFloat textX = hintRect.origin.x + (boxWidth - textSize.width) / 2.0;
         CGFloat textY = hintRect.origin.y + padding;
         NSPoint textPosition = NSMakePoint(textX, textY);
         [attrString drawAtPoint:textPosition];
@@ -415,7 +412,7 @@
     unsigned rgbValue = 0;
     NSScanner *scanner = [NSScanner scannerWithString:hexString];
     if ([hexString hasPrefix:@"#"]) {
-        [scanner setScanLocation:1]; // Skip '#'
+        [scanner setScanLocation:1];
     }
     [scanner scanHexInt:&rgbValue];
 
@@ -427,31 +424,31 @@
 
 - (void)drawGridCells {
     if ([self.gridCells count] == 0) return;
-    
+
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
     [context saveGraphicsState];
-    
+
     NSScreen *mainScreen = [NSScreen mainScreen];
     CGFloat screenHeight = [mainScreen frame].size.height;
-    
+
     for (NSDictionary *cellDict in self.gridCells) {
         NSString *label = cellDict[@"label"];
         NSValue *boundsValue = cellDict[@"bounds"];
         BOOL isMatched = [cellDict[@"isMatched"] boolValue];
         BOOL isSubgrid = [cellDict[@"isSubgrid"] boolValue];
-        
+
         // Skip drawing unmatched cells if hideUnmatched is enabled AND it's not a subgrid cell
         if (self.hideUnmatched && !isMatched && !isSubgrid) {
             continue;
         }
-        
+
         CGRect bounds = [boundsValue rectValue];
-        
+
         // Convert coordinates (macOS uses bottom-left origin)
         CGFloat flippedY = screenHeight - bounds.origin.y - bounds.size.height;
         NSRect cellRect = NSMakeRect(bounds.origin.x, flippedY, bounds.size.width, bounds.size.height);
-        
-        // Draw cell background with opacity (use matched background color when isMatched)
+
+        // Draw cell background with opacity
         NSColor *bgBase = self.gridBackgroundColor;
         if (isMatched && self.gridMatchedBackgroundColor) {
             bgBase = self.gridMatchedBackgroundColor;
@@ -459,8 +456,8 @@
         NSColor *bgColor = [bgBase colorWithAlphaComponent:self.gridBackgroundOpacity];
         [bgColor setFill];
         NSRectFill(cellRect);
-        
-        // Draw cell border (use matched border color when isMatched)
+
+        // Draw cell border
         NSColor *borderColor = self.gridBorderColor;
         if (isMatched && self.gridMatchedBorderColor) {
             borderColor = self.gridMatchedBorderColor;
@@ -469,68 +466,64 @@
         NSBezierPath *borderPath = [NSBezierPath bezierPathWithRect:cellRect];
         [borderPath setLineWidth:self.gridBorderWidth];
         [borderPath stroke];
-        
+
         // Draw text label centered in cell
         if (label && [label length] > 0) {
-            // Use attributed string for character-level color highlighting
             NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:label];
-            
-            // Set default font for entire string
+
             [attrString addAttribute:NSFontAttributeName value:self.gridFont range:NSMakeRange(0, [label length])];
-            
-            // Set default text color for entire string (always use default text color)
+
             NSColor *defaultTextColor = self.gridTextColor;
             defaultTextColor = [defaultTextColor colorWithAlphaComponent:self.gridTextOpacity];
             [attrString addAttribute:NSForegroundColorAttributeName value:defaultTextColor range:NSMakeRange(0, [label length])];
-            
-            // Apply matched text color only to the matched prefix
+
             NSNumber *matchedPrefixLengthNum = cellDict[@"matchedPrefixLength"];
             int matchedPrefixLength = matchedPrefixLengthNum ? [matchedPrefixLengthNum intValue] : 0;
             if (isMatched && matchedPrefixLength > 0 && matchedPrefixLength <= [label length]) {
                 NSColor *matchedTextColor = [self.gridMatchedTextColor colorWithAlphaComponent:self.gridTextOpacity];
-                [attrString addAttribute:NSForegroundColorAttributeName 
-                                   value:matchedTextColor 
+                [attrString addAttribute:NSForegroundColorAttributeName
+                                   value:matchedTextColor
                                    range:NSMakeRange(0, matchedPrefixLength)];
             }
-            
+
             NSSize textSize = [attrString size];
             CGFloat textX = cellRect.origin.x + (cellRect.size.width - textSize.width) / 2.0;
             CGFloat textY = cellRect.origin.y + (cellRect.size.height - textSize.height) / 2.0;
-            
+
             [attrString drawAtPoint:NSMakePoint(textX, textY)];
         }
     }
-    
+
     [context restoreGraphicsState];
 }
 
 - (void)drawGridLines {
     if ([self.gridLines count] == 0) return;
-    
+
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
     [context saveGraphicsState];
-    
+
     for (NSDictionary *lineDict in self.gridLines) {
         NSValue *rectValue = lineDict[@"rect"];
         NSString *colorHex = lineDict[@"color"];
         NSNumber *widthNum = lineDict[@"width"];
         NSNumber *opacityNum = lineDict[@"opacity"];
-        
+
         CGRect lineRect = [rectValue rectValue];
         int width = [widthNum intValue];
         double opacity = [opacityNum doubleValue];
-        
+
         NSScreen *mainScreen = [NSScreen mainScreen];
         CGFloat screenHeight = [mainScreen frame].size.height;
         CGFloat flippedY = screenHeight - lineRect.origin.y - lineRect.size.height;
         NSRect rect = NSMakeRect(lineRect.origin.x, flippedY, lineRect.size.width, lineRect.size.height);
-        
+
         NSColor *color = [self colorFromHex:colorHex];
         color = [color colorWithAlphaComponent:opacity];
         [color setFill];
         NSRectFill(rect);
     }
-    
+
     [context restoreGraphicsState];
 }
 
@@ -555,7 +548,6 @@
     NSScreen *mainScreen = [NSScreen mainScreen];
     NSRect screenFrame = [mainScreen frame];
 
-    // Create window
     self.window = [[NSWindow alloc] initWithContentRect:screenFrame
                                               styleMask:NSWindowStyleMaskBorderless
                                                 backing:NSBackingStoreBuffered
@@ -567,7 +559,7 @@
     [self.window setAnimations:@{}];
     [self.window setAlphaValue:1.0];
 
-    [self.window setLevel:NSScreenSaverWindowLevel]; // Higher level to be above everything
+    [self.window setLevel:NSScreenSaverWindowLevel];
     [self.window setOpaque:NO];
     [self.window setBackgroundColor:[NSColor clearColor]];
     [self.window setIgnoresMouseEvents:YES];
@@ -578,7 +570,6 @@
                                         NSWindowCollectionBehaviorFullScreenAuxiliary |
                                         NSWindowCollectionBehaviorIgnoresCycle];
 
-    // Create overlay view with local coordinates (origin at 0,0)
     NSRect viewFrame = NSMakeRect(0, 0, screenFrame.size.width, screenFrame.size.height);
     self.overlayView = [[OverlayView alloc] initWithFrame:viewFrame];
     [self.window setContentView:self.overlayView];
@@ -592,7 +583,7 @@ OverlayWindow createOverlayWindow() {
     __block OverlayWindowController *controller = nil;
     if ([NSThread isMainThread]) {
         controller = [[OverlayWindowController alloc] init];
-        [controller retain]; // Retain for the caller
+        [controller retain];
     } else {
         dispatch_sync(dispatch_get_main_queue(), ^{
             controller = [[OverlayWindowController alloc] init];
@@ -623,22 +614,18 @@ void showOverlayWindow(OverlayWindow window) {
     OverlayWindowController *controller = (OverlayWindowController*)window;
 
     dispatch_async(dispatch_get_main_queue(), ^{
-        // Set window level to maximum
         [controller.window setLevel:kCGMaximumWindowLevel];
 
-        // Set collection behavior
         [controller.window setCollectionBehavior:
             NSWindowCollectionBehaviorCanJoinAllSpaces |
             NSWindowCollectionBehaviorStationary |
             NSWindowCollectionBehaviorIgnoresCycle |
             NSWindowCollectionBehaviorFullScreenAuxiliary];
 
-        // orderFrontRegardless to make it visible
         [controller.window setIsVisible:YES];
         [controller.window orderFrontRegardless];
         [controller.window makeKeyAndOrderFront:nil];
 
-        // Force display update
         [controller.window display];
         [controller.overlayView setNeedsDisplay:YES];
     });
@@ -693,8 +680,7 @@ void resizeOverlayToMainScreen(OverlayWindow window) {
         }
         NSRect screenFrame = [mainScreen frame];
         [controller.window setFrame:screenFrame display:YES];
-        
-        // View frame should be in window's coordinate space (origin at 0,0)
+
         NSRect viewFrame = NSMakeRect(0, 0, screenFrame.size.width, screenFrame.size.height);
         [controller.overlayView setFrame:viewFrame];
         [controller.overlayView setNeedsDisplay:YES];
@@ -706,10 +692,8 @@ void resizeOverlayToActiveScreen(OverlayWindow window) {
 
     OverlayWindowController *controller = (OverlayWindowController*)window;
     dispatch_async(dispatch_get_main_queue(), ^{
-        // Get current mouse location
         NSPoint mouseLoc = [NSEvent mouseLocation];
-        
-        // Find the screen containing the mouse cursor
+
         NSScreen *activeScreen = nil;
         for (NSScreen *screen in [NSScreen screens]) {
             if (NSPointInRect(mouseLoc, screen.frame)) {
@@ -717,20 +701,18 @@ void resizeOverlayToActiveScreen(OverlayWindow window) {
                 break;
             }
         }
-        
-        // Fall back to main screen if mouse is somehow not on any screen
+
         if (!activeScreen) {
             activeScreen = [NSScreen mainScreen];
         }
-        
+
         if (!activeScreen) {
             return;
         }
-        
+
         NSRect screenFrame = [activeScreen frame];
         [controller.window setFrame:screenFrame display:YES];
-        
-        // View frame should be in window's coordinate space (origin at 0,0)
+
         NSRect viewFrame = NSMakeRect(0, 0, screenFrame.size.width, screenFrame.size.height);
         [controller.overlayView setFrame:viewFrame];
         [controller.overlayView setNeedsDisplay:YES];
@@ -745,10 +727,8 @@ void resizeOverlayToActiveScreenWithCallback(OverlayWindow window, ResizeComplet
 
     OverlayWindowController *controller = (OverlayWindowController*)window;
     dispatch_async(dispatch_get_main_queue(), ^{
-        // Get current mouse location
         NSPoint mouseLoc = [NSEvent mouseLocation];
-        
-        // Find the screen containing the mouse cursor
+
         NSScreen *activeScreen = nil;
         for (NSScreen *screen in [NSScreen screens]) {
             if (NSPointInRect(mouseLoc, screen.frame)) {
@@ -756,30 +736,41 @@ void resizeOverlayToActiveScreenWithCallback(OverlayWindow window, ResizeComplet
                 break;
             }
         }
-        
-        // Fall back to main screen if mouse is somehow not on any screen
+
         if (!activeScreen) {
             activeScreen = [NSScreen mainScreen];
         }
-        
+
         if (!activeScreen) {
             if (callback) callback(context);
             return;
         }
-        
+
         NSRect screenFrame = [activeScreen frame];
         [controller.window setFrame:screenFrame display:YES];
-        
-        // View frame should be in window's coordinate space (origin at 0,0)
+
         NSRect viewFrame = NSMakeRect(0, 0, screenFrame.size.width, screenFrame.size.height);
         [controller.overlayView setFrame:viewFrame];
         [controller.overlayView setNeedsDisplay:YES];
-        
-        // Call completion callback
+
         if (callback) {
             callback(context);
         }
     });
+}
+
+// Helper function to copy style strings safely
+static inline char* safe_strdup(const char* str) {
+    return str ? strdup(str) : NULL;
+}
+
+// Helper function to free style strings
+static inline void free_hint_style_strings(const HintStyle* style) {
+    if (style->fontFamily) free((void*)style->fontFamily);
+    if (style->backgroundColor) free((void*)style->backgroundColor);
+    if (style->textColor) free((void*)style->textColor);
+    if (style->matchedTextColor) free((void*)style->matchedTextColor);
+    if (style->borderColor) free((void*)style->borderColor);
 }
 
 void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style) {
@@ -788,7 +779,6 @@ void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style
     OverlayWindowController *controller = (OverlayWindowController*)window;
 
     if ([NSThread isMainThread]) {
-        // Execute directly - original code
         [controller.overlayView.hints removeAllObjects];
         [controller.overlayView applyStyle:style];
 
@@ -805,7 +795,7 @@ void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style
 
         [controller.overlayView setNeedsDisplay:YES];
     } else {
-        // Need to copy data for async dispatch
+        // Copy hint data
         NSMutableArray *hintDicts = [NSMutableArray arrayWithCapacity:count];
         for (int i = 0; i < count; i++) {
             HintData hint = hints[i];
@@ -818,19 +808,19 @@ void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style
             [hintDicts addObject:hintDict];
         }
 
-        // Deep copy style strings
-        HintStyle styleCopy;
-        styleCopy.fontSize = style.fontSize;
-        styleCopy.borderRadius = style.borderRadius;
-        styleCopy.borderWidth = style.borderWidth;
-        styleCopy.padding = style.padding;
-        styleCopy.opacity = style.opacity;
-        styleCopy.showArrow = style.showArrow;
-        styleCopy.fontFamily = style.fontFamily ? strdup(style.fontFamily) : NULL;
-        styleCopy.backgroundColor = style.backgroundColor ? strdup(style.backgroundColor) : NULL;
-        styleCopy.textColor = style.textColor ? strdup(style.textColor) : NULL;
-        styleCopy.matchedTextColor = style.matchedTextColor ? strdup(style.matchedTextColor) : NULL;
-        styleCopy.borderColor = style.borderColor ? strdup(style.borderColor) : NULL;
+        HintStyle styleCopy = {
+            .fontSize = style.fontSize,
+            .borderRadius = style.borderRadius,
+            .borderWidth = style.borderWidth,
+            .padding = style.padding,
+            .opacity = style.opacity,
+            .showArrow = style.showArrow,
+            .fontFamily = safe_strdup(style.fontFamily),
+            .backgroundColor = safe_strdup(style.backgroundColor),
+            .textColor = safe_strdup(style.textColor),
+            .matchedTextColor = safe_strdup(style.matchedTextColor),
+            .borderColor = safe_strdup(style.borderColor)
+        };
 
         dispatch_async(dispatch_get_main_queue(), ^{
             [controller.overlayView.hints removeAllObjects];
@@ -838,12 +828,7 @@ void drawHints(OverlayWindow window, HintData* hints, int count, HintStyle style
             [controller.overlayView.hints addObjectsFromArray:hintDicts];
             [controller.overlayView setNeedsDisplay:YES];
 
-            // Free copied strings
-            if (styleCopy.fontFamily) free((void*)styleCopy.fontFamily);
-            if (styleCopy.backgroundColor) free((void*)styleCopy.backgroundColor);
-            if (styleCopy.textColor) free((void*)styleCopy.textColor);
-            if (styleCopy.matchedTextColor) free((void*)styleCopy.matchedTextColor);
-            if (styleCopy.borderColor) free((void*)styleCopy.borderColor);
+            free_hint_style_strings(&styleCopy);
         });
     }
 }
@@ -854,7 +839,6 @@ void drawScrollHighlight(OverlayWindow window, CGRect bounds, char* color, int w
     OverlayWindowController *controller = (OverlayWindowController*)window;
 
     if ([NSThread isMainThread]) {
-        // Execute directly - original code
         controller.overlayView.scrollHighlight = bounds;
         controller.overlayView.scrollHighlightWidth = width;
         controller.overlayView.showScrollHighlight = YES;
@@ -904,7 +888,6 @@ void drawTargetDot(OverlayWindow window, CGPoint center, double radius, const ch
     OverlayWindowController *controller = (OverlayWindowController*)window;
 
     if ([NSThread isMainThread]) {
-        // Execute directly - original code
         controller.overlayView.targetDotCenter = center;
         controller.overlayView.targetDotRadius = radius;
         controller.overlayView.targetDotBorderWidth = borderWidth;
@@ -972,10 +955,10 @@ void replaceOverlayWindow(OverlayWindow *pwindow) {
 
 void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellStyle style) {
     if (!window || !cells) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    
-    // Build cell data array
+
+    // Build cell data array and copy all strings NOW
     NSMutableArray *cellDicts = [NSMutableArray arrayWithCapacity:count];
     for (int i = 0; i < count; i++) {
         GridCell cell = cells[i];
@@ -988,8 +971,8 @@ void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellSty
         };
         [cellDicts addObject:cellDict];
     }
-    
-    // Copy all style strings NOW (before the async block) to avoid use-after-free
+
+    // Copy all style properties NOW (before async block)
     CGFloat fontSize = style.fontSize > 0 ? style.fontSize : 10.0;
     NSString *fontFamily = style.fontFamily ? @(style.fontFamily) : nil;
     NSString *bgHex = style.backgroundColor ? @(style.backgroundColor) : nil;
@@ -1001,7 +984,7 @@ void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellSty
     int borderWidth = style.borderWidth;
     double backgroundOpacity = style.backgroundOpacity;
     double textOpacity = style.textOpacity;
-    
+
     dispatch_async(dispatch_get_main_queue(), ^{
         // Apply style
         NSFont *font = nil;
@@ -1015,7 +998,7 @@ void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellSty
             font = [NSFont systemFontOfSize:fontSize];
         }
         controller.overlayView.gridFont = font;
-        
+
         controller.overlayView.gridBackgroundColor = [controller.overlayView colorFromHex:bgHex defaultColor:[NSColor whiteColor]];
         controller.overlayView.gridTextColor = [controller.overlayView colorFromHex:textHex defaultColor:[NSColor blackColor]];
         controller.overlayView.gridMatchedTextColor = [controller.overlayView colorFromHex:matchedTextHex defaultColor:[NSColor blueColor]];
@@ -1025,8 +1008,7 @@ void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellSty
         controller.overlayView.gridBorderWidth = borderWidth > 0 ? borderWidth : 1.0;
         controller.overlayView.gridBackgroundOpacity = (backgroundOpacity >= 0.0 && backgroundOpacity <= 1.0) ? backgroundOpacity : 0.85;
         controller.overlayView.gridTextOpacity = (textOpacity >= 0.0 && textOpacity <= 1.0) ? textOpacity : 1.0;
-        
-        // Set cells and redraw
+
         [controller.overlayView.gridCells removeAllObjects];
         [controller.overlayView.gridCells addObjectsFromArray:cellDicts];
         [controller.overlayView setNeedsDisplay:YES];
@@ -1035,10 +1017,10 @@ void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellSty
 
 void drawGridLines(OverlayWindow window, CGRect* lines, int count, char* color, int width, double opacity) {
     if (!window || !lines) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
     NSString *colorHex = color ? @(color) : @"#333333";
-    
+
     // Build line data array
     NSMutableArray *lineDicts = [NSMutableArray arrayWithCapacity:count];
     for (int i = 0; i < count; i++) {
@@ -1050,7 +1032,7 @@ void drawGridLines(OverlayWindow window, CGRect* lines, int count, char* color, 
         };
         [lineDicts addObject:lineDict];
     }
-    
+
     dispatch_async(dispatch_get_main_queue(), ^{
         [controller.overlayView.gridLines removeAllObjects];
         [controller.overlayView.gridLines addObjectsFromArray:lineDicts];
@@ -1060,13 +1042,12 @@ void drawGridLines(OverlayWindow window, CGRect* lines, int count, char* color, 
 
 void updateGridMatchPrefix(OverlayWindow window, const char* prefix) {
     if (!window) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    
+
     NSString *prefixStr = prefix ? @(prefix) : @"";
-    
+
     dispatch_async(dispatch_get_main_queue(), ^{
-        // Update matched state for all cells without removing any
         NSMutableArray *updated = [NSMutableArray arrayWithCapacity:[controller.overlayView.gridCells count]];
         for (NSDictionary *cellDict in controller.overlayView.gridCells) {
             NSString *label = cellDict[@"label"] ?: @"";
@@ -1079,8 +1060,6 @@ void updateGridMatchPrefix(OverlayWindow window, const char* prefix) {
                     matchedPrefixLength = (int)[prefixStr length];
                 }
             }
-            // Always include the cell, just update its matched state
-            // Preserve the isSubgrid field
             BOOL isSubgrid = [cellDict[@"isSubgrid"] boolValue];
             NSDictionary *newDict = @{ @"label": label,
                                        @"bounds": cellDict[@"bounds"],
@@ -1111,9 +1090,9 @@ void setOverlayLevel(OverlayWindow window, int level) {
 
 void setHideUnmatched(OverlayWindow window, int hide) {
     if (!window) return;
-    
+
     OverlayWindowController *controller = (OverlayWindowController*)window;
-    
+
     dispatch_async(dispatch_get_main_queue(), ^{
         controller.overlayView.hideUnmatched = hide ? YES : NO;
         [controller.overlayView setNeedsDisplay:YES];
