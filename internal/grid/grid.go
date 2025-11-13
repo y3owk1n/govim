@@ -13,6 +13,7 @@ type Grid struct {
 	characters string          // Characters used for coordinates (e.g., "asdfghjkl")
 	bounds     image.Rectangle // Screen bounds
 	cells      []*Cell         // All cells with 3-char coordinates
+	index      map[string]*Cell
 }
 
 // Cell represents a grid cell with a 3-character coordinate
@@ -257,10 +258,16 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 			zap.Int("cell_count", len(cells)))
 	}
 
+	idx := make(map[string]*Cell, len(cells))
+	for _, c := range cells {
+		idx[c.Coordinate] = c
+	}
+
 	return &Grid{
 		characters: characters,
 		bounds:     bounds,
 		cells:      cells,
+		index:      idx,
 	}
 }
 
@@ -307,6 +314,26 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 	// Iterate through regions (first character)
 	regionIndex := 0
 	maxRegions := numChars * numChars // Maximum regions we might need
+
+	// Precompute x/y starts to avoid inner summation loops
+	xStarts := make([]int, gridCols)
+	yStarts := make([]int, gridRows)
+	for i := 0; i < gridCols; i++ {
+		xStarts[i] = bounds.Min.X + i*baseCellWidth
+		if i < remainderWidth {
+			xStarts[i] += i
+		} else {
+			xStarts[i] += remainderWidth
+		}
+	}
+	for j := 0; j < gridRows; j++ {
+		yStarts[j] = bounds.Min.Y + j*baseCellHeight
+		if j < remainderHeight {
+			yStarts[j] += j
+		} else {
+			yStarts[j] += remainderHeight
+		}
+	}
 
 	for regionIndex < maxRegions && currentRow < gridRows {
 		// Determine region identifier (first character)
@@ -367,25 +394,8 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 					cellHeight++
 				}
 
-				// Calculate x position
-				x := bounds.Min.X
-				for i := range globalCol {
-					if i < remainderWidth {
-						x += baseCellWidth + 1
-					} else {
-						x += baseCellWidth
-					}
-				}
-
-				// Calculate y position
-				y := bounds.Min.Y
-				for i := range globalRow {
-					if i < remainderHeight {
-						y += baseCellHeight + 1
-					} else {
-						y += baseCellHeight
-					}
-				}
+				x := xStarts[globalCol]
+				y := yStarts[globalRow]
 
 				cell := &Cell{
 					Coordinate: coord,
@@ -431,7 +441,11 @@ func (g *Grid) GetAllCells() []*Cell {
 func (g *Grid) GetCellByCoordinate(coord string) *Cell {
 	coord = strings.ToUpper(coord)
 
-	// Linear search through cells
+	if g.index != nil {
+		if cell, ok := g.index[coord]; ok {
+			return cell
+		}
+	}
 	for _, cell := range g.cells {
 		if cell.Coordinate == coord {
 			return cell

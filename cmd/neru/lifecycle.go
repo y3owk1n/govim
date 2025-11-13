@@ -244,6 +244,9 @@ func (a *App) Cleanup() {
 	if a.hintOverlay != nil {
 		a.hintOverlay.Destroy()
 	}
+	if a.gridCtx != nil && a.gridCtx.gridOverlay != nil && *a.gridCtx.gridOverlay != nil {
+		(*a.gridCtx.gridOverlay).Destroy()
+	}
 
 	// Cleanup event tap
 	if a.eventTap != nil {
