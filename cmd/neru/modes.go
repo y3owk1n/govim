@@ -229,9 +229,20 @@ func (a *App) setupGrid(action Action) error {
 	const subCols = 3
 
 	// Initialize manager with the new grid
-	a.gridManager = grid.NewManager(gridInstance, subRows, subCols, keys, func() {
+	a.gridManager = grid.NewManager(gridInstance, subRows, subCols, keys, func(forceRedraw bool) {
 		// Update matches only (no full redraw)
 		input := a.gridManager.GetInput()
+
+		// special case to handle only when exiting subgrid
+		if forceRedraw {
+			(*a.gridCtx.gridOverlay).Clear()
+
+			if err := (*a.gridCtx.gridOverlay).Draw(gridInstance, input, gridStyle); err != nil {
+				return
+			}
+
+			(*a.gridCtx.gridOverlay).Show()
+		}
 
 		// Set hideUnmatched based on whether we have input and the config setting
 		hideUnmatched := a.config.Grid.HideUnmatched && len(input) > 0
