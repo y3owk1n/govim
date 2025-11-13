@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"github.com/y3owk1n/neru/internal/config"
@@ -112,6 +113,10 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	hintCallbackMap[id] = done
 	hintCallbackLock.Unlock()
 
+	if o.logger != nil {
+		o.logger.Debug("Hint overlay resize started", zap.Uint64("callback_id", id))
+	}
+
 	// Pass ID as context (safe - no Go pointers)
 	// Note: uintptr conversion must happen in same expression to satisfy go vet
 	C.resizeOverlayToActiveScreenWithCallback(
@@ -120,7 +125,32 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 		*(*unsafe.Pointer)(unsafe.Pointer(&id)),
 	)
 
-	<-done
+	// Don't wait for callback - continue immediately for better UX
+	// The resize operation is typically fast and visually complete before callback
+	// Start a goroutine to handle cleanup when callback eventually arrives
+	go func() {
+		if o.logger != nil {
+			o.logger.Debug("Hint overlay resize background cleanup started", zap.Uint64("callback_id", id))
+		}
+
+		select {
+		case <-done:
+			// Callback received, normal cleanup already handled in callback
+			if o.logger != nil {
+				o.logger.Debug("Hint overlay resize callback received", zap.Uint64("callback_id", id))
+			}
+		case <-time.After(2 * time.Second):
+			// Long timeout for cleanup only - callback likely failed
+			hintCallbackLock.Lock()
+			delete(hintCallbackMap, id)
+			hintCallbackLock.Unlock()
+
+			if o.logger != nil {
+				o.logger.Debug("Hint overlay resize cleanup timeout - removed callback from map",
+					zap.Uint64("callback_id", id))
+			}
+		}
+	}()
 }
 
 // DrawHintsWithoutArrow draws hints without arrows

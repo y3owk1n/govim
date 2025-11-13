@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"github.com/y3owk1n/neru/internal/config"
@@ -121,6 +122,10 @@ func (o *GridOverlay) ResizeToActiveScreenSync() {
 	gridCallbackMap[id] = done
 	gridCallbackLock.Unlock()
 
+	if o.logger != nil {
+		o.logger.Debug("Grid overlay resize started", zap.Uint64("callback_id", id))
+	}
+
 	// Pass ID as context (safe - no Go pointers)
 	// Note: uintptr conversion must happen in same expression to satisfy go vet
 	C.resizeOverlayToActiveScreenWithCallback(
@@ -129,7 +134,32 @@ func (o *GridOverlay) ResizeToActiveScreenSync() {
 		*(*unsafe.Pointer)(unsafe.Pointer(&id)),
 	)
 
-	<-done
+	// Don't wait for callback - continue immediately for better UX
+	// The resize operation is typically fast and visually complete before callback
+	// Start a goroutine to handle cleanup when callback eventually arrives
+	go func() {
+		if o.logger != nil {
+			o.logger.Debug("Grid overlay resize background cleanup started", zap.Uint64("callback_id", id))
+		}
+
+		select {
+		case <-done:
+			// Callback received, normal cleanup already handled in callback
+			if o.logger != nil {
+				o.logger.Debug("Grid overlay resize callback received", zap.Uint64("callback_id", id))
+			}
+		case <-time.After(2 * time.Second):
+			// Long timeout for cleanup only - callback likely failed
+			gridCallbackLock.Lock()
+			delete(gridCallbackMap, id)
+			gridCallbackLock.Unlock()
+
+			if o.logger != nil {
+				o.logger.Debug("Grid overlay resize cleanup timeout - removed callback from map",
+					zap.Uint64("callback_id", id))
+			}
+		}
+	}()
 }
 
 // Draw renders the flat grid with all 3-char cells visible
