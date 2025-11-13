@@ -77,7 +77,7 @@ func (a *App) activateHintMode(action Action) {
 	// Always resize overlay to the active screen (where mouse is) before collecting elements
 	// This ensures proper positioning when switching between multiple displays
 	if a.hintOverlay != nil {
-		// Use synchronous resize with callback - no artificial delay needed
+		// Use synchronous resize with timeout to prevent hanging
 		a.hintOverlay.ResizeToActiveScreenSync()
 		a.hintOverlayNeedsRefresh = false
 	}
@@ -172,7 +172,7 @@ func (a *App) activateGridMode(action Action) {
 	if a.gridCtx != nil && a.gridCtx.gridOverlay != nil {
 		gridOverlay := *a.gridCtx.gridOverlay
 
-		// Use synchronous resize with callback - no artificial delay needed
+		// Use synchronous resize with timeout to prevent hanging
 		gridOverlay.ResizeToActiveScreenSync()
 		a.gridOverlayNeedsRefresh = false
 	}
@@ -925,7 +925,7 @@ func (a *App) exitMode() {
 		a.hintOverlay.Hide()
 	case ModeGrid:
 		// If we are in mouse up action, remove the mouse up to prevent further dragging
-		if a.currentAction == ActionMouseUp {
+		if a.gridCtx.currentAction == ActionMouseUp {
 			a.logger.Info("Detected MouseUp action, removing mouse up event...")
 			err := accessibility.LeftMouseUp()
 			if err != nil {
@@ -943,6 +943,7 @@ func (a *App) exitMode() {
 		}
 		// Hide overlays
 		if a.gridCtx != nil && a.gridCtx.gridOverlay != nil && *a.gridCtx.gridOverlay != nil {
+			a.logger.Info("Hiding grid overlay")
 			(*a.gridCtx.gridOverlay).Hide()
 		}
 		// Also clear any context menu drawn on hint overlay
@@ -959,6 +960,7 @@ func (a *App) exitMode() {
 	// Update mode after all cleanup is done
 	a.currentMode = ModeIdle
 	a.currentAction = ActionLeftClick
+	a.gridCtx.currentAction = ActionLeftClick
 	a.logger.Debug("Mode transition complete",
 		zap.String("to", "idle"))
 
