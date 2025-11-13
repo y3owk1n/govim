@@ -472,19 +472,32 @@
         
         // Draw text label centered in cell
         if (label && [label length] > 0) {
-            NSColor *textColor = isMatched ? self.gridMatchedTextColor : self.gridTextColor;
-            textColor = [textColor colorWithAlphaComponent:self.gridTextOpacity];
+            // Use attributed string for character-level color highlighting
+            NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:label];
             
-            NSDictionary *attributes = @{
-                NSFontAttributeName: self.gridFont,
-                NSForegroundColorAttributeName: textColor
-            };
+            // Set default font for entire string
+            [attrString addAttribute:NSFontAttributeName value:self.gridFont range:NSMakeRange(0, [label length])];
             
-            NSSize textSize = [label sizeWithAttributes:attributes];
+            // Set default text color for entire string (always use default text color)
+            NSColor *defaultTextColor = self.gridTextColor;
+            defaultTextColor = [defaultTextColor colorWithAlphaComponent:self.gridTextOpacity];
+            [attrString addAttribute:NSForegroundColorAttributeName value:defaultTextColor range:NSMakeRange(0, [label length])];
+            
+            // Apply matched text color only to the matched prefix
+            NSNumber *matchedPrefixLengthNum = cellDict[@"matchedPrefixLength"];
+            int matchedPrefixLength = matchedPrefixLengthNum ? [matchedPrefixLengthNum intValue] : 0;
+            if (isMatched && matchedPrefixLength > 0 && matchedPrefixLength <= [label length]) {
+                NSColor *matchedTextColor = [self.gridMatchedTextColor colorWithAlphaComponent:self.gridTextOpacity];
+                [attrString addAttribute:NSForegroundColorAttributeName 
+                                   value:matchedTextColor 
+                                   range:NSMakeRange(0, matchedPrefixLength)];
+            }
+            
+            NSSize textSize = [attrString size];
             CGFloat textX = cellRect.origin.x + (cellRect.size.width - textSize.width) / 2.0;
             CGFloat textY = cellRect.origin.y + (cellRect.size.height - textSize.height) / 2.0;
             
-            [label drawAtPoint:NSMakePoint(textX, textY) withAttributes:attributes];
+            [attrString drawAtPoint:NSMakePoint(textX, textY)];
         }
     }
     
@@ -970,7 +983,8 @@ void drawGridCells(OverlayWindow window, GridCell* cells, int count, GridCellSty
             @"label": cell.label ? @(cell.label) : @"",
             @"bounds": [NSValue valueWithRect:NSRectFromCGRect(cell.bounds)],
             @"isMatched": @(cell.isMatched),
-            @"isSubgrid": @(cell.isSubgrid)
+            @"isSubgrid": @(cell.isSubgrid),
+            @"matchedPrefixLength": @(cell.matchedPrefixLength)
         };
         [cellDicts addObject:cellDict];
     }
@@ -1057,9 +1071,13 @@ void updateGridMatchPrefix(OverlayWindow window, const char* prefix) {
         for (NSDictionary *cellDict in controller.overlayView.gridCells) {
             NSString *label = cellDict[@"label"] ?: @"";
             BOOL isMatched = NO;
+            int matchedPrefixLength = 0;
             if ([prefixStr length] > 0 && [label length] >= [prefixStr length]) {
                 NSString *lblPrefix = [label substringToIndex:[prefixStr length]];
                 isMatched = [lblPrefix isEqualToString:prefixStr];
+                if (isMatched) {
+                    matchedPrefixLength = (int)[prefixStr length];
+                }
             }
             // Always include the cell, just update its matched state
             // Preserve the isSubgrid field
@@ -1067,7 +1085,8 @@ void updateGridMatchPrefix(OverlayWindow window, const char* prefix) {
             NSDictionary *newDict = @{ @"label": label,
                                        @"bounds": cellDict[@"bounds"],
                                        @"isMatched": @(isMatched),
-                                       @"isSubgrid": @(isSubgrid) };
+                                       @"isSubgrid": @(isSubgrid),
+                                       @"matchedPrefixLength": @(matchedPrefixLength) };
             [updated addObject:newDict];
         }
         [controller.overlayView.gridCells removeAllObjects];
