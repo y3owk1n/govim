@@ -15,9 +15,11 @@ Navigate macOS without touching your mouse - keyboard-driven productivity at its
 
 [Installation](#installation) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Contributing](#contributing)
 
-![preview](https://github.com/user-attachments/assets/71b13850-1b87-40b5-9ac0-93cff1f2e89b)
+![hints-preview](https://github.com/user-attachments/assets/71b13850-1b87-40b5-9ac0-93cff1f2e89b)
 
-[Hints demo](demos/hints.md)
+![grid-preview](https://github.com/user-attachments/assets/d452f972-ce23-4798-955b-6dbfa8435504)
+
+[Hints demo](demos/hints.md) • [Grid demo](demos/grid.md)
 
 ---
 
