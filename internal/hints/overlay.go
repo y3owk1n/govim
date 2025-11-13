@@ -12,6 +12,7 @@ import "C"
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -26,6 +27,8 @@ var (
 	hintCallbackID   uint64
 	hintCallbackMap  = make(map[uint64]chan struct{})
 	hintCallbackLock sync.Mutex
+	hintDataPool     sync.Pool
+	cLabelSlicePool  sync.Pool
 )
 
 //export resizeCompletionCallback
@@ -67,6 +70,8 @@ func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	if window == nil {
 		return nil, fmt.Errorf("failed to create overlay window")
 	}
+	hintDataPool = sync.Pool{New: func() any { s := make([]C.HintData, 0); return &s }}
+	cLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
 
 	return &Overlay{
 		window: window,
@@ -175,9 +180,25 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 		return nil
 	}
 
-	// Convert hints to C array - collect all C strings to free later
-	cHints := make([]C.HintData, len(hints))
-	cLabels := make([]*C.char, len(hints))
+	start := time.Now()
+	var msBefore runtime.MemStats
+	runtime.ReadMemStats(&msBefore)
+	cHintsPtr := hintDataPool.Get().(*[]C.HintData)
+	if cap(*cHintsPtr) < len(hints) {
+		s := make([]C.HintData, len(hints))
+		cHintsPtr = &s
+	} else {
+		*cHintsPtr = (*cHintsPtr)[:len(hints)]
+	}
+	cHints := *cHintsPtr
+	cLabelsPtr := cLabelSlicePool.Get().(*[]*C.char)
+	if cap(*cLabelsPtr) < len(hints) {
+		s := make([]*C.char, len(hints))
+		cLabelsPtr = &s
+	} else {
+		*cLabelsPtr = (*cLabelsPtr)[:len(hints)]
+	}
+	cLabels := *cLabelsPtr
 
 	matchedCount := 0
 	for i, hint := range hints {
@@ -237,6 +258,10 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 	for _, cLabel := range cLabels {
 		C.free(unsafe.Pointer(cLabel))
 	}
+	*cHintsPtr = (*cHintsPtr)[:0]
+	*cLabelsPtr = (*cLabelsPtr)[:0]
+	hintDataPool.Put(cHintsPtr)
+	cLabelSlicePool.Put(cLabelsPtr)
 	C.free(unsafe.Pointer(cFontFamily))
 	C.free(unsafe.Pointer(cBgColor))
 	C.free(unsafe.Pointer(cTextColor))
@@ -244,6 +269,13 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 	C.free(unsafe.Pointer(cBorderColor))
 
 	o.logger.Debug("Hints drawn successfully")
+	var msAfter runtime.MemStats
+	runtime.ReadMemStats(&msAfter)
+	o.logger.Info("Hints draw perf",
+		zap.Int("hint_count", len(hints)),
+		zap.Duration("duration", time.Since(start)),
+		zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
+		zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
 	return nil
 }
 

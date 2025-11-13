@@ -66,7 +66,15 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 		zap.Int("width", width),
 		zap.Int("height", height))
 
-	// Validate bounds before processing
+	if gridCacheEnabled {
+		if cells, ok := gridCache.get(characters, bounds); ok {
+			logger.Debug("Grid cache hit",
+				zap.Int("cell_count", len(cells)))
+			return &Grid{characters: characters, bounds: bounds, cells: cells}
+		}
+		logger.Debug("Grid cache miss")
+	}
+
 	if width <= 0 || height <= 0 {
 		logger.Warn("Invalid grid bounds, creating minimal grid",
 			zap.Int("width", width),
@@ -242,6 +250,12 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 		zap.Int("grid_cols", gridCols),
 		zap.Int("grid_rows", gridRows),
 		zap.Int("label_length", labelLength))
+
+	if gridCacheEnabled {
+		gridCache.put(characters, bounds, cells)
+		logger.Debug("Grid cache store",
+			zap.Int("cell_count", len(cells)))
+	}
 
 	return &Grid{
 		characters: characters,

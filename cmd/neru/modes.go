@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"runtime"
 	"strings"
 
 	"github.com/y3owk1n/neru/internal/accessibility"
@@ -67,7 +68,7 @@ func (a *App) activateHintMode(action Action) {
 	actionString := getActionString(action)
 	a.logger.Info("Activating hint mode", zap.String("action", actionString))
 
-	a.exitMode() // Exit current mode first
+	a.exitMode()
 
 	if actionString == "unknown" {
 		a.logger.Warn("Unknown action, ignoring")
@@ -114,6 +115,8 @@ func (a *App) activateHintMode(action Action) {
 
 // setupHints generates hints and draws them with appropriate styling
 func (a *App) setupHints(elements []*accessibility.TreeNode, action Action) error {
+	var msBefore runtime.MemStats
+	runtime.ReadMemStats(&msBefore)
 	// Get active screen bounds to calculate offset for normalization
 	screenBounds := bridge.GetActiveScreenBounds()
 	screenOffsetX := screenBounds.Min.X
@@ -132,6 +135,15 @@ func (a *App) setupHints(elements []*accessibility.TreeNode, action Action) erro
 		hint.Position.Y -= screenOffsetY
 	}
 
+	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
+	filtered := make([]*hints.Hint, 0, len(hintList))
+	for _, h := range hintList {
+		if h.IsVisible(localBounds) {
+			filtered = append(filtered, h)
+		}
+	}
+	hintList = filtered
+
 	// Set up hints in the hint manager
 	hintCollection := hints.NewHintCollection(hintList)
 	a.hintManager.SetHints(hintCollection)
@@ -143,6 +155,12 @@ func (a *App) setupHints(elements []*accessibility.TreeNode, action Action) erro
 	}
 
 	a.hintOverlay.Show()
+	var msAfter runtime.MemStats
+	runtime.ReadMemStats(&msAfter)
+	a.logger.Info("Hints setup perf",
+		zap.Int("hints", len(hintList)),
+		zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
+		zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
 	return nil
 }
 
@@ -934,6 +952,11 @@ func (a *App) exitMode() {
 		// Clear and hide overlay for hints
 		a.hintOverlay.Clear()
 		a.hintOverlay.Hide()
+		var ms runtime.MemStats
+		runtime.ReadMemStats(&ms)
+		a.logger.Info("Hints cleanup mem",
+			zap.Uint64("alloc_bytes", ms.Alloc),
+			zap.Uint64("sys_bytes", ms.Sys))
 	case ModeGrid:
 		// If we are in mouse up action, remove the mouse up to prevent further dragging
 		if a.gridCtx.currentAction == ActionMouseUp {

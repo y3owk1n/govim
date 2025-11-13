@@ -11,6 +11,8 @@ extern void gridResizeCompletionCallback(void* context);
 import "C"
 
 import (
+	"image"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -22,9 +24,11 @@ import (
 )
 
 var (
-	gridCallbackID   uint64
-	gridCallbackMap  = make(map[uint64]chan struct{})
-	gridCallbackLock sync.Mutex
+	gridCallbackID     uint64
+	gridCallbackMap    = make(map[uint64]chan struct{})
+	gridCallbackLock   sync.Mutex
+	gridCellSlicePool  sync.Pool
+	gridLabelSlicePool sync.Pool
 )
 
 //export gridResizeCompletionCallback
@@ -50,6 +54,21 @@ type GridOverlay struct {
 // NewGridOverlay creates a new grid overlay with its own window
 func NewGridOverlay(cfg config.GridConfig, logger *zap.Logger) *GridOverlay {
 	window := C.createOverlayWindow()
+	gridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
+	gridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	chars := cfg.Characters
+	if strings.TrimSpace(chars) == "" {
+		chars = cfg.Characters
+	}
+	go Prewarm(chars, []image.Rectangle{
+		image.Rect(0, 0, 1280, 800),
+		image.Rect(0, 0, 1366, 768),
+		image.Rect(0, 0, 1440, 900),
+		image.Rect(0, 0, 1920, 1080),
+		image.Rect(0, 0, 2560, 1440),
+		image.Rect(0, 0, 3440, 1440),
+		image.Rect(0, 0, 3840, 2160),
+	})
 	return &GridOverlay{
 		window: window,
 		cfg:    cfg,
@@ -177,8 +196,19 @@ func (o *GridOverlay) Draw(grid *Grid, currentInput string, style GridStyle) err
 		return nil
 	}
 
-	// Draw grid cells with labels (no grid lines for dense flat view)
+	start := time.Now()
+	var msBefore runtime.MemStats
+	runtime.ReadMemStats(&msBefore)
+
 	o.drawGridCells(cells, currentInput, style)
+
+	var msAfter runtime.MemStats
+	runtime.ReadMemStats(&msAfter)
+	o.logger.Info("Grid draw perf",
+		zap.Int("cell_count", len(cells)),
+		zap.Duration("duration", time.Since(start)),
+		zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
+		zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
 
 	o.logger.Debug("Grid overlay drawn successfully")
 	return nil
@@ -337,8 +367,22 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 		zap.Int("cell_count", len(cellsGo)),
 		zap.String("current_input", currentInput))
 
-	cGridCells := make([]C.GridCell, len(cellsGo))
-	cLabels := make([]*C.char, len(cellsGo))
+	cGridCellsPtr := gridCellSlicePool.Get().(*[]C.GridCell)
+	if cap(*cGridCellsPtr) < len(cellsGo) {
+		s := make([]C.GridCell, len(cellsGo))
+		cGridCellsPtr = &s
+	} else {
+		*cGridCellsPtr = (*cGridCellsPtr)[:len(cellsGo)]
+	}
+	cGridCells := *cGridCellsPtr
+	cLabelsPtr := gridLabelSlicePool.Get().(*[]*C.char)
+	if cap(*cLabelsPtr) < len(cellsGo) {
+		s := make([]*C.char, len(cellsGo))
+		cLabelsPtr = &s
+	} else {
+		*cLabelsPtr = (*cLabelsPtr)[:len(cellsGo)]
+	}
+	cLabels := *cLabelsPtr
 
 	matchedCount := 0
 	for i, cell := range cellsGo {
@@ -399,6 +443,10 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 	for _, cLabel := range cLabels {
 		C.free(unsafe.Pointer(cLabel))
 	}
+	*cGridCellsPtr = (*cGridCellsPtr)[:0]
+	*cLabelsPtr = (*cLabelsPtr)[:0]
+	gridCellSlicePool.Put(cGridCellsPtr)
+	gridLabelSlicePool.Put(cLabelsPtr)
 	C.free(unsafe.Pointer(fontFamily))
 	C.free(unsafe.Pointer(backgroundColor))
 	C.free(unsafe.Pointer(textColor))
