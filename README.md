@@ -50,13 +50,14 @@ Neru is a capable replacement for:
 - [Homerow](https://www.homerow.app/) - Modern keyboard navigation (paid)
 - [Shortcat](https://shortcat.app/) - Keyboard productivity tool (discontinued? not sure...)
 - [Vimac](https://github.com/dexterleng/vimac) - Vim-style navigation (unmaintained)
+- [Mouseless](https://mouseless.click/) - Grid based keyboard navigation (paid)
 
 ---
 
 ## Features
 
-- 🎯 **Grid-based hints** - Click any visible element using keyboard labels
-- 🎬 **Action mode** - Choose click type: left, right, double, middle, drag
+- 🎯 **Hint labels** - Click any visible element using keyboard labels (grid or vimium hints)
+- 🎬 **Action mode** - Choose click type: left, right, double, triple middle, drag and drop, and more
 - 📜 **Vim-style scrolling** - Scroll anywhere with `j`/`k`, `gg`/`G`, Ctrl+D/U - works standalone or within hints/grid modes
 - 🌐 **Universal support** - Native apps, Electron, Chrome, Firefox, menubar, Dock, Mission Control
 - ⚡ **Native performance** - Built with Objective-C and Go for instant response
@@ -280,6 +281,7 @@ Neru is inspired by these excellent projects:
 - [Shortcat](https://shortcat.app/) - Keyboard productivity tool
 - [Vimium](https://github.com/philc/vimium) - Vim bindings for browsers
 - [Vifari](https://github.com/dzirtusss/vifari) - Vimium/Vimari for Safari
+- [Mouseless](https://mouseless.click/) - Grid based keyboard navigation
 
 ---
 
