@@ -1,10 +1,10 @@
 package main
 
 import (
-    "fmt"
-    "image"
-    "runtime"
-    "strings"
+	"fmt"
+	"image"
+	"runtime"
+	"strings"
 
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/bridge"
@@ -68,7 +68,7 @@ func (a *App) activateHintMode(action Action) {
 	actionString := getActionString(action)
 	a.logger.Info("Activating hint mode", zap.String("action", actionString))
 
-    a.exitMode()
+	a.exitMode()
 
 	if actionString == "unknown" {
 		a.logger.Warn("Unknown action, ignoring")
@@ -77,11 +77,11 @@ func (a *App) activateHintMode(action Action) {
 
 	// Always resize overlay to the active screen (where mouse is) before collecting elements
 	// This ensures proper positioning when switching between multiple displays
-    if a.hintOverlay != nil {
-        // Use synchronous resize with timeout to prevent hanging
-        a.hintOverlay.ResizeToActiveScreenSync()
-        a.hintOverlayNeedsRefresh = false
-    }
+	if a.hintOverlay != nil {
+		// Use synchronous resize with timeout to prevent hanging
+		a.hintOverlay.ResizeToActiveScreenSync()
+		a.hintOverlayNeedsRefresh = false
+	}
 
 	// Update roles for the current focused app
 	a.updateRolesForCurrentApp()
@@ -94,10 +94,10 @@ func (a *App) activateHintMode(action Action) {
 	}
 
 	// Generate and setup hints
-    if err := a.setupHints(elements, action); err != nil {
-        a.logger.Error("Failed to setup hints", zap.Error(err), zap.String("action", actionString))
-        return
-    }
+	if err := a.setupHints(elements, action); err != nil {
+		a.logger.Error("Failed to setup hints", zap.Error(err), zap.String("action", actionString))
+		return
+	}
 
 	// Update mode and enable event tap
 	a.currentMode = ModeHints
@@ -110,13 +110,13 @@ func (a *App) activateHintMode(action Action) {
 		a.eventTap.Enable()
 	}
 
-    a.logModeActivation(action)
+	a.logModeActivation(action)
 }
 
 // setupHints generates hints and draws them with appropriate styling
 func (a *App) setupHints(elements []*accessibility.TreeNode, action Action) error {
-    var msBefore runtime.MemStats
-    runtime.ReadMemStats(&msBefore)
+	var msBefore runtime.MemStats
+	runtime.ReadMemStats(&msBefore)
 	// Get active screen bounds to calculate offset for normalization
 	screenBounds := bridge.GetActiveScreenBounds()
 	screenOffsetX := screenBounds.Min.X
@@ -130,38 +130,38 @@ func (a *App) setupHints(elements []*accessibility.TreeNode, action Action) erro
 
 	// Normalize hint positions to window-local coordinates
 	// The overlay window is positioned at the screen origin, but the view uses local coordinates
-    for _, hint := range hintList {
-        hint.Position.X -= screenOffsetX
-        hint.Position.Y -= screenOffsetY
-    }
+	for _, hint := range hintList {
+		hint.Position.X -= screenOffsetX
+		hint.Position.Y -= screenOffsetY
+	}
 
-    localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
-    filtered := make([]*hints.Hint, 0, len(hintList))
-    for _, h := range hintList {
-        if h.IsVisible(localBounds) {
-            filtered = append(filtered, h)
-        }
-    }
-    hintList = filtered
+	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
+	filtered := make([]*hints.Hint, 0, len(hintList))
+	for _, h := range hintList {
+		if h.IsVisible(localBounds) {
+			filtered = append(filtered, h)
+		}
+	}
+	hintList = filtered
 
 	// Set up hints in the hint manager
-    hintCollection := hints.NewHintCollection(hintList)
-    a.hintManager.SetHints(hintCollection)
+	hintCollection := hints.NewHintCollection(hintList)
+	a.hintManager.SetHints(hintCollection)
 
 	// Draw hints with mode-specific styling
 	style := hints.BuildStyleForAction(a.config.Hints, getActionString(action))
-    if err := a.hintOverlay.DrawHintsWithStyle(hintList, style); err != nil {
-        return fmt.Errorf("failed to draw hints: %w", err)
-    }
+	if err := a.hintOverlay.DrawHintsWithStyle(hintList, style); err != nil {
+		return fmt.Errorf("failed to draw hints: %w", err)
+	}
 
-    a.hintOverlay.Show()
-    var msAfter runtime.MemStats
-    runtime.ReadMemStats(&msAfter)
-    a.logger.Info("Hints setup perf",
-        zap.Int("hints", len(hintList)),
-        zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
-        zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
-    return nil
+	a.hintOverlay.Show()
+	var msAfter runtime.MemStats
+	runtime.ReadMemStats(&msAfter)
+	a.logger.Info("Hints setup perf",
+		zap.Int("hints", len(hintList)),
+		zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
+		zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
+	return nil
 }
 
 func (a *App) activateGridMode(action Action) {
@@ -305,7 +305,7 @@ func (a *App) handleKeyPress(key string) {
 
 	// Explicitly dispatch by current mode
 	switch a.currentMode {
-case ModeHints:
+	case ModeHints:
 		// Route hint-specific keys via hints router
 		res := a.hintsRouter.RouteKey(key, a.hintsCtx.selectedHint != nil, a.hintsCtx.canScroll, a.currentAction == ActionScroll)
 		if res.Exit {
@@ -950,13 +950,13 @@ func (a *App) exitMode() {
 		a.hintsCtx.canScroll = false
 
 		// Clear and hide overlay for hints
-        a.hintOverlay.Clear()
-        a.hintOverlay.Hide()
-        var ms runtime.MemStats
-        runtime.ReadMemStats(&ms)
-        a.logger.Info("Hints cleanup mem",
-            zap.Uint64("alloc_bytes", ms.Alloc),
-            zap.Uint64("sys_bytes", ms.Sys))
+		a.hintOverlay.Clear()
+		a.hintOverlay.Hide()
+		var ms runtime.MemStats
+		runtime.ReadMemStats(&ms)
+		a.logger.Info("Hints cleanup mem",
+			zap.Uint64("alloc_bytes", ms.Alloc),
+			zap.Uint64("sys_bytes", ms.Sys))
 	case ModeGrid:
 		// If we are in mouse up action, remove the mouse up to prevent further dragging
 		if a.gridCtx.currentAction == ActionMouseUp {

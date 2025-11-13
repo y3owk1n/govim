@@ -11,24 +11,24 @@ extern void resizeCompletionCallback(void* context);
 import "C"
 
 import (
-    "runtime"
-    "fmt"
-    "strings"
-    "sync"
-    "sync/atomic"
-    "time"
-    "unsafe"
+	"fmt"
+	"runtime"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+	"unsafe"
 
 	"github.com/y3owk1n/neru/internal/config"
 	"go.uber.org/zap"
 )
 
 var (
-    hintCallbackID   uint64
-    hintCallbackMap  = make(map[uint64]chan struct{})
-    hintCallbackLock sync.Mutex
-    hintDataPool     sync.Pool
-    cLabelSlicePool  sync.Pool
+	hintCallbackID   uint64
+	hintCallbackMap  = make(map[uint64]chan struct{})
+	hintCallbackLock sync.Mutex
+	hintDataPool     sync.Pool
+	cLabelSlicePool  sync.Pool
 )
 
 //export resizeCompletionCallback
@@ -46,9 +46,9 @@ func resizeCompletionCallback(context unsafe.Pointer) {
 
 // Overlay manages the hint overlay window
 type Overlay struct {
-    window C.OverlayWindow
-    config config.HintsConfig
-    logger *zap.Logger
+	window C.OverlayWindow
+	config config.HintsConfig
+	logger *zap.Logger
 }
 
 type StyleMode struct {
@@ -66,12 +66,12 @@ type StyleMode struct {
 
 // NewOverlay creates a new overlay
 func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
-    window := C.createOverlayWindow()
-    if window == nil {
-        return nil, fmt.Errorf("failed to create overlay window")
-    }
-    hintDataPool = sync.Pool{New: func() any { return make([]C.HintData, 0) }}
-    cLabelSlicePool = sync.Pool{New: func() any { return make([]*C.char, 0) }}
+	window := C.createOverlayWindow()
+	if window == nil {
+		return nil, fmt.Errorf("failed to create overlay window")
+	}
+	hintDataPool = sync.Pool{New: func() any { s := make([]C.HintData, 0); return &s }}
+	cLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
 
 	return &Overlay{
 		window: window,
@@ -170,33 +170,35 @@ func (o *Overlay) DrawHintsWithStyle(hints []*Hint, style StyleMode) error {
 
 // drawHintsInternal is the internal implementation for drawing hints
 func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bool) error {
-    o.logger.Debug("Drawing hints internally",
-        zap.Int("hint_count", len(hints)),
-        zap.Bool("show_arrow", showArrow))
+	o.logger.Debug("Drawing hints internally",
+		zap.Int("hint_count", len(hints)),
+		zap.Bool("show_arrow", showArrow))
 
-    if len(hints) == 0 {
-        o.Clear()
-        o.logger.Debug("No hints to draw, cleared overlay")
-        return nil
-    }
+	if len(hints) == 0 {
+		o.Clear()
+		o.logger.Debug("No hints to draw, cleared overlay")
+		return nil
+	}
 
-    start := time.Now()
-    var msBefore runtime.MemStats
-    runtime.ReadMemStats(&msBefore)
-    cHintsAny := hintDataPool.Get().([]C.HintData)
-    if cap(cHintsAny) < len(hints) {
-        cHintsAny = make([]C.HintData, len(hints))
-    } else {
-        cHintsAny = cHintsAny[:len(hints)]
-    }
-    cHints := cHintsAny
-    cLabelsAny := cLabelSlicePool.Get().([]*C.char)
-    if cap(cLabelsAny) < len(hints) {
-        cLabelsAny = make([]*C.char, len(hints))
-    } else {
-        cLabelsAny = cLabelsAny[:len(hints)]
-    }
-    cLabels := cLabelsAny
+	start := time.Now()
+	var msBefore runtime.MemStats
+	runtime.ReadMemStats(&msBefore)
+	cHintsPtr := hintDataPool.Get().(*[]C.HintData)
+	if cap(*cHintsPtr) < len(hints) {
+		s := make([]C.HintData, len(hints))
+		cHintsPtr = &s
+	} else {
+		*cHintsPtr = (*cHintsPtr)[:len(hints)]
+	}
+	cHints := *cHintsPtr
+	cLabelsPtr := cLabelSlicePool.Get().(*[]*C.char)
+	if cap(*cLabelsPtr) < len(hints) {
+		s := make([]*C.char, len(hints))
+		cLabelsPtr = &s
+	} else {
+		*cLabelsPtr = (*cLabelsPtr)[:len(hints)]
+	}
+	cLabels := *cLabelsPtr
 
 	matchedCount := 0
 	for i, hint := range hints {
@@ -219,9 +221,9 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 		}
 	}
 
-    o.logger.Debug("Hint match statistics",
-        zap.Int("total_hints", len(hints)),
-        zap.Int("matched_hints", matchedCount))
+	o.logger.Debug("Hint match statistics",
+		zap.Int("total_hints", len(hints)),
+		zap.Int("matched_hints", matchedCount))
 
 	// Create style
 	cFontFamily := C.CString(style.FontFamily)
@@ -250,29 +252,31 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 	}
 
 	// Draw hints
-    C.drawHints(o.window, &cHints[0], C.int(len(cHints)), finalStyle)
+	C.drawHints(o.window, &cHints[0], C.int(len(cHints)), finalStyle)
 
 	// Free all C strings
-    for _, cLabel := range cLabels {
-        C.free(unsafe.Pointer(cLabel))
-    }
-    hintDataPool.Put(cHintsAny[:0])
-    cLabelSlicePool.Put(cLabelsAny[:0])
-    C.free(unsafe.Pointer(cFontFamily))
-    C.free(unsafe.Pointer(cBgColor))
-    C.free(unsafe.Pointer(cTextColor))
-    C.free(unsafe.Pointer(cMatchedTextColor))
-    C.free(unsafe.Pointer(cBorderColor))
+	for _, cLabel := range cLabels {
+		C.free(unsafe.Pointer(cLabel))
+	}
+	*cHintsPtr = (*cHintsPtr)[:0]
+	*cLabelsPtr = (*cLabelsPtr)[:0]
+	hintDataPool.Put(cHintsPtr)
+	cLabelSlicePool.Put(cLabelsPtr)
+	C.free(unsafe.Pointer(cFontFamily))
+	C.free(unsafe.Pointer(cBgColor))
+	C.free(unsafe.Pointer(cTextColor))
+	C.free(unsafe.Pointer(cMatchedTextColor))
+	C.free(unsafe.Pointer(cBorderColor))
 
-    o.logger.Debug("Hints drawn successfully")
-    var msAfter runtime.MemStats
-    runtime.ReadMemStats(&msAfter)
-    o.logger.Info("Hints draw perf",
-        zap.Int("hint_count", len(hints)),
-        zap.Duration("duration", time.Since(start)),
-        zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
-        zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
-    return nil
+	o.logger.Debug("Hints drawn successfully")
+	var msAfter runtime.MemStats
+	runtime.ReadMemStats(&msAfter)
+	o.logger.Info("Hints draw perf",
+		zap.Int("hint_count", len(hints)),
+		zap.Duration("duration", time.Since(start)),
+		zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
+		zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
+	return nil
 }
 
 // GetWindow returns the underlying C overlay window
