@@ -53,87 +53,10 @@ enabled = false
 # Grid mode - ENABLED only for move_mouse
 enabled = true
 
-[grid.left_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.right_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.double_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.triple_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.middle_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.mouse_up]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.mouse_down]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
 [grid.move_mouse]
 background_color = "#abe9b3"
 text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.scroll]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.context_menu]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
+matched_text_color = "#f8bd96"
 matched_background_color = "#f8bd96"
 matched_border_color = "#f8bd96"
 border_color = "#abe9b3"

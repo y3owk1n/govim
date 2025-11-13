@@ -249,15 +249,18 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
 		right := xBreaks[c+1]
 		top := yBreaks[r]
 		bottom := yBreaks[r+1]
-		cells[i] = C.GridCell{
-			label: labels[i],
-			bounds: C.CGRect{
-				origin: C.CGPoint{x: C.double(left), y: C.double(top)},
-				size:   C.CGSize{width: C.double(right - left), height: C.double(bottom - top)},
-			},
-			isMatched: C.int(0),
-			isSubgrid: C.int(1), // Mark as subgrid cell
-		}
+
+		var cell C.GridCell
+		cell.label = labels[i]
+		cell.bounds.origin.x = C.double(left)
+		cell.bounds.origin.y = C.double(top)
+		cell.bounds.size.width = C.double(right - left)
+		cell.bounds.size.height = C.double(bottom - top)
+		cell.isMatched = C.int(0)
+		cell.isSubgrid = C.int(1)           // Mark as subgrid cell
+		cell.matchedPrefixLength = C.int(0) // Subgrid cells don't have matched prefixes
+
+		cells[i] = cell
 	}
 
 	fontFamily := C.CString(style.FontFamily)
@@ -342,23 +345,27 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 		cLabels[i] = C.CString(cell.Coordinate)
 
 		isMatched := 0
+		matchedPrefixLength := 0
 		if currentInput != "" && len(cell.Coordinate) >= len(currentInput) {
 			cellPrefix := cell.Coordinate[:len(currentInput)]
 			if cellPrefix == currentInput {
 				isMatched = 1
 				matchedCount++
+				matchedPrefixLength = len(currentInput)
 			}
 		}
 
-		cGridCells[i] = C.GridCell{
-			label: cLabels[i],
-			bounds: C.CGRect{
-				origin: C.CGPoint{x: C.double(cell.Bounds.Min.X), y: C.double(cell.Bounds.Min.Y)},
-				size:   C.CGSize{width: C.double(cell.Bounds.Dx()), height: C.double(cell.Bounds.Dy())},
-			},
-			isMatched: C.int(isMatched),
-			isSubgrid: C.int(0), // Mark as regular grid cell
-		}
+		var cGridCell C.GridCell
+		cGridCell.label = cLabels[i]
+		cGridCell.bounds.origin.x = C.double(cell.Bounds.Min.X)
+		cGridCell.bounds.origin.y = C.double(cell.Bounds.Min.Y)
+		cGridCell.bounds.size.width = C.double(cell.Bounds.Dx())
+		cGridCell.bounds.size.height = C.double(cell.Bounds.Dy())
+		cGridCell.isMatched = C.int(isMatched)
+		cGridCell.isSubgrid = C.int(0) // Mark as regular grid cell
+		cGridCell.matchedPrefixLength = C.int(matchedPrefixLength)
+
+		cGridCells[i] = cGridCell
 	}
 
 	o.logger.Debug("Grid cell match statistics",

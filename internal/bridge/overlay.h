@@ -51,6 +51,7 @@ typedef struct {
     CGRect bounds;  // Cell rectangle
     int isMatched;  // 1 if cell matches current input, 0 otherwise
     int isSubgrid;  // 1 if cell is part of subgrid, 0 otherwise
+    int matchedPrefixLength; // Number of matched characters at the beginning of the label
 } GridCell;
 
 // Callback type for async operations
