@@ -67,34 +67,7 @@ func (a *App) handleHints(cmd ipc.Command) ipc.Response {
 		return ipc.Response{Success: false, Message: "hints mode is disabled by config"}
 	}
 
-	// Parse params
-	params := cmd.Args
-	for _, param := range params {
-		switch param {
-		case "left_click":
-			a.activateMode(ModeHints, ActionLeftClick)
-		case "right_click":
-			a.activateMode(ModeHints, ActionRightClick)
-		case "double_click":
-			a.activateMode(ModeHints, ActionDoubleClick)
-		case "triple_click":
-			a.activateMode(ModeHints, ActionTripleClick)
-		case "mouse_up":
-			a.activateMode(ModeHints, ActionMouseUp)
-		case "mouse_down":
-			a.activateMode(ModeHints, ActionMouseDown)
-		case "middle_click":
-			a.activateMode(ModeHints, ActionMiddleClick)
-		case "move_mouse":
-			a.activateMode(ModeHints, ActionMoveMouse)
-		case "scroll":
-			a.activateMode(ModeHints, ActionScroll)
-		case "context_menu":
-			a.activateMode(ModeHints, ActionContextMenu)
-		default:
-			return ipc.Response{Success: false, Message: fmt.Sprintf("unknown hints mode: %s", param)}
-		}
-	}
+	a.activateMode(ModeHints)
 
 	return ipc.Response{Success: true, Message: "hint mode activated"}
 }
@@ -107,34 +80,7 @@ func (a *App) handleGrid(cmd ipc.Command) ipc.Response {
 		return ipc.Response{Success: false, Message: "grid mode is disabled by config"}
 	}
 
-	// Parse params
-	params := cmd.Args
-	for _, param := range params {
-		switch param {
-		case "left_click":
-			a.activateMode(ModeGrid, ActionLeftClick)
-		case "right_click":
-			a.activateMode(ModeGrid, ActionRightClick)
-		case "double_click":
-			a.activateMode(ModeGrid, ActionDoubleClick)
-		case "triple_click":
-			a.activateMode(ModeGrid, ActionTripleClick)
-		case "mouse_up":
-			a.activateMode(ModeGrid, ActionMouseUp)
-		case "mouse_down":
-			a.activateMode(ModeGrid, ActionMouseDown)
-		case "middle_click":
-			a.activateMode(ModeGrid, ActionMiddleClick)
-		case "move_mouse":
-			a.activateMode(ModeGrid, ActionMoveMouse)
-		case "scroll":
-			a.activateMode(ModeGrid, ActionScroll)
-		case "context_menu":
-			a.activateMode(ModeGrid, ActionContextMenu)
-		default:
-			return ipc.Response{Success: false, Message: fmt.Sprintf("unknown grid action: %s", param)}
-		}
-	}
+	a.activateMode(ModeGrid)
 
 	return ipc.Response{Success: true, Message: "grid mode activated"}
 }
@@ -160,10 +106,6 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 			err = accessibility.LeftClickAtPoint(cursorPos, false)
 		case "right_click":
 			err = accessibility.RightClickAtPoint(cursorPos, false)
-		case "double_click":
-			err = accessibility.DoubleClickAtPoint(cursorPos, false)
-		case "triple_click":
-			err = accessibility.TripleClickAtPoint(cursorPos, false)
 		case "mouse_up":
 			err = accessibility.LeftMouseUpAtPoint(cursorPos)
 		case "mouse_down":
@@ -171,14 +113,16 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 		case "middle_click":
 			err = accessibility.MiddleClickAtPoint(cursorPos, false)
 		case "scroll":
+			a.exitMode()
+
 			// Enable event tap and let user scroll interactively at current position
 			// Resize overlay to active screen for multi-monitor support
-			a.hintOverlay.ResizeToActiveScreen()
+			a.scrollOverlay.ResizeToActiveScreen()
 
 			// Draw highlight border if enabled
 			if a.config.Scroll.HighlightScrollArea {
 				a.drawScrollHighlightBorder()
-				a.hintOverlay.Show()
+				a.scrollOverlay.Show()
 			}
 
 			// Enable event tap for scroll key handling

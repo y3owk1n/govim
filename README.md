@@ -111,10 +111,14 @@ open -a Neru  # App bundle
 neru launch   # CLI
 
 # Try the default hotkeys:
-# Cmd+Shift+Space - Hint mode (left click)
-# Cmd+Shift+A     - Hints with Action mode (choose click type)
-# Cmd+Shift+J     - Standalone scroll (Vim-style scrolling at cursor)
-# Cmd+Shift+G     - Grid mode (left click)
+# Cmd+Shift+Space - Hint mode
+# Cmd+Shift+G     - Grid mode
+# Cmd+Shift+L     - Left click
+# Cmd+Shift+R     - Right click
+# Cmd+Shift+M     - Middle click
+# Cmd+Shift+N     - Mouse down
+# Cmd+Shift+P     - Mouse up
+# Cmd+Shift+S     - Scroll
 ```
 
 **Basic workflow:**

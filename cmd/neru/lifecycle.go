@@ -74,7 +74,7 @@ func (a *App) handleScreenParametersChange() {
 			gridOverlay.ResizeToActiveScreenSync()
 
 			// Regenerate the grid cells with updated screen bounds
-			if err := a.setupGrid(a.gridCtx.currentAction); err != nil {
+			if err := a.setupGrid(); err != nil {
 				a.logger.Error("Failed to refresh grid after screen change", zap.Error(err))
 				return
 			}
@@ -94,9 +94,9 @@ func (a *App) handleScreenParametersChange() {
 
 			// Regenerate hints for current action
 			a.updateRolesForCurrentApp()
-			elements := a.collectElementsForAction(a.currentAction)
+			elements := a.collectElements()
 			if len(elements) > 0 {
-				if err := a.setupHints(elements, a.currentAction); err != nil {
+				if err := a.setupHints(elements); err != nil {
 					a.logger.Error("Failed to refresh hints after screen change", zap.Error(err))
 					return
 				}
@@ -107,6 +107,9 @@ func (a *App) handleScreenParametersChange() {
 			}
 		}
 	}
+
+	// Resize scroll overlay to current active screen (where mouse is)
+	a.scrollOverlay.ResizeToActiveScreenSync()
 }
 
 // handleAppActivation handles application activation events

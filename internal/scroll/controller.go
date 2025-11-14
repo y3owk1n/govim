@@ -1,12 +1,8 @@
 package scroll
 
 import (
-	"image"
-
 	"github.com/y3owk1n/neru/internal/accessibility"
-	"github.com/y3owk1n/neru/internal/bridge"
 	"github.com/y3owk1n/neru/internal/config"
-	"github.com/y3owk1n/neru/internal/hints"
 	"go.uber.org/zap"
 )
 
@@ -191,43 +187,4 @@ func (c *Controller) ScrollToTop() error {
 func (c *Controller) ScrollToBottom() error {
 	c.logger.Debug("ScrollToBottom called")
 	return c.Scroll(DirectionDown, AmountEnd)
-}
-
-// DrawHighlightBorder draws a highlight around the current scroll area
-func (c *Controller) DrawHighlightBorder(overlay *hints.Overlay) {
-	c.logger.Debug("DrawHighlightBorder called")
-	window := accessibility.GetFrontmostWindow()
-	if window == nil {
-		c.logger.Debug("No frontmost window")
-		return
-	}
-	defer window.Release()
-
-	// Get scroll bounds in absolute screen coordinates
-	bounds := window.GetScrollBounds()
-
-	// Get active screen bounds to normalize coordinates
-	screenBounds := bridge.GetActiveScreenBounds()
-
-	// Convert absolute bounds to window-local coordinates
-	// The overlay window is positioned at the screen origin, but the view uses local coordinates
-	localBounds := image.Rect(
-		bounds.Min.X-screenBounds.Min.X,
-		bounds.Min.Y-screenBounds.Min.Y,
-		bounds.Max.X-screenBounds.Min.X,
-		bounds.Max.Y-screenBounds.Min.Y,
-	)
-
-	c.logger.Debug("Drawing scroll highlight",
-		zap.Int("x", localBounds.Min.X),
-		zap.Int("y", localBounds.Min.Y),
-		zap.Int("width", localBounds.Dx()),
-		zap.Int("height", localBounds.Dy()))
-
-	overlay.DrawScrollHighlight(
-		localBounds.Min.X, localBounds.Min.Y,
-		localBounds.Dx(), localBounds.Dy(),
-		c.config.HighlightColor,
-		c.config.HighlightWidth,
-	)
 }

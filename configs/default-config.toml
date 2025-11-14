@@ -28,35 +28,16 @@ accessibility_check_on_start = true
 
 [hotkeys]
 # all hotkeys can be disabled by setting the key to ""
-"Cmd+Shift+Space" = "hints left_click" # Hint mode (left click)
-"Cmd+Shift+A" = "hints context_menu"    # Hints with Action mode (choose click type)
-"Cmd+Shift+J" = "action scroll"         # Standalone scroll (Vim-style scrolling at cursor)
-"Cmd+Shift+G" = "grid left_click"       # Grid mode (left click)
+"Cmd+Shift+Space" = "hints" # Hint mode (left click)
+"Cmd+Shift+G" = "grid"
+# these keys might not work and conflict with system or apps, change them!
+"Cmd+Shift+L" = "action left_click"
+"Cmd+Shift+R" = "action right_click"
+"Cmd+Shift+M" = "action middle_click"
+"Cmd+Shift+N" = "action mouse_down"
+"Cmd+Shift+P" = "action mouse_up"
+"Cmd+Shift+S" = "action scroll"
 
-# Additional hint action hotkeys (uncomment to enable)
-# "Ctrl+R" = "hints right_click"
-# "Ctrl+D" = "hints double_click"
-# "Ctrl+T" = "hints triple_click"
-# "Ctrl+H" = "hints middle_click"
-# "Ctrl+U" = "hints mouse_up" # you should not need to use this at all, calling mouse_down will call this after hint selection
-# "Ctrl+I" = "hints mouse_down"
-# "Ctrl+M" = "hints move_mouse"
-# "Ctrl+S" = "hints scroll"    # Select hint location, then scroll there
-
-# Additional grid action hotkeys (uncomment to enable)
-# "Cmd+Shift+R" = "grid right_click"   # Grid right click
-# "Cmd+Shift+M" = "grid move_mouse"    # Grid move mouse
-# "Cmd+Shift+D" = "grid double_click"  # Grid double click
-# "Cmd+Shift+T" = "grid triple_click"  # Grid triple click
-# "Cmd+Shift+I" = "grid mouse_down"    # Grid mouse down (hold)
-# "Cmd+Shift+U" = "grid mouse_up"      # Grid mouse up (release)
-# "Cmd+Shift+H" = "grid middle_click"  # Grid middle click
-# "Cmd+Shift+S" = "grid scroll"        # Grid scroll - select grid location, then scroll there
-# "Cmd+Shift+C" = "grid context_menu"  # Grid context menu
-
-# Additional action commands (direct actions at cursor position)
-# "Cmd+Shift+L" = "action left_click"   # Left click at current cursor position
-# "Cmd+Shift+K" = "action right_click"  # Right click at current cursor position
 # There are more that can be added, see `docs/CLI.md` for details
 # Note: "Cmd+Shift+J" = "action scroll" is already set above as default
 
@@ -95,6 +76,10 @@ border_width = 1
 # Controls hint translucency; 1.0 is fully opaque
 opacity = 0.95
 
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#737373" # Matched text color - color for characters that have been typed
+border_color = "#000000"
 
 # Include additional targets in hint mode
 # Show hints on the macOS menu bar
@@ -140,30 +125,14 @@ clickable_roles = [
 # Enable this if you know what you're doing
 ignore_clickable_check = false
 
-# Global accessibility roles that are treated as scrollable
-# These roles will be used for ALL applications
-# Users can add or remove roles as needed
-scrollable_roles = [
-    "AXWebArea",
-    "AXScrollArea",
-    "AXTable",
-    "AXRow",
-    "AXColumn",
-    "AXOutline",
-    "AXList",
-    "AXGroup",
-]
-
 # Per-app role configurations
-# These allow you to add additional clickable/scrollable roles for specific applications
+# These allow you to add additional clickable roles for specific applications
 # The roles defined here are ADDED to the global roles above (not replaced)
 # To find an app's bundle ID, run: osascript -e 'id of app "AppName"'
 
 # [[hints.app_configs]]
 # bundle_id = "com.example.bundle"
 # additional_clickable_roles = ["AXStaticText"]
-# # You can also add scrollable roles scoped to the app:
-# additional_scrollable_roles = ["AXGroup"]
 # # You can also ignore the check for the app:
 # ignore_clickable_check = true
 
@@ -190,71 +159,6 @@ additional_chromium_bundles = []
 # Extra bundle IDs for firefox support.
 additional_firefox_bundles = []
 
-[hints.left_click_hints]
-background_color = "#FFD700"
-text_color = "#000000"
-matched_text_color = "#737373" # Matched text color - color for characters that have been typed
-border_color = "#000000"
-restore_cursor = false
-
-[hints.right_click_hints]
-background_color = "#FFD700"
-text_color = "#000000"
-matched_text_color = "#737373" # Matched text color - color for characters that have been typed
-border_color = "#000000"
-restore_cursor = false
-
-[hints.double_click_hints]
-background_color = "#FFD700"
-text_color = "#000000"
-matched_text_color = "#737373" # Matched text color - color for characters that have been typed
-border_color = "#000000"
-restore_cursor = false
-
-[hints.triple_click_hints]
-background_color = "#FFD700"
-text_color = "#000000"
-matched_text_color = "#737373" # Matched text color - color for characters that have been typed
-border_color = "#000000"
-restore_cursor = false
-
-[hints.middle_click_hints]
-background_color = "#FFD700"
-text_color = "#000000"
-matched_text_color = "#737373" # Matched text color - color for characters that have been typed
-border_color = "#000000"
-restore_cursor = false
-
-[hints.mouse_up_hints]
-background_color = "#FFD700"
-text_color = "#000000"
-matched_text_color = "#737373" # Matched text color - color for characters that have been typed
-border_color = "#000000"
-
-[hints.mouse_down_hints]
-background_color = "#FFD700"
-text_color = "#000000"
-matched_text_color = "#737373" # Matched text color - color for characters that have been typed
-border_color = "#000000"
-
-[hints.move_mouse_hints]
-background_color = "#FFD700"
-text_color = "#000000"
-matched_text_color = "#737373" # Matched text color - color for characters that have been typed
-border_color = "#000000"
-
-[hints.scroll_hints]
-background_color = "#2ECC71"
-text_color = "#000000"
-matched_text_color = "#145A32" # Matched text color - color for characters that have been typed
-border_color = "#000000"
-
-[hints.context_menu_hints]
-background_color = "#66CCFF"
-text_color = "#000000"
-matched_text_color = "#005585" # Matched text color - color for characters that have been typed
-border_color = "#000000"
-
 [grid]
 # Grid overlay (flat, label-based)
 # Fills the entire screen with uniformly sized cells.
@@ -275,95 +179,16 @@ sublayer_keys = "abcdefghijklmnpqrstuvwxyz"
 font_size = 12
 font_family = ""
 opacity = 0.7
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#f8bd96"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 
 # Behavior
 live_match_update = true      # Update matched highlight per keystroke without full redraw
 hide_unmatched = true        # Hide unmatched cells during typing
-
-[grid.left_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.right_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.double_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.triple_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.middle_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.mouse_up]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.mouse_down]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.move_mouse]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.scroll]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.context_menu]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
 
 [scroll]
 # Base scroll amount for j/k keys in pixels
@@ -390,7 +215,7 @@ highlight_width = 2
 [logging]
 # Log level: "debug", "info", "warn", "error"
 # Use "debug" for troubleshooting; default is "info".
-log_level = "info"
+log_level = "debug"
 
 # Log file location (empty for default: ~/Library/Logs/neru/app.log)
 # Set a custom path to redirect logs elsewhere; directories are created as needed.

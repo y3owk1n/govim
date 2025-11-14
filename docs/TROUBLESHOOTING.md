@@ -144,7 +144,7 @@ neru launch
 # Remove app from excluded_apps list
 
 # 4. Test with CLI (bypasses hotkey issues)
-neru hints left_click
+neru hints
 ```
 
 ### Hints or grids appear but are misaligned
@@ -263,7 +263,7 @@ additional_menubar_hints_targets = [
 
 ```bash
 # 1. Test with CLI to bypass hotkey system
-neru hints left_click
+neru hints
 
 # If CLI works, it's a hotkey issue
 
@@ -273,7 +273,7 @@ neru status
 # 3. Try different hotkey combo
 # Edit ~/.config/neru/config.toml:
 [hotkeys]
-"Ctrl+F" = "hints left_click"  # Try this instead
+"Ctrl+F" = "hints"  # Try this instead
 
 # 4. Verify syntax is correct
 # Modifiers: Cmd, Ctrl, Alt/Option, Shift
@@ -308,7 +308,7 @@ osascript -e 'id of app "AppName"'
 ```toml
 [hotkeys]
 "Cmd+Shift+Space" = ""  # Disable default
-"Ctrl+Alt+Space" = "hints left_click"  # Use different combo
+"Ctrl+Alt+Space" = "hints"  # Use different combo
 ```
 
 **Option 2: Disable system shortcut**
@@ -322,7 +322,7 @@ osascript -e 'id of app "AppName"'
 ```bash
 # Use skhd or similar instead of Neru hotkeys
 # ~/.config/skhd/skhdrc
-ctrl - f : neru hints left_click
+ctrl - f : neru hints
 ```
 
 Then disable Neru hotkeys:
@@ -373,22 +373,6 @@ tail -f ~/Library/Logs/neru/app.log | grep ERROR
 pkill neru && neru launch
 ```
 
-### Cursor restoration is slow
-
-**Cursor restoration delay is normal for visual feedback.**
-
-**Solution:**
-
-If too slow, disable it:
-
-```toml
-[hints.left_click_hints]
-restore_cursor = false
-
-[grid.left_click]
-restore_cursor = false
-```
-
 ---
 
 ## Daemon Issues
@@ -428,7 +412,7 @@ neru launch  # Uses defaults if no config file
 mkdir -p ~/.config/neru
 cat > ~/.config/neru/config.toml << EOF
 [hotkeys]
-"Cmd+Shift+Space" = "hints left_click"
+"Cmd+Shift+Space" = "hints"
 
 [logging]
 log_level = "debug"
@@ -636,11 +620,11 @@ background_color = "#FFFGG"   # Invalid hex
 
 ```toml
 # Correct:
-"Cmd+Shift+Space" = "hints left_click"
+"Cmd+Shift+Space" = "hints"
 
 # Incorrect:
-"Cmd-Shift-Space" = "hints left_click"  # Use +, not -
-"CMD+SHIFT+SPACE" = "hints left_click"  # Use proper case
+"Cmd-Shift-Space" = "hints"  # Use +, not -
+"CMD+SHIFT+SPACE" = "hints"  # Use proper case
 ```
 
 ---

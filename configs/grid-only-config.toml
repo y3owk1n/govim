@@ -25,16 +25,14 @@ accessibility_check_on_start = true
 
 [hotkeys]
 # Grid mode hotkeys - all actions available
-"Cmd+Shift+Space" = "grid left_click"
-"Cmd+Shift+R" = "grid right_click"
-"Cmd+Shift+D" = "grid double_click"
-"Cmd+Shift+T" = "grid triple_click"
-"Cmd+Shift+H" = "grid middle_click"
-"Cmd+Shift+M" = "grid move_mouse"
-"Cmd+Shift+I" = "grid mouse_down"
-"Cmd+Shift+U" = "grid mouse_up"
-"Cmd+Shift+S" = "grid scroll"
-"Cmd+Shift+C" = "grid context_menu"
+"Cmd+Shift+Space" = "grid"
+# these keys might not work and conflict with system or apps, change them!
+"Cmd+Shift+L" = "action left_click"
+"Cmd+Shift+R" = "action right_click"
+"Cmd+Shift+M" = "action middle_click"
+"Cmd+Shift+N" = "action mouse_down"
+"Cmd+Shift+P" = "action mouse_up"
+"Cmd+Shift+S" = "action scroll"
 
 # Hints mode - DISABLED (no hotkeys assigned)
 
@@ -51,93 +49,3 @@ enabled = true
 
 # Characters for grid labels
 characters = "abcdefghijklmnpqrstuvwxyz"
-
-[grid.left_click]
-# Restore cursor to original position after click (enable it if you want)
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.right_click]
-# Restore cursor to original position after click (enable it if you want)
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.double_click]
-# Restore cursor to original position after click (enable it if you want)
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.triple_click]
-# Restore cursor to original position after click (enable it if you want)
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.middle_click]
-# Restore cursor to original position after click (enable it if you want)
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.mouse_up]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.mouse_down]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.move_mouse]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.scroll]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.context_menu]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#f8bd96"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"

@@ -28,7 +28,6 @@ type GeneralConfig struct {
 type AppConfig struct {
 	BundleID             string   `toml:"bundle_id"`
 	AdditionalClickable  []string `toml:"additional_clickable_roles"`
-	AdditionalScrollable []string `toml:"additional_scrollable_roles"`
 	IgnoreClickableCheck bool     `toml:"ignore_clickable_check"`
 }
 
@@ -61,6 +60,11 @@ type HintsConfig struct {
 	BorderWidth    int     `toml:"border_width"`
 	Opacity        float64 `toml:"opacity"`
 
+	BackgroundColor  string `toml:"background_color"`
+	TextColor        string `toml:"text_color"`
+	MatchedTextColor string `toml:"matched_text_color"`
+	BorderColor      string `toml:"border_color"`
+
 	// Addidiotanl hints
 	IncludeMenubarHints           bool     `toml:"include_menubar_hints"`
 	AdditionalMenubarHintsTargets []string `toml:"additional_menubar_hints_targets"`
@@ -69,7 +73,6 @@ type HintsConfig struct {
 
 	// Roles and clicks
 	ClickableRoles       []string `toml:"clickable_roles"`
-	ScrollableRoles      []string `toml:"scrollable_roles"`
 	IgnoreClickableCheck bool     `toml:"ignore_clickable_check"`
 
 	// App specific configs for roles and clicks
@@ -77,52 +80,6 @@ type HintsConfig struct {
 
 	// AX support
 	AdditionalAXSupport AdditionalAXSupport `toml:"additional_ax_support"`
-
-	// Action configurations
-	LeftClickHints   HintsActionConfigWithRestoreCursor `toml:"left_click_hints"`
-	RightClickHints  HintsActionConfigWithRestoreCursor `toml:"right_click_hints"`
-	DoubleClickHints HintsActionConfigWithRestoreCursor `toml:"double_click_hints"`
-	TripleClickHints HintsActionConfigWithRestoreCursor `toml:"triple_click_hints"`
-	MiddleClickHints HintsActionConfigWithRestoreCursor `toml:"middle_click_hints"`
-	MouseUpHints     HintsActionConfig                  `toml:"mouse_up_hints"`
-	MouseDownHints   HintsActionConfig                  `toml:"mouse_down_hints"`
-	MoveMouseHints   HintsActionConfig                  `toml:"move_mouse_hints"`
-	ScrollHints      HintsActionConfig                  `toml:"scroll_hints"`
-	ContextMenuHints HintsActionConfig                  `toml:"context_menu_hints"`
-}
-
-type HintsActionConfig struct {
-	BackgroundColor  string `toml:"background_color"`
-	TextColor        string `toml:"text_color"`
-	MatchedTextColor string `toml:"matched_text_color"`
-	BorderColor      string `toml:"border_color"`
-}
-
-type HintsActionConfigWithRestoreCursor struct {
-	HintsActionConfig
-	RestoreCursor bool `toml:"restore_cursor"`
-}
-
-type GridActionConfig struct {
-	RestoreCursor bool `toml:"restore_cursor"`
-
-	// Appearance settings
-	BackgroundColor        string `toml:"background_color"`
-	TextColor              string `toml:"text_color"`
-	MatchedTextColor       string `toml:"matched_text_color"`
-	MatchedBackgroundColor string `toml:"matched_background_color"`
-	MatchedBorderColor     string `toml:"matched_border_color"`
-	BorderColor            string `toml:"border_color"`
-}
-
-type GridActionConfigWithoutRestoreCursor struct {
-	// Appearance settings
-	BackgroundColor        string `toml:"background_color"`
-	TextColor              string `toml:"text_color"`
-	MatchedTextColor       string `toml:"matched_text_color"`
-	MatchedBackgroundColor string `toml:"matched_background_color"`
-	MatchedBorderColor     string `toml:"matched_border_color"`
-	BorderColor            string `toml:"border_color"`
 }
 
 type GridConfig struct {
@@ -140,21 +97,16 @@ type GridConfig struct {
 	Opacity     float64 `toml:"opacity"`
 	BorderWidth int     `toml:"border_width"`
 
+	BackgroundColor        string `toml:"background_color"`
+	TextColor              string `toml:"text_color"`
+	MatchedTextColor       string `toml:"matched_text_color"`
+	MatchedBackgroundColor string `toml:"matched_background_color"`
+	MatchedBorderColor     string `toml:"matched_border_color"`
+	BorderColor            string `toml:"border_color"`
+
 	// Behavior
 	LiveMatchUpdate bool `toml:"live_match_update"`
 	HideUnmatched   bool `toml:"hide_unmatched"`
-
-	// Action configurations
-	LeftClick   GridActionConfig                     `toml:"left_click"`
-	RightClick  GridActionConfig                     `toml:"right_click"`
-	DoubleClick GridActionConfig                     `toml:"double_click"`
-	TripleClick GridActionConfig                     `toml:"triple_click"`
-	MiddleClick GridActionConfig                     `toml:"middle_click"`
-	MouseUp     GridActionConfigWithoutRestoreCursor `toml:"mouse_up"`
-	MouseDown   GridActionConfigWithoutRestoreCursor `toml:"mouse_down"`
-	MoveMouse   GridActionConfigWithoutRestoreCursor `toml:"move_mouse"`
-	Scroll      GridActionConfigWithoutRestoreCursor `toml:"scroll"`
-	ContextMenu GridActionConfigWithoutRestoreCursor `toml:"context_menu"`
 }
 
 type LoggingConfig struct {
@@ -179,10 +131,14 @@ func DefaultConfig() *Config {
 		},
 		Hotkeys: HotkeysConfig{
 			Bindings: map[string]string{
-				"Cmd+Shift+Space": "hints left_click",
-				"Cmd+Shift+A":     "hints context_menu",
-				"Cmd+Shift+J":     "action scroll",
-				"Cmd+Shift+G":     "grid left_click",
+				"Cmd+Shift+Space": "hints",
+				"Cmd+Shift+G":     "grid",
+				"Cmd+Shift+L":     "action left_click",
+				"Cmd+Shift+R":     "action right_click",
+				"Cmd+Shift+M":     "action middle_click",
+				"Cmd+Shift+N":     "action mouse_down",
+				"Cmd+Shift+P":     "action mouse_up",
+				"Cmd+Shift+S":     "action scroll",
 			},
 		},
 		Hints: HintsConfig{
@@ -194,6 +150,11 @@ func DefaultConfig() *Config {
 			Padding:        4,
 			BorderWidth:    1,
 			Opacity:        0.95,
+
+			BackgroundColor:  "#FFD700",
+			TextColor:        "#000000",
+			MatchedTextColor: "#737373",
+			BorderColor:      "#000000",
 
 			IncludeMenubarHints: false,
 			AdditionalMenubarHintsTargets: []string{
@@ -222,16 +183,6 @@ func DefaultConfig() *Config {
 				"AXCell",
 				"AXRow",
 			},
-			ScrollableRoles: []string{
-				"AXWebArea",
-				"AXScrollArea",
-				"AXTable",
-				"AXRow",
-				"AXColumn",
-				"AXOutline",
-				"AXList",
-				"AXGroup",
-			},
 			IgnoreClickableCheck: false,
 
 			AppConfigs: []AppConfig{}, // Moved from AccessibilityConfig
@@ -241,82 +192,6 @@ func DefaultConfig() *Config {
 				AdditionalElectronBundles: []string{},
 				AdditionalChromiumBundles: []string{},
 				AdditionalFirefoxBundles:  []string{},
-			},
-
-			LeftClickHints: HintsActionConfigWithRestoreCursor{
-				HintsActionConfig: HintsActionConfig{
-					BackgroundColor:  "#FFD700",
-					TextColor:        "#000000",
-					MatchedTextColor: "#737373",
-					BorderColor:      "#000000",
-				},
-				RestoreCursor: false,
-			},
-			RightClickHints: HintsActionConfigWithRestoreCursor{
-				HintsActionConfig: HintsActionConfig{
-					BackgroundColor:  "#FFD700",
-					TextColor:        "#000000",
-					MatchedTextColor: "#737373",
-					BorderColor:      "#000000",
-				},
-				RestoreCursor: false,
-			},
-			DoubleClickHints: HintsActionConfigWithRestoreCursor{
-				HintsActionConfig: HintsActionConfig{
-					BackgroundColor:  "#FFD700",
-					TextColor:        "#000000",
-					MatchedTextColor: "#737373",
-					BorderColor:      "#000000",
-				},
-				RestoreCursor: false,
-			},
-			TripleClickHints: HintsActionConfigWithRestoreCursor{
-				HintsActionConfig: HintsActionConfig{
-					BackgroundColor:  "#FFD700",
-					TextColor:        "#000000",
-					MatchedTextColor: "#737373",
-					BorderColor:      "#000000",
-				},
-				RestoreCursor: false,
-			},
-			MiddleClickHints: HintsActionConfigWithRestoreCursor{
-				HintsActionConfig: HintsActionConfig{
-					BackgroundColor:  "#FFD700",
-					TextColor:        "#000000",
-					MatchedTextColor: "#737373",
-					BorderColor:      "#000000",
-				},
-				RestoreCursor: false,
-			},
-			MouseUpHints: HintsActionConfig{
-				BackgroundColor:  "#FFD700",
-				TextColor:        "#000000",
-				MatchedTextColor: "#737373",
-				BorderColor:      "#000000",
-			},
-			MouseDownHints: HintsActionConfig{
-				BackgroundColor:  "#FFD700",
-				TextColor:        "#000000",
-				MatchedTextColor: "#737373",
-				BorderColor:      "#000000",
-			},
-			MoveMouseHints: HintsActionConfig{
-				BackgroundColor:  "#FFD700",
-				TextColor:        "#000000",
-				MatchedTextColor: "#737373",
-				BorderColor:      "#000000",
-			},
-			ScrollHints: HintsActionConfig{
-				BackgroundColor:  "#2ECC71",
-				TextColor:        "#000000",
-				MatchedTextColor: "#145A32",
-				BorderColor:      "#000000",
-			},
-			ContextMenuHints: HintsActionConfig{
-				BackgroundColor:  "#66CCFF",
-				TextColor:        "#000000",
-				MatchedTextColor: "#005585",
-				BorderColor:      "#000000",
 			},
 		},
 		Grid: GridConfig{
@@ -331,94 +206,15 @@ func DefaultConfig() *Config {
 			Opacity:     0.7,
 			BorderWidth: 1,
 
+			BackgroundColor:        "#abe9b3",
+			TextColor:              "#000000",
+			MatchedTextColor:       "#f8bd96",
+			MatchedBackgroundColor: "#f8bd96",
+			MatchedBorderColor:     "#f8bd96",
+			BorderColor:            "#abe9b3",
+
 			LiveMatchUpdate: true,
 			HideUnmatched:   true,
-
-			LeftClick: GridActionConfig{
-				RestoreCursor:          false,
-				BackgroundColor:        "#abe9b3",
-				TextColor:              "#000000",
-				MatchedTextColor:       "#f8bd96",
-				MatchedBackgroundColor: "#f8bd96",
-				MatchedBorderColor:     "#f8bd96",
-				BorderColor:            "#abe9b3",
-			},
-			RightClick: GridActionConfig{
-				RestoreCursor:          false,
-				BackgroundColor:        "#abe9b3",
-				TextColor:              "#000000",
-				MatchedTextColor:       "#f8bd96",
-				MatchedBackgroundColor: "#f8bd96",
-				MatchedBorderColor:     "#f8bd96",
-				BorderColor:            "#abe9b3",
-			},
-			DoubleClick: GridActionConfig{
-				RestoreCursor:          false,
-				BackgroundColor:        "#abe9b3",
-				TextColor:              "#000000",
-				MatchedTextColor:       "#f8bd96",
-				MatchedBackgroundColor: "#f8bd96",
-				MatchedBorderColor:     "#f8bd96",
-				BorderColor:            "#abe9b3",
-			},
-			TripleClick: GridActionConfig{
-				RestoreCursor:          false,
-				BackgroundColor:        "#abe9b3",
-				TextColor:              "#000000",
-				MatchedTextColor:       "#f8bd96",
-				MatchedBackgroundColor: "#f8bd96",
-				MatchedBorderColor:     "#f8bd96",
-				BorderColor:            "#abe9b3",
-			},
-			MiddleClick: GridActionConfig{
-				RestoreCursor:          false,
-				BackgroundColor:        "#abe9b3",
-				TextColor:              "#000000",
-				MatchedTextColor:       "#f8bd96",
-				MatchedBackgroundColor: "#f8bd96",
-				MatchedBorderColor:     "#f8bd96",
-				BorderColor:            "#abe9b3",
-			},
-			MouseUp: GridActionConfigWithoutRestoreCursor{
-				BackgroundColor:        "#abe9b3",
-				TextColor:              "#000000",
-				MatchedTextColor:       "#f8bd96",
-				MatchedBackgroundColor: "#f8bd96",
-				MatchedBorderColor:     "#f8bd96",
-				BorderColor:            "#abe9b3",
-			},
-			MouseDown: GridActionConfigWithoutRestoreCursor{
-				BackgroundColor:        "#abe9b3",
-				TextColor:              "#000000",
-				MatchedTextColor:       "#f8bd96",
-				MatchedBackgroundColor: "#f8bd96",
-				MatchedBorderColor:     "#f8bd96",
-				BorderColor:            "#abe9b3",
-			},
-			MoveMouse: GridActionConfigWithoutRestoreCursor{
-				BackgroundColor:        "#abe9b3",
-				TextColor:              "#000000",
-				MatchedTextColor:       "#f8bd96",
-				MatchedBackgroundColor: "#f8bd96",
-				MatchedBorderColor:     "#f8bd96",
-				BorderColor:            "#abe9b3",
-			},
-			Scroll: GridActionConfigWithoutRestoreCursor{
-				BackgroundColor:        "#abe9b3",
-				TextColor:              "#000000",
-				MatchedTextColor:       "#f8bd96",
-				MatchedBackgroundColor: "#f8bd96",
-				MatchedBorderColor:     "#f8bd96",
-				BorderColor:            "#abe9b3",
-			},
-			ContextMenu: GridActionConfigWithoutRestoreCursor{
-				BackgroundColor:        "#abe9b3",
-				TextColor:              "#000000",
-				MatchedTextColor:       "#f8bd96",
-				MatchedBackgroundColor: "#f8bd96",
-				MatchedBorderColor:     "#f8bd96",
-				BorderColor:            "#abe9b3",
-			},
 		},
 		Scroll: ScrollConfig{
 			ScrollStep:          50,
@@ -545,120 +341,16 @@ func (c *Config) Validate() error {
 	// Hotkeys are validated in the bindings validation section below
 
 	// Validate colors
-	if err := validateColor(c.Hints.LeftClickHints.BackgroundColor, "hints.left_click_hints.background_color"); err != nil {
+	if err := validateColor(c.Hints.BackgroundColor, "hints.background_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.LeftClickHints.TextColor, "hints.left_click_hints.text_color"); err != nil {
+	if err := validateColor(c.Hints.TextColor, "hints.text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.LeftClickHints.MatchedTextColor, "hints.left_click_hints.matched_text_color"); err != nil {
+	if err := validateColor(c.Hints.MatchedTextColor, "hints.matched_text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.LeftClickHints.BorderColor, "hints.left_click_hints.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Hints.RightClickHints.BackgroundColor, "hints.right_click_hints.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.RightClickHints.TextColor, "hints.right_click_hints.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.RightClickHints.MatchedTextColor, "hints.right_click_hints.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.RightClickHints.BorderColor, "hints.right_click_hints.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Hints.DoubleClickHints.BackgroundColor, "hints.double_click_hints.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.DoubleClickHints.TextColor, "hints.double_click_hints.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.DoubleClickHints.MatchedTextColor, "hints.double_click_hints.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.DoubleClickHints.BorderColor, "hints.double_click_hints.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Hints.TripleClickHints.BackgroundColor, "hints.triple_click_hints.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.TripleClickHints.TextColor, "hints.triple_click_hints.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.TripleClickHints.MatchedTextColor, "hints.triple_click_hints.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.TripleClickHints.BorderColor, "hints.triple_click_hints.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Hints.MiddleClickHints.BackgroundColor, "hints.middle_click_hints.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MiddleClickHints.TextColor, "hints.middle_click_hints.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MiddleClickHints.MatchedTextColor, "hints.middle_click_hints.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MiddleClickHints.BorderColor, "hints.middle_click_hints.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Hints.MouseUpHints.BackgroundColor, "hints.mouse_up_hints.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MouseUpHints.TextColor, "hints.mouse_up_hints.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MouseUpHints.MatchedTextColor, "hints.mouse_up_hints.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MouseUpHints.BorderColor, "hints.mouse_up_hints.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Hints.MouseDownHints.BackgroundColor, "hints.mouse_down_hints.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MouseDownHints.TextColor, "hints.mouse_down_hints.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MouseDownHints.MatchedTextColor, "hints.mouse_down_hints.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MouseDownHints.BorderColor, "hints.mouse_down_hints.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Hints.MoveMouseHints.BackgroundColor, "hints.move_mouse_hints.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MoveMouseHints.TextColor, "hints.move_mouse_hints.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MoveMouseHints.MatchedTextColor, "hints.move_mouse_hints.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.MoveMouseHints.BorderColor, "hints.move_mouse_hints.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Hints.ScrollHints.BackgroundColor, "hints.scroll_hints.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.ScrollHints.TextColor, "hints.scroll_hints.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.ScrollHints.MatchedTextColor, "hints.scroll_hints.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Hints.ScrollHints.BorderColor, "hints.scroll_hints.border_color"); err != nil {
+	if err := validateColor(c.Hints.BorderColor, "hints.border_color"); err != nil {
 		return err
 	}
 
@@ -690,12 +382,6 @@ func (c *Config) Validate() error {
 	for _, role := range c.Hints.ClickableRoles { // Changed from c.Accessibility.ClickableRoles
 		if strings.TrimSpace(role) == "" {
 			return fmt.Errorf("hints.clickable_roles cannot contain empty values")
-		}
-	}
-
-	for _, role := range c.Hints.ScrollableRoles { // Changed from c.Accessibility.ScrollableRoles
-		if strings.TrimSpace(role) == "" {
-			return fmt.Errorf("hints.scrollable_roles cannot contain empty values")
 		}
 	}
 
@@ -740,11 +426,6 @@ func (c *Config) Validate() error {
 				return fmt.Errorf("hints.app_configs[%d].additional_clickable_roles cannot contain empty values", i)
 			}
 		}
-		for _, role := range appConfig.AdditionalScrollable {
-			if strings.TrimSpace(role) == "" {
-				return fmt.Errorf("hints.app_configs[%d].additional_scrollable_roles cannot contain empty values", i)
-			}
-		}
 	}
 
 	// Validate grid settings
@@ -765,193 +446,22 @@ func (c *Config) Validate() error {
 	}
 
 	// Validate per-action grid colors
-	if err := validateColor(c.Grid.LeftClick.BackgroundColor, "grid.left_click.background_color"); err != nil {
+	if err := validateColor(c.Grid.BackgroundColor, "grid.background_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.LeftClick.TextColor, "grid.left_click.text_color"); err != nil {
+	if err := validateColor(c.Grid.TextColor, "grid.text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.LeftClick.MatchedTextColor, "grid.left_click.matched_text_color"); err != nil {
+	if err := validateColor(c.Grid.MatchedTextColor, "grid.matched_text_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.LeftClick.MatchedBackgroundColor, "grid.left_click.matched_background_color"); err != nil {
+	if err := validateColor(c.Grid.MatchedBackgroundColor, "grid.matched_background_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.LeftClick.MatchedBorderColor, "grid.left_click.matched_border_color"); err != nil {
+	if err := validateColor(c.Grid.MatchedBorderColor, "grid.matched_border_color"); err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.LeftClick.BorderColor, "grid.left_click.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Grid.RightClick.BackgroundColor, "grid.right_click.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.RightClick.TextColor, "grid.right_click.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.RightClick.MatchedTextColor, "grid.right_click.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.RightClick.MatchedBackgroundColor, "grid.right_click.matched_background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.RightClick.MatchedBorderColor, "grid.right_click.matched_border_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.RightClick.BorderColor, "grid.right_click.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Grid.DoubleClick.BackgroundColor, "grid.double_click.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.DoubleClick.TextColor, "grid.double_click.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.DoubleClick.MatchedTextColor, "grid.double_click.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.DoubleClick.MatchedBackgroundColor, "grid.double_click.matched_background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.DoubleClick.MatchedBorderColor, "grid.double_click.matched_border_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.DoubleClick.BorderColor, "grid.double_click.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Grid.TripleClick.BackgroundColor, "grid.triple_click.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.TripleClick.TextColor, "grid.triple_click.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.TripleClick.MatchedTextColor, "grid.triple_click.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.TripleClick.MatchedBackgroundColor, "grid.triple_click.matched_background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.TripleClick.MatchedBorderColor, "grid.triple_click.matched_border_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.TripleClick.BorderColor, "grid.triple_click.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Grid.MiddleClick.BackgroundColor, "grid.middle_click.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MiddleClick.TextColor, "grid.middle_click.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MiddleClick.MatchedTextColor, "grid.middle_click.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MiddleClick.MatchedBackgroundColor, "grid.middle_click.matched_background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MiddleClick.MatchedBorderColor, "grid.middle_click.matched_border_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MiddleClick.BorderColor, "grid.middle_click.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Grid.MouseUp.BackgroundColor, "grid.mouse_up.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MouseUp.TextColor, "grid.mouse_up.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MouseUp.MatchedTextColor, "grid.mouse_up.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MouseUp.MatchedBackgroundColor, "grid.mouse_up.matched_background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MouseUp.MatchedBorderColor, "grid.mouse_up.matched_border_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MouseUp.BorderColor, "grid.mouse_up.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Grid.MouseDown.BackgroundColor, "grid.mouse_down.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MouseDown.TextColor, "grid.mouse_down.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MouseDown.MatchedTextColor, "grid.mouse_down.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MouseDown.MatchedBackgroundColor, "grid.mouse_down.matched_background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MouseDown.MatchedBorderColor, "grid.mouse_down.matched_border_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MouseDown.BorderColor, "grid.mouse_down.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Grid.MoveMouse.BackgroundColor, "grid.move_mouse.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MoveMouse.TextColor, "grid.move_mouse.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MoveMouse.MatchedTextColor, "grid.move_mouse.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MoveMouse.MatchedBackgroundColor, "grid.move_mouse.matched_background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MoveMouse.MatchedBorderColor, "grid.move_mouse.matched_border_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.MoveMouse.BorderColor, "grid.move_mouse.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Grid.Scroll.BackgroundColor, "grid.scroll.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.Scroll.TextColor, "grid.scroll.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.Scroll.MatchedTextColor, "grid.scroll.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.Scroll.MatchedBackgroundColor, "grid.scroll.matched_background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.Scroll.MatchedBorderColor, "grid.scroll.matched_border_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.Scroll.BorderColor, "grid.scroll.border_color"); err != nil {
-		return err
-	}
-
-	if err := validateColor(c.Grid.ContextMenu.BackgroundColor, "grid.context_menu.background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.ContextMenu.TextColor, "grid.context_menu.text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.ContextMenu.MatchedTextColor, "grid.context_menu.matched_text_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.ContextMenu.MatchedBackgroundColor, "grid.context_menu.matched_background_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.ContextMenu.MatchedBorderColor, "grid.context_menu.matched_border_color"); err != nil {
-		return err
-	}
-	if err := validateColor(c.Grid.ContextMenu.BorderColor, "grid.context_menu.border_color"); err != nil {
+	if err := validateColor(c.Grid.BorderColor, "grid.border_color"); err != nil {
 		return err
 	}
 
@@ -1004,39 +514,6 @@ func (c *Config) GetClickableRolesForApp(bundleID string) []string {
 	// Add dock roles if enabled
 	if c.Hints.IncludeDockHints { // Changed from c.General.IncludeDockHints
 		rolesMap["AXDockItem"] = struct{}{}
-	}
-
-	// Convert map to slice
-	roles := make([]string, 0, len(rolesMap))
-	for role := range rolesMap {
-		roles = append(roles, role)
-	}
-	return roles
-}
-
-// GetScrollableRolesForApp returns the merged scrollable roles for a specific app.
-// It combines global scrollable roles with app-specific additional roles.
-func (c *Config) GetScrollableRolesForApp(bundleID string) []string {
-	// Start with global roles
-	rolesMap := make(map[string]struct{})
-	for _, role := range c.Hints.ScrollableRoles { // Changed from c.Accessibility.ScrollableRoles
-		trimmed := strings.TrimSpace(role)
-		if trimmed != "" {
-			rolesMap[trimmed] = struct{}{}
-		}
-	}
-
-	// Add app-specific roles
-	for _, appConfig := range c.Hints.AppConfigs { // Changed from c.Accessibility.AppConfigs
-		if appConfig.BundleID == bundleID {
-			for _, role := range appConfig.AdditionalScrollable {
-				trimmed := strings.TrimSpace(role)
-				if trimmed != "" {
-					rolesMap[trimmed] = struct{}{}
-				}
-			}
-			break
-		}
 	}
 
 	// Convert map to slice
