@@ -372,6 +372,10 @@ highlight_width = 3
 log_level = "info"          # "debug", "info", "warn", "error"
 log_file = ""               # Empty = ~/Library/Logs/neru/app.log
 structured_logging = true   # JSON format for file logs
+disable_file_logging = false # Disable file logging
+max_file_size = 10          # Max file size in MB
+max_backups = 5             # Max number of backups
+max_age = 30                # Max age in days
 ```
 
 **Default location:** `~/Library/Logs/neru/app.log`
@@ -473,6 +477,11 @@ mouse_up_key = "u"
 [logging]
 log_level = "info"
 structured_logging = true
+structured_logging = true
+disable_file_logging = false
+max_file_size = 10
+max_backups = 5
+max_age = 30
 ```
 
 ---

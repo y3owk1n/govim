@@ -126,6 +126,12 @@ type LoggingConfig struct {
 	LogLevel          string `toml:"log_level"`
 	LogFile           string `toml:"log_file"`
 	StructuredLogging bool   `toml:"structured_logging"`
+
+	// New options for log rotation and file logging control
+	DisableFileLogging bool `toml:"disable_file_logging"`
+	MaxFileSize        int  `toml:"max_file_size"` // Size in MB
+	MaxBackups         int  `toml:"max_backups"`   // Maximum number of old log files to retain
+	MaxAge             int  `toml:"max_age"`       // Maximum number of days to retain old log files
 }
 
 type AdditionalAXSupport struct {
@@ -244,9 +250,13 @@ func DefaultConfig() *Config {
 			MouseUpKey:     "u",
 		},
 		Logging: LoggingConfig{
-			LogLevel:          "info",
-			LogFile:           "",
-			StructuredLogging: true,
+			LogLevel:           "info",
+			LogFile:            "",
+			StructuredLogging:  true,
+			DisableFileLogging: false,
+			MaxFileSize:        10, // 10MB
+			MaxBackups:         5,  // Keep 5 old log files
+			MaxAge:             30, // Keep log files for 30 days
 		},
 	}
 }
