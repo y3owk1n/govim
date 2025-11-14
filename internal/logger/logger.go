@@ -9,16 +9,17 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
 	globalLogger *zap.Logger
-	logFile      *os.File
+	logFile      *lumberjack.Logger
 	logFileMu    sync.Mutex
 )
 
 // Init initializes the global logger
-func Init(logLevel, logFilePath string, structured bool) error {
+func Init(logLevel, logFilePath string, structured bool, disableFileLogging bool, maxFileSize, maxBackups, maxAge int) error {
 	logFileMu.Lock()
 	defer logFileMu.Unlock()
 
@@ -43,49 +44,72 @@ func Init(logLevel, logFilePath string, structured bool) error {
 		level = zapcore.ErrorLevel
 	}
 
-	// Determine log file path
-	if logFilePath == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("failed to get home directory: %w", err)
-		}
-		logFilePath = filepath.Join(homeDir, "Library", "Logs", "neru", "app.log")
-	}
-
-	// Create log directory
-	logDir := filepath.Dir(logFilePath)
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return fmt.Errorf("failed to create log directory: %w", err)
-	}
-
 	// Configure encoder
-	var encoderConfig zapcore.EncoderConfig
+	var consoleEncoderConfig, fileEncoderConfig zapcore.EncoderConfig
 	if structured {
-		encoderConfig = zap.NewProductionEncoderConfig()
+		consoleEncoderConfig = zap.NewProductionEncoderConfig()
+		fileEncoderConfig = zap.NewProductionEncoderConfig()
 	} else {
-		encoderConfig = zap.NewDevelopmentEncoderConfig()
-	}
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-
-	// Create file writer
-	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open log file: %w", err)
+		consoleEncoderConfig = zap.NewDevelopmentEncoderConfig()
+		fileEncoderConfig = zap.NewDevelopmentEncoderConfig()
 	}
 
-	// Store file reference for cleanup
-	logFile = file
+	// Set time encoding
+	consoleEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	fileEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
-	// Create console writer
-	consoleEncoder := zapcore.NewConsoleEncoder(encoderConfig)
-	fileEncoder := zapcore.NewJSONEncoder(encoderConfig)
+	// Set level encoding - no colors for file output
+	consoleEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	fileEncoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
 
-	// Create core with both console and file output
-	core := zapcore.NewTee(
+	// Create console encoder
+	consoleEncoder := zapcore.NewConsoleEncoder(consoleEncoderConfig)
+
+	// Create cores slice
+	cores := []zapcore.Core{
 		zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), level),
-		zapcore.NewCore(fileEncoder, zapcore.AddSync(file), level),
-	)
+	}
+
+	// Add file logging if not disabled
+	if !disableFileLogging {
+		// Determine log file path
+		if logFilePath == "" {
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return fmt.Errorf("failed to get home directory: %w", err)
+			}
+			logFilePath = filepath.Join(homeDir, "Library", "Logs", "neru", "app.log")
+		}
+
+		// Create log directory
+		logDir := filepath.Dir(logFilePath)
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			return fmt.Errorf("failed to create log directory: %w", err)
+		}
+
+		// Create lumberjack logger for file rotation
+		logFile = &lumberjack.Logger{
+			Filename:   logFilePath,
+			MaxSize:    maxFileSize, // Size in MB
+			MaxBackups: maxBackups,  // Maximum number of old log files to retain
+			MaxAge:     maxAge,      // Maximum number of days to retain old log files
+			Compress:   true,        // Compress old log files
+		}
+
+		// Create file encoder (no colors)
+		var fileEncoder zapcore.Encoder
+		if structured {
+			fileEncoder = zapcore.NewJSONEncoder(fileEncoderConfig)
+		} else {
+			fileEncoder = zapcore.NewConsoleEncoder(fileEncoderConfig)
+		}
+
+		// Add file core
+		cores = append(cores, zapcore.NewCore(fileEncoder, zapcore.AddSync(logFile), level))
+	}
+
+	// Create core with both console and file output (if enabled)
+	core := zapcore.NewTee(cores...)
 
 	// Create logger
 	globalLogger = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
@@ -129,8 +153,7 @@ func Close() error {
 	}
 
 	if logFile != nil {
-		// Best effort sync, ignore errors on stdout/stderr
-		_ = logFile.Sync()
+		// lumberjack.Logger doesn't have a Sync method, but Close will flush
 		if err := logFile.Close(); err != nil {
 			return fmt.Errorf("failed to close log file: %w", err)
 		}

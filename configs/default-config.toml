@@ -151,8 +151,20 @@ mouse_up_key = "u"
 # Log level: debug, info, warn, error
 log_level = "info"
 
-# Log file path (empty = stdout)
+# Log file path (empty = default location)
 log_file = ""
 
 # Whether to use structured (JSON) logging
 structured_logging = true
+
+# Whether to disable file logging entirely (logs only to stdout/stderr)
+disable_file_logging = false
+
+# Maximum size in megabytes of the log file before it gets rotated
+max_file_size = 10
+
+# Maximum number of old log files to retain
+max_backups = 5
+
+# Maximum number of days to retain old log files
+max_age = 30

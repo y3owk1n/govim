@@ -80,7 +80,15 @@ type App struct {
 // NewApp creates a new application instance
 func NewApp(cfg *config.Config) (*App, error) {
 	// Initialize logger
-	if err := logger.Init(cfg.Logging.LogLevel, cfg.Logging.LogFile, cfg.Logging.StructuredLogging); err != nil {
+	if err := logger.Init(
+		cfg.Logging.LogLevel,
+		cfg.Logging.LogFile,
+		cfg.Logging.StructuredLogging,
+		cfg.Logging.DisableFileLogging,
+		cfg.Logging.MaxFileSize,
+		cfg.Logging.MaxBackups,
+		cfg.Logging.MaxAge,
+	); err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
