@@ -215,7 +215,7 @@ highlight_width = 2
 [logging]
 # Log level: "debug", "info", "warn", "error"
 # Use "debug" for troubleshooting; default is "info".
-log_level = "debug"
+log_level = "info"
 
 # Log file location (empty for default: ~/Library/Logs/neru/app.log)
 # Set a custom path to redirect logs elsewhere; directories are created as needed.
