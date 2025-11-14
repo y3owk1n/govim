@@ -1,0 +1,25 @@
+[hotkeys]
+"Ctrl+F" = "grid"
+"Ctrl+S" = "action scroll"
+# keys on dvorak (right hand)
+# cr
+# htn
+"Cmd+Shift+H" = "action left_click"
+"Cmd+Shift+T" = "action middle_click"
+"Cmd+Shift+N" = "action right_click"
+"Cmd+Shift+C" = "action mouse_down"
+"Cmd+Shift+R" = "action mouse_up"
+
+[hints]
+enabled = false
+
+[grid]
+font_family = "JetBrainsMonoNLNFP-ExtraBold"
+
+# characters = "ahotenusigcrplyfmqwjvkzx"
+sublayer_keys = "gcrhtnmwv"
+
+[logging]
+# Log level: "debug", "info", "warn", "error"
+# Use "debug" for troubleshooting; default is "info".
+log_level = "debug"

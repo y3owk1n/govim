@@ -255,14 +255,11 @@ func Load(path string) (*Config, error) {
 	}
 
 	// Decode the hotkeys table into a generic map and populate cfg.Hotkeys.Bindings.
-	// We only support the inline mapping format and reject the old nested `bindings` map.
 	var raw map[string]map[string]interface{}
 	if _, err := toml.DecodeFile(path, &raw); err == nil {
 		if hot, ok := raw["hotkeys"]; ok {
-			if _, hasBindings := hot["bindings"]; hasBindings {
-				return nil, fmt.Errorf("hotkeys.bindings is not supported; use inline mapping under [hotkeys], e.g. \"Cmd+Shift+Space\" = \"hints\"")
-			}
-			if cfg.Hotkeys.Bindings == nil {
+			// Clear default bindings and initialize with empty map when user provides hotkeys config
+			if len(hot) > 0 {
 				cfg.Hotkeys.Bindings = map[string]string{}
 			}
 			for k, v := range hot {

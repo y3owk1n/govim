@@ -27,7 +27,7 @@ excluded_apps = []
 accessibility_check_on_start = true
 
 [hotkeys]
-# all hotkeys can be disabled by setting the key to ""
+# all hotkeys can be disabled by just removing them or comment them
 "Cmd+Shift+Space" = "hints" # Hint mode (left click)
 "Cmd+Shift+G" = "grid"
 # these keys might not work and conflict with system or apps, change them!
