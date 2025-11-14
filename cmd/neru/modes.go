@@ -506,8 +506,6 @@ func (a *App) exitMode() {
 			a.logger.Info("Hiding grid overlay")
 			(*a.gridCtx.gridOverlay).Hide()
 		}
-		// Also clear any context menu drawn on hint overlay
-		a.hintOverlay.Clear()
 	default:
 		// No domain-specific cleanup for other modes yet
 	}
