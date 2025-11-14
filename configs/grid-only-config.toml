@@ -26,12 +26,6 @@ accessibility_check_on_start = true
 [hotkeys]
 # Grid mode hotkeys - all actions available
 "Cmd+Shift+Space" = "grid"
-# these keys might not work and conflict with system or apps, change them!
-"Cmd+Shift+L" = "action left_click"
-"Cmd+Shift+R" = "action right_click"
-"Cmd+Shift+M" = "action middle_click"
-"Cmd+Shift+N" = "action mouse_down"
-"Cmd+Shift+P" = "action mouse_up"
 "Cmd+Shift+S" = "action scroll"
 
 # Hints mode - DISABLED (no hotkeys assigned)

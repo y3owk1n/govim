@@ -1,106 +1,68 @@
-# Neru Configuration — Mini Docs
-#
-# Copy locations:
-#   - macOS: ~/Library/Application Support/neru/config.toml
-#   - XDG:   ~/.config/neru/config.toml
-# Or pass a custom path via the CLI: `neru launch --config /path/to/config.toml`
-#
-# Conventions
-# - Colors: `#RGB`, `#RRGGBB`, or `#RRGGBBAA`.
-# - Hotkeys: `Modifier+...+Key` with modifiers `Cmd`, `Ctrl`, `Alt`, `Shift`, `Option`.
-#   Examples: `Cmd+Shift+Space`, `Ctrl+D`.
+# This is the default configuration file for Neru.
+# It is NOT loaded by the application at runtime.
+# To use this configuration, copy it to one of these locations:
+#   ~/.config/neru/config.toml
+#   ~/Library/Application Support/neru/config.toml
+# Or specify a custom path with the --config flag.
+
 [general]
-# Applications to exclude from Neru functionality
-# Neru will do nothing when these applications are focused and pass through everything back to the os
-# Use bundle IDs to identify applications. To find an app's bundle ID:
-# osascript -e 'id of app "AppName"'
-# Examples:
-# excluded_apps = [
-#     "com.apple.Terminal",      # Terminal
-#     "com.googlecode.iterm2",   # iTerm2
-#     "com.microsoft.VSCode",    # VS Code
-#     "com.apple.dt.Xcode",      # Xcode
-# ]
+# List of bundle IDs to exclude from Neru (e.g., "com.apple.finder")
 excluded_apps = []
 
-# Check Accessibility permission on startup; exits with guidance if missing.
+# Whether to check for accessibility permissions on startup
 accessibility_check_on_start = true
 
 [hotkeys]
-# all hotkeys can be disabled by just removing them or comment them
-"Cmd+Shift+Space" = "hints" # Hint mode (left click)
+# Hotkey bindings - key = action
+# Supported modifiers: Cmd, Ctrl, Alt, Shift, Option
+# Examples: "Cmd+Shift+Space" = "hints", "Ctrl+D" = "action scroll"
+"Cmd+Shift+Space" = "hints"
 "Cmd+Shift+G" = "grid"
-# these keys might not work and conflict with system or apps, change them!
-"Cmd+Shift+L" = "action left_click"
-"Cmd+Shift+R" = "action right_click"
-"Cmd+Shift+M" = "action middle_click"
-"Cmd+Shift+N" = "action mouse_down"
-"Cmd+Shift+P" = "action mouse_up"
 "Cmd+Shift+S" = "action scroll"
 
 # There are more that can be added, see `docs/CLI.md` for details
+# "Cmd+Shift+L" = "action left_click"
+# "Cmd+Shift+R" = "action right_click"
+# "Cmd+Shift+M" = "action middle_click"
+# "Cmd+Shift+N" = "action mouse_down"
+# "Cmd+Shift+P" = "action mouse_up"
 # Note: "Cmd+Shift+J" = "action scroll" is already set above as default
 
 # To run a shell command from a hotkey, prefix the value with `exec `:
 # "Ctrl+Alt+T" = "exec open -a Terminal"
 # "Ctrl+Alt+F" = "exec osascript -e 'display notification \"This is a test notification!\" with title \"Hello from Terminal\" subtitle \"Just testing 🚀\"'"
 
-
 [hints]
+# Whether to enable hints mode
 enabled = true
 
-# Characters used to build hint labels for alphabet style.
-# - At least 2 characters; choose distinct, easy-to-type ones.
+# Characters to use for hint labels
 hint_characters = "asdfghjkl"
 
-# Font size for hint labels
-# Valid range: 6–72
+# Visual appearance
 font_size = 12
-
-# Font family (leave empty for system default)
-font_family = ""
-
-# Border radius (pixels)
-# Non-negative integer
+font_family = "SF Mono"
 border_radius = 4
-
-# Padding (pixels)
-# Non-negative integer
 padding = 4
-
-# Border width (pixels)
-# Non-negative integer
 border_width = 1
-
-# Opacity (0.0 to 1.0)
-# Controls hint translucency; 1.0 is fully opaque
 opacity = 0.95
 
 background_color = "#FFD700"
 text_color = "#000000"
-matched_text_color = "#737373" # Matched text color - color for characters that have been typed
+matched_text_color = "#737373"
 border_color = "#000000"
 
-# Include additional targets in hint mode
-# Show hints on the macOS menu bar
+# Additional hint targets
 include_menubar_hints = false
-
-# Do nothing if `include_menubar_hints` is false
 additional_menubar_hints_targets = [
-  "com.apple.TextInputMenuAgent", # TextInput menu bar
-  "com.apple.controlcenter",      # Control Center
-  "com.apple.systemuiserver",     # SystemUIServer (e.g. Siri in menubar)
-  # "com.somebundle.example",       # You can add more here for the apps that you use and shows in menubar (e.g. Aerospace, Orbstack, ...)
+    "com.apple.TextInputMenuAgent",
+    "com.apple.controlcenter",
+    "com.apple.systemuiserver",
 ]
-
-# Show hints on the Dock (includes mission control)
 include_dock_hints = false
-# Show hints on the Notification Center
 include_nc_hints = false
 
-# Global accessibility roles that are treated as clickable
-# These roles will be used for ALL applications
-# Users can add or remove roles as needed
+# Roles considered clickable
 clickable_roles = [
     "AXButton",
     "AXComboBox",
@@ -120,65 +82,35 @@ clickable_roles = [
     "AXRow",
 ]
 
-# There are predefined heuristics checks for if an element should be clickable or not.
-# Skip role checking for clickable elements (all elements will be considered clickable)
-# Enable this if you know what you're doing
+# Whether to ignore the clickable check (useful for some apps)
 ignore_clickable_check = false
 
-# Per-app role configurations
-# These allow you to add additional clickable roles for specific applications
-# The roles defined here are ADDED to the global roles above (not replaced)
-# To find an app's bundle ID, run: osascript -e 'id of app "AppName"'
-
-# [[hints.app_configs]]
-# bundle_id = "com.example.bundle"
-# additional_clickable_roles = ["AXStaticText"]
-# # You can also ignore the check for the app:
-# ignore_clickable_check = true
-
-# For example, in `Chrome`, we can add support for tabgroups.
-# [[hints.app_configs]]
-# bundle_id = "com.google.Chrome"
-# additional_clickable_roles = ["AXTabGroup"]
-
-# You can do and customise alot more when the defaults or global are not good enough.
-
+# Electron/Chromium/Firefox support
 [hints.additional_ax_support]
-# Enables additional AX supports for different apps.
-# `AXManualAccessibility` will be enabled for Electron-like apps.
-# `AXEnhancedUserInterface` will be enabled for Chromium-like apps.
-# `AXEnhancedUserInterface` will be enabled for Firefox-like apps.
 enable = false
-
-# Extra bundle IDs for electron support.
 additional_electron_bundles = []
-
-# Extra bundle IDs for chromium support.
 additional_chromium_bundles = []
-
-# Extra bundle IDs for firefox support.
 additional_firefox_bundles = []
 
 [grid]
-# Grid overlay (flat, label-based)
-# Fills the entire screen with uniformly sized cells.
-# Type the label (2/3/4 characters, chosen automatically) to click the cell center.
-# Cell sizes are automatically optimized based on screen resolution and aspect ratio
-# to ensure consistent precision and usability across all display types.
-
+# Whether to enable grid mode
 enabled = true
-subgrid_enabled = true        # Enable precision sublayer after main label selection (always 3x3)
 
-# Characters used to build grid labels
+# Whether to enable subgrid precision mode
+subgrid_enabled = true
+
+# Characters to use for grid labels
 characters = "abcdefghijklmnpqrstuvwxyz"
 
-# Sublayer keys used for subgrid selection (at least 9 characters for 3x3 subgrid)
+# Characters to use for subgrid labels (fallback to grid.characters)
 sublayer_keys = "abcdefghijklmnpqrstuvwxyz"
 
-# Grid label style
+# Visual appearance
 font_size = 12
-font_family = ""
+font_family = "SF Mono"
 opacity = 0.7
+border_width = 1
+
 background_color = "#abe9b3"
 text_color = "#000000"
 matched_text_color = "#f8bd96"
@@ -187,41 +119,40 @@ matched_border_color = "#f8bd96"
 border_color = "#abe9b3"
 
 # Behavior
-live_match_update = true      # Update matched highlight per keystroke without full redraw
-hide_unmatched = true        # Hide unmatched cells during typing
+live_match_update = true
+hide_unmatched = true
 
 [scroll]
-# Base scroll amount for j/k keys in pixels
+# Scroll step sizes
 scroll_step = 50
-
-# Half-page scroll amount for Ctrl+D/U in pixels
 scroll_step_half = 500
-
-# Full-page scroll amount for gg/G in pixels
-# Normally this will be an extremely large number
 scroll_step_full = 1000000
 
-# Highlight the active scroll area with a border
-# When true, draws a border around the active app.
-# This is just for visual feedback, it doesn't affect the actual scrolling
+# Whether to highlight the scroll area
 highlight_scroll_area = true
 
-# Highlight border color (hex format)
+# Scroll highlight appearance
 highlight_color = "#FF0000"
-
-# Highlight border width in pixels
 highlight_width = 2
 
+[action]
+# Action mode highlight appearance
+highlight_color = "#00FF00"
+highlight_width = 3
+
+# Action key mappings
+left_click_key = "l"
+right_click_key = "r"
+middle_click_key = "m"
+mouse_down_key = "i"
+mouse_up_key = "u"
+
 [logging]
-# Log level: "debug", "info", "warn", "error"
-# Use "debug" for troubleshooting; default is "info".
+# Log level: debug, info, warn, error
 log_level = "info"
 
-# Log file location (empty for default: ~/Library/Logs/neru/app.log)
-# Set a custom path to redirect logs elsewhere; directories are created as needed.
+# Log file path (empty = stdout)
 log_file = ""
 
-# Enable structured logging
+# Whether to use structured (JSON) logging
 structured_logging = true
-# When true, file logs use a structured (JSON) encoder; console remains readable.
-# When false, console uses a development-friendly formatter.

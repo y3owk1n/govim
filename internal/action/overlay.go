@@ -1,4 +1,4 @@
-package scroll
+package action
 
 /*
 #cgo CFLAGS: -x objective-c
@@ -6,7 +6,7 @@ package scroll
 #include <stdlib.h>
 
 // Callback function that Go can reference
-extern void resizeScrollCompletionCallback(void* context);
+extern void resizeActionCompletionCallback(void* context);
 */
 import "C"
 
@@ -22,32 +22,32 @@ import (
 )
 
 var (
-	scrollCallbackID   uint64
-	scrollCallbackMap  = make(map[uint64]chan struct{})
-	scrollCallbackLock sync.Mutex
+	actionCallbackID   uint64
+	actionCallbackMap  = make(map[uint64]chan struct{})
+	actionCallbackLock sync.Mutex
 )
 
-//export resizeScrollCompletionCallback
-func resizeScrollCompletionCallback(context unsafe.Pointer) {
+//export resizeActionCompletionCallback
+func resizeActionCompletionCallback(context unsafe.Pointer) {
 	// Convert context to callback ID
 	id := uint64(uintptr(context))
 
-	scrollCallbackLock.Lock()
-	if done, ok := scrollCallbackMap[id]; ok {
+	actionCallbackLock.Lock()
+	if done, ok := actionCallbackMap[id]; ok {
 		close(done)
-		delete(scrollCallbackMap, id)
+		delete(actionCallbackMap, id)
 	}
-	scrollCallbackLock.Unlock()
+	actionCallbackLock.Unlock()
 }
 
 type Overlay struct {
 	window C.OverlayWindow
-	config config.ScrollConfig
+	config config.ActionConfig
 	logger *zap.Logger
 }
 
-// NewOverlay creates a new overlay
-func NewOverlay(cfg config.ScrollConfig, logger *zap.Logger) (*Overlay, error) {
+// NewOverlay creates a new action overlay
+func NewOverlay(cfg config.ActionConfig, logger *zap.Logger) (*Overlay, error) {
 	window := C.createOverlayWindow()
 	if window == nil {
 		return nil, fmt.Errorf("failed to create overlay window")
@@ -61,23 +61,23 @@ func NewOverlay(cfg config.ScrollConfig, logger *zap.Logger) (*Overlay, error) {
 
 // Show shows the overlay
 func (o *Overlay) Show() {
-	o.logger.Debug("Showing scroll overlay")
+	o.logger.Debug("Showing action overlay")
 	C.showOverlayWindow(o.window)
-	o.logger.Debug("Scroll overlay shown successfully")
+	o.logger.Debug("Action overlay shown successfully")
 }
 
 // Hide hides the overlay
 func (o *Overlay) Hide() {
-	o.logger.Debug("Hiding scroll overlay")
+	o.logger.Debug("Hiding action overlay")
 	C.hideOverlayWindow(o.window)
-	o.logger.Debug("Scroll overlay hidden successfully")
+	o.logger.Debug("Action overlay hidden successfully")
 }
 
-// Clear clears all scroll from the overlay
+// Clear clears all action highlights from the overlay
 func (o *Overlay) Clear() {
-	o.logger.Debug("Clearing scroll overlay")
+	o.logger.Debug("Clearing action overlay")
 	C.clearOverlay(o.window)
-	o.logger.Debug("Scroll overlay cleared successfully")
+	o.logger.Debug("Action overlay cleared successfully")
 }
 
 // ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor
@@ -90,22 +90,22 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	done := make(chan struct{})
 
 	// Generate unique ID for this callback
-	id := atomic.AddUint64(&scrollCallbackID, 1)
+	id := atomic.AddUint64(&actionCallbackID, 1)
 
 	// Store channel in map
-	scrollCallbackLock.Lock()
-	scrollCallbackMap[id] = done
-	scrollCallbackLock.Unlock()
+	actionCallbackLock.Lock()
+	actionCallbackMap[id] = done
+	actionCallbackLock.Unlock()
 
 	if o.logger != nil {
-		o.logger.Debug("Scroll overlay resize started", zap.Uint64("callback_id", id))
+		o.logger.Debug("Action overlay resize started", zap.Uint64("callback_id", id))
 	}
 
 	// Pass ID as context (safe - no Go pointers)
 	// Note: uintptr conversion must happen in same expression to satisfy go vet
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
-		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeScrollCompletionCallback)),
+		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeActionCompletionCallback)),
 		*(*unsafe.Pointer)(unsafe.Pointer(&id)),
 	)
 
@@ -114,40 +114,32 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	// Start a goroutine to handle cleanup when callback eventually arrives
 	go func() {
 		if o.logger != nil {
-			o.logger.Debug("Scroll overlay resize background cleanup started", zap.Uint64("callback_id", id))
+			o.logger.Debug("Action overlay resize background cleanup started", zap.Uint64("callback_id", id))
 		}
 
 		select {
 		case <-done:
 			// Callback received, normal cleanup already handled in callback
 			if o.logger != nil {
-				o.logger.Debug("Scroll overlay resize callback received", zap.Uint64("callback_id", id))
+				o.logger.Debug("Action overlay resize callback received", zap.Uint64("callback_id", id))
 			}
 		case <-time.After(2 * time.Second):
 			// Long timeout for cleanup only - callback likely failed
-			scrollCallbackLock.Lock()
-			delete(scrollCallbackMap, id)
-			scrollCallbackLock.Unlock()
+			actionCallbackLock.Lock()
+			delete(actionCallbackMap, id)
+			actionCallbackLock.Unlock()
 
 			if o.logger != nil {
-				o.logger.Debug("Scroll overlay resize cleanup timeout - removed callback from map",
+				o.logger.Debug("Action overlay resize cleanup timeout - removed callback from map",
 					zap.Uint64("callback_id", id))
 			}
 		}
 	}()
 }
 
-// Destroy destroys the overlay
-func (o *Overlay) Destroy() {
-	if o.window != nil {
-		C.destroyOverlayWindow(o.window)
-		o.window = nil
-	}
-}
-
-// DrawScrollHighlight draws a highlight border around the screen
-func (o *Overlay) DrawScrollHighlight(x, y, w, h int) {
-	o.logger.Debug("DrawScrollHighlight called")
+// DrawActionHighlight draws a highlight border around the screen
+func (o *Overlay) DrawActionHighlight(x, y, w, h int) {
+	o.logger.Debug("DrawActionHighlight called")
 
 	// Use action config for highlight color and width
 	color := o.config.HighlightColor
@@ -184,4 +176,12 @@ func (o *Overlay) DrawScrollHighlight(x, y, w, h int) {
 	}
 
 	C.drawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(width), C.double(1.0))
+}
+
+// Destroy destroys the overlay
+func (o *Overlay) Destroy() {
+	if o.window != nil {
+		C.destroyOverlayWindow(o.window)
+		o.window = nil
+	}
 }

@@ -113,11 +113,6 @@ neru launch   # CLI
 # Try the default hotkeys:
 # Cmd+Shift+Space - Hint mode
 # Cmd+Shift+G     - Grid mode
-# Cmd+Shift+L     - Left click
-# Cmd+Shift+R     - Right click
-# Cmd+Shift+M     - Middle click
-# Cmd+Shift+N     - Mouse down
-# Cmd+Shift+P     - Mouse up
 # Cmd+Shift+S     - Scroll
 ```
 
@@ -129,6 +124,7 @@ For hints:
 2. Type the label characters (e.g., "aa", "ab") - use `delete` to fix typos
 3. Element is clicked, cursor optionally restores to original position
 4. Press `Esc` anytime to cancel
+5. Press `<Tab>` to switch to between action and overlay modes
 
 For grid:
 
@@ -137,6 +133,9 @@ For grid:
 3. Refine the final selection within the selected cell
 4. Element is clicked, cursor optionally restores to original position
 5. Press `Esc` anytime to cancel
+6. Press `<Tab>` to switch to between action and overlay modes
+
+Action mode is a special mode that allows you to perform actions on the current cursor position.
 
 ---
 
@@ -218,13 +217,9 @@ This project thrives on community contributions. I'm happy to merge PRs that ali
 
 ### Roadmap / Future Ideas
 
-- [ ] Auto-deduplicate hints targeting the same point
-- [ ] Continuous clicks (like Homerow)
 - [ ] Test suites (contributions welcome!)
 - [ ] Launch agent with `start-service`/`stop-service` commands
 - [ ] Better app icon and menubar icon
-- [ ] Full vim mode (like [Vimnav.spoon](https://github.com/y3owk1n/vimnav.spoon))
-- [ ] Expose mouse action to CLI (like `neru left_click`) and perform the action on the current cursor position
 
 **Known Issues:**
 
