@@ -21,4 +21,5 @@ mouse_up_key = "r"
 [logging]
 # Log level: "debug", "info", "warn", "error"
 # Use "debug" for troubleshooting; default is "info".
-log_level = "debug"
+log_level = "info"
+disable_file_logging = true

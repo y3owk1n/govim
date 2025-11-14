@@ -59,6 +59,15 @@ func NewOverlay(cfg config.ScrollConfig, logger *zap.Logger) (*Overlay, error) {
 	}, nil
 }
 
+// NewOverlayWithWindow creates a scroll overlay using a shared window
+func NewOverlayWithWindow(cfg config.ScrollConfig, logger *zap.Logger, windowPtr unsafe.Pointer) (*Overlay, error) {
+	return &Overlay{
+		window: (C.OverlayWindow)(windowPtr),
+		config: cfg,
+		logger: logger,
+	}, nil
+}
+
 // Show shows the overlay
 func (o *Overlay) Show() {
 	o.logger.Debug("Showing scroll overlay")
@@ -144,6 +153,9 @@ func (o *Overlay) Destroy() {
 		o.window = nil
 	}
 }
+
+// CleanupCallbackMap cleans up any pending callbacks in the map
+// CleanupCallbackMap removed: centralized overlay manager controls resizes
 
 // DrawScrollHighlight draws a highlight border around the screen
 func (o *Overlay) DrawScrollHighlight(x, y, w, h int) {

@@ -79,6 +79,17 @@ func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	}, nil
 }
 
+// NewOverlayWithWindow creates an overlay using a shared window
+func NewOverlayWithWindow(cfg config.HintsConfig, logger *zap.Logger, windowPtr unsafe.Pointer) (*Overlay, error) {
+	hintDataPool = sync.Pool{New: func() any { s := make([]C.HintData, 0); return &s }}
+	cLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	return &Overlay{
+		window: (C.OverlayWindow)(windowPtr),
+		config: cfg,
+		logger: logger,
+	}, nil
+}
+
 // Show shows the overlay
 func (o *Overlay) Show() {
 	o.logger.Debug("Showing hint overlay")
@@ -350,3 +361,6 @@ func (o *Overlay) Destroy() {
 		o.window = nil
 	}
 }
+
+// CleanupCallbackMap cleans up any pending callbacks in the map
+// CleanupCallbackMap removed: centralized overlay manager controls resizes

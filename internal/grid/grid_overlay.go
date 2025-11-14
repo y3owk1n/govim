@@ -80,6 +80,32 @@ func NewGridOverlay(cfg config.GridConfig, logger *zap.Logger) *GridOverlay {
 	}
 }
 
+// NewGridOverlayWithWindow creates a grid overlay using a shared window
+func NewGridOverlayWithWindow(cfg config.GridConfig, logger *zap.Logger, windowPtr unsafe.Pointer) *GridOverlay {
+	gridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
+	gridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	subgridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
+	subgridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	chars := cfg.Characters
+	if strings.TrimSpace(chars) == "" {
+		chars = cfg.Characters
+	}
+	go Prewarm(chars, []image.Rectangle{
+		image.Rect(0, 0, 1280, 800),
+		image.Rect(0, 0, 1366, 768),
+		image.Rect(0, 0, 1440, 900),
+		image.Rect(0, 0, 1920, 1080),
+		image.Rect(0, 0, 2560, 1440),
+		image.Rect(0, 0, 3440, 1440),
+		image.Rect(0, 0, 3840, 2160),
+	})
+	return &GridOverlay{
+		window: (C.OverlayWindow)(windowPtr),
+		cfg:    cfg,
+		logger: logger,
+	}
+}
+
 // UpdateConfig updates the overlay's config (e.g., after config reload)
 func (o *GridOverlay) UpdateConfig(cfg config.GridConfig) {
 	o.cfg = cfg
@@ -117,6 +143,9 @@ func (o *GridOverlay) Clear() {
 func (o *GridOverlay) Destroy() {
 	C.destroyOverlayWindow(o.window)
 }
+
+// CleanupCallbackMap cleans up any pending callbacks in the map
+// CleanupCallbackMap removed: centralized overlay manager controls resizes
 
 // ReplaceWindow atomically replaces the underlying overlay window on the main thread
 func (o *GridOverlay) ReplaceWindow() {
