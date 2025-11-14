@@ -1,5 +1,6 @@
 #import "accessibility.h"
 #import <Cocoa/Cocoa.h>
+#include <sys/time.h>
 
 // Check if accessibility permissions are granted
 int checkAccessibilityPermissions() {
@@ -545,13 +546,6 @@ void moveMouse(CGPoint position) {
     }
 }
 
-
-
-
-
-
-
-
 // Release the left button without moving
 int performLeftMouseUpAtCursor(void) {
     CGEventRef currentEvent = CGEventCreate(NULL);
@@ -598,7 +592,7 @@ static int performClickAtPosition(CGPoint pos, CGEventType downEvent, CGEventTyp
     // Clear all modifier flags to ensure clean click without Cmd/Shift/etc
     CGEventSetFlags(down, 0);
     CGEventSetFlags(up, 0);
-    
+
     CGEventPost(kCGHIDEventTap, down);
     CGEventPost(kCGHIDEventTap, up);
     CFRelease(down);
@@ -608,82 +602,89 @@ static int performClickAtPosition(CGPoint pos, CGEventType downEvent, CGEventTyp
     return 1;
 }
 
-int performLeftClickAtPosition(CGPoint position, bool restoreCursor) {
-    return performClickAtPosition(position, kCGEventLeftMouseDown, kCGEventLeftMouseUp, kCGMouseButtonLeft, restoreCursor);
+// State tracking for click detection
+static struct {
+    CGPoint lastPosition;
+    struct timeval lastClickTime;
+    int clickCount;
+} clickState = {0};
+
+// Get current time in milliseconds
+static long long getCurrentTimeMs() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (long long)tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
+
+int performLeftClickAtPosition(CGPoint position, bool restoreCursor) {
+    CGPoint originalPosition = CGPointZero;
+    if (restoreCursor) {
+        CGEventRef currentEvent = CGEventCreate(NULL);
+        if (currentEvent) {
+            originalPosition = CGEventGetLocation(currentEvent);
+            CFRelease(currentEvent);
+        }
+    }
+
+    // Get current time
+    long long currentTime = getCurrentTimeMs();
+    long long lastTime = (long long)clickState.lastClickTime.tv_sec * 1000 +
+                         clickState.lastClickTime.tv_usec / 1000;
+    long long timeDiff = currentTime - lastTime;
+
+    // Check if this is a multi-click (within 500ms and at same position)
+    // macOS typically uses 500ms as the double-click interval
+    double distance = sqrt(pow(position.x - clickState.lastPosition.x, 2) +
+                          pow(position.y - clickState.lastPosition.y, 2));
+
+    if (timeDiff < 500 && distance < 5.0) {
+        // Same location, quick succession - increment click count
+        clickState.clickCount++;
+    } else {
+        // New click sequence
+        clickState.clickCount = 1;
+    }
+
+    // Update state
+    clickState.lastPosition = position;
+    gettimeofday(&clickState.lastClickTime, NULL);
+
+    moveMouse(position);
+
+    CGEventRef down = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, position, kCGMouseButtonLeft);
+    CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, position, kCGMouseButtonLeft);
+
+    if (!down || !up) {
+        if (down) CFRelease(down);
+        if (up) CFRelease(up);
+        if (restoreCursor) moveMouse(originalPosition);
+        return 0;
+    }
+
+    // Clear all modifier flags to ensure clean click
+    CGEventSetFlags(down, 0);
+    CGEventSetFlags(up, 0);
+
+    // Set the click count
+    CGEventSetIntegerValueField(down, kCGMouseEventClickState, clickState.clickCount);
+    CGEventSetIntegerValueField(up, kCGMouseEventClickState, clickState.clickCount);
+
+    CGEventPost(kCGHIDEventTap, down);
+    CGEventPost(kCGHIDEventTap, up);
+    CFRelease(down);
+    CFRelease(up);
+
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
+
+    if (restoreCursor) moveMouse(originalPosition);
+    return 1;
+}
+
 int performRightClickAtPosition(CGPoint position, bool restoreCursor) {
     return performClickAtPosition(position, kCGEventRightMouseDown, kCGEventRightMouseUp, kCGMouseButtonRight, restoreCursor);
 }
 int performMiddleClickAtPosition(CGPoint position, bool restoreCursor) {
     return performClickAtPosition(position, kCGEventOtherMouseDown, kCGEventOtherMouseUp, kCGMouseButtonCenter, restoreCursor);
-}
-int performDoubleClickAtPosition(CGPoint position, bool restoreCursor) {
-    CGPoint originalPos = CGPointZero;
-    if (restoreCursor) {
-        CGEventRef ev = CGEventCreate(NULL);
-        if (ev) { originalPos = CGEventGetLocation(ev); CFRelease(ev); }
-    }
-    moveMouse(position);
-    for (int i = 1; i <= 2; ++i) {
-        CGEventRef dn = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, position, kCGMouseButtonLeft);
-        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, position, kCGMouseButtonLeft);
-        if (!dn || !up) {
-            if (dn) CFRelease(dn);
-            if (up) CFRelease(up);
-            if (restoreCursor) moveMouse(originalPos);
-            return 0;
-        }
-        // Clear all modifier flags to ensure clean click
-        CGEventSetFlags(dn, 0);
-        CGEventSetFlags(up, 0);
-        
-        if (i == 2) {
-            CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 2);
-            CGEventSetIntegerValueField(up, kCGMouseEventClickState, 2);
-        }
-        CGEventPost(kCGHIDEventTap, dn);
-        CGEventPost(kCGHIDEventTap, up);
-        CFRelease(dn);
-        CFRelease(up);
-        if (i < 2) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
-    }
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
-    if (restoreCursor) moveMouse(originalPos);
-    return 1;
-}
-int performTripleClickAtPosition(CGPoint position, bool restoreCursor) {
-    CGPoint originalPos = CGPointZero;
-    if (restoreCursor) {
-        CGEventRef ev = CGEventCreate(NULL);
-        if (ev) { originalPos = CGEventGetLocation(ev); CFRelease(ev); }
-    }
-    moveMouse(position);
-    for (int i = 1; i <= 3; ++i) {
-        CGEventRef dn = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown, position, kCGMouseButtonLeft);
-        CGEventRef up = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseUp, position, kCGMouseButtonLeft);
-        if (!dn || !up) {
-            if (dn) CFRelease(dn);
-            if (up) CFRelease(up);
-            if (restoreCursor) moveMouse(originalPos);
-            return 0;
-        }
-        // Clear all modifier flags to ensure clean click
-        CGEventSetFlags(dn, 0);
-        CGEventSetFlags(up, 0);
-        
-        if (i == 3) {
-            CGEventSetIntegerValueField(dn, kCGMouseEventClickState, 3);
-            CGEventSetIntegerValueField(up, kCGMouseEventClickState, 3);
-        }
-        CGEventPost(kCGHIDEventTap, dn);
-        CGEventPost(kCGHIDEventTap, up);
-        CFRelease(dn);
-        CFRelease(up);
-        if (i < 3) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, false);
-    }
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
-    if (restoreCursor) moveMouse(originalPos);
-    return 1;
 }
 int performLeftMouseDownAtPosition(CGPoint position) {
     moveMouse(position);
@@ -1018,7 +1019,7 @@ bool isMissionControlActive() {
             CFRelease(windowList);
             return false;
         }
-        
+
         // Find the largest screen dimensions to use as reference
         // This prevents false positives on multi-monitor setups
         CGFloat maxWidth = 0;
@@ -1028,9 +1029,9 @@ bool isMissionControlActive() {
             if (size.width > maxWidth) maxWidth = size.width;
             if (size.height > maxHeight) maxHeight = size.height;
         }
-        
+
         CGSize screenSize = CGSizeMake(maxWidth, maxHeight);
-        
+
         CFIndex count = CFArrayGetCount(windowList);
         int fullscreenDockWindows = 0;
         int highLayerDockWindows = 0;
@@ -1118,7 +1119,7 @@ CGRect getActiveScreenBounds() {
     @autoreleasepool {
         // Get current mouse location in screen coordinates
         NSPoint mouseLoc = [NSEvent mouseLocation];
-        
+
         // Find the screen containing the mouse cursor
         NSScreen *activeScreen = nil;
         for (NSScreen *screen in [NSScreen screens]) {
@@ -1127,31 +1128,31 @@ CGRect getActiveScreenBounds() {
                 break;
             }
         }
-        
+
         // Fall back to main screen if mouse is somehow not on any screen
         if (!activeScreen) {
             activeScreen = [NSScreen mainScreen];
         }
-        
+
         if (!activeScreen) {
             return CGRectZero;
         }
-        
+
         // Convert NSScreen frame (bottom-left origin, Y up) to CG coordinates (top-left origin, Y down)
         // This matches the coordinate system used by accessibility APIs
         NSRect nsFrame = activeScreen.frame;
-        
+
         // Get the primary screen height to flip Y coordinate
         NSScreen *primaryScreen = [[NSScreen screens] firstObject];
         CGFloat primaryScreenHeight = primaryScreen.frame.size.height;
-        
+
         // Convert to CG coordinates
         CGRect cgFrame;
         cgFrame.origin.x = nsFrame.origin.x;
         cgFrame.origin.y = primaryScreenHeight - (nsFrame.origin.y + nsFrame.size.height);
         cgFrame.size.width = nsFrame.size.width;
         cgFrame.size.height = nsFrame.size.height;
-        
+
         return cgFrame;
     }
 }
@@ -1162,10 +1163,10 @@ CGPoint getCurrentCursorPosition() {
         if (!event) {
             return CGPointZero;
         }
-        
+
         CGPoint position = CGEventGetLocation(event);
         CFRelease(event);
-        
+
         return position;
     }
 }

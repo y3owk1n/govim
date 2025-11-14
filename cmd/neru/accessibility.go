@@ -12,8 +12,7 @@ func (a *App) updateRolesForCurrentApp() {
 	if focusedApp == nil {
 		a.logger.Debug("No focused application, using global roles only")
 		// Use global roles
-		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles)   // Changed from a.config.Accessibility.ClickableRoles
-		accessibility.SetScrollableRoles(a.config.Hints.ScrollableRoles) // Changed from a.config.Accessibility.ScrollableRoles
+		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles) // Changed from a.config.Accessibility.ClickableRoles
 		return
 	}
 	defer focusedApp.Release()
@@ -23,23 +22,20 @@ func (a *App) updateRolesForCurrentApp() {
 	if bundleID == "" {
 		a.logger.Debug("Could not get bundle ID, using global roles only")
 		// Use global roles
-		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles)   // Changed from a.config.Accessibility.ClickableRoles
-		accessibility.SetScrollableRoles(a.config.Hints.ScrollableRoles) // Changed from a.config.Accessibility.ScrollableRoles
+		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles) // Changed from a.config.Accessibility.ClickableRoles
 		return
 	}
 
 	// Get merged roles for this app
 	clickableRoles := a.config.GetClickableRolesForApp(bundleID)
-	scrollableRoles := a.config.GetScrollableRolesForApp(bundleID)
 
 	a.logger.Debug("Updating roles for current app",
 		zap.String("bundle_id", bundleID),
 		zap.Int("clickable_count", len(clickableRoles)),
-		zap.Int("scrollable_count", len(scrollableRoles)))
+	)
 
 	// Apply the merged roles
 	accessibility.SetClickableRoles(clickableRoles)
-	accessibility.SetScrollableRoles(scrollableRoles)
 }
 
 // getFocusedBundleID returns the bundle identifier of the currently focused
@@ -66,24 +62,15 @@ func (a *App) isFocusedAppExcluded() bool {
 }
 
 // collectElementsForMode collects UI elements based on the current mode
-func (a *App) collectElementsForAction(action Action) []*accessibility.TreeNode {
+func (a *App) collectElements() []*accessibility.TreeNode {
 	var elements []*accessibility.TreeNode
 
 	// Check if Mission Control is active - affects what we can scan
 	missionControlActive := accessibility.IsMissionControlActive()
 
-	// Collect primary elements based on mode
-	switch action {
-	case ActionLeftClick, ActionRightClick, ActionDoubleClick, ActionTripleClick, ActionMouseUp, ActionMouseDown, ActionMiddleClick, ActionMoveMouse, ActionContextMenu:
-		elements = a.collectClickableElements(missionControlActive)
-	case ActionScroll:
-		elements = a.collectScrollableElements(missionControlActive)
-	}
+	elements = a.collectClickableElements(missionControlActive)
 
-	// Add supplementary elements (menubar, dock, notification center)
-	if action != ActionScroll {
-		elements = a.addSupplementaryElements(elements, missionControlActive)
-	}
+	elements = a.addSupplementaryElements(elements, missionControlActive)
 
 	return elements
 }
@@ -107,27 +94,6 @@ func (a *App) collectClickableElements(missionControlActive bool) []*accessibili
 
 	a.logger.Info("Found clickable elements", zap.Int("count", len(clickableElements)))
 	return clickableElements
-}
-
-// collectScrollableElements collects scrollable elements from the frontmost window
-func (a *App) collectScrollableElements(missionControlActive bool) []*accessibility.TreeNode {
-	if missionControlActive {
-		a.logger.Info("Mission Control is active, skipping scrollable elements")
-		return nil
-	}
-
-	a.logger.Info("Scanning for scrollable elements")
-	roles := accessibility.GetScrollableRoles()
-	a.logger.Debug("Scrollable roles", zap.Strings("roles", roles))
-
-	scrollableElements, err := accessibility.GetScrollableElements()
-	if err != nil {
-		a.logger.Error("Failed to get scrollable elements", zap.Error(err))
-		return nil
-	}
-
-	a.logger.Info("Found scrollable elements", zap.Int("count", len(scrollableElements)))
-	return scrollableElements
 }
 
 // addSupplementaryElements adds menubar, dock, and notification center elements

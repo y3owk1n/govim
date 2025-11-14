@@ -14,10 +14,9 @@ type Router struct {
 
 // KeyResult captures routing decisions for grid mode
 type KeyResult struct {
-	Exit           bool        // Escape pressed -> exit mode
-	SwitchToScroll bool        // Tab pressed when in scroll action but not yet scrolling
-	TargetPoint    image.Point // Complete coordinate entered
-	Complete       bool        // Coordinate selection complete
+	Exit        bool        // Escape pressed -> exit mode
+	TargetPoint image.Point // Complete coordinate entered
+	Complete    bool        // Coordinate selection complete
 }
 
 func NewRouter(m *Manager, logger *zap.Logger) *Router {
@@ -28,25 +27,17 @@ func NewRouter(m *Manager, logger *zap.Logger) *Router {
 }
 
 // RouteKey processes a keypress for grid mode
-func (r *Router) RouteKey(key string, canScroll bool, isScrollAction bool) KeyResult {
+func (r *Router) RouteKey(key string) KeyResult {
 	var res KeyResult
 
 	r.logger.Debug("Grid router processing key",
 		zap.String("key", key),
-		zap.Bool("can_scroll", canScroll),
-		zap.Bool("is_scroll_action", isScrollAction))
+	)
 
 	// Exit grid mode with Escape
 	if key == "\x1b" || key == "escape" {
 		r.logger.Debug("Grid router: Exit key pressed")
 		res.Exit = true
-		return res
-	}
-
-	// Tab: when current action is scroll but not yet scrolling, switch to scroll sub-state
-	if key == "\t" && isScrollAction && !canScroll {
-		r.logger.Debug("Grid router: Tab pressed for scroll action")
-		res.SwitchToScroll = true
 		return res
 	}
 

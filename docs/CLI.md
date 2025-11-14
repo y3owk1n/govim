@@ -93,10 +93,8 @@ neru action [action_type]
 
 **Available actions:**
 
-- `left_click` - Left click at cursor position
+- `left_click` - Left click at cursor position (press 2 times to double click and so on)
 - `right_click` - Right click at cursor position
-- `double_click` - Double click at cursor position
-- `triple_click` - Triple click at cursor position
 - `middle_click` - Middle click at cursor position
 - `mouse_down` - Hold mouse button at cursor position
 - `scroll` - Scroll at cursor position (Vim-style)
@@ -106,8 +104,6 @@ neru action [action_type]
 ```bash
 # Click at current cursor position
 neru action left_click
-neru action right_click
-neru action double_click
 
 # Scroll at current cursor position
 neru action scroll
@@ -124,110 +120,33 @@ neru action scroll
 
 ## Hint / Grid Commands
 
-### General Syntax
+Calling `neru hints` or `neru grid` will move the mousue cursor to the selection location, and you can perform actions anytime later.
 
 ```bash
-neru hints [action]
-neru grid [action]
+neru hints # activate hint mode
+neru grid # activate grid mode
 ```
 
-**Available actions:**
+## Scroll Actions
 
-- `left_click` - Show hints and left click
-- `right_click` - Show hints and right click
-- `double_click` - Show hints and double click
-- `triple_click` - Show hints and triple click
-- `middle_click` - Show hints and middle click (useful for opening links in new tabs)
-- `move_mouse` - Show hints and move cursor (no click)
-- `mouse_down` - Show hints and hold mouse button (for dragging)
-- `mouse_up` - Release mouse button (typically called after mouse_down)
-- `scroll` - Show hints/grid, then select element to scroll at that position
-- `context_menu` - Show hints and open context menu (action selection)
+It will scroll with the movement keys based on the current cursor position.
 
-### Examples
-
-```bash
-# Left click (most common)
-neru hints left_click
-neru grid left_click
-
-# Right click for context menu
-neru hints right_click
-neru grid right_click
-
-# Double click (e.g., open files in Finder)
-neru hints double_click
-neru grid double_click
-
-# Middle click (e.g., open link in new tab)
-neru hints middle_click
-neru grid middle_click
-
-# Move mouse without clicking
-neru hints move_mouse
-neru grid move_mouse
-
-# Scroll at selected position
-# After selecting a hint/grid location, you can scroll there with j/k/gg/G/Ctrl+D/U
-# Press Tab to return to hint/grid selection, or Esc to exit
-neru hints scroll
-neru grid scroll
-
-# Context menu (choose action after selecting hint)
-neru hints context_menu
-neru grid context_menu
-```
-
-### Context Menu Actions
-
-When using `context_menu`, after selecting a hint you can choose:
-
-- `l` - Left click (with cursor restore if enabled)
-- `r` - Right click (with cursor restore if enabled)
-- `d` - Double click (with cursor restore if enabled)
-- `t` - Triple click (with cursor restore if enabled)
-- `m` - Middle click (with cursor restore if enabled)
-- `g` - Go to position (move cursor)
-- `h` - Hold mouse (start drag)
-- `H` - Release mouse (end drag)
-
-### Scroll Actions
-
-When using the `scroll` action with hints or grid mode:
-
-1. Select a hint/grid location where you want to scroll
-2. Once selected, use Vim-style keys to scroll:
+2. Use Vim-style keys to scroll:
    - `j` / `k` - Scroll down/up
    - `h` / `l` - Scroll left/right
    - `Ctrl+d` / `Ctrl+u` - Half-page down/up
    - `gg` - Jump to top
    - `G` - Jump to bottom
-   - `Tab` - Return to hint/grid selection overlay
    - `Esc` - Exit scroll mode
 
 **Workflow example:**
 
 ```bash
-# Start scroll mode with hints
-neru hints scroll
-
-# 1. Type hint label (e.g., "aa") to select scroll location
-# 2. Cursor moves to that position
-# 3. Use j/k/gg/G/Ctrl+D/U to scroll
-# 4. Press Tab to select a different hint
-# 5. Press Esc to exit
-```
-
-**Standalone scroll at cursor:**
-
-You can also scroll directly at the current cursor position without selecting a hint:
-
-```bash
+# Start scroll mode
 neru action scroll
-
 # Scrolls at current cursor position
 # Use j/k/gg/G/Ctrl+D/U to scroll
-# Press Esc to exit (no Tab option since there's no overlay)
+# Press Esc to exit
 ```
 
 ---
@@ -277,6 +196,7 @@ neru --help
 # Command-specific help
 neru hints --help
 neru grid --help
+neru action --help
 neru launch --help
 ```
 
@@ -343,11 +263,10 @@ Instead of Neru's built-in hotkeys, use external hotkey managers:
 # ~/.config/skhd/skhdrc
 
 # Neru hotkeys
-ctrl - f : neru hints left_click
-ctrl - g : neru hints context_menu
-ctrl - s : neru hints scroll
-ctrl - r : neru hints right_click
-ctrl - d : neru hints double_click
+ctrl - f : neru hints
+ctrl - g : neru grid
+ctrl - s : neru action scroll
+ctrl - r : neru action right_click
 
 # Toggle Neru
 ctrl + alt - n : ~/scripts/toggle-neru.sh
@@ -374,10 +293,10 @@ Create an Alfred workflow for quick access:
 
 ```bash
 # Alfred Script Filter
-neru hints left_click
+neru hints
 ```
 
-Trigger: `nerul` (Neru Left click)
+Trigger: `nerul` (Neru)
 Action: Run script above
 
 ---
@@ -415,7 +334,7 @@ The CLI and daemon communicate via JSON messages over the Unix socket:
 When the daemon is not running:
 
 ```bash
-$ neru hints left_click
+$ neru hints
 Error: Failed to connect to Neru daemon
 Is Neru running? Try: neru launch
 ```
@@ -423,7 +342,7 @@ Is Neru running? Try: neru launch
 When a mode is disabled:
 
 ```bash
-$ neru hints left_click
+$ neru hints
 Error: hints mode is disabled
 ```
 

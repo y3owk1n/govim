@@ -421,24 +421,6 @@ func MiddleClickAtPoint(p image.Point, restoreCursor bool) error {
 	return nil
 }
 
-func DoubleClickAtPoint(p image.Point, restoreCursor bool) error {
-	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
-	result := C.performDoubleClickAtPosition(pos, C.bool(restoreCursor))
-	if result == 0 {
-		return fmt.Errorf("double-click at point failed")
-	}
-	return nil
-}
-
-func TripleClickAtPoint(p image.Point, restoreCursor bool) error {
-	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
-	result := C.performTripleClickAtPosition(pos, C.bool(restoreCursor))
-	if result == 0 {
-		return fmt.Errorf("triple-click at point failed")
-	}
-	return nil
-}
-
 func LeftMouseDownAtPoint(p image.Point) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performLeftMouseDownAtPosition(pos)

@@ -491,87 +491,19 @@ type GridStyle struct {
 	BorderColor            string
 }
 
-// BuildStyleForAction returns GridStyle based on action name using the provided config
-func BuildStyleForAction(cfg config.GridConfig, action string) GridStyle {
+// BuildStyle returns GridStyle based on action name using the provided config
+func BuildStyle(cfg config.GridConfig) GridStyle {
 	style := GridStyle{
-		FontSize:    cfg.FontSize,
-		FontFamily:  cfg.FontFamily,
-		Opacity:     cfg.Opacity,
-		BorderWidth: cfg.BorderWidth,
-	}
-
-	// Override with per-action colors if available
-	switch action {
-	case "left_click":
-		style.BackgroundColor = cfg.LeftClick.BackgroundColor
-		style.TextColor = cfg.LeftClick.TextColor
-		style.MatchedTextColor = cfg.LeftClick.MatchedTextColor
-		style.MatchedBackgroundColor = cfg.LeftClick.MatchedBackgroundColor
-		style.MatchedBorderColor = cfg.LeftClick.MatchedBorderColor
-		style.BorderColor = cfg.LeftClick.BorderColor
-	case "right_click":
-		style.BackgroundColor = cfg.RightClick.BackgroundColor
-		style.TextColor = cfg.RightClick.TextColor
-		style.MatchedTextColor = cfg.RightClick.MatchedTextColor
-		style.MatchedBackgroundColor = cfg.RightClick.MatchedBackgroundColor
-		style.MatchedBorderColor = cfg.RightClick.MatchedBorderColor
-		style.BorderColor = cfg.RightClick.BorderColor
-	case "double_click":
-		style.BackgroundColor = cfg.DoubleClick.BackgroundColor
-		style.TextColor = cfg.DoubleClick.TextColor
-		style.MatchedTextColor = cfg.DoubleClick.MatchedTextColor
-		style.MatchedBackgroundColor = cfg.DoubleClick.MatchedBackgroundColor
-		style.MatchedBorderColor = cfg.DoubleClick.MatchedBorderColor
-		style.BorderColor = cfg.DoubleClick.BorderColor
-	case "triple_click":
-		style.BackgroundColor = cfg.TripleClick.BackgroundColor
-		style.TextColor = cfg.TripleClick.TextColor
-		style.MatchedTextColor = cfg.TripleClick.MatchedTextColor
-		style.MatchedBackgroundColor = cfg.TripleClick.MatchedBackgroundColor
-		style.MatchedBorderColor = cfg.TripleClick.MatchedBorderColor
-		style.BorderColor = cfg.TripleClick.BorderColor
-	case "middle_click":
-		style.BackgroundColor = cfg.MiddleClick.BackgroundColor
-		style.TextColor = cfg.MiddleClick.TextColor
-		style.MatchedTextColor = cfg.MiddleClick.MatchedTextColor
-		style.MatchedBackgroundColor = cfg.MiddleClick.MatchedBackgroundColor
-		style.MatchedBorderColor = cfg.MiddleClick.MatchedBorderColor
-		style.BorderColor = cfg.MiddleClick.BorderColor
-	case "mouse_up":
-		style.BackgroundColor = cfg.MouseUp.BackgroundColor
-		style.TextColor = cfg.MouseUp.TextColor
-		style.MatchedTextColor = cfg.MouseUp.MatchedTextColor
-		style.MatchedBackgroundColor = cfg.MouseUp.MatchedBackgroundColor
-		style.MatchedBorderColor = cfg.MouseUp.MatchedBorderColor
-		style.BorderColor = cfg.MouseUp.BorderColor
-	case "mouse_down":
-		style.BackgroundColor = cfg.MouseDown.BackgroundColor
-		style.TextColor = cfg.MouseDown.TextColor
-		style.MatchedTextColor = cfg.MouseDown.MatchedTextColor
-		style.MatchedBackgroundColor = cfg.MouseDown.MatchedBackgroundColor
-		style.MatchedBorderColor = cfg.MouseDown.MatchedBorderColor
-		style.BorderColor = cfg.MouseDown.BorderColor
-	case "move_mouse":
-		style.BackgroundColor = cfg.MoveMouse.BackgroundColor
-		style.TextColor = cfg.MoveMouse.TextColor
-		style.MatchedTextColor = cfg.MoveMouse.MatchedTextColor
-		style.MatchedBackgroundColor = cfg.MoveMouse.MatchedBackgroundColor
-		style.MatchedBorderColor = cfg.MoveMouse.MatchedBorderColor
-		style.BorderColor = cfg.MoveMouse.BorderColor
-	case "scroll":
-		style.BackgroundColor = cfg.Scroll.BackgroundColor
-		style.TextColor = cfg.Scroll.TextColor
-		style.MatchedTextColor = cfg.Scroll.MatchedTextColor
-		style.MatchedBackgroundColor = cfg.Scroll.MatchedBackgroundColor
-		style.MatchedBorderColor = cfg.Scroll.MatchedBorderColor
-		style.BorderColor = cfg.Scroll.BorderColor
-	case "context_menu":
-		style.BackgroundColor = cfg.ContextMenu.BackgroundColor
-		style.TextColor = cfg.ContextMenu.TextColor
-		style.MatchedTextColor = cfg.ContextMenu.MatchedTextColor
-		style.MatchedBackgroundColor = cfg.ContextMenu.MatchedBackgroundColor
-		style.MatchedBorderColor = cfg.ContextMenu.MatchedBorderColor
-		style.BorderColor = cfg.ContextMenu.BorderColor
+		FontSize:               cfg.FontSize,
+		FontFamily:             cfg.FontFamily,
+		Opacity:                cfg.Opacity,
+		BorderWidth:            cfg.BorderWidth,
+		BackgroundColor:        cfg.BackgroundColor,
+		TextColor:              cfg.TextColor,
+		MatchedTextColor:       cfg.MatchedTextColor,
+		MatchedBackgroundColor: cfg.MatchedBackgroundColor,
+		MatchedBorderColor:     cfg.MatchedBorderColor,
+		BorderColor:            cfg.BorderColor,
 	}
 
 	return style

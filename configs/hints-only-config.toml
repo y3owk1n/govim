@@ -17,16 +17,14 @@ accessibility_check_on_start = true
 
 [hotkeys]
 # Hints mode hotkeys - all actions available
-"Cmd+Shift+Space" = "hints left_click"
-"Cmd+Shift+R" = "hints right_click"
-"Cmd+Shift+D" = "hints double_click"
-"Cmd+Shift+T" = "hints triple_click"
-"Cmd+Shift+H" = "hints middle_click"
-"Cmd+Shift+M" = "hints move_mouse"
-"Cmd+Shift+I" = "hints mouse_down"
-"Cmd+Shift+U" = "hints mouse_up"
-"Cmd+Shift+J" = "hints scroll"
-"Cmd+Shift+A" = "hints context_menu"
+"Cmd+Shift+Space" = "hints"
+# these keys might not work and conflict with system or apps, change them!
+"Cmd+Shift+L" = "action left_click"
+"Cmd+Shift+R" = "action right_click"
+"Cmd+Shift+M" = "action middle_click"
+"Cmd+Shift+N" = "action mouse_down"
+"Cmd+Shift+P" = "action mouse_up"
+"Cmd+Shift+S" = "action scroll"
 
 # Grid mode - DISABLED (no hotkeys assigned)
 
@@ -69,18 +67,6 @@ clickable_roles = [
 ]
 
 ignore_clickable_check = false
-
-# Global scrollable roles for hints
-scrollable_roles = [
-    "AXWebArea",
-    "AXScrollArea",
-    "AXTable",
-    "AXRow",
-    "AXColumn",
-    "AXOutline",
-    "AXList",
-    "AXGroup",
-]
 
 # Example per-app customization for Chrome
 # [[hints.app_configs]]

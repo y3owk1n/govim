@@ -6,14 +6,13 @@ package hints
 #include <stdlib.h>
 
 // Callback function that Go can reference
-extern void resizeCompletionCallback(void* context);
+extern void resizeHintCompletionCallback(void* context);
 */
 import "C"
 
 import (
 	"fmt"
 	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,17 +23,15 @@ import (
 )
 
 var (
-	hintCallbackID    uint64
-	hintCallbackMap   = make(map[uint64]chan struct{})
-	hintCallbackLock  sync.Mutex
-	hintDataPool      sync.Pool
-	cLabelSlicePool   sync.Pool
-	contextMenuOnce   sync.Once
-	contextMenuCached string
+	hintCallbackID   uint64
+	hintCallbackMap  = make(map[uint64]chan struct{})
+	hintCallbackLock sync.Mutex
+	hintDataPool     sync.Pool
+	cLabelSlicePool  sync.Pool
 )
 
-//export resizeCompletionCallback
-func resizeCompletionCallback(context unsafe.Pointer) {
+//export resizeHintCompletionCallback
+func resizeHintCompletionCallback(context unsafe.Pointer) {
 	// Convert context to callback ID
 	id := uint64(uintptr(context))
 
@@ -128,7 +125,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	// Note: uintptr conversion must happen in same expression to satisfy go vet
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
-		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeCompletionCallback)),
+		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeHintCompletionCallback)),
 		*(*unsafe.Pointer)(unsafe.Pointer(&id)),
 	)
 
@@ -286,25 +283,6 @@ func (o *Overlay) GetWindow() C.OverlayWindow {
 	return o.window
 }
 
-// DrawScrollHighlight draws a highlight around a scroll area
-func (o *Overlay) DrawScrollHighlight(x, y, width, height int, color string, borderWidth int) {
-	bounds := C.CGRect{
-		origin: C.CGPoint{
-			x: C.double(x),
-			y: C.double(y),
-		},
-		size: C.CGSize{
-			width:  C.double(width),
-			height: C.double(height),
-		},
-	}
-
-	cColor := C.CString(color)
-	defer C.free(unsafe.Pointer(cColor))
-
-	C.drawScrollHighlight(o.window, bounds, cColor, C.int(borderWidth))
-}
-
 // DrawTargetDot draws a small circular dot at the target position
 func (o *Overlay) DrawTargetDot(x, y int, radius float64, color, borderColor string, borderWidth float64) error {
 	center := C.CGPoint{
@@ -326,84 +304,22 @@ func (o *Overlay) DrawTargetDot(x, y int, radius float64, color, borderColor str
 	return nil
 }
 
-// BuildStyleForAction returns StyleMode based on action name using the provided config
-func BuildStyleForAction(cfg config.HintsConfig, action string) StyleMode {
+// BuildStyle returns StyleMode based on action name using the provided config
+func BuildStyle(cfg config.HintsConfig) StyleMode {
 	style := StyleMode{
-		FontSize:     cfg.FontSize,
-		FontFamily:   cfg.FontFamily,
-		BorderRadius: cfg.BorderRadius,
-		Padding:      cfg.Padding,
-		BorderWidth:  cfg.BorderWidth,
-		Opacity:      cfg.Opacity,
-	}
-
-	switch action {
-	case "left_click":
-		style.BackgroundColor = cfg.LeftClickHints.BackgroundColor
-		style.TextColor = cfg.LeftClickHints.TextColor
-		style.MatchedTextColor = cfg.LeftClickHints.MatchedTextColor
-		style.BorderColor = cfg.LeftClickHints.BorderColor
-	case "right_click":
-		style.BackgroundColor = cfg.RightClickHints.BackgroundColor
-		style.TextColor = cfg.RightClickHints.TextColor
-		style.MatchedTextColor = cfg.RightClickHints.MatchedTextColor
-		style.BorderColor = cfg.RightClickHints.BorderColor
-	case "double_click":
-		style.BackgroundColor = cfg.DoubleClickHints.BackgroundColor
-		style.TextColor = cfg.DoubleClickHints.TextColor
-		style.MatchedTextColor = cfg.DoubleClickHints.MatchedTextColor
-		style.BorderColor = cfg.DoubleClickHints.BorderColor
-	case "triple_click":
-		style.BackgroundColor = cfg.TripleClickHints.BackgroundColor
-		style.TextColor = cfg.TripleClickHints.TextColor
-		style.MatchedTextColor = cfg.TripleClickHints.MatchedTextColor
-		style.BorderColor = cfg.TripleClickHints.BorderColor
-	case "mouse_up":
-		style.BackgroundColor = cfg.MouseUpHints.BackgroundColor
-		style.TextColor = cfg.MouseUpHints.TextColor
-		style.MatchedTextColor = cfg.MouseUpHints.MatchedTextColor
-		style.BorderColor = cfg.MouseUpHints.BorderColor
-	case "mouse_down":
-		style.BackgroundColor = cfg.MouseDownHints.BackgroundColor
-		style.TextColor = cfg.MouseDownHints.TextColor
-		style.MatchedTextColor = cfg.MouseDownHints.MatchedTextColor
-		style.BorderColor = cfg.MouseDownHints.BorderColor
-	case "move_mouse":
-		style.BackgroundColor = cfg.MoveMouseHints.BackgroundColor
-		style.TextColor = cfg.MoveMouseHints.TextColor
-		style.MatchedTextColor = cfg.MoveMouseHints.MatchedTextColor
-		style.BorderColor = cfg.MoveMouseHints.BorderColor
-	case "middle_click":
-		style.BackgroundColor = cfg.MiddleClickHints.BackgroundColor
-		style.TextColor = cfg.MiddleClickHints.TextColor
-		style.MatchedTextColor = cfg.MiddleClickHints.MatchedTextColor
-		style.BorderColor = cfg.MiddleClickHints.BorderColor
-	case "scroll":
-		style.BackgroundColor = cfg.ScrollHints.BackgroundColor
-		style.TextColor = cfg.ScrollHints.TextColor
-		style.MatchedTextColor = cfg.ScrollHints.MatchedTextColor
-		style.BorderColor = cfg.ScrollHints.BorderColor
-	case "context_menu":
-		style.BackgroundColor = cfg.ContextMenuHints.BackgroundColor
-		style.TextColor = cfg.ContextMenuHints.TextColor
-		style.MatchedTextColor = cfg.ContextMenuHints.MatchedTextColor
-		style.BorderColor = cfg.ContextMenuHints.BorderColor
+		FontSize:         cfg.FontSize,
+		FontFamily:       cfg.FontFamily,
+		BorderRadius:     cfg.BorderRadius,
+		Padding:          cfg.Padding,
+		BorderWidth:      cfg.BorderWidth,
+		Opacity:          cfg.Opacity,
+		BackgroundColor:  cfg.BackgroundColor,
+		TextColor:        cfg.TextColor,
+		MatchedTextColor: cfg.MatchedTextColor,
+		BorderColor:      cfg.BorderColor,
 	}
 
 	return style
-}
-
-// BuildContextMenuLabel returns the context menu label block used for hints action menu
-func BuildContextMenuLabel() string {
-	contextMenuOnce.Do(func() {
-		items := ContextMenuItems()
-		var formatted []string
-		for _, it := range items {
-			formatted = append(formatted, fmt.Sprintf("[%s]%s", it.Key, it.Label))
-		}
-		contextMenuCached = strings.Join(formatted, "\n")
-	})
-	return contextMenuCached
 }
 
 // Destroy destroys the overlay

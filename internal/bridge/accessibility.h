@@ -62,8 +62,6 @@ int scrollAtCursor(int deltaX, int deltaY);
 int performLeftClickAtPosition(CGPoint position, bool restoreCursor);
 int performRightClickAtPosition(CGPoint position, bool restoreCursor);
 int performMiddleClickAtPosition(CGPoint position, bool restoreCursor);
-int performDoubleClickAtPosition(CGPoint position, bool restoreCursor);
-int performTripleClickAtPosition(CGPoint position, bool restoreCursor);
 int performLeftMouseDownAtPosition(CGPoint position);
 int performLeftMouseUpAtPosition(CGPoint position);
 int performLeftMouseUpAtCursor(void);

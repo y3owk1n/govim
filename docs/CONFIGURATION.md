@@ -33,18 +33,18 @@ Bind global hotkeys to Neru actions. Comment out to disable.
 ```toml
 [hotkeys]
 # Hint modes
-"Cmd+Shift+Space" = "hints left_click"
-"Cmd+Shift+A" = "hints context_menu"
-"Cmd+Shift+J" = "action scroll"
+"Cmd+Shift+Space" = "hints"
 
 # Grid mode
-"Cmd+Shift+G" = "grid left_click"
+"Cmd+Shift+G" = "grid"
 
-# Additional actions (uncomment to enable)
-# "Ctrl+R" = "hints right_click"
-# "Ctrl+D" = "hints double_click"
-# "Cmd+Shift+M" = "grid move_mouse"
-# "Cmd+Shift+S" = "grid scroll"
+# these keys might not work and conflict with system or apps, change them!
+"Cmd+Shift+L" = "action left_click"
+"Cmd+Shift+R" = "action right_click"
+"Cmd+Shift+M" = "action middle_click"
+"Cmd+Shift+N" = "action mouse_down"
+"Cmd+Shift+P" = "action mouse_up"
+"Cmd+Shift+S" = "action scroll"
 
 # Execute shell commands
 # "Cmd+Alt+T" = "exec open -a Terminal"
@@ -68,8 +68,8 @@ Bind global hotkeys to Neru actions. Comment out to disable.
 
 ```bash
 # ~/.config/skhd/skhdrc
-ctrl - f : neru hints left_click
-ctrl - g : neru hints context_menu
+ctrl - f : neru hints
+ctrl - g : neru grid
 ```
 
 ---
@@ -114,6 +114,11 @@ border_radius = 4
 padding = 4
 border_width = 1
 opacity = 0.95                 # Range: 0.0-1.0
+
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#737373" # Matched text color - color for characters that have been typed
+border_color = "#000000"
 ```
 
 **Choosing hint characters:**
@@ -143,38 +148,6 @@ include_dock_hints = false
 include_nc_hints = false
 ```
 
-### Per-Action Customization
-
-Customize colors and behavior for each action type:
-
-```toml
-[hints.left_click_hints]
-background_color = "#FFD700"    # Gold
-text_color = "#000000"
-matched_text_color = "#737373"  # Typed characters
-border_color = "#000000"
-restore_cursor = false          # Return cursor to original position
-
-[hints.right_click_hints]
-background_color = "#FF6B6B"
-text_color = "#FFFFFF"
-matched_text_color = "#CCCCCC"
-border_color = "#CC0000"
-restore_cursor = false
-
-[hints.double_click_hints]
-background_color = "#4ECDC4"
-text_color = "#000000"
-matched_text_color = "#555555"
-border_color = "#2BA39C"
-restore_cursor = true
-
-# Additional action types: triple_click, middle_click, mouse_up,
-# mouse_down, move_mouse, scroll, context_menu
-```
-
-**Cursor restoration:** When `restore_cursor = true`, the cursor returns to its original position after the action completes.
-
 ### Accessibility Configuration
 
 Define which UI elements are clickable or scrollable:
@@ -201,18 +174,6 @@ clickable_roles = [
     "AXRow",
 ]
 
-# Global scrollable roles
-scrollable_roles = [
-    "AXWebArea",
-    "AXScrollArea",
-    "AXTable",
-    "AXRow",
-    "AXColumn",
-    "AXOutline",
-    "AXList",
-    "AXGroup",
-]
-
 # ⚠️ Make all elements clickable (use with caution)
 ignore_clickable_check = false
 ```
@@ -225,7 +186,6 @@ Customize accessibility for specific apps:
 [[hints.app_configs]]
 bundle_id = "com.google.Chrome"
 additional_clickable_roles = ["AXTabGroup"]
-additional_scrollable_roles = []
 ignore_clickable_check = false
 
 [[hints.app_configs]]
@@ -236,7 +196,7 @@ ignore_clickable_check = true
 
 **How it works:**
 
-- App-specific `additional_*_roles` are **merged** with global roles
+- App-specific `additional_clickable_roles` are **merged** with global roles
 - App-specific `ignore_clickable_check` overrides the global setting
 
 ### Enhanced Browser Support
@@ -286,6 +246,13 @@ font_size = 12
 font_family = ""
 opacity = 0.7
 border_width = 1
+
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#f8bd96"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 ```
 
 **Cell sizing:** Automatically optimized based on screen resolution. Uses 2-4 character labels with square cells.
@@ -308,95 +275,6 @@ sublayer_keys = "abcdefghijklmnpqrstuvwxyz"
 2. Type main grid coordinate (2-4 characters)
 3. If subgrid enabled, type subgrid position (1 character, a-i)
 4. Action executes at selected location
-
-### Per-Action Configuration
-
-```toml
-[grid.left_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.right_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.double_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.triple_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.middle_click]
-restore_cursor = false
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.mouse_up]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.mouse_down]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.move_mouse]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.scroll]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-
-[grid.context_menu]
-background_color = "#abe9b3"
-text_color = "#000000"
-matched_text_color = "#000000"
-matched_background_color = "#f8bd96"
-matched_border_color = "#f8bd96"
-border_color = "#abe9b3"
-```
 
 ---
 
@@ -424,7 +302,6 @@ highlight_width = 2
 - `Ctrl+d` / `Ctrl+u` - Half-page down/up
 - `gg` - Jump to top (press `g` twice)
 - `G` - Jump to bottom
-- `Tab` - Return to hint/grid overlay (hints/grid mode only)
 - `Esc` - Exit scroll mode
 
 ### Scroll Modes
@@ -438,7 +315,6 @@ highlight_width = 2
 **Hint/Grid scroll** (`neru hints scroll` or `neru grid scroll`):
 
 - Select location first, then scroll
-- Press `Tab` to reselect location
 - Press `Esc` to exit
 
 ---
@@ -477,10 +353,14 @@ A full configuration example:
 # ~/.config/neru/config.toml
 
 [hotkeys]
-"Cmd+Shift+Space" = "hints left_click"
-"Cmd+Shift+A" = "hints context_menu"
-"Cmd+Shift+J" = "action scroll"
-"Cmd+Shift+G" = "grid left_click"
+"Cmd+Shift+Space" = "hints"
+"Cmd+Shift+G" = "grid"
+"Cmd+Shift+L" = "action left_click"
+"Cmd+Shift+R" = "action right_click"
+"Cmd+Shift+M" = "action middle_click"
+"Cmd+Shift+N" = "action mouse_down"
+"Cmd+Shift+P" = "action mouse_up"
+"Cmd+Shift+S" = "action scroll"
 
 [general]
 excluded_apps = ["com.apple.Terminal", "com.googlecode.iterm2"]
@@ -493,6 +373,10 @@ font_size = 14
 border_radius = 6
 padding = 5
 opacity = 0.9
+background_color = "#FFD700"
+text_color = "#000000"
+matched_text_color = "#737373"
+border_color = "#000000"
 include_menubar_hints = false
 include_dock_hints = false
 include_nc_hints = false
@@ -507,24 +391,20 @@ additional_clickable_roles = ["AXTabGroup"]
 [hints.additional_ax_support]
 enable = false
 
-[hints.left_click_hints]
-background_color = "#FFD700"
-text_color = "#000000"
-matched_text_color = "#737373"
-border_color = "#000000"
-restore_cursor = false
-
 [grid]
 enabled = true
 characters = "abcdefghijklmnpqrstuvwxyz"
 font_size = 12
 opacity = 0.7
+background_color = "#abe9b3"
+text_color = "#000000"
+matched_text_color = "#f8bd96"
+matched_background_color = "#f8bd96"
+matched_border_color = "#f8bd96"
+border_color = "#abe9b3"
 live_match_update = true
 subgrid_enabled = true
 hide_unmatched = true
-
-[grid.left_click]
-restore_cursor = false
 
 [scroll]
 scroll_step = 60

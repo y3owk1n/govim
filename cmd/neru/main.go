@@ -37,14 +37,11 @@ type Action int
 const (
 	ActionLeftClick Action = iota
 	ActionRightClick
-	ActionDoubleClick
-	ActionTripleClick
 	ActionMouseUp
 	ActionMouseDown
 	ActionMiddleClick
 	ActionMoveMouse
 	ActionScroll
-	ActionContextMenu
 )
 
 // App represents the main application
@@ -55,13 +52,13 @@ type App struct {
 	hotkeyManager    *hotkeys.Manager
 	hintGenerator    *hints.Generator
 	hintOverlay      *hints.Overlay
+	scrollOverlay    *scroll.Overlay
 	scrollController *scroll.Controller
 	eventTap         *eventtap.EventTap
 	ipcServer        *ipc.Server
 	electronManager  *electron.ElectronManager
 	appWatcher       *appwatcher.Watcher
 	currentMode      Mode
-	currentAction    Action
 	hintsRouter      *hints.Router
 	hintManager      *hints.Manager
 	hintsCtx         *HintsContext
@@ -110,11 +107,6 @@ func NewApp(cfg *config.Config) (*App, error) {
 			zap.Int("count", len(cfg.Hints.ClickableRoles)), // Changed from cfg.Accessibility.ClickableRoles
 			zap.Strings("roles", cfg.Hints.ClickableRoles))  // Changed from cfg.Accessibility.ClickableRoles
 		accessibility.SetClickableRoles(cfg.Hints.ClickableRoles) // Changed from cfg.Accessibility.ClickableRoles
-
-		log.Info("Applying scrollable roles",
-			zap.Int("count", len(cfg.Hints.ScrollableRoles)), // Changed from cfg.Accessibility.ScrollableRoles
-			zap.Strings("roles", cfg.Hints.ScrollableRoles))  // Changed from cfg.Accessibility.ScrollableRoles
-		accessibility.SetScrollableRoles(cfg.Hints.ScrollableRoles) // Changed from cfg.Accessibility.ScrollableRoles
 	}
 
 	// Create app watcher
@@ -132,18 +124,15 @@ func NewApp(cfg *config.Config) (*App, error) {
 		)
 	}
 
-	// Create hint overlay if either hints or grid requires overlay drawing
 	var hintOverlay *hints.Overlay
-	if cfg.Hints.Enabled || cfg.Grid.Enabled {
-		var err error
-		hintOverlay, err = hints.NewOverlay(cfg.Hints, log)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create overlay: %w", err)
-		}
-	}
 
 	// Create scroll controller
 	scrollCtrl := scroll.NewController(cfg.Scroll, log)
+
+	scrollOverlay, err := scroll.NewOverlay(cfg.Scroll, log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create scroll overlay: %w", err)
+	}
 
 	app := &App{
 		config:            cfg,
@@ -152,9 +141,9 @@ func NewApp(cfg *config.Config) (*App, error) {
 		appWatcher:        appWatcher,
 		hintGenerator:     hintGen,
 		hintOverlay:       hintOverlay,
+		scrollOverlay:     scrollOverlay,
 		scrollController:  scrollCtrl,
 		currentMode:       ModeIdle,
-		currentAction:     ActionLeftClick,
 		enabled:           true,
 		hotkeysRegistered: false,
 	}
@@ -162,7 +151,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Initialize hints components only if enabled
 	if cfg.Hints.Enabled {
 		app.hintManager = hints.NewManager(func(hs []*hints.Hint) {
-			style := hints.BuildStyleForAction(app.config.Hints, getActionString(app.currentAction))
+			style := hints.BuildStyle(app.config.Hints)
 			if err := app.hintOverlay.DrawHintsWithStyle(hs, style); err != nil {
 				app.logger.Error("Failed to redraw hints", zap.Error(err))
 			}
@@ -170,6 +159,14 @@ func NewApp(cfg *config.Config) (*App, error) {
 		// Initialize hints router
 		app.hintsRouter = hints.NewRouter(app.hintManager, app.logger)
 		app.hintsCtx = &HintsContext{}
+
+		var err error
+		hintOverlay, err = hints.NewOverlay(cfg.Hints, log)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create overlay: %w", err)
+		}
+
+		app.hintOverlay = hintOverlay
 	}
 
 	// Create grid components only if enabled
@@ -195,22 +192,20 @@ func NewApp(cfg *config.Config) (*App, error) {
 		}, func(cell *grid.Cell) {
 			// Show subgrid in selected cell
 			// Use default left_click style during initialization
-			gridStyle := grid.BuildStyleForAction(cfg.Grid, "left_click")
+			gridStyle := grid.BuildStyle(cfg.Grid)
 			gridOverlay.ShowSubgrid(cell, gridStyle)
 		}, log)
 
 		// Store grid config for later creation
 		app.gridCtx = &GridContext{
-			currentAction: ActionLeftClick,
-			gridInstance:  &gridInstance,
-			gridOverlay:   &gridOverlay,
+			gridInstance: &gridInstance,
+			gridOverlay:  &gridOverlay,
 		}
 	} else {
 		// Minimal grid context without overlay/manager
 		var gridInstance *grid.Grid
 		app.gridCtx = &GridContext{
-			currentAction: ActionLeftClick,
-			gridInstance:  &gridInstance,
+			gridInstance: &gridInstance,
 		}
 	}
 

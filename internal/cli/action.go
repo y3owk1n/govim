@@ -44,36 +44,6 @@ var actionRightClickCmd = &cobra.Command{
 	},
 }
 
-var actionDoubleClickCmd = &cobra.Command{
-	Use:   "double_click",
-	Short: "Perform double click at current cursor position",
-	Long:  `Execute a double click at the current cursor location.`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return requiresRunningInstance()
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.Debug("Executing double click action at current cursor position")
-		var params []string
-		params = append(params, "double_click")
-		return sendCommand("action", params)
-	},
-}
-
-var actionTripleClickCmd = &cobra.Command{
-	Use:   "triple_click",
-	Short: "Perform triple click at current cursor position",
-	Long:  `Execute a triple click at the current cursor location.`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return requiresRunningInstance()
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.Debug("Executing triple click action at current cursor position")
-		var params []string
-		params = append(params, "triple_click")
-		return sendCommand("action", params)
-	},
-}
-
 var actionMouseUpCmd = &cobra.Command{
 	Use:   "mouse_up",
 	Short: "Release mouse button at current cursor position",
@@ -137,8 +107,6 @@ var actionScrollCmd = &cobra.Command{
 func init() {
 	actionCmd.AddCommand(actionLeftClickCmd)
 	actionCmd.AddCommand(actionRightClickCmd)
-	actionCmd.AddCommand(actionDoubleClickCmd)
-	actionCmd.AddCommand(actionTripleClickCmd)
 	actionCmd.AddCommand(actionMouseUpCmd)
 	actionCmd.AddCommand(actionMouseDownCmd)
 	actionCmd.AddCommand(actionMiddleClickCmd)

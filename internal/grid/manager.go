@@ -49,6 +49,15 @@ func NewManager(grid *Grid, subRows int, subCols int, subKeys string, onUpdate f
 func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete bool) {
 	m.logger.Debug("Grid manager: Processing input", zap.String("key", key), zap.String("current_input", m.currentInput))
 
+	resetKey := "<"
+
+	if key == resetKey {
+		m.Reset()
+		if m.onUpdate != nil {
+			m.onUpdate(false)
+		}
+	}
+
 	// Handle backspace
 	if key == "\x7f" || key == "delete" || key == "backspace" {
 		if len(m.currentInput) > 0 {
@@ -59,6 +68,7 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 			}
 			return image.Point{}, false
 		}
+
 		// If in subgrid, backspace exits subgrid and back to main grid
 		if m.inSubgrid {
 			m.logger.Debug("Grid manager: Exiting subgrid on backspace")
@@ -80,7 +90,7 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 	}
 
 	// Ignore non-letter keys
-	if len(key) != 1 || !isLetter(key[0]) {
+	if len(key) != 1 || !isLetter(key[0]) && key != resetKey {
 		m.logger.Debug("Grid manager: Ignoring non-letter key", zap.String("key", key))
 		return image.Point{}, false
 	}
@@ -127,8 +137,17 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 		m.logger.Info("Grid manager: Subgrid selection complete",
 			zap.Int("row", row), zap.Int("col", col),
 			zap.Int("x", x), zap.Int("y", y))
-		m.Reset()
+		// m.Reset()
 		return image.Point{X: x, Y: y}, true
+	}
+
+	// Allow < to reset grid
+	if key == resetKey {
+		m.Reset()
+		if m.onUpdate != nil {
+			m.onUpdate(true)
+		}
+		return image.Point{}, false
 	}
 
 	// Check if character is valid for grid
@@ -159,21 +178,26 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 	m.logger.Debug("Grid manager: Input accumulated", zap.String("current_input", m.currentInput))
 
 	// After reaching label length, show subgrid inside the selected cell
-	if len(m.currentInput) >= m.labelLength {
+	if !m.inSubgrid && len(m.currentInput) >= m.labelLength {
 		coord := m.currentInput[:m.labelLength]
 		if m.grid != nil {
 			cell := m.grid.GetCellByCoordinate(coord)
 			if cell != nil {
-				m.inSubgrid = true
-				m.selectedCell = cell
-				// Save the main grid input for restoring after subgrid
-				m.mainGridInput = m.currentInput
-				m.currentInput = ""
-				m.logger.Debug("Grid manager: Showing subgrid for cell", zap.String("coordinate", coord))
-				if m.onShowSub != nil {
-					m.onShowSub(cell)
+				if !m.inSubgrid {
+					center := cell.Center
+
+					m.inSubgrid = true
+					m.selectedCell = cell
+					// Save the main grid input for restoring after subgrid
+					m.mainGridInput = m.currentInput
+					m.currentInput = ""
+					m.logger.Debug("Grid manager: Showing subgrid for cell", zap.String("coordinate", coord))
+					if m.onShowSub != nil {
+						m.onShowSub(cell)
+					}
+
+					return image.Point{X: center.X, Y: center.Y}, true
 				}
-				return image.Point{}, false
 			}
 		}
 		// Invalid coordinate, reset
