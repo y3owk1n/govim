@@ -38,13 +38,15 @@ Bind global hotkeys to Neru actions. Remove or comment out to disable.
 # Grid mode
 "Cmd+Shift+G" = "grid"
 
-# these keys might not work and conflict with system or apps, change them!
-"Cmd+Shift+L" = "action left_click"
-"Cmd+Shift+R" = "action right_click"
-"Cmd+Shift+M" = "action middle_click"
-"Cmd+Shift+N" = "action mouse_down"
-"Cmd+Shift+P" = "action mouse_up"
+# Scroll
 "Cmd+Shift+S" = "action scroll"
+
+# these keys might not work and conflict with system or apps, change them!
+# "Cmd+Shift+L" = "action left_click"
+# "Cmd+Shift+R" = "action right_click"
+# "Cmd+Shift+M" = "action middle_click"
+# "Cmd+Shift+N" = "action mouse_down"
+# "Cmd+Shift+P" = "action mouse_up"
 
 # Execute shell commands
 # "Cmd+Alt+T" = "exec open -a Terminal"
@@ -319,6 +321,50 @@ highlight_width = 2
 
 ---
 
+## Action
+
+Action mode is a special mode where you can toggle using <tab> when in hints or grid mode.
+
+### Basic Configuration
+
+```toml
+[action]
+highlight_color = "#00FF00"
+highlight_width = 3
+
+# Action key mappings
+left_click_key = "l"
+right_click_key = "r"
+middle_click_key = "m"
+mouse_down_key = "i"
+mouse_up_key = "u"
+```
+
+**Action key mappings:**
+
+- `left_click_key` - Left click at cursor position
+- `right_click_key` - Right click at cursor position
+- `middle_click_key` - Middle click at cursor position
+- `mouse_down_key` - Hold mouse button at cursor position
+- `mouse_up_key` - Release mouse button at cursor position
+
+### Action Behavior
+
+```toml
+[action]
+# Action mode highlight appearance
+highlight_color = "#00FF00"
+highlight_width = 3
+```
+
+**Action mode highlight appearance:**
+
+- Color and width can be customized
+- Color can be any hex color (e.g., `#FF0000`)
+- Width can be any number (e.g., `2`)
+
+---
+
 ## Logging
 
 ```toml
@@ -413,6 +459,16 @@ scroll_step_full = 1000000
 highlight_scroll_area = true
 highlight_color = "#00FF00"
 highlight_width = 3
+
+[action]
+highlight_color = "#00FF00"
+highlight_width = 3
+
+left_click_key = "l"
+right_click_key = "r"
+middle_click_key = "m"
+mouse_down_key = "i"
+mouse_up_key = "u"
 
 [logging]
 log_level = "info"

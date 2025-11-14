@@ -18,12 +18,6 @@ accessibility_check_on_start = true
 [hotkeys]
 # Hints mode hotkeys - all actions available
 "Cmd+Shift+Space" = "hints"
-# these keys might not work and conflict with system or apps, change them!
-"Cmd+Shift+L" = "action left_click"
-"Cmd+Shift+R" = "action right_click"
-"Cmd+Shift+M" = "action middle_click"
-"Cmd+Shift+N" = "action mouse_down"
-"Cmd+Shift+P" = "action mouse_up"
 "Cmd+Shift+S" = "action scroll"
 
 # Grid mode - DISABLED (no hotkeys assigned)
@@ -81,26 +75,6 @@ enable = true
 additional_electron_bundles = []
 additional_chromium_bundles = []
 additional_firefox_bundles = []
-
-[hints.left_click_hints]
-# Restore cursor to original position after click (enable it if you want)
-restore_cursor = false
-
-[hints.right_click_hints]
-# Restore cursor to original position after click (enable it if you want)
-restore_cursor = false
-
-[hints.double_click_hints]
-# Restore cursor to original position after click (enable it if you want)
-restore_cursor = false
-
-[hints.triple_click_hints]
-# Restore cursor to original position after click (enable it if you want)
-restore_cursor = false
-
-[hints.middle_click_hints]
-# Restore cursor to original position after click (enable it if you want)
-restore_cursor = false
 
 [grid]
 # Grid mode - DISABLED

@@ -10,6 +10,18 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+type ActionConfig struct {
+	HighlightColor string `toml:"highlight_color"`
+	HighlightWidth int    `toml:"highlight_width"`
+
+	// Action key mappings
+	LeftClickKey   string `toml:"left_click_key"`
+	RightClickKey  string `toml:"right_click_key"`
+	MiddleClickKey string `toml:"middle_click_key"`
+	MouseDownKey   string `toml:"mouse_down_key"`
+	MouseUpKey     string `toml:"mouse_up_key"`
+}
+
 // Config represents the complete application configuration
 type Config struct {
 	General GeneralConfig `toml:"general"`
@@ -17,6 +29,7 @@ type Config struct {
 	Hints   HintsConfig   `toml:"hints"`
 	Grid    GridConfig    `toml:"grid"`
 	Scroll  ScrollConfig  `toml:"scroll"`
+	Action  ActionConfig  `toml:"action"`
 	Logging LoggingConfig `toml:"logging"`
 }
 
@@ -133,11 +146,6 @@ func DefaultConfig() *Config {
 			Bindings: map[string]string{
 				"Cmd+Shift+Space": "hints",
 				"Cmd+Shift+G":     "grid",
-				"Cmd+Shift+L":     "action left_click",
-				"Cmd+Shift+R":     "action right_click",
-				"Cmd+Shift+M":     "action middle_click",
-				"Cmd+Shift+N":     "action mouse_down",
-				"Cmd+Shift+P":     "action mouse_up",
 				"Cmd+Shift+S":     "action scroll",
 			},
 		},
@@ -223,6 +231,17 @@ func DefaultConfig() *Config {
 			HighlightScrollArea: true,
 			HighlightColor:      "#FF0000",
 			HighlightWidth:      2,
+		},
+		Action: ActionConfig{
+			HighlightColor: "#00FF00",
+			HighlightWidth: 3,
+
+			// Default action key mappings
+			LeftClickKey:   "l",
+			RightClickKey:  "r",
+			MiddleClickKey: "m",
+			MouseDownKey:   "i",
+			MouseUpKey:     "u",
 		},
 		Logging: LoggingConfig{
 			LogLevel:          "info",
@@ -473,6 +492,14 @@ func (c *Config) Validate() error {
 		if len([]rune(keys)) < required {
 			return fmt.Errorf("grid.sublayer_keys must contain at least %d characters for 3x3 subgrid selection", required)
 		}
+	}
+
+	// Validate action settings
+	if c.Action.HighlightWidth < 1 {
+		return fmt.Errorf("action.highlight_width must be at least 1")
+	}
+	if err := validateColor(c.Action.HighlightColor, "action.highlight_color"); err != nil {
+		return err
 	}
 
 	return nil

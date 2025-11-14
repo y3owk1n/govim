@@ -16,11 +16,13 @@ import (
 
 type HintsContext struct {
 	selectedHint *hints.Hint
+	inActionMode bool
 }
 
 type GridContext struct {
 	gridInstance **grid.Grid
 	gridOverlay  **grid.GridOverlay
+	inActionMode bool
 }
 
 // activateMode activates a mode with a given action (for hints mode)
@@ -42,7 +44,13 @@ func (a *App) activateMode(mode Mode) {
 	a.logger.Warn("Unknown mode", zap.String("mode", getModeString(mode)))
 }
 
+// activateHintMode activates hint mode, with an option to preserve action mode state
 func (a *App) activateHintMode() {
+	a.activateHintModeInternal(false)
+}
+
+// activateHintModeInternal activates hint mode with option to preserve action mode state
+func (a *App) activateHintModeInternal(preserveActionMode bool) {
 	if !a.enabled {
 		a.logger.Debug("Neru is disabled, ignoring hint mode activation")
 		return
@@ -62,7 +70,10 @@ func (a *App) activateHintMode() {
 	actionString := getActionString(action)
 	a.logger.Info("Activating hint mode", zap.String("action", actionString))
 
-	a.exitMode()
+	// Only exit mode if not preserving action mode state
+	if !preserveActionMode {
+		a.exitMode()
+	}
 
 	if actionString == "unknown" {
 		a.logger.Warn("Unknown action string, ignoring")
@@ -223,6 +234,14 @@ func (a *App) setupGrid() error {
 	// Grid overlay already created in NewApp - update its config and use it
 	(*a.gridCtx.gridOverlay).UpdateConfig(a.config.Grid)
 
+	// Ensure the overlay is properly sized for the active screen
+	(*a.gridCtx.gridOverlay).ResizeToActiveScreenSync()
+
+	// Reset the grid manager state when setting up the grid
+	if a.gridManager != nil {
+		a.gridManager.Reset()
+	}
+
 	// Get style for current action
 	gridStyle := grid.BuildStyle(a.config.Grid)
 
@@ -267,6 +286,7 @@ func (a *App) setupGrid() error {
 	}
 
 	(*a.gridCtx.gridOverlay).Show()
+
 	return nil
 }
 
@@ -291,9 +311,103 @@ func (a *App) handleKeyPress(key string) {
 		return
 	}
 
+	// Handle Tab key to toggle between overlay mode and action mode
+	if key == "\t" { // Tab key
+		switch a.currentMode {
+		case ModeHints:
+			if a.hintsCtx.inActionMode {
+				// Switch back to overlay mode
+				a.hintsCtx.inActionMode = false
+				a.actionOverlay.Clear()
+				a.actionOverlay.Hide()
+				// Re-activate hint mode while preserving action mode state
+				a.activateHintModeInternal(true)
+				a.logger.Info("Switched back to hints overlay mode")
+			} else {
+				// Switch to action mode
+				a.hintsCtx.inActionMode = true
+				a.hintOverlay.Clear()
+				a.hintOverlay.Hide()
+				a.drawHintsActionHighlight()
+				a.actionOverlay.Show()
+				a.logger.Info("Switched to hints action mode")
+			}
+			return
+		case ModeGrid:
+			if a.gridCtx.inActionMode {
+				// Switch back to overlay mode
+				a.gridCtx.inActionMode = false
+				a.actionOverlay.Clear()
+				a.actionOverlay.Hide()
+				// Re-setup grid to show grid again with proper refresh
+				if err := a.setupGrid(); err != nil {
+					a.logger.Error("Failed to re-setup grid", zap.Error(err))
+				}
+				a.logger.Info("Switched back to grid overlay mode")
+			} else {
+				// Switch to action mode
+				a.gridCtx.inActionMode = true
+				if a.gridCtx.gridOverlay != nil {
+					gridOverlay := *a.gridCtx.gridOverlay
+					gridOverlay.Clear()
+					gridOverlay.Hide()
+				}
+				a.drawGridActionHighlight()
+				a.actionOverlay.Show()
+				a.logger.Info("Switched to grid action mode")
+			}
+			return
+		}
+	}
+
+	// Handle Escape key to exit action mode or current mode
+	if key == "\x1b" || key == "escape" {
+		switch a.currentMode {
+		case ModeHints:
+			if a.hintsCtx.inActionMode {
+				// Exit action mode completely, go back to idle mode
+				a.hintsCtx.inActionMode = false
+				a.actionOverlay.Clear()
+				a.actionOverlay.Hide()
+				a.hintOverlay.Clear()
+				a.hintOverlay.Hide()
+				a.exitMode()
+				a.logger.Info("Exited hints action mode completely")
+				return
+			}
+			// Fall through to exit mode
+		case ModeGrid:
+			if a.gridCtx.inActionMode {
+				// Exit action mode completely, go back to idle mode
+				a.gridCtx.inActionMode = false
+				a.actionOverlay.Clear()
+				a.actionOverlay.Hide()
+				// Hide grid overlay as well
+				if a.gridCtx != nil && a.gridCtx.gridOverlay != nil && *a.gridCtx.gridOverlay != nil {
+					(*a.gridCtx.gridOverlay).Clear()
+					(*a.gridCtx.gridOverlay).Hide()
+				}
+				a.exitMode()
+				a.logger.Info("Exited grid action mode completely")
+				return
+			}
+			// Fall through to exit mode
+		}
+		a.exitMode()
+		return
+	}
+
 	// Explicitly dispatch by current mode
 	switch a.currentMode {
 	case ModeHints:
+		// If in action mode, handle action keys
+		if a.hintsCtx.inActionMode {
+			a.handleHintsActionKey(key)
+			// After handling the action, we stay in action mode
+			// The user can press Tab to go back to overlay mode or perform more actions
+			return
+		}
+
 		// Route hint-specific keys via hints router
 		res := a.hintsRouter.RouteKey(key, a.hintsCtx.selectedHint != nil)
 		if res.Exit {
@@ -325,6 +439,14 @@ func (a *App) handleKeyPress(key string) {
 			return
 		}
 	case ModeGrid:
+		// If in action mode, handle action keys
+		if a.gridCtx.inActionMode {
+			a.handleGridActionKey(key)
+			// After handling the action, we stay in action mode
+			// The user can press Tab to go back to overlay mode or perform more actions
+			return
+		}
+
 		res := a.gridRouter.RouteKey(key)
 		if res.Exit {
 			a.exitMode()
@@ -467,10 +589,64 @@ done:
 	return false
 }
 
+// drawHintsActionHighlight draws a highlight border around the active screen for hints action mode
+func (a *App) drawHintsActionHighlight() {
+	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
+	a.actionOverlay.ResizeToActiveScreen()
+
+	// Get active screen bounds
+	screenBounds := bridge.GetActiveScreenBounds()
+	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
+
+	// Draw action highlight using action overlay
+	a.actionOverlay.DrawActionHighlight(
+		localBounds.Min.X,
+		localBounds.Min.Y,
+		localBounds.Dx(),
+		localBounds.Dy(),
+	)
+
+	a.logger.Debug("Drawing hints action highlight",
+		zap.Int("x", localBounds.Min.X),
+		zap.Int("y", localBounds.Min.Y),
+		zap.Int("width", localBounds.Dx()),
+		zap.Int("height", localBounds.Dy()))
+}
+
+// drawGridActionHighlight draws a highlight border around the active screen for grid action mode
+func (a *App) drawGridActionHighlight() {
+	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
+	a.actionOverlay.ResizeToActiveScreen()
+
+	// Get active screen bounds
+	screenBounds := bridge.GetActiveScreenBounds()
+	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
+
+	// Draw action highlight using action overlay
+	a.actionOverlay.DrawActionHighlight(
+		localBounds.Min.X,
+		localBounds.Min.Y,
+		localBounds.Dx(),
+		localBounds.Dy(),
+	)
+
+	a.logger.Debug("Drawing grid action highlight",
+		zap.Int("x", localBounds.Min.X),
+		zap.Int("y", localBounds.Min.Y),
+		zap.Int("width", localBounds.Dx()),
+		zap.Int("height", localBounds.Dy()))
+}
+
 func (a *App) drawScrollHighlightBorder() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
 	a.scrollOverlay.ResizeToActiveScreen()
-	a.scrollOverlay.DrawScrollHighlight()
+
+	// Get active screen bounds
+	screenBounds := bridge.GetActiveScreenBounds()
+	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
+
+	// Draw scroll highlight using scroll overlay
+	a.scrollOverlay.DrawScrollHighlight(localBounds.Min.X, localBounds.Min.Y, localBounds.Dx(), localBounds.Dy())
 }
 
 // exitMode exits the current mode
@@ -484,6 +660,9 @@ func (a *App) exitMode() {
 	// Mode-specific cleanup
 	switch a.currentMode {
 	case ModeHints:
+		// Reset action mode state
+		a.hintsCtx.inActionMode = false
+
 		if a.hintManager != nil {
 			a.hintManager.Reset()
 		}
@@ -492,12 +671,20 @@ func (a *App) exitMode() {
 		// Clear and hide overlay for hints
 		a.hintOverlay.Clear()
 		a.hintOverlay.Hide()
+
+		// Also clear and hide action overlay
+		a.actionOverlay.Clear()
+		a.actionOverlay.Hide()
+
 		var ms runtime.MemStats
 		runtime.ReadMemStats(&ms)
 		a.logger.Info("Hints cleanup mem",
 			zap.Uint64("alloc_bytes", ms.Alloc),
 			zap.Uint64("sys_bytes", ms.Sys))
 	case ModeGrid:
+		// Reset action mode state
+		a.gridCtx.inActionMode = false
+
 		if a.gridManager != nil {
 			a.gridManager.Reset()
 		}
@@ -506,8 +693,15 @@ func (a *App) exitMode() {
 			a.logger.Info("Hiding grid overlay")
 			(*a.gridCtx.gridOverlay).Hide()
 		}
+
+		// Also clear and hide action overlay
+		a.actionOverlay.Clear()
+		a.actionOverlay.Hide()
 	default:
 		// No domain-specific cleanup for other modes yet
+		// But still clear and hide action overlay
+		a.actionOverlay.Clear()
+		a.actionOverlay.Hide()
 	}
 
 	// Clear scroll overlay
@@ -567,4 +761,88 @@ func getActionString(action Action) string {
 // getCurrModeString returns the current mode as a string
 func (a *App) getCurrModeString() string {
 	return getModeString(a.currentMode)
+}
+
+// handleHintsActionKey handles action keys when in hints action mode
+func (a *App) handleHintsActionKey(key string) {
+	// Get the current cursor position
+	cursorPos := accessibility.GetCurrentCursorPosition()
+
+	// Map action keys to actions using configurable keys
+	switch key {
+	case a.config.Action.LeftClickKey: // Left click
+		a.logger.Info("Hints action: Left click")
+		err := accessibility.LeftClickAtPoint(cursorPos, false)
+		if err != nil {
+			a.logger.Error("Failed to perform left click", zap.Error(err))
+		}
+	case a.config.Action.RightClickKey: // Right click
+		a.logger.Info("Hints action: Right click")
+		err := accessibility.RightClickAtPoint(cursorPos, false)
+		if err != nil {
+			a.logger.Error("Failed to perform right click", zap.Error(err))
+		}
+	case a.config.Action.MiddleClickKey: // Middle click
+		a.logger.Info("Hints action: Middle click")
+		err := accessibility.MiddleClickAtPoint(cursorPos, false)
+		if err != nil {
+			a.logger.Error("Failed to perform middle click", zap.Error(err))
+		}
+	case a.config.Action.MouseDownKey: // Mouse down
+		a.logger.Info("Hints action: Mouse down")
+		err := accessibility.LeftMouseDownAtPoint(cursorPos)
+		if err != nil {
+			a.logger.Error("Failed to perform mouse down", zap.Error(err))
+		}
+	case a.config.Action.MouseUpKey: // Mouse up
+		a.logger.Info("Hints action: Mouse up")
+		err := accessibility.LeftMouseUpAtPoint(cursorPos)
+		if err != nil {
+			a.logger.Error("Failed to perform mouse up", zap.Error(err))
+		}
+	default:
+		a.logger.Debug("Unknown hints action key", zap.String("key", key))
+	}
+}
+
+// handleGridActionKey handles action keys when in grid action mode
+func (a *App) handleGridActionKey(key string) {
+	// Get the current cursor position
+	cursorPos := accessibility.GetCurrentCursorPosition()
+
+	// Map action keys to actions using configurable keys
+	switch key {
+	case a.config.Action.LeftClickKey: // Left click
+		a.logger.Info("Grid action: Left click")
+		err := accessibility.LeftClickAtPoint(cursorPos, false)
+		if err != nil {
+			a.logger.Error("Failed to perform left click", zap.Error(err))
+		}
+	case a.config.Action.RightClickKey: // Right click
+		a.logger.Info("Grid action: Right click")
+		err := accessibility.RightClickAtPoint(cursorPos, false)
+		if err != nil {
+			a.logger.Error("Failed to perform right click", zap.Error(err))
+		}
+	case a.config.Action.MiddleClickKey: // Middle click
+		a.logger.Info("Grid action: Middle click")
+		err := accessibility.MiddleClickAtPoint(cursorPos, false)
+		if err != nil {
+			a.logger.Error("Failed to perform middle click", zap.Error(err))
+		}
+	case a.config.Action.MouseDownKey: // Mouse down
+		a.logger.Info("Grid action: Mouse down")
+		err := accessibility.LeftMouseDownAtPoint(cursorPos)
+		if err != nil {
+			a.logger.Error("Failed to perform mouse down", zap.Error(err))
+		}
+	case a.config.Action.MouseUpKey: // Mouse up
+		a.logger.Info("Grid action: Mouse up")
+		err := accessibility.LeftMouseUpAtPoint(cursorPos)
+		if err != nil {
+			a.logger.Error("Failed to perform mouse up", zap.Error(err))
+		}
+	default:
+		a.logger.Debug("Unknown grid action key", zap.String("key", key))
+	}
 }

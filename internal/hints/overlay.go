@@ -304,6 +304,27 @@ func (o *Overlay) DrawTargetDot(x, y int, radius float64, color, borderColor str
 	return nil
 }
 
+// DrawScrollHighlight draws a highlight around a scroll area
+func (o *Overlay) DrawScrollHighlight(x, y, w, h int, color string, width int) {
+	o.logger.Debug("DrawScrollHighlight called")
+
+	renderBounds := C.CGRect{
+		origin: C.CGPoint{
+			x: C.double(x),
+			y: C.double(y),
+		},
+		size: C.CGSize{
+			width:  C.double(w),
+			height: C.double(h),
+		},
+	}
+
+	cColor := C.CString(color)
+	defer C.free(unsafe.Pointer(cColor))
+
+	C.drawScrollHighlight(o.window, renderBounds, cColor, C.int(width))
+}
+
 // BuildStyle returns StyleMode based on action name using the provided config
 func BuildStyle(cfg config.HintsConfig) StyleMode {
 	style := StyleMode{

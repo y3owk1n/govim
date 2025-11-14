@@ -7,6 +7,7 @@ import (
 
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/accessibility"
+	"github.com/y3owk1n/neru/internal/action"
 	"github.com/y3owk1n/neru/internal/appwatcher"
 	"github.com/y3owk1n/neru/internal/bridge"
 	"github.com/y3owk1n/neru/internal/cli"
@@ -53,6 +54,7 @@ type App struct {
 	hintGenerator    *hints.Generator
 	hintOverlay      *hints.Overlay
 	scrollOverlay    *scroll.Overlay
+	actionOverlay    *action.Overlay
 	scrollController *scroll.Controller
 	eventTap         *eventtap.EventTap
 	ipcServer        *ipc.Server
@@ -168,6 +170,13 @@ func NewApp(cfg *config.Config) (*App, error) {
 
 		app.hintOverlay = hintOverlay
 	}
+
+	// Create action overlay after hints overlay is created
+	actionOverlay, err := action.NewOverlay(cfg.Action, log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create action overlay: %w", err)
+	}
+	app.actionOverlay = actionOverlay
 
 	// Create grid components only if enabled
 	if cfg.Grid.Enabled {
