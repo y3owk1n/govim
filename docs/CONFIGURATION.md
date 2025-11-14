@@ -28,7 +28,7 @@ Neru searches for configuration in the following order:
 
 ## Hotkeys
 
-Bind global hotkeys to Neru actions. Comment out to disable.
+Bind global hotkeys to Neru actions. Remove or comment out to disable.
 
 ```toml
 [hotkeys]
