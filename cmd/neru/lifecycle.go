@@ -11,6 +11,7 @@ import (
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/electron"
 	"github.com/y3owk1n/neru/internal/logger"
+	"github.com/y3owk1n/neru/internal/overlay"
 	"go.uber.org/zap"
 )
 
@@ -60,6 +61,9 @@ func (a *App) handleScreenParametersChange() {
 	defer func() { a.screenChangeProcessing = false }()
 
 	a.logger.Info("Screen parameters changed; adjusting overlays")
+	if overlay.Get() != nil {
+		overlay.Get().ResizeToActiveScreenSync()
+	}
 
 	// Handle grid overlay
 	if a.config.Grid.Enabled && a.gridCtx != nil && a.gridCtx.gridOverlay != nil {
@@ -68,10 +72,10 @@ func (a *App) handleScreenParametersChange() {
 			a.gridOverlayNeedsRefresh = true
 		} else {
 			// Grid mode is active - resize the existing overlay window to match new screen bounds
-			gridOverlay := *a.gridCtx.gridOverlay
-
 			// Resize overlay window to current active screen (where mouse is)
-			gridOverlay.ResizeToActiveScreenSync()
+			if overlay.Get() != nil {
+				overlay.Get().ResizeToActiveScreenSync()
+			}
 
 			// Regenerate the grid cells with updated screen bounds
 			if err := a.setupGrid(); err != nil {
@@ -90,7 +94,9 @@ func (a *App) handleScreenParametersChange() {
 			a.hintOverlayNeedsRefresh = true
 		} else {
 			// Hints mode is active - resize the overlay and regenerate hints
-			a.hintOverlay.ResizeToActiveScreenSync()
+			if overlay.Get() != nil {
+				overlay.Get().ResizeToActiveScreenSync()
+			}
 
 			// Regenerate hints for current action
 			a.updateRolesForCurrentApp()
@@ -109,7 +115,9 @@ func (a *App) handleScreenParametersChange() {
 	}
 
 	// Resize scroll overlay to current active screen (where mouse is)
-	a.scrollOverlay.ResizeToActiveScreenSync()
+	if overlay.Get() != nil {
+		overlay.Get().ResizeToActiveScreenSync()
+	}
 }
 
 // handleAppActivation handles application activation events
@@ -243,12 +251,9 @@ func (a *App) Cleanup() {
 		a.hotkeyManager.UnregisterAll()
 	}
 
-	// Clean up UI elements
-	if a.hintOverlay != nil {
-		a.hintOverlay.Destroy()
-	}
-	if a.gridCtx != nil && a.gridCtx.gridOverlay != nil && *a.gridCtx.gridOverlay != nil {
-		(*a.gridCtx.gridOverlay).Destroy()
+	// Clean up centralized overlay window
+	if overlay.Get() != nil {
+		overlay.Get().Destroy()
 	}
 
 	// Cleanup event tap

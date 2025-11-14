@@ -9,6 +9,7 @@ import (
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/config"
 	"github.com/y3owk1n/neru/internal/ipc"
+	"github.com/y3owk1n/neru/internal/overlay"
 	"go.uber.org/zap"
 )
 
@@ -117,12 +118,16 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 
 			// Enable event tap and let user scroll interactively at current position
 			// Resize overlay to active screen for multi-monitor support
-			a.scrollOverlay.ResizeToActiveScreen()
+			if overlay.Get() != nil {
+				overlay.Get().ResizeToActiveScreenSync()
+			}
 
 			// Draw highlight border if enabled
 			if a.config.Scroll.HighlightScrollArea {
 				a.drawScrollHighlightBorder()
-				a.scrollOverlay.Show()
+				if overlay.Get() != nil {
+					overlay.Get().Show()
+				}
 			}
 
 			// Enable event tap for scroll key handling

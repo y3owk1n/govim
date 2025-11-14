@@ -19,6 +19,7 @@ import (
 	"github.com/y3owk1n/neru/internal/hotkeys"
 	"github.com/y3owk1n/neru/internal/ipc"
 	"github.com/y3owk1n/neru/internal/logger"
+	"github.com/y3owk1n/neru/internal/overlay"
 	"github.com/y3owk1n/neru/internal/scroll"
 	"go.uber.org/zap"
 )
@@ -97,6 +98,9 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Initialize bridge logger
 	bridge.InitializeLogger(log)
 
+	// Initialize centralized overlay manager
+	om := overlay.Init(log)
+
 	// Check accessibility permissions
 	if cfg.General.AccessibilityCheckOnStart { // Changed from cfg.Accessibility.AccessibilityCheckOnStart
 		if !accessibility.CheckAccessibilityPermissions() {
@@ -139,7 +143,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Create scroll controller
 	scrollCtrl := scroll.NewController(cfg.Scroll, log)
 
-	scrollOverlay, err := scroll.NewOverlay(cfg.Scroll, log)
+	scrollOverlay, err := scroll.NewOverlayWithWindow(cfg.Scroll, log, om.GetWindowPtr())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create scroll overlay: %w", err)
 	}
@@ -171,7 +175,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 		app.hintsCtx = &HintsContext{}
 
 		var err error
-		hintOverlay, err = hints.NewOverlay(cfg.Hints, log)
+		hintOverlay, err = hints.NewOverlayWithWindow(cfg.Hints, log, om.GetWindowPtr())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create overlay: %w", err)
 		}
@@ -180,7 +184,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	}
 
 	// Create action overlay after hints overlay is created
-	actionOverlay, err := action.NewOverlay(cfg.Action, log)
+	actionOverlay, err := action.NewOverlayWithWindow(cfg.Action, log, om.GetWindowPtr())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create action overlay: %w", err)
 	}
@@ -189,7 +193,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Create grid components only if enabled
 	if cfg.Grid.Enabled {
 		// Create grid overlay upfront (like hints overlay) to avoid thread issues
-		gridOverlay := grid.NewGridOverlay(cfg.Grid, log)
+		gridOverlay := grid.NewGridOverlayWithWindow(cfg.Grid, log, om.GetWindowPtr())
 
 		// Grid instance will be created when activated (screen bounds may change)
 		var gridInstance *grid.Grid
@@ -266,6 +270,16 @@ func NewApp(cfg *config.Config) (*App, error) {
 		return nil, fmt.Errorf("failed to create IPC server: %w", err)
 	}
 	app.ipcServer = ipcServer
+
+	// Register overlays with the manager for centralized drawing
+	om.UseScrollOverlay(scrollOverlay)
+	om.UseActionOverlay(actionOverlay)
+	if app.hintOverlay != nil {
+		om.UseHintOverlay(app.hintOverlay)
+	}
+	if app.gridCtx != nil && app.gridCtx.gridOverlay != nil {
+		om.UseGridOverlay(*app.gridCtx.gridOverlay)
+	}
 
 	return app, nil
 }
