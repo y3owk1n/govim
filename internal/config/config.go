@@ -1,3 +1,4 @@
+// Package config provides configuration functionality for the Neru application.
 package config
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// ActionConfig represents the configuration for action mode.
 type ActionConfig struct {
 	HighlightColor string `toml:"highlight_color"`
 	HighlightWidth int    `toml:"highlight_width"`
@@ -33,26 +35,30 @@ type Config struct {
 	Logging LoggingConfig `toml:"logging"`
 }
 
+// GeneralConfig represents general application configuration.
 type GeneralConfig struct {
 	ExcludedApps              []string `toml:"excluded_apps"`
 	AccessibilityCheckOnStart bool     `toml:"accessibility_check_on_start"` // Moved from AccessibilityConfig
 }
 
+// AppConfig represents application-specific configuration.
 type AppConfig struct {
 	BundleID             string   `toml:"bundle_id"`
 	AdditionalClickable  []string `toml:"additional_clickable_roles"`
 	IgnoreClickableCheck bool     `toml:"ignore_clickable_check"`
 }
 
+// HotkeysConfig represents hotkey configuration.
 type HotkeysConfig struct {
 	// Bindings holds hotkey -> action mappings parsed from the [hotkeys] table.
 	// Supported TOML format (preferred):
 	// [hotkeys]
 	// "Cmd+Shift+Space" = "hints"
 	// Values are strings. The special exec prefix is supported: "exec /usr/bin/say hi"
-	Bindings map[string]string
+	Bindings map[string]string `toml:"bindings"`
 }
 
+// ScrollConfig represents scroll mode configuration.
 type ScrollConfig struct {
 	ScrollStep          int    `toml:"scroll_step"`
 	ScrollStepHalf      int    `toml:"scroll_step_half"`
@@ -62,6 +68,7 @@ type ScrollConfig struct {
 	HighlightWidth      int    `toml:"highlight_width"`
 }
 
+// HintsConfig represents hints mode configuration.
 type HintsConfig struct {
 	// General configurations
 	Enabled        bool    `toml:"enabled"`
@@ -95,6 +102,7 @@ type HintsConfig struct {
 	AdditionalAXSupport AdditionalAXSupport `toml:"additional_ax_support"`
 }
 
+// GridConfig represents grid mode configuration.
 type GridConfig struct {
 	// General configurations
 	Enabled        bool `toml:"enabled"`
@@ -122,6 +130,7 @@ type GridConfig struct {
 	HideUnmatched   bool `toml:"hide_unmatched"`
 }
 
+// LoggingConfig represents logging configuration.
 type LoggingConfig struct {
 	LogLevel          string `toml:"log_level"`
 	LogFile           string `toml:"log_file"`
@@ -134,6 +143,7 @@ type LoggingConfig struct {
 	MaxAge             int  `toml:"max_age"`       // Maximum number of days to retain old log files
 }
 
+// AdditionalAXSupport represents additional accessibility support configuration.
 type AdditionalAXSupport struct {
 	Enable                    bool     `toml:"enable"`
 	AdditionalElectronBundles []string `toml:"additional_electron_bundles"`
@@ -291,13 +301,13 @@ func Load(path string) (*Config, error) {
 			if len(hot) > 0 {
 				cfg.Hotkeys.Bindings = map[string]string{}
 			}
-			for k, v := range hot {
+			for key, value := range hot {
 				// Only accept string values for actions
-				str, ok := v.(string)
+				str, ok := value.(string)
 				if !ok {
-					return nil, fmt.Errorf("hotkeys.%s must be a string action", k)
+					return nil, fmt.Errorf("hotkeys.%s must be a string action", key)
 				}
-				cfg.Hotkeys.Bindings[k] = str
+				cfg.Hotkeys.Bindings[key] = str
 			}
 		}
 	}
@@ -310,7 +320,7 @@ func Load(path string) (*Config, error) {
 	return cfg, nil
 }
 
-// findConfigFile searches for config file in default locations
+// FindConfigFile searches for config file in default locations.
 func FindConfigFile() string {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -341,12 +351,10 @@ func (c *Config) Validate() error {
 	if !c.Hints.Enabled && !c.Grid.Enabled {
 		return fmt.Errorf("at least one mode must be enabled: hints.enabled or grid.enabled")
 	}
-	// Validate hint characters
-	if strings.TrimSpace(c.Hints.HintCharacters) == "" {
-		return fmt.Errorf("hint_characters cannot be empty")
-	}
-	if len(c.Hints.HintCharacters) < 2 {
-		return fmt.Errorf("hint_characters must contain at least 2 characters")
+
+	// Validate hints configuration
+	if err := c.validateHints(); err != nil {
+		return err
 	}
 
 	// Validate log level
@@ -360,11 +368,49 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("log_level must be one of: debug, info, warn, error")
 	}
 
+	// Validate scroll settings
+	if c.Scroll.ScrollStep < 1 {
+		return fmt.Errorf("scroll.scroll_speed must be at least 1")
+	}
+	if c.Scroll.ScrollStepHalf < 1 {
+		return fmt.Errorf("scroll.half_page_multiplier must be at least 1")
+	}
+	if c.Scroll.ScrollStepFull < 1 {
+		return fmt.Errorf("scroll.full_page_multiplier must be at least 1")
+	}
+
+	// Validate app configs
+	if err := c.validateAppConfigs(); err != nil {
+		return err
+	}
+
+	// Validate grid settings
+	if err := c.validateGrid(); err != nil {
+		return err
+	}
+
+	// Validate action settings
+	if err := c.validateAction(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateHints validates the hints configuration
+func (c *Config) validateHints() error {
+	// Validate hint characters
+	if strings.TrimSpace(c.Hints.HintCharacters) == "" {
+		return fmt.Errorf("hint_characters cannot be empty")
+	}
+	if len(c.Hints.HintCharacters) < 2 {
+		return fmt.Errorf("hint_characters must contain at least 2 characters")
+	}
+
 	// Validate opacity values
 	if c.Hints.Opacity < 0 || c.Hints.Opacity > 1 {
 		return fmt.Errorf("hints.opacity must be between 0 and 1")
 	}
-	// Hotkeys are validated in the bindings validation section below
 
 	// Validate colors
 	if err := validateColor(c.Hints.BackgroundColor, "hints.background_color"); err != nil {
@@ -378,17 +424,6 @@ func (c *Config) Validate() error {
 	}
 	if err := validateColor(c.Hints.BorderColor, "hints.border_color"); err != nil {
 		return err
-	}
-
-	// Validate scroll settings
-	if c.Scroll.ScrollStep < 1 {
-		return fmt.Errorf("scroll.scroll_speed must be at least 1")
-	}
-	if c.Scroll.ScrollStepHalf < 1 {
-		return fmt.Errorf("scroll.half_page_multiplier must be at least 1")
-	}
-	if c.Scroll.ScrollStepFull < 1 {
-		return fmt.Errorf("scroll.full_page_multiplier must be at least 1")
 	}
 
 	// Validate hints settings
@@ -429,32 +464,39 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	// Validate app configs
-	for i, appConfig := range c.Hints.AppConfigs { // Changed from c.Accessibility.AppConfigs
+	return nil
+}
+
+// validateAppConfigs validates the app configurations
+func (c *Config) validateAppConfigs() error {
+	for index, appConfig := range c.Hints.AppConfigs { // Changed from c.Accessibility.AppConfigs
 		if strings.TrimSpace(appConfig.BundleID) == "" {
-			return fmt.Errorf("hints.app_configs[%d].bundle_id cannot be empty", i)
+			return fmt.Errorf("hints.app_configs[%d].bundle_id cannot be empty", index)
 		}
 
 		// Validate hotkey bindings
-		for k, v := range c.Hotkeys.Bindings {
-			if strings.TrimSpace(k) == "" {
+		for key, value := range c.Hotkeys.Bindings {
+			if strings.TrimSpace(key) == "" {
 				return fmt.Errorf("hotkeys.bindings contains an empty key")
 			}
-			if err := validateHotkey(k, "hotkeys.bindings"); err != nil {
+			if err := validateHotkey(key, "hotkeys.bindings"); err != nil {
 				return err
 			}
-			if strings.TrimSpace(v) == "" {
-				return fmt.Errorf("hotkeys.bindings[%s] cannot be empty", k)
+			if strings.TrimSpace(value) == "" {
+				return fmt.Errorf("hotkeys.bindings[%s] cannot be empty", key)
 			}
 		}
 		for _, role := range appConfig.AdditionalClickable {
 			if strings.TrimSpace(role) == "" {
-				return fmt.Errorf("hints.app_configs[%d].additional_clickable_roles cannot contain empty values", i)
+				return fmt.Errorf("hints.app_configs[%d].additional_clickable_roles cannot contain empty values", index)
 			}
 		}
 	}
+	return nil
+}
 
-	// Validate grid settings
+// validateGrid validates the grid configuration
+func (c *Config) validateGrid() error {
 	if strings.TrimSpace(c.Grid.Characters) == "" {
 		return fmt.Errorf("grid.characters cannot be empty")
 	}
@@ -503,15 +545,17 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("grid.sublayer_keys must contain at least %d characters for 3x3 subgrid selection", required)
 		}
 	}
+	return nil
+}
 
-	// Validate action settings
+// validateAction validates the action configuration
+func (c *Config) validateAction() error {
 	if c.Action.HighlightWidth < 1 {
 		return fmt.Errorf("action.highlight_width must be at least 1")
 	}
 	if err := validateColor(c.Action.HighlightColor, "action.highlight_color"); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -580,24 +624,25 @@ func (c *Config) IsAppExcluded(bundleID string) bool {
 func (c *Config) Save(path string) error {
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
 	// Create file
 	var closeErr error
-	f, err := os.Create(path)
+	// #nosec G304 -- Path is validated and controlled by the application
+	file, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
 	}
 	defer func() {
-		if cerr := f.Close(); cerr != nil && closeErr == nil {
+		if cerr := file.Close(); cerr != nil && closeErr == nil {
 			closeErr = fmt.Errorf("failed to close config file: %w", cerr)
 		}
 	}()
 
 	// Encode to TOML
-	encoder := toml.NewEncoder(f)
+	encoder := toml.NewEncoder(file)
 	if err := encoder.Encode(c); err != nil {
 		return fmt.Errorf("failed to encode config: %w", err)
 	}

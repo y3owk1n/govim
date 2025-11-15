@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const unknownAction = "unknown"
+
 type HintsContext struct {
 	selectedHint *hints.Hint
 	inActionMode bool
@@ -22,7 +24,7 @@ type HintsContext struct {
 
 type GridContext struct {
 	gridInstance **grid.Grid
-	gridOverlay  **grid.GridOverlay
+	gridOverlay  **grid.Overlay
 	inActionMode bool
 }
 
@@ -76,7 +78,7 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		a.exitMode()
 	}
 
-	if actionString == "unknown" {
+	if actionString == unknownAction {
 		a.logger.Warn("Unknown action string, ignoring")
 		return
 	}
@@ -343,116 +345,136 @@ func (a *App) handleKeyPress(key string) {
 
 	// Handle Tab key to toggle between overlay mode and action mode
 	if key == "\t" { // Tab key
-		switch a.currentMode {
-		case ModeHints:
-			if a.hintsCtx.inActionMode {
-				// Switch back to overlay mode
-				a.hintsCtx.inActionMode = false
-				if overlay.Get() != nil {
-					overlay.Get().Clear()
-					overlay.Get().Hide()
-				}
-				// Re-activate hint mode while preserving action mode state
-				a.activateHintModeInternal(true)
-				a.logger.Info("Switched back to hints overlay mode")
-				if overlay.Get() != nil {
-					overlay.Get().SwitchTo(overlay.ModeHints)
-				}
-			} else {
-				// Switch to action mode
-				a.hintsCtx.inActionMode = true
-				if overlay.Get() != nil {
-					overlay.Get().Clear()
-					overlay.Get().Hide()
-				}
-				a.drawHintsActionHighlight()
-				overlay.Get().Show()
-				a.logger.Info("Switched to hints action mode")
-				if overlay.Get() != nil {
-					overlay.Get().SwitchTo(overlay.ModeAction)
-				}
-			}
-			return
-		case ModeGrid:
-			if a.gridCtx.inActionMode {
-				// Switch back to overlay mode
-				a.gridCtx.inActionMode = false
-				if overlay.Get() != nil {
-					overlay.Get().Clear()
-					overlay.Get().Hide()
-				}
-				// Re-setup grid to show grid again with proper refresh
-				if err := a.setupGrid(); err != nil {
-					a.logger.Error("Failed to re-setup grid", zap.Error(err))
-				}
-				a.logger.Info("Switched back to grid overlay mode")
-				if overlay.Get() != nil {
-					overlay.Get().SwitchTo(overlay.ModeGrid)
-				}
-			} else {
-				// Switch to action mode
-				a.gridCtx.inActionMode = true
-				if a.gridCtx.gridOverlay != nil {
-					if overlay.Get() != nil {
-						overlay.Get().Clear()
-						overlay.Get().Hide()
-					}
-				}
-				a.drawGridActionHighlight()
-				overlay.Get().Show()
-				a.logger.Info("Switched to grid action mode")
-				if overlay.Get() != nil {
-					overlay.Get().SwitchTo(overlay.ModeAction)
-				}
-			}
-			return
-		}
+		a.handleTabKey()
+		return
 	}
 
 	// Handle Escape key to exit action mode or current mode
 	if key == "\x1b" || key == "escape" {
-		switch a.currentMode {
-		case ModeHints:
-			if a.hintsCtx.inActionMode {
-				// Exit action mode completely, go back to idle mode
-				a.hintsCtx.inActionMode = false
-				if overlay.Get() != nil {
-					overlay.Get().Clear()
-					overlay.Get().Hide()
-				}
-				a.exitMode()
-				a.logger.Info("Exited hints action mode completely")
-				if overlay.Get() != nil {
-					overlay.Get().SwitchTo(overlay.ModeIdle)
-				}
-				return
-			}
-			// Fall through to exit mode
-		case ModeGrid:
-			if a.gridCtx.inActionMode {
-				// Exit action mode completely, go back to idle mode
-				a.gridCtx.inActionMode = false
-				if overlay.Get() != nil {
-					overlay.Get().Clear()
-					overlay.Get().Hide()
-				}
-				a.exitMode()
-				a.logger.Info("Exited grid action mode completely")
-				if overlay.Get() != nil {
-					overlay.Get().SwitchTo(overlay.ModeIdle)
-				}
-				return
-			}
-			// Fall through to exit mode
-		}
-		a.exitMode()
-		if overlay.Get() != nil {
-			overlay.Get().SwitchTo(overlay.ModeIdle)
-		}
+		a.handleEscapeKey()
 		return
 	}
 
 	// Explicitly dispatch by current mode
+	a.handleModeSpecificKey(key)
+}
+
+// handleTabKey handles the tab key to toggle between overlay mode and action mode
+func (a *App) handleTabKey() {
+	switch a.currentMode {
+	case ModeHints:
+		if a.hintsCtx.inActionMode {
+			// Switch back to overlay mode
+			a.hintsCtx.inActionMode = false
+			if overlay.Get() != nil {
+				overlay.Get().Clear()
+				overlay.Get().Hide()
+			}
+			// Re-activate hint mode while preserving action mode state
+			a.activateHintModeInternal(true)
+			a.logger.Info("Switched back to hints overlay mode")
+			if overlay.Get() != nil {
+				overlay.Get().SwitchTo(overlay.ModeHints)
+			}
+		} else {
+			// Switch to action mode
+			a.hintsCtx.inActionMode = true
+			if overlay.Get() != nil {
+				overlay.Get().Clear()
+				overlay.Get().Hide()
+			}
+			a.drawHintsActionHighlight()
+			overlay.Get().Show()
+			a.logger.Info("Switched to hints action mode")
+			if overlay.Get() != nil {
+				overlay.Get().SwitchTo(overlay.ModeAction)
+			}
+		}
+	case ModeGrid:
+		if a.gridCtx.inActionMode {
+			// Switch back to overlay mode
+			a.gridCtx.inActionMode = false
+			if overlay.Get() != nil {
+				overlay.Get().Clear()
+				overlay.Get().Hide()
+			}
+			// Re-setup grid to show grid again with proper refresh
+			if err := a.setupGrid(); err != nil {
+				a.logger.Error("Failed to re-setup grid", zap.Error(err))
+			}
+			a.logger.Info("Switched back to grid overlay mode")
+			if overlay.Get() != nil {
+				overlay.Get().SwitchTo(overlay.ModeGrid)
+			}
+		} else {
+			// Switch to action mode
+			a.gridCtx.inActionMode = true
+			if a.gridCtx.gridOverlay != nil {
+				if overlay.Get() != nil {
+					overlay.Get().Clear()
+					overlay.Get().Hide()
+				}
+			}
+			a.drawGridActionHighlight()
+			overlay.Get().Show()
+			a.logger.Info("Switched to grid action mode")
+			if overlay.Get() != nil {
+				overlay.Get().SwitchTo(overlay.ModeAction)
+			}
+		}
+	case ModeIdle:
+		// Nothing to do in idle mode
+		return
+	}
+}
+
+// handleEscapeKey handles the escape key to exit action mode or current mode
+func (a *App) handleEscapeKey() {
+	switch a.currentMode {
+	case ModeHints:
+		if a.hintsCtx.inActionMode {
+			// Exit action mode completely, go back to idle mode
+			a.hintsCtx.inActionMode = false
+			if overlay.Get() != nil {
+				overlay.Get().Clear()
+				overlay.Get().Hide()
+			}
+			a.exitMode()
+			a.logger.Info("Exited hints action mode completely")
+			if overlay.Get() != nil {
+				overlay.Get().SwitchTo(overlay.ModeIdle)
+			}
+			return
+		}
+		// Fall through to exit mode
+	case ModeGrid:
+		if a.gridCtx.inActionMode {
+			// Exit action mode completely, go back to idle mode
+			a.gridCtx.inActionMode = false
+			if overlay.Get() != nil {
+				overlay.Get().Clear()
+				overlay.Get().Hide()
+			}
+			a.exitMode()
+			a.logger.Info("Exited grid action mode completely")
+			if overlay.Get() != nil {
+				overlay.Get().SwitchTo(overlay.ModeIdle)
+			}
+			return
+		}
+		// Fall through to exit mode
+	case ModeIdle:
+		// Nothing to do in idle mode
+		return
+	}
+	a.exitMode()
+	if overlay.Get() != nil {
+		overlay.Get().SwitchTo(overlay.ModeIdle)
+	}
+}
+
+// handleModeSpecificKey handles mode-specific key processing
+func (a *App) handleModeSpecificKey(key string) {
 	switch a.currentMode {
 	case ModeHints:
 		// If in action mode, handle action keys
@@ -528,12 +550,14 @@ func (a *App) handleKeyPress(key string) {
 
 			return
 		}
+	case ModeIdle:
+		// Nothing to do in idle mode
+		return
 	}
 }
 
 // handleGenericScrollKey handles scroll keys in a generic way
-// Returns true if exit was requested
-func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
+func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
 	// Local storage for scroll state if not provided
 	var localLastKey string
 	if lastScrollKey == nil {
@@ -579,7 +603,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 	case "j":
 		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
-			return false
+			return
 		}
 		if op == "down" {
 			err = a.scrollController.ScrollDown()
@@ -587,7 +611,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 	case "k":
 		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
-			return false
+			return
 		}
 		if op == "up" {
 			err = a.scrollController.ScrollUp()
@@ -595,7 +619,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 	case "h":
 		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
-			return false
+			return
 		}
 		if op == "left" {
 			err = a.scrollController.ScrollLeft()
@@ -603,27 +627,27 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 	case "l":
 		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
-			return false
+			return
 		}
 		if op == "right" {
 			err = a.scrollController.ScrollRight()
 		}
 	case "g": // gg for top (need to press twice)
-		op, newLast, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
+		operation, newLast, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
 			a.logger.Info("First g pressed, press again for top")
 			*lastScrollKey = newLast
-			return false
+			return
 		}
-		if op == "top" {
+		if operation == "top" {
 			a.logger.Info("gg detected - scroll to top")
 			err = a.scrollController.ScrollToTop()
 			*lastScrollKey = ""
 			goto done
 		}
 	case "G": // Shift+G for bottom
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
-		if ok && op == "bottom" {
+		operation, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
+		if ok && operation == "bottom" {
 			a.logger.Info("G key detected - scroll to bottom")
 			err = a.scrollController.ScrollToBottom()
 			*lastScrollKey = ""
@@ -631,7 +655,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) bool {
 	default:
 		a.logger.Debug("Ignoring non-scroll key", zap.String("key", key))
 		*lastScrollKey = ""
-		return false
+		return
 	}
 
 	// Reset last key for most commands
@@ -641,7 +665,6 @@ done:
 	if err != nil {
 		a.logger.Error("Scroll failed", zap.Error(err))
 	}
-	return false
 }
 
 // drawHintsActionHighlight draws a highlight border around the active screen for hints action mode
@@ -769,6 +792,9 @@ func (a *App) exitMode() {
 			overlay.Get().Clear()
 			overlay.Get().Hide()
 		}
+	case ModeIdle:
+		// Already in idle mode, nothing to do
+		return
 	default:
 		// No domain-specific cleanup for other modes yet
 		// But still clear and hide action overlay
@@ -842,86 +868,54 @@ func (a *App) getCurrModeString() string {
 	return getModeString(a.currentMode)
 }
 
-// handleHintsActionKey handles action keys when in hints action mode
-func (a *App) handleHintsActionKey(key string) {
+// handleActionKey handles action keys for both hints and grid modes
+func (a *App) handleActionKey(key string, mode string) {
 	// Get the current cursor position
 	cursorPos := accessibility.GetCurrentCursorPosition()
 
 	// Map action keys to actions using configurable keys
 	switch key {
 	case a.config.Action.LeftClickKey: // Left click
-		a.logger.Info("Hints action: Left click")
+		a.logger.Info(fmt.Sprintf("%s action: Left click", mode))
 		err := accessibility.LeftClickAtPoint(cursorPos, false)
 		if err != nil {
 			a.logger.Error("Failed to perform left click", zap.Error(err))
 		}
 	case a.config.Action.RightClickKey: // Right click
-		a.logger.Info("Hints action: Right click")
+		a.logger.Info(fmt.Sprintf("%s action: Right click", mode))
 		err := accessibility.RightClickAtPoint(cursorPos, false)
 		if err != nil {
 			a.logger.Error("Failed to perform right click", zap.Error(err))
 		}
 	case a.config.Action.MiddleClickKey: // Middle click
-		a.logger.Info("Hints action: Middle click")
+		a.logger.Info(fmt.Sprintf("%s action: Middle click", mode))
 		err := accessibility.MiddleClickAtPoint(cursorPos, false)
 		if err != nil {
 			a.logger.Error("Failed to perform middle click", zap.Error(err))
 		}
 	case a.config.Action.MouseDownKey: // Mouse down
-		a.logger.Info("Hints action: Mouse down")
+		a.logger.Info(fmt.Sprintf("%s action: Mouse down", mode))
 		err := accessibility.LeftMouseDownAtPoint(cursorPos)
 		if err != nil {
 			a.logger.Error("Failed to perform mouse down", zap.Error(err))
 		}
 	case a.config.Action.MouseUpKey: // Mouse up
-		a.logger.Info("Hints action: Mouse up")
+		a.logger.Info(fmt.Sprintf("%s action: Mouse up", mode))
 		err := accessibility.LeftMouseUpAtPoint(cursorPos)
 		if err != nil {
 			a.logger.Error("Failed to perform mouse up", zap.Error(err))
 		}
 	default:
-		a.logger.Debug("Unknown hints action key", zap.String("key", key))
+		a.logger.Debug(fmt.Sprintf("Unknown %s action key", mode), zap.String("key", key))
 	}
+}
+
+// handleHintsActionKey handles action keys when in hints action mode
+func (a *App) handleHintsActionKey(key string) {
+	a.handleActionKey(key, "Hints")
 }
 
 // handleGridActionKey handles action keys when in grid action mode
 func (a *App) handleGridActionKey(key string) {
-	// Get the current cursor position
-	cursorPos := accessibility.GetCurrentCursorPosition()
-
-	// Map action keys to actions using configurable keys
-	switch key {
-	case a.config.Action.LeftClickKey: // Left click
-		a.logger.Info("Grid action: Left click")
-		err := accessibility.LeftClickAtPoint(cursorPos, false)
-		if err != nil {
-			a.logger.Error("Failed to perform left click", zap.Error(err))
-		}
-	case a.config.Action.RightClickKey: // Right click
-		a.logger.Info("Grid action: Right click")
-		err := accessibility.RightClickAtPoint(cursorPos, false)
-		if err != nil {
-			a.logger.Error("Failed to perform right click", zap.Error(err))
-		}
-	case a.config.Action.MiddleClickKey: // Middle click
-		a.logger.Info("Grid action: Middle click")
-		err := accessibility.MiddleClickAtPoint(cursorPos, false)
-		if err != nil {
-			a.logger.Error("Failed to perform middle click", zap.Error(err))
-		}
-	case a.config.Action.MouseDownKey: // Mouse down
-		a.logger.Info("Grid action: Mouse down")
-		err := accessibility.LeftMouseDownAtPoint(cursorPos)
-		if err != nil {
-			a.logger.Error("Failed to perform mouse down", zap.Error(err))
-		}
-	case a.config.Action.MouseUpKey: // Mouse up
-		a.logger.Info("Grid action: Mouse up")
-		err := accessibility.LeftMouseUpAtPoint(cursorPos)
-		if err != nil {
-			a.logger.Error("Failed to perform mouse up", zap.Error(err))
-		}
-	default:
-		a.logger.Debug("Unknown grid action key", zap.String("key", key))
-	}
+	a.handleActionKey(key, "Grid")
 }

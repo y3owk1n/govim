@@ -12,7 +12,6 @@ import (
 	"github.com/y3owk1n/neru/internal/bridge"
 	"github.com/y3owk1n/neru/internal/cli"
 	"github.com/y3owk1n/neru/internal/config"
-	"github.com/y3owk1n/neru/internal/electron"
 	"github.com/y3owk1n/neru/internal/eventtap"
 	"github.com/y3owk1n/neru/internal/grid"
 	"github.com/y3owk1n/neru/internal/hints"
@@ -59,7 +58,6 @@ type App struct {
 	scrollController *scroll.Controller
 	eventTap         *eventtap.EventTap
 	ipcServer        *ipc.Server
-	electronManager  *electron.ElectronManager
 	appWatcher       *appwatcher.Watcher
 	currentMode      Mode
 	hintsRouter      *hints.Router
@@ -99,7 +97,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	bridge.InitializeLogger(log)
 
 	// Initialize centralized overlay manager
-	om := overlay.Init(log)
+	overlayManager := overlay.Init(log)
 
 	// Check accessibility permissions
 	if cfg.General.AccessibilityCheckOnStart { // Changed from cfg.Accessibility.AccessibilityCheckOnStart
@@ -143,7 +141,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Create scroll controller
 	scrollCtrl := scroll.NewController(cfg.Scroll, log)
 
-	scrollOverlay, err := scroll.NewOverlayWithWindow(cfg.Scroll, log, om.GetWindowPtr())
+	scrollOverlay, err := scroll.NewOverlayWithWindow(cfg.Scroll, log, overlayManager.GetWindowPtr())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create scroll overlay: %w", err)
 	}
@@ -175,7 +173,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 		app.hintsCtx = &HintsContext{}
 
 		var err error
-		hintOverlay, err = hints.NewOverlayWithWindow(cfg.Hints, log, om.GetWindowPtr())
+		hintOverlay, err = hints.NewOverlayWithWindow(cfg.Hints, log, overlayManager.GetWindowPtr())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create overlay: %w", err)
 		}
@@ -184,7 +182,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	}
 
 	// Create action overlay after hints overlay is created
-	actionOverlay, err := action.NewOverlayWithWindow(cfg.Action, log, om.GetWindowPtr())
+	actionOverlay, err := action.NewOverlayWithWindow(cfg.Action, log, overlayManager.GetWindowPtr())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create action overlay: %w", err)
 	}
@@ -193,7 +191,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Create grid components only if enabled
 	if cfg.Grid.Enabled {
 		// Create grid overlay upfront (like hints overlay) to avoid thread issues
-		gridOverlay := grid.NewGridOverlayWithWindow(cfg.Grid, log, om.GetWindowPtr())
+		gridOverlay := grid.NewOverlayWithWindow(cfg.Grid, log, overlayManager.GetWindowPtr())
 
 		// Grid instance will be created when activated (screen bounds may change)
 		var gridInstance *grid.Grid
@@ -204,7 +202,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 		}
 		const subRows = 3
 		const subCols = 3
-		app.gridManager = grid.NewManager(nil, subRows, subCols, keys, func(forceRedraw bool) {
+		app.gridManager = grid.NewManager(nil, subRows, subCols, keys, func(_ bool) {
 			// Redraw grid overlay when input changes
 			if gridInstance == nil {
 				return
@@ -230,22 +228,15 @@ func NewApp(cfg *config.Config) (*App, error) {
 		}
 	}
 
-	// Create electron manager
-	if cfg.Hints.Enabled {
-		if cfg.Hints.AdditionalAXSupport.Enable { // Changed from cfg.Accessibility.AdditionalAXSupport.Enable
-			app.electronManager = electron.NewElectronManager(cfg.Hints.AdditionalAXSupport.AdditionalElectronBundles, cfg.Hints.AdditionalAXSupport.AdditionalChromiumBundles, cfg.Hints.AdditionalAXSupport.AdditionalFirefoxBundles) // Changed from cfg.Accessibility.AdditionalAXSupport
-		}
-	}
-
 	// Create event tap for capturing keys in modes
 	app.eventTap = eventtap.NewEventTap(app.handleKeyPress, log)
 	if app.eventTap == nil {
 		log.Warn("Event tap creation failed - key capture won't work")
 	} else {
 		keys := make([]string, 0, len(cfg.Hotkeys.Bindings))
-		for k, v := range cfg.Hotkeys.Bindings {
-			mode := v
-			if parts := strings.Split(v, " "); len(parts) > 0 {
+		for key, value := range cfg.Hotkeys.Bindings {
+			mode := value
+			if parts := strings.Split(value, " "); len(parts) > 0 {
 				mode = parts[0]
 			}
 			if mode == "hints" && !cfg.Hints.Enabled {
@@ -254,7 +245,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 			if mode == "grid" && !cfg.Grid.Enabled {
 				continue
 			}
-			keys = append(keys, k)
+			keys = append(keys, key)
 		}
 
 		// Configure hotkeys that should pass through to the global hotkey system
@@ -272,13 +263,13 @@ func NewApp(cfg *config.Config) (*App, error) {
 	app.ipcServer = ipcServer
 
 	// Register overlays with the manager for centralized drawing
-	om.UseScrollOverlay(scrollOverlay)
-	om.UseActionOverlay(actionOverlay)
+	overlayManager.UseScrollOverlay(scrollOverlay)
+	overlayManager.UseActionOverlay(actionOverlay)
 	if app.hintOverlay != nil {
-		om.UseHintOverlay(app.hintOverlay)
+		overlayManager.UseHintOverlay(app.hintOverlay)
 	}
 	if app.gridCtx != nil && app.gridCtx.gridOverlay != nil {
-		om.UseGridOverlay(*app.gridCtx.gridOverlay)
+		overlayManager.UseGridOverlay(*app.gridCtx.gridOverlay)
 	}
 
 	return app, nil

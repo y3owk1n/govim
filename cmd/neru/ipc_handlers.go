@@ -24,9 +24,9 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 		return a.handleStart(cmd)
 	case "stop":
 		return a.handleStop(cmd)
-	case "hints":
+	case modeHints:
 		return a.handleHints(cmd)
-	case "grid":
+	case modeGrid:
 		return a.handleGrid(cmd)
 	case "action":
 		return a.handleAction(cmd)
@@ -39,11 +39,11 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 	}
 }
 
-func (a *App) handlePing(cmd ipc.Command) ipc.Response {
+func (a *App) handlePing(_ ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Message: "pong"}
 }
 
-func (a *App) handleStart(cmd ipc.Command) ipc.Response {
+func (a *App) handleStart(_ ipc.Command) ipc.Response {
 	if a.enabled {
 		return ipc.Response{Success: false, Message: "neru is already running"}
 	}
@@ -51,7 +51,7 @@ func (a *App) handleStart(cmd ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Message: "neru started"}
 }
 
-func (a *App) handleStop(cmd ipc.Command) ipc.Response {
+func (a *App) handleStop(_ ipc.Command) ipc.Response {
 	if !a.enabled {
 		return ipc.Response{Success: false, Message: "neru is already stopped"}
 	}
@@ -60,7 +60,7 @@ func (a *App) handleStop(cmd ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Message: "neru stopped"}
 }
 
-func (a *App) handleHints(cmd ipc.Command) ipc.Response {
+func (a *App) handleHints(_ ipc.Command) ipc.Response {
 	if !a.enabled {
 		return ipc.Response{Success: false, Message: "neru is not running"}
 	}
@@ -73,7 +73,7 @@ func (a *App) handleHints(cmd ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Message: "hint mode activated"}
 }
 
-func (a *App) handleGrid(cmd ipc.Command) ipc.Response {
+func (a *App) handleGrid(_ ipc.Command) ipc.Response {
 	if !a.enabled {
 		return ipc.Response{Success: false, Message: "neru is not running"}
 	}
@@ -150,7 +150,7 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Message: "action performed at cursor"}
 }
 
-func (a *App) handleIdle(cmd ipc.Command) ipc.Response {
+func (a *App) handleIdle(_ ipc.Command) ipc.Response {
 	if !a.enabled {
 		return ipc.Response{Success: false, Message: "neru is not running"}
 	}
@@ -158,7 +158,7 @@ func (a *App) handleIdle(cmd ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Message: "mode set to idle"}
 }
 
-func (a *App) handleStatus(cmd ipc.Command) ipc.Response {
+func (a *App) handleStatus(_ ipc.Command) ipc.Response {
 	cfgPath := a.resolveConfigPath()
 	statusData := map[string]any{
 		"enabled": a.enabled,

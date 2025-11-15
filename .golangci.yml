@@ -1,6 +1,13 @@
 version: "2"
-# Options for analysis running.
 run:
-    # Include test files or not.
-    # Default: true
-    tests: false
+  tests: true
+linters:
+  default: standard
+  enable:
+    - exhaustive
+    - godox
+    - lll
+    - promlinter
+  settings:
+    lll:
+      line-length: 200

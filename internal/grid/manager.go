@@ -46,47 +46,18 @@ func NewManager(grid *Grid, subRows int, subCols int, subKeys string, onUpdate f
 
 // HandleInput processes variable-length coordinate input
 // Returns the target point when complete (labelLength characters entered or subgrid selection)
-func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete bool) {
+func (m *Manager) HandleInput(key string) (image.Point, bool) {
 	m.logger.Debug("Grid manager: Processing input", zap.String("key", key), zap.String("current_input", m.currentInput))
 
 	resetKey := "<"
 
 	if key == resetKey {
-		m.Reset()
-		if m.onUpdate != nil {
-			m.onUpdate(false)
-		}
+		m.handleResetKey(false)
 	}
 
 	// Handle backspace
 	if key == "\x7f" || key == "delete" || key == "backspace" {
-		if len(m.currentInput) > 0 {
-			m.currentInput = m.currentInput[:len(m.currentInput)-1]
-			m.logger.Debug("Grid manager: Backspace processed", zap.String("new_input", m.currentInput))
-			if m.onUpdate != nil {
-				m.onUpdate(false)
-			}
-			return image.Point{}, false
-		}
-
-		// If in subgrid, backspace exits subgrid and back to main grid
-		if m.inSubgrid {
-			m.logger.Debug("Grid manager: Exiting subgrid on backspace")
-			m.inSubgrid = false
-			m.selectedCell = nil
-			// Restore main grid input
-			if len(m.mainGridInput) > 0 {
-				// remove the last character
-				m.currentInput = m.mainGridInput[:len(m.mainGridInput)-1]
-			} else {
-				// just in case
-				m.currentInput = ""
-			}
-			if m.onUpdate != nil {
-				m.onUpdate(true)
-			}
-		}
-		return image.Point{}, false
+		return m.handleBackspace()
 	}
 
 	// Ignore non-letter keys
@@ -99,61 +70,70 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 
 	// If we're in subgrid selection, next key chooses a subcell
 	if m.inSubgrid && m.selectedCell != nil {
-		idx := strings.Index(m.subKeys, key)
-		if idx < 0 {
-			m.logger.Debug("Grid manager: Invalid subgrid key", zap.String("key", key))
-			return image.Point{}, false
-		}
-		// Subgrid is always 3x3
-		if idx >= 9 {
-			m.logger.Debug("Grid manager: Subgrid index out of range", zap.Int("index", idx))
-			return image.Point{}, false
-		}
-		row := idx / m.subCols
-		col := idx % m.subCols
-		b := m.selectedCell.Bounds
-		// Compute breakpoints to match overlay splitting and cover full bounds
-		xBreaks := make([]int, m.subCols+1)
-		yBreaks := make([]int, m.subRows+1)
-		xBreaks[0] = b.Min.X
-		yBreaks[0] = b.Min.Y
-		for i := 1; i <= m.subCols; i++ {
-			val := float64(i) * float64(b.Dx()) / float64(m.subCols)
-			xBreaks[i] = b.Min.X + int(val+0.5)
-		}
-		for j := 1; j <= m.subRows; j++ {
-			val := float64(j) * float64(b.Dy()) / float64(m.subRows)
-			yBreaks[j] = b.Min.Y + int(val+0.5)
-		}
-		// Ensure exact coverage
-		xBreaks[m.subCols] = b.Max.X
-		yBreaks[m.subRows] = b.Max.Y
-		left := xBreaks[col]
-		right := xBreaks[col+1]
-		top := yBreaks[row]
-		bottom := yBreaks[row+1]
-		x := left + (right-left)/2
-		y := top + (bottom-top)/2
-		m.logger.Info("Grid manager: Subgrid selection complete",
-			zap.Int("row", row), zap.Int("col", col),
-			zap.Int("x", x), zap.Int("y", y))
-		// m.Reset()
-		return image.Point{X: x, Y: y}, true
+		return m.handleSubgridSelection(key)
 	}
 
 	// Allow < to reset grid
 	if key == resetKey {
-		m.Reset()
-		if m.onUpdate != nil {
-			m.onUpdate(true)
-		}
+		m.handleResetKey(true)
 		return image.Point{}, false
 	}
 
+	// Validate the input key
+	if !m.validateInputKey(key) {
+		return image.Point{}, false
+	}
+
+	m.currentInput += key
+	m.logger.Debug("Grid manager: Input accumulated", zap.String("current_input", m.currentInput))
+
+	// After reaching label length, show subgrid inside the selected cell
+	if !m.inSubgrid && len(m.currentInput) >= m.labelLength {
+		return m.handleLabelLengthReached()
+	}
+
+	// Update overlay to show matched cells
+	if m.onUpdate != nil {
+		m.onUpdate(false)
+	}
+	return image.Point{}, false
+}
+
+// handleLabelLengthReached handles the case when label length is reached
+func (m *Manager) handleLabelLengthReached() (image.Point, bool) {
+	coord := m.currentInput[:m.labelLength]
+	if m.grid != nil {
+		cell := m.grid.GetCellByCoordinate(coord)
+		if cell != nil {
+			if !m.inSubgrid {
+				center := cell.Center
+
+				m.inSubgrid = true
+				m.selectedCell = cell
+				// Save the main grid input for restoring after subgrid
+				m.mainGridInput = m.currentInput
+				m.currentInput = ""
+				m.logger.Debug("Grid manager: Showing subgrid for cell", zap.String("coordinate", coord))
+				if m.onShowSub != nil {
+					m.onShowSub(cell)
+				}
+
+				return image.Point{X: center.X, Y: center.Y}, true
+			}
+		}
+	}
+	// Invalid coordinate, reset
+	m.logger.Debug("Grid manager: Invalid coordinate, resetting", zap.String("coordinate", coord))
+	m.Reset()
+	return image.Point{}, false
+}
+
+// validateInputKey validates the input key
+func (m *Manager) validateInputKey(key string) bool {
 	// Check if character is valid for grid
 	if m.grid != nil && !strings.Contains(m.grid.characters, key) {
 		m.logger.Debug("Grid manager: Character not valid for grid", zap.String("key", key))
-		return image.Point{}, false
+		return false
 	}
 
 	// Check if this key could potentially lead to a valid coordinate
@@ -171,46 +151,93 @@ func (m *Manager) HandleInput(key string) (targetPoint image.Point, complete boo
 	// If this key doesn't lead to any valid coordinate, ignore it
 	if !validPrefix {
 		m.logger.Debug("Grid manager: Key does not lead to valid coordinate", zap.String("input", potentialInput))
-		return image.Point{}, false
+		return false
 	}
 
-	m.currentInput += key
-	m.logger.Debug("Grid manager: Input accumulated", zap.String("current_input", m.currentInput))
+	return true
+}
 
-	// After reaching label length, show subgrid inside the selected cell
-	if !m.inSubgrid && len(m.currentInput) >= m.labelLength {
-		coord := m.currentInput[:m.labelLength]
-		if m.grid != nil {
-			cell := m.grid.GetCellByCoordinate(coord)
-			if cell != nil {
-				if !m.inSubgrid {
-					center := cell.Center
+// handleSubgridSelection handles subgrid selection
+func (m *Manager) handleSubgridSelection(key string) (image.Point, bool) {
+	keyIndex := strings.Index(m.subKeys, key)
+	if keyIndex < 0 {
+		m.logger.Debug("Grid manager: Invalid subgrid key", zap.String("key", key))
+		return image.Point{}, false
+	}
+	// Subgrid is always 3x3
+	if keyIndex >= 9 {
+		m.logger.Debug("Grid manager: Subgrid index out of range", zap.Int("index", keyIndex))
+		return image.Point{}, false
+	}
+	rowIndex := keyIndex / m.subCols
+	colIndex := keyIndex % m.subCols
+	cellBounds := m.selectedCell.Bounds
+	// Compute breakpoints to match overlay splitting and cover full bounds
+	xBreaks := make([]int, m.subCols+1)
+	yBreaks := make([]int, m.subRows+1)
+	xBreaks[0] = cellBounds.Min.X
+	yBreaks[0] = cellBounds.Min.Y
+	for breakIndex := 1; breakIndex <= m.subCols; breakIndex++ {
+		val := float64(breakIndex) * float64(cellBounds.Dx()) / float64(m.subCols)
+		xBreaks[breakIndex] = cellBounds.Min.X + int(val+0.5)
+	}
+	for breakIndex := 1; breakIndex <= m.subRows; breakIndex++ {
+		val := float64(breakIndex) * float64(cellBounds.Dy()) / float64(m.subRows)
+		yBreaks[breakIndex] = cellBounds.Min.Y + int(val+0.5)
+	}
+	// Ensure exact coverage
+	xBreaks[m.subCols] = cellBounds.Max.X
+	yBreaks[m.subRows] = cellBounds.Max.Y
+	left := xBreaks[colIndex]
+	right := xBreaks[colIndex+1]
+	top := yBreaks[rowIndex]
+	bottom := yBreaks[rowIndex+1]
+	xCoordinate := left + (right-left)/2
+	yCoordinate := top + (bottom-top)/2
+	m.logger.Info("Grid manager: Subgrid selection complete",
+		zap.Int("row", rowIndex), zap.Int("col", colIndex),
+		zap.Int("x", xCoordinate), zap.Int("y", yCoordinate))
+	// m.Reset()
+	return image.Point{X: xCoordinate, Y: yCoordinate}, true
+}
 
-					m.inSubgrid = true
-					m.selectedCell = cell
-					// Save the main grid input for restoring after subgrid
-					m.mainGridInput = m.currentInput
-					m.currentInput = ""
-					m.logger.Debug("Grid manager: Showing subgrid for cell", zap.String("coordinate", coord))
-					if m.onShowSub != nil {
-						m.onShowSub(cell)
-					}
-
-					return image.Point{X: center.X, Y: center.Y}, true
-				}
-			}
+// handleBackspace handles the backspace key input
+func (m *Manager) handleBackspace() (image.Point, bool) {
+	if len(m.currentInput) > 0 {
+		m.currentInput = m.currentInput[:len(m.currentInput)-1]
+		m.logger.Debug("Grid manager: Backspace processed", zap.String("new_input", m.currentInput))
+		if m.onUpdate != nil {
+			m.onUpdate(false)
 		}
-		// Invalid coordinate, reset
-		m.logger.Debug("Grid manager: Invalid coordinate, resetting", zap.String("coordinate", coord))
-		m.Reset()
 		return image.Point{}, false
 	}
 
-	// Update overlay to show matched cells
-	if m.onUpdate != nil {
-		m.onUpdate(false)
+	// If in subgrid, backspace exits subgrid and back to main grid
+	if m.inSubgrid {
+		m.logger.Debug("Grid manager: Exiting subgrid on backspace")
+		m.inSubgrid = false
+		m.selectedCell = nil
+		// Restore main grid input
+		if len(m.mainGridInput) > 0 {
+			// remove the last character
+			m.currentInput = m.mainGridInput[:len(m.mainGridInput)-1]
+		} else {
+			// just in case
+			m.currentInput = ""
+		}
+		if m.onUpdate != nil {
+			m.onUpdate(true)
+		}
 	}
 	return image.Point{}, false
+}
+
+// handleResetKey handles the reset key input
+func (m *Manager) handleResetKey(redraw bool) {
+	m.Reset()
+	if m.onUpdate != nil {
+		m.onUpdate(redraw)
+	}
 }
 
 // GetInput returns the current partial coordinate input

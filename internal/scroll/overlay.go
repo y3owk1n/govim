@@ -40,6 +40,7 @@ func resizeScrollCompletionCallback(context unsafe.Pointer) {
 	scrollCallbackLock.Unlock()
 }
 
+// Overlay represents a scroll overlay.
 type Overlay struct {
 	window C.OverlayWindow
 	config config.ScrollConfig
@@ -99,15 +100,15 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	done := make(chan struct{})
 
 	// Generate unique ID for this callback
-	id := atomic.AddUint64(&scrollCallbackID, 1)
+	callbackID := atomic.AddUint64(&scrollCallbackID, 1)
 
 	// Store channel in map
 	scrollCallbackLock.Lock()
-	scrollCallbackMap[id] = done
+	scrollCallbackMap[callbackID] = done
 	scrollCallbackLock.Unlock()
 
 	if o.logger != nil {
-		o.logger.Debug("Scroll overlay resize started", zap.Uint64("callback_id", id))
+		o.logger.Debug("Scroll overlay resize started", zap.Uint64("callback_id", callbackID))
 	}
 
 	// Pass ID as context (safe - no Go pointers)
@@ -115,7 +116,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
 		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeScrollCompletionCallback)),
-		*(*unsafe.Pointer)(unsafe.Pointer(&id)),
+		*(*unsafe.Pointer)(unsafe.Pointer(&callbackID)),
 	)
 
 	// Don't wait for callback - continue immediately for better UX
@@ -123,27 +124,68 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	// Start a goroutine to handle cleanup when callback eventually arrives
 	go func() {
 		if o.logger != nil {
-			o.logger.Debug("Scroll overlay resize background cleanup started", zap.Uint64("callback_id", id))
+			o.logger.Debug("Scroll overlay resize background cleanup started", zap.Uint64("callback_id", callbackID))
 		}
 
 		select {
 		case <-done:
 			// Callback received, normal cleanup already handled in callback
 			if o.logger != nil {
-				o.logger.Debug("Scroll overlay resize callback received", zap.Uint64("callback_id", id))
+				o.logger.Debug("Scroll overlay resize callback received", zap.Uint64("callback_id", callbackID))
 			}
 		case <-time.After(2 * time.Second):
 			// Long timeout for cleanup only - callback likely failed
 			scrollCallbackLock.Lock()
-			delete(scrollCallbackMap, id)
+			delete(scrollCallbackMap, callbackID)
 			scrollCallbackLock.Unlock()
 
 			if o.logger != nil {
 				o.logger.Debug("Scroll overlay resize cleanup timeout - removed callback from map",
-					zap.Uint64("callback_id", id))
+					zap.Uint64("callback_id", callbackID))
 			}
 		}
 	}()
+}
+
+// DrawScrollHighlight draws a highlight border around the screen
+func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height int) {
+	o.logger.Debug("DrawScrollHighlight called")
+
+	// Use action config for highlight color and width
+	color := o.config.HighlightColor
+	borderWidth := o.config.HighlightWidth
+
+	cColor := C.CString(color)
+	defer C.free(unsafe.Pointer(cColor))
+
+	// Build 4 border lines around the rectangle
+	lines := make([]C.CGRect, 4)
+
+	// Bottom
+	lines[0] = C.CGRect{
+		origin: C.CGPoint{x: C.double(xCoordinate), y: C.double(yCoordinate)},
+		size:   C.CGSize{width: C.double(width), height: C.double(borderWidth)},
+	}
+
+	// Top
+	lines[1] = C.CGRect{
+		origin: C.CGPoint{x: C.double(xCoordinate), y: C.double(yCoordinate + height - borderWidth)},
+		size:   C.CGSize{width: C.double(width), height: C.double(borderWidth)},
+	}
+
+	// Left
+	lines[2] = C.CGRect{
+		origin: C.CGPoint{x: C.double(xCoordinate), y: C.double(yCoordinate)},
+		size:   C.CGSize{width: C.double(borderWidth), height: C.double(height)},
+	}
+
+	// Right
+	lines[3] = C.CGRect{
+		origin: C.CGPoint{x: C.double(xCoordinate + width - borderWidth), y: C.double(yCoordinate)},
+		size:   C.CGSize{width: C.double(borderWidth), height: C.double(height)},
+	}
+
+	C.drawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(borderWidth), C.double(1.0))
 }
 
 // Destroy destroys the overlay
@@ -156,44 +198,3 @@ func (o *Overlay) Destroy() {
 
 // CleanupCallbackMap cleans up any pending callbacks in the map
 // CleanupCallbackMap removed: centralized overlay manager controls resizes
-
-// DrawScrollHighlight draws a highlight border around the screen
-func (o *Overlay) DrawScrollHighlight(x, y, w, h int) {
-	o.logger.Debug("DrawScrollHighlight called")
-
-	// Use action config for highlight color and width
-	color := o.config.HighlightColor
-	width := o.config.HighlightWidth
-
-	cColor := C.CString(color)
-	defer C.free(unsafe.Pointer(cColor))
-
-	// Build 4 border lines around the rectangle
-	lines := make([]C.CGRect, 4)
-
-	// Bottom
-	lines[0] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x), y: C.double(y)},
-		size:   C.CGSize{width: C.double(w), height: C.double(width)},
-	}
-
-	// Top
-	lines[1] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x), y: C.double(y + h - width)},
-		size:   C.CGSize{width: C.double(w), height: C.double(width)},
-	}
-
-	// Left
-	lines[2] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x), y: C.double(y)},
-		size:   C.CGSize{width: C.double(width), height: C.double(h)},
-	}
-
-	// Right
-	lines[3] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x + w - width), y: C.double(y)},
-		size:   C.CGSize{width: C.double(width), height: C.double(h)},
-	}
-
-	C.drawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(width), C.double(1.0))
-}

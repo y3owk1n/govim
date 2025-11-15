@@ -1,6 +1,9 @@
+// Package scroll provides scrolling functionality for the Neru application.
 package scroll
 
 import (
+	"fmt"
+
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/config"
 	"go.uber.org/zap"
@@ -10,18 +13,25 @@ import (
 type Direction int
 
 const (
+	// DirectionUp represents upward scrolling.
 	DirectionUp Direction = iota
+	// DirectionDown represents downward scrolling.
 	DirectionDown
+	// DirectionLeft represents leftward scrolling.
 	DirectionLeft
+	// DirectionRight represents rightward scrolling.
 	DirectionRight
 )
 
-// ScrollAmount represents the amount to scroll
-type ScrollAmount int
+// Amount represents the amount to scroll
+type Amount int
 
 const (
-	AmountChar ScrollAmount = iota
+	// AmountChar represents character-level scrolling.
+	AmountChar Amount = iota
+	// AmountHalfPage represents half-page scrolling.
 	AmountHalfPage
+	// AmountEnd represents scrolling to the end.
 	AmountEnd
 )
 
@@ -45,7 +55,7 @@ func NewController(cfg config.ScrollConfig, logger *zap.Logger) *Controller {
 }
 
 // Scroll scrolls in the specified direction
-func (c *Controller) Scroll(dir Direction, amount ScrollAmount) error {
+func (c *Controller) Scroll(dir Direction, amount Amount) error {
 	deltaX, deltaY := c.calculateDelta(dir, amount)
 
 	c.logger.Debug("Scrolling",
@@ -56,7 +66,7 @@ func (c *Controller) Scroll(dir Direction, amount ScrollAmount) error {
 
 	if err := accessibility.ScrollAtCursor(deltaX, deltaY); err != nil {
 		c.logger.Error("Scroll failed", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to scroll at cursor: %w", err)
 	}
 
 	c.logger.Info("Scroll completed successfully",
@@ -69,7 +79,7 @@ func (c *Controller) Scroll(dir Direction, amount ScrollAmount) error {
 }
 
 // calculateDelta calculates the scroll delta based on direction and amount
-func (c *Controller) calculateDelta(dir Direction, amount ScrollAmount) (int, int) {
+func (c *Controller) calculateDelta(dir Direction, amount Amount) (int, int) {
 	var deltaX, deltaY int
 
 	// Use config values for all scroll amounts
@@ -126,7 +136,7 @@ func (c *Controller) directionString(dir Direction) string {
 }
 
 // amountString converts scroll amount to string
-func (c *Controller) amountString(amount ScrollAmount) string {
+func (c *Controller) amountString(amount Amount) string {
 	switch amount {
 	case AmountChar:
 		return "character"

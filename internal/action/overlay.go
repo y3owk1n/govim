@@ -1,4 +1,8 @@
+// Package action provides overlay functionality for action mode.
 package action
+
+// Package action provides overlay functionality for action mode in the Neru application.
+// Action mode allows users to perform mouse actions at the current cursor position.
 
 /*
 #cgo CFLAGS: -x objective-c
@@ -40,6 +44,7 @@ func resizeActionCompletionCallback(context unsafe.Pointer) {
 	actionCallbackLock.Unlock()
 }
 
+// Overlay represents an action overlay.
 type Overlay struct {
 	window C.OverlayWindow
 	config config.ActionConfig
@@ -99,15 +104,15 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	done := make(chan struct{})
 
 	// Generate unique ID for this callback
-	id := atomic.AddUint64(&actionCallbackID, 1)
+	callbackID := atomic.AddUint64(&actionCallbackID, 1)
 
 	// Store channel in map
 	actionCallbackLock.Lock()
-	actionCallbackMap[id] = done
+	actionCallbackMap[callbackID] = done
 	actionCallbackLock.Unlock()
 
 	if o.logger != nil {
-		o.logger.Debug("Action overlay resize started", zap.Uint64("callback_id", id))
+		o.logger.Debug("Action overlay resize started", zap.Uint64("callback_id", callbackID))
 	}
 
 	// Pass ID as context (safe - no Go pointers)
@@ -115,7 +120,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
 		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeActionCompletionCallback)),
-		*(*unsafe.Pointer)(unsafe.Pointer(&id)),
+		*(*unsafe.Pointer)(unsafe.Pointer(&callbackID)),
 	)
 
 	// Don't wait for callback - continue immediately for better UX
@@ -123,36 +128,36 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	// Start a goroutine to handle cleanup when callback eventually arrives
 	go func() {
 		if o.logger != nil {
-			o.logger.Debug("Action overlay resize background cleanup started", zap.Uint64("callback_id", id))
+			o.logger.Debug("Action overlay resize background cleanup started", zap.Uint64("callback_id", callbackID))
 		}
 
 		select {
 		case <-done:
 			// Callback received, normal cleanup already handled in callback
 			if o.logger != nil {
-				o.logger.Debug("Action overlay resize callback received", zap.Uint64("callback_id", id))
+				o.logger.Debug("Action overlay resize callback received", zap.Uint64("callback_id", callbackID))
 			}
 		case <-time.After(2 * time.Second):
 			// Long timeout for cleanup only - callback likely failed
 			actionCallbackLock.Lock()
-			delete(actionCallbackMap, id)
+			delete(actionCallbackMap, callbackID)
 			actionCallbackLock.Unlock()
 
 			if o.logger != nil {
 				o.logger.Debug("Action overlay resize cleanup timeout - removed callback from map",
-					zap.Uint64("callback_id", id))
+					zap.Uint64("callback_id", callbackID))
 			}
 		}
 	}()
 }
 
 // DrawActionHighlight draws a highlight border around the screen
-func (o *Overlay) DrawActionHighlight(x, y, w, h int) {
+func (o *Overlay) DrawActionHighlight(xCoordinate, yCoordinate, width, height int) {
 	o.logger.Debug("DrawActionHighlight called")
 
 	// Use action config for highlight color and width
 	color := o.config.HighlightColor
-	width := o.config.HighlightWidth
+	highlightWidth := o.config.HighlightWidth
 
 	cColor := C.CString(color)
 	defer C.free(unsafe.Pointer(cColor))
@@ -162,29 +167,29 @@ func (o *Overlay) DrawActionHighlight(x, y, w, h int) {
 
 	// Bottom
 	lines[0] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x), y: C.double(y)},
-		size:   C.CGSize{width: C.double(w), height: C.double(width)},
+		origin: C.CGPoint{x: C.double(xCoordinate), y: C.double(yCoordinate)},
+		size:   C.CGSize{width: C.double(width), height: C.double(highlightWidth)},
 	}
 
 	// Top
 	lines[1] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x), y: C.double(y + h - width)},
-		size:   C.CGSize{width: C.double(w), height: C.double(width)},
+		origin: C.CGPoint{x: C.double(xCoordinate), y: C.double(yCoordinate + height - highlightWidth)},
+		size:   C.CGSize{width: C.double(width), height: C.double(highlightWidth)},
 	}
 
 	// Left
 	lines[2] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x), y: C.double(y)},
-		size:   C.CGSize{width: C.double(width), height: C.double(h)},
+		origin: C.CGPoint{x: C.double(xCoordinate), y: C.double(yCoordinate)},
+		size:   C.CGSize{width: C.double(highlightWidth), height: C.double(height)},
 	}
 
 	// Right
 	lines[3] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x + w - width), y: C.double(y)},
-		size:   C.CGSize{width: C.double(width), height: C.double(h)},
+		origin: C.CGPoint{x: C.double(xCoordinate + width - highlightWidth), y: C.double(yCoordinate)},
+		size:   C.CGSize{width: C.double(highlightWidth), height: C.double(height)},
 	}
 
-	C.drawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(width), C.double(1.0))
+	C.drawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(highlightWidth), C.double(1.0))
 }
 
 // Destroy destroys the overlay

@@ -9,10 +9,10 @@ var gridCmd = &cobra.Command{
 	Use:   "grid",
 	Short: "Launch grid mode",
 	Long:  `Activate grid mode for mouseless navigation.`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(_ *cobra.Command, _ []string) error {
 		return requiresRunningInstance()
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		logger.Debug("Launching grid mode")
 		var params []string
 		params = append(params, "grid")

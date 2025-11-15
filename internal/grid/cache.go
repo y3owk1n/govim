@@ -1,11 +1,16 @@
+// Package grid provides grid mode functionality for the Neru application.
 package grid
+
+// Package grid provides grid-based navigation functionality for the Neru application,
+// including grid generation, caching, and overlay rendering.
 
 import (
 	"container/list"
-	"go.uber.org/zap"
 	"image"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type gridCacheKey struct {
@@ -20,20 +25,23 @@ type gridCacheEntry struct {
 	usedAt  time.Time
 }
 
-type GridCache struct {
+// Cache implements a cache for grid cells to improve performance
+type Cache struct {
 	mu       sync.Mutex
 	items    map[gridCacheKey]*list.Element
 	order    *list.List
 	capacity int
 }
 
-var gridCache = newGridCache(8)
+var gridCache = newCache(8)
 var gridCacheEnabled = true
 
+// SetGridCacheEnabled enables or disables the grid cache
 func SetGridCacheEnabled(enabled bool) {
 	gridCacheEnabled = enabled
 }
 
+// Prewarm prewarms the grid cache with common grid sizes
 func Prewarm(characters string, sizes []image.Rectangle) {
 	if !gridCacheEnabled {
 		return
@@ -47,47 +55,52 @@ func Prewarm(characters string, sizes []image.Rectangle) {
 	}
 }
 
-func newGridCache(cap int) *GridCache {
-	return &GridCache{items: make(map[gridCacheKey]*list.Element), order: list.New(), capacity: cap}
+func newCache(capacity int) *Cache {
+	return &Cache{items: make(map[gridCacheKey]*list.Element), order: list.New(), capacity: capacity}
 }
 
-func (c *GridCache) get(characters string, bounds image.Rectangle) ([]*Cell, bool) {
+func (c *Cache) get(characters string, bounds image.Rectangle) ([]*Cell, bool) {
 	key := gridCacheKey{characters: characters, width: bounds.Dx(), height: bounds.Dy()}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if el, ok := c.items[key]; ok {
-		ent := el.Value.(*gridCacheEntry)
-		ent.usedAt = time.Now()
-		c.order.MoveToFront(el)
-		return ent.cells, true
+	if element, ok := c.items[key]; ok {
+		if entry, ok := element.Value.(*gridCacheEntry); ok {
+			entry.usedAt = time.Now()
+			c.order.MoveToFront(element)
+			return entry.cells, true
+		}
 	}
 	return nil, false
 }
 
-func (c *GridCache) put(characters string, bounds image.Rectangle, cells []*Cell) {
+func (c *Cache) put(characters string, bounds image.Rectangle, cells []*Cell) {
 	key := gridCacheKey{characters: characters, width: bounds.Dx(), height: bounds.Dy()}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if el, ok := c.items[key]; ok {
-		ent := el.Value.(*gridCacheEntry)
-		ent.cells = cells
-		ent.usedAt = time.Now()
-		ent.addedAt = ent.usedAt
-		c.order.MoveToFront(el)
+	if element, ok := c.items[key]; ok {
+		if entry, ok := element.Value.(*gridCacheEntry); ok {
+			entry.cells = cells
+			entry.usedAt = time.Now()
+			entry.addedAt = entry.usedAt
+			c.order.MoveToFront(element)
+			return
+		}
+		// replace unexpected type
+		newEntry := &gridCacheEntry{cells: cells, addedAt: time.Now(), usedAt: time.Now()}
+		element.Value = newEntry
+		c.order.MoveToFront(element)
 		return
 	}
-	ent := &gridCacheEntry{cells: cells, addedAt: time.Now(), usedAt: time.Now()}
-	el := c.order.PushFront(ent)
-	c.items[key] = el
+	entry := &gridCacheEntry{cells: cells, addedAt: time.Now(), usedAt: time.Now()}
+	element := c.order.PushFront(entry)
+	c.items[key] = element
 	if c.order.Len() > c.capacity {
 		tail := c.order.Back()
 		if tail != nil {
-			removed := tail.Value.(*gridCacheEntry)
-			_ = removed
 			c.order.Remove(tail)
-			for k, v := range c.items {
-				if v == tail {
-					delete(c.items, k)
+			for cacheKey, value := range c.items {
+				if value == tail {
+					delete(c.items, cacheKey)
 					break
 				}
 			}

@@ -1,3 +1,4 @@
+// Package hotkeys provides hotkey management functionality.
 package hotkeys
 
 /*
@@ -16,6 +17,9 @@ import (
 
 	"go.uber.org/zap"
 )
+
+// Package hotkeys provides functionality for registering and handling global hotkeys
+// in the Neru application using the Carbon Event Manager API.
 
 // HotkeyID represents a unique hotkey identifier
 type HotkeyID int
@@ -90,16 +94,16 @@ func (m *Manager) Register(keyString string, callback Callback) (HotkeyID, error
 }
 
 // Unregister unregisters a hotkey
-func (m *Manager) Unregister(id HotkeyID) {
-	m.logger.Debug("Unregistering hotkey", zap.Int("id", int(id)))
+func (m *Manager) Unregister(hotkeyID HotkeyID) {
+	m.logger.Debug("Unregistering hotkey", zap.Int("id", int(hotkeyID)))
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	C.unregisterHotkey(C.int(id))
-	delete(m.callbacks, id)
+	C.unregisterHotkey(C.int(hotkeyID))
+	delete(m.callbacks, hotkeyID)
 
-	m.logger.Info("Unregistered hotkey", zap.Int("id", int(id)))
+	m.logger.Info("Unregistered hotkey", zap.Int("id", int(hotkeyID)))
 }
 
 // UnregisterAll unregisters all hotkeys
@@ -135,18 +139,18 @@ func (m *Manager) handleCallback(hotkeyID HotkeyID) {
 var globalManager *Manager
 
 // SetGlobalManager sets the global manager for C callbacks
-func SetGlobalManager(m *Manager) {
-	if m != nil {
-		m.logger.Debug("Setting global hotkey manager")
+func SetGlobalManager(manager *Manager) {
+	if manager != nil {
+		manager.logger.Debug("Setting global hotkey manager")
 	} else {
 		// This would be unusual but let's log it
 		fmt.Println("Setting global hotkey manager to nil")
 	}
-	globalManager = m
+	globalManager = manager
 }
 
 //export hotkeyCallbackBridge
-func hotkeyCallbackBridge(hotkeyID C.int, userData unsafe.Pointer) {
+func hotkeyCallbackBridge(hotkeyID C.int, _ unsafe.Pointer) {
 	if globalManager != nil {
 		globalManager.logger.Debug("Hotkey callback bridge called", zap.Int("id", int(hotkeyID)))
 		go globalManager.handleCallback(HotkeyID(hotkeyID))

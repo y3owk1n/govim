@@ -80,6 +80,12 @@ lint:
     golangci-lint run
     @echo "✓ Lint complete"
 
+# Vet
+vet:
+    @echo "Vetting code..."
+    go vet ./...
+    @echo "✓ Vet complete"
+
 # Download dependencies
 deps:
     @echo "Downloading dependencies..."

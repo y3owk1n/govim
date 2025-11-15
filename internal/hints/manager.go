@@ -38,7 +38,7 @@ func (m *Manager) Reset() {
 }
 
 // HandleInput processes an input character and returns true if an exact match was found
-func (m *Manager) HandleInput(key string) (exactMatch *Hint, ok bool) {
+func (m *Manager) HandleInput(key string) (*Hint, bool) {
 	if m.currentHints == nil {
 		m.logger.Debug("Hint manager: No current hints available")
 		return nil, false
@@ -125,6 +125,7 @@ func isLetter(c byte) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
+// GetHints returns the current hints.
 func (m *Manager) GetHints() []*Hint {
 	return m.currentHints.GetHints()
 }

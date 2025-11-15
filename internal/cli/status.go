@@ -7,21 +7,22 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/y3owk1n/neru/internal/ipc"
 	"github.com/y3owk1n/neru/internal/logger"
+	"go.uber.org/zap"
 )
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show neru status",
 	Long:  `Display the current status of the neru program.`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(_ *cobra.Command, _ []string) error {
 		return requiresRunningInstance()
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		logger.Debug("Fetching status")
 		client := ipc.NewClient()
 		response, err := client.Send(ipc.Command{Action: "status"})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to send status command: %w", err)
 		}
 
 		if !response.Success {
@@ -46,7 +47,11 @@ var statusCmd = &cobra.Command{
 			}
 		} else {
 			// Fallback to JSON output if structure is unexpected
-			jsonData, _ := json.MarshalIndent(response.Data, "  ", "  ")
+			jsonData, err := json.MarshalIndent(response.Data, "  ", "  ")
+			if err != nil {
+				logger.Error("Failed to marshal status data to JSON", zap.Error(err))
+				return fmt.Errorf("failed to marshal status data: %w", err)
+			}
 			fmt.Println(string(jsonData))
 		}
 

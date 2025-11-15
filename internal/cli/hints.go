@@ -9,10 +9,10 @@ var hintsCmd = &cobra.Command{
 	Use:   "hints",
 	Short: "Launch hints mode in left click mode",
 	Long:  `Activate hint mode for direct clicking on UI elements.`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(_ *cobra.Command, _ []string) error {
 		return requiresRunningInstance()
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		logger.Debug("Launching hints mode")
 		var params []string
 		params = append(params, "hints")

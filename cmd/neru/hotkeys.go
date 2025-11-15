@@ -1,16 +1,23 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/y3owk1n/neru/internal/ipc"
 	"go.uber.org/zap"
 )
 
+const (
+	modeHints = "hints"
+	modeGrid  = "grid"
+)
+
 // registerHotkeys registers all global hotkeys
-func (a *App) registerHotkeys() error {
+func (a *App) registerHotkeys() {
 	// Note: Escape key for exiting modes is hardcoded in handleKeyPress, not registered as global hotkey
 
 	// Register arbitrary bindings from config.Hotkeys.Bindings
@@ -27,10 +34,10 @@ func (a *App) registerHotkeys() error {
 		if parts := strings.Split(action, " "); len(parts) > 0 {
 			mode = parts[0]
 		}
-		if mode == "hints" && !a.config.Hints.Enabled {
+		if mode == modeHints && !a.config.Hints.Enabled {
 			continue
 		}
-		if mode == "grid" && !a.config.Grid.Enabled {
+		if mode == modeGrid && !a.config.Grid.Enabled {
 			continue
 		}
 
@@ -61,8 +68,6 @@ func (a *App) registerHotkeys() error {
 			continue
 		}
 	}
-
-	return nil
 }
 
 // executeHotkeyAction executes a hotkey action (either exec or IPC command)
@@ -96,11 +101,14 @@ func (a *App) executeShellCommand(key, action string) error {
 	}
 
 	a.logger.Debug("Executing shell command from hotkey", zap.String("key", key), zap.String("cmd", cmdStr))
-	cmd := exec.Command("/bin/bash", "-lc", cmdStr)
+	// Create a context with a reasonable timeout for shell commands
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "/bin/bash", "-lc", cmdStr) //nolint:gosec
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		a.logger.Error("hotkey exec failed", zap.String("key", key), zap.String("cmd", cmdStr), zap.ByteString("output", out), zap.Error(err))
-		return err
+		return fmt.Errorf("hotkey exec failed: %w", err)
 	}
 
 	a.logger.Info("hotkey exec completed", zap.String("key", key), zap.String("cmd", cmdStr), zap.ByteString("output", out))
@@ -136,10 +144,7 @@ func (a *App) refreshHotkeysForAppOrCurrent(bundleID string) {
 	}
 
 	if !a.hotkeysRegistered {
-		if err := a.registerHotkeys(); err != nil {
-			a.logger.Error("Failed to register hotkeys", zap.Error(err))
-			return
-		}
+		a.registerHotkeys()
 		a.hotkeysRegistered = true
 		a.logger.Debug("Hotkeys registered")
 	}
