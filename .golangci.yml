@@ -1,8 +1,6 @@
 version: "2"
 run:
   tests: true
-  skip-dirs:
-    - .direnv
 linters:
   enable:
     - errorlint
@@ -57,33 +55,3 @@ linters:
     - wrapcheck
   disable:
     - unconvert
-linters-settings:
-  gocyclo:
-    min-complexity: 15
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-  varnamelen:
-    max-distance: 10
-    min-name-length: 2
-    check-receiver: false
-    check-return: false
-    check-type-param: false
-  revive:
-    confidence: 0.8
-  stylecheck:
-    checks: ["all"]
-  errcheck:
-    exclude-functions:
-      - fmt.Print
-      - fmt.Printf
-      - fmt.Println
