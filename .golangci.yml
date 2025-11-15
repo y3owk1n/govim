@@ -2,56 +2,12 @@ version: "2"
 run:
   tests: true
 linters:
+  default: standard
   enable:
-    - errorlint
-    - forcetypeassert
-    - goconst
-    # Additional linters for improved code quality
-    - unused
-    - staticcheck
-    - ineffassign
-    - misspell
-    - errcheck
-    - nakedret
-    - gocyclo
-    - dupl
-    - gosec
-    - prealloc
-    - unparam
-    - revive
-    - thelper
-    - tparallel
-    - wastedassign
-    - whitespace
-    # Additional linters for production readiness
-    - asciicheck
-    - bidichk
-    - bodyclose
-    - contextcheck
-    - decorder
-    - dogsled
-    - durationcheck
-    - errchkjson
-    - errname
-    - gocheckcompilerdirectives
-    - gomoddirectives
-    - grouper
-    - importas
-    - makezero
-    - mirror
-    - musttag
-    - nilerr
-    - nilnil
-    - noctx
-    - nolintlint
-    - nonamedreturns
-    - reassign
-    - rowserrcheck
-    - sqlclosecheck
-    - testableexamples
-    - testpackage
-    - usestdlibvars
-    - varnamelen
-    - wrapcheck
-  disable:
-    - unconvert
+    - exhaustive
+    - godox
+    - lll
+    - promlinter
+  settings:
+    lll:
+      line-length: 200

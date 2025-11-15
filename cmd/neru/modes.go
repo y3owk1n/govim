@@ -422,6 +422,9 @@ func (a *App) handleTabKey() {
 				overlay.Get().SwitchTo(overlay.ModeAction)
 			}
 		}
+	case ModeIdle:
+		// Nothing to do in idle mode
+		return
 	}
 }
 
@@ -460,6 +463,9 @@ func (a *App) handleEscapeKey() {
 			return
 		}
 		// Fall through to exit mode
+	case ModeIdle:
+		// Nothing to do in idle mode
+		return
 	}
 	a.exitMode()
 	if overlay.Get() != nil {
@@ -544,6 +550,9 @@ func (a *App) handleModeSpecificKey(key string) {
 
 			return
 		}
+	case ModeIdle:
+		// Nothing to do in idle mode
+		return
 	}
 }
 
@@ -783,6 +792,9 @@ func (a *App) exitMode() {
 			overlay.Get().Clear()
 			overlay.Get().Hide()
 		}
+	case ModeIdle:
+		// Already in idle mode, nothing to do
+		return
 	default:
 		// No domain-specific cleanup for other modes yet
 		// But still clear and hide action overlay
