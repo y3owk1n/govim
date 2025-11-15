@@ -50,6 +50,7 @@ type Overlay struct {
 	logger *zap.Logger
 }
 
+// StyleMode represents the style configuration for hints.
 type StyleMode struct {
 	FontSize         int
 	FontFamily       string
@@ -121,15 +122,15 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	done := make(chan struct{})
 
 	// Generate unique ID for this callback
-	id := atomic.AddUint64(&hintCallbackID, 1)
+	callbackID := atomic.AddUint64(&hintCallbackID, 1)
 
 	// Store channel in map
 	hintCallbackLock.Lock()
-	hintCallbackMap[id] = done
+	hintCallbackMap[callbackID] = done
 	hintCallbackLock.Unlock()
 
 	if o.logger != nil {
-		o.logger.Debug("Hint overlay resize started", zap.Uint64("callback_id", id))
+		o.logger.Debug("Hint overlay resize started", zap.Uint64("callback_id", callbackID))
 	}
 
 	// Pass ID as context (safe - no Go pointers)
@@ -137,7 +138,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
 		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeHintCompletionCallback)),
-		*(*unsafe.Pointer)(unsafe.Pointer(&id)),
+		*(*unsafe.Pointer)(unsafe.Pointer(&callbackID)),
 	)
 
 	// Don't wait for callback - continue immediately for better UX
@@ -145,32 +146,27 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	// Start a goroutine to handle cleanup when callback eventually arrives
 	go func() {
 		if o.logger != nil {
-			o.logger.Debug("Hint overlay resize background cleanup started", zap.Uint64("callback_id", id))
+			o.logger.Debug("Hint overlay resize background cleanup started", zap.Uint64("callback_id", callbackID))
 		}
 
 		select {
 		case <-done:
 			// Callback received, normal cleanup already handled in callback
 			if o.logger != nil {
-				o.logger.Debug("Hint overlay resize callback received", zap.Uint64("callback_id", id))
+				o.logger.Debug("Hint overlay resize callback received", zap.Uint64("callback_id", callbackID))
 			}
 		case <-time.After(2 * time.Second):
 			// Long timeout for cleanup only - callback likely failed
 			hintCallbackLock.Lock()
-			delete(hintCallbackMap, id)
+			delete(hintCallbackMap, callbackID)
 			hintCallbackLock.Unlock()
 
 			if o.logger != nil {
 				o.logger.Debug("Hint overlay resize cleanup timeout - removed callback from map",
-					zap.Uint64("callback_id", id))
+					zap.Uint64("callback_id", callbackID))
 			}
 		}
 	}()
-}
-
-// DrawHintsWithoutArrow draws hints without arrows
-func (o *Overlay) DrawHintsWithoutArrow(hints []*Hint, style StyleMode) error {
-	return o.drawHintsInternal(hints, style, false)
 }
 
 // DrawHintsWithStyle draws hints on the overlay with custom style
@@ -193,7 +189,8 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 	start := time.Now()
 	var msBefore runtime.MemStats
 	runtime.ReadMemStats(&msBefore)
-	cHintsPtr := hintDataPool.Get().(*[]C.HintData)
+	tmpHints := hintDataPool.Get()
+	cHintsPtr, _ := tmpHints.(*[]C.HintData)
 	if cap(*cHintsPtr) < len(hints) {
 		s := make([]C.HintData, len(hints))
 		cHintsPtr = &s
@@ -201,7 +198,8 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 		*cHintsPtr = (*cHintsPtr)[:len(hints)]
 	}
 	cHints := *cHintsPtr
-	cLabelsPtr := cLabelSlicePool.Get().(*[]*C.char)
+	tmpCLables := cLabelSlicePool.Get()
+	cLabelsPtr, _ := tmpCLables.(*[]*C.char)
 	if cap(*cLabelsPtr) < len(hints) {
 		s := make([]*C.char, len(hints))
 		cLabelsPtr = &s
@@ -316,24 +314,24 @@ func (o *Overlay) DrawTargetDot(x, y int, radius float64, color, borderColor str
 }
 
 // DrawScrollHighlight draws a highlight around a scroll area
-func (o *Overlay) DrawScrollHighlight(x, y, w, h int, color string, width int) {
+func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height int, color string, borderWidth int) {
 	o.logger.Debug("DrawScrollHighlight called")
 
 	renderBounds := C.CGRect{
 		origin: C.CGPoint{
-			x: C.double(x),
-			y: C.double(y),
+			x: C.double(xCoordinate),
+			y: C.double(yCoordinate),
 		},
 		size: C.CGSize{
-			width:  C.double(w),
-			height: C.double(h),
+			width:  C.double(width),
+			height: C.double(height),
 		},
 	}
 
 	cColor := C.CString(color)
 	defer C.free(unsafe.Pointer(cColor))
 
-	C.drawScrollHighlight(o.window, renderBounds, cColor, C.int(width))
+	C.drawScrollHighlight(o.window, renderBounds, cColor, C.int(borderWidth))
 }
 
 // BuildStyle returns StyleMode based on action name using the provided config
@@ -361,6 +359,3 @@ func (o *Overlay) Destroy() {
 		o.window = nil
 	}
 }
-
-// CleanupCallbackMap cleans up any pending callbacks in the map
-// CleanupCallbackMap removed: centralized overlay manager controls resizes

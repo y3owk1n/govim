@@ -1,3 +1,4 @@
+// Package appwatcher provides application lifecycle monitoring functionality.
 package appwatcher
 
 import (
@@ -8,7 +9,10 @@ import (
 	"github.com/y3owk1n/neru/internal/bridge"
 )
 
-// Callback function type for application events
+// Package appwatcher provides functionality for monitoring application lifecycle events
+// such as launches, terminations, activations, and deactivations on macOS.
+
+// AppCallback is a callback function type for application events.
 type AppCallback func(appName string, bundleID string)
 
 // Watcher represents an application watcher
@@ -23,21 +27,24 @@ type Watcher struct {
 	logger                *zap.Logger
 }
 
+// NewWatcher creates a new application watcher.
 func NewWatcher(logger *zap.Logger) *Watcher {
-	w := &Watcher{
+	watcher := &Watcher{
 		logger: logger,
 	}
 
-	bridge.SetAppWatcher(bridge.AppWatcher(w))
+	bridge.SetAppWatcher(bridge.AppWatcher(watcher))
 
-	return w
+	return watcher
 }
 
+// Start starts the application watcher.
 func (w *Watcher) Start() {
 	w.logger.Debug("App watcher: Starting")
 	bridge.StartAppWatcher()
 }
 
+// Stop stops the application watcher.
 func (w *Watcher) Stop() {
 	w.logger.Debug("App watcher: Stopping")
 	bridge.StopAppWatcher()
@@ -71,7 +78,7 @@ func (w *Watcher) OnDeactivate(callback AppCallback) {
 	w.deactivateCallbacks = append(w.deactivateCallbacks, callback)
 }
 
-// handleLaunch is called from the bridge when an application launches
+// HandleLaunch is called from the bridge when an application launches
 func (w *Watcher) HandleLaunch(appName, bundleID string) {
 	w.logger.Debug("App watcher: Application launched",
 		zap.String("app_name", appName),
@@ -83,7 +90,7 @@ func (w *Watcher) HandleLaunch(appName, bundleID string) {
 	}
 }
 
-// handleTerminate is called from the bridge when an application terminates
+// HandleTerminate is called from the bridge when an application terminates
 func (w *Watcher) HandleTerminate(appName, bundleID string) {
 	w.logger.Debug("App watcher: Application terminated",
 		zap.String("app_name", appName),
@@ -95,7 +102,7 @@ func (w *Watcher) HandleTerminate(appName, bundleID string) {
 	}
 }
 
-// handleActivate is called from the bridge when an application is activated
+// HandleActivate is called from the bridge when an application is activated
 func (w *Watcher) HandleActivate(appName, bundleID string) {
 	w.logger.Debug("App watcher: Application activated",
 		zap.String("app_name", appName),
@@ -107,7 +114,7 @@ func (w *Watcher) HandleActivate(appName, bundleID string) {
 	}
 }
 
-// handleDeactivate is called from the bridge when an application is deactivated
+// HandleDeactivate is called from the bridge when an application is deactivated
 func (w *Watcher) HandleDeactivate(appName, bundleID string) {
 	w.logger.Debug("App watcher: Application deactivated",
 		zap.String("app_name", appName),

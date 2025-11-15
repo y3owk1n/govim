@@ -1,8 +1,13 @@
+// Package ipc provides inter-process communication functionality.
 package ipc
+
+// Package ipc provides inter-process communication functionality for the Neru application,
+// allowing external commands to control the daemon via Unix domain sockets.
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -63,7 +68,9 @@ func NewServer(handler CommandHandler, logger *zap.Logger) (*Server, error) {
 		return nil, fmt.Errorf("failed to remove existing socket: %w", err)
 	}
 
-	listener, err := net.Listen("unix", socketPath)
+	// Create a ListenConfig with context support
+	listenConfig := &net.ListenConfig{}
+	listener, err := listenConfig.Listen(context.Background(), "unix", socketPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create socket: %w", err)
 	}
@@ -85,7 +92,7 @@ func (s *Server) Start() {
 			conn, err := s.listener.Accept()
 			if err != nil {
 				// If listener is closed, exit gracefully
-				if opErr, ok := err.(*net.OpError); ok && opErr.Err.Error() == "use of closed network connection" {
+				if errors.Is(err, net.ErrClosed) {
 					s.logger.Info("IPC server listener closed, stopping accept loop")
 					return
 				}
@@ -139,13 +146,13 @@ func (s *Server) handleConnection(conn net.Conn) {
 func (s *Server) Stop() error {
 	if s.listener != nil {
 		if err := s.listener.Close(); err != nil {
-			return err
+			return fmt.Errorf("failed to close listener: %w", err)
 		}
 	}
 
 	// Clean up socket file
 	if err := os.Remove(s.socketPath); err != nil && !os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("failed to remove socket file: %w", err)
 	}
 
 	return nil
@@ -207,7 +214,7 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 		}
 		err = fmt.Errorf("failed to send command: %w", err)
 		if closeErr != nil {
-			err = fmt.Errorf("%v (close error: %v)", err, closeErr)
+			err = fmt.Errorf("%w (close error: %s)", err, closeErr.Error())
 		}
 		return Response{}, err
 	}
@@ -219,7 +226,7 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 		}
 		err = fmt.Errorf("failed to receive response: %w", err)
 		if closeErr != nil {
-			err = fmt.Errorf("%v (close error: %v)", err, closeErr)
+			err = fmt.Errorf("%w (close error: %s)", err, closeErr.Error())
 		}
 		return Response{}, err
 	}

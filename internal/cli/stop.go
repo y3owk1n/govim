@@ -9,10 +9,10 @@ var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Pause the neru program (does not quit)",
 	Long:  `Pause the neru program. This disables neru functionality but keeps it running in the background.`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(_ *cobra.Command, _ []string) error {
 		return requiresRunningInstance()
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, args []string) error {
 		logger.Debug("Stopping/pausing program")
 		return sendCommand("stop", args)
 	},

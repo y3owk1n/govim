@@ -43,7 +43,7 @@ func (a *App) Run() error {
 
 // setupAppWatcherCallbacks configures the app watcher callbacks
 func (a *App) setupAppWatcherCallbacks() {
-	a.appWatcher.OnActivate(func(appName, bundleID string) {
+	a.appWatcher.OnActivate(func(_, bundleID string) {
 		a.handleAppActivation(bundleID)
 	})
 	// Watch for display parameter changes (monitor unplug/plug, resolution changes)
@@ -170,27 +170,27 @@ func (a *App) handleAdditionalAccessibility(bundleID string) {
 func (a *App) printStartupInfo() {
 	fmt.Println("✓ Neru is running")
 
-	for k, v := range a.config.Hotkeys.Bindings {
+	for key, value := range a.config.Hotkeys.Bindings {
 		// Skip showing bindings for disabled modes
-		mode := v
-		if parts := strings.Split(v, " "); len(parts) > 0 {
+		mode := value
+		if parts := strings.Split(value, " "); len(parts) > 0 {
 			mode = parts[0]
 		}
-		if mode == "hints" && !a.config.Hints.Enabled {
+		if mode == modeHints && !a.config.Hints.Enabled {
 			continue
 		}
-		if mode == "grid" && !a.config.Grid.Enabled {
+		if mode == modeGrid && !a.config.Grid.Enabled {
 			continue
 		}
 
-		toShow := v
-		if strings.HasPrefix(v, "exec") {
-			runes := []rune(v)
+		toShow := value
+		if strings.HasPrefix(value, "exec") {
+			runes := []rune(value)
 			if len(runes) > 30 {
 				toShow = string(runes[:30]) + "..."
 			}
 		}
-		fmt.Printf("  %s: %s\n", k, toShow)
+		fmt.Printf("  %s: %s\n", key, toShow)
 	}
 }
 

@@ -9,6 +9,7 @@ package accessibility
 import "C"
 
 import (
+	"fmt"
 	"image"
 	"sync"
 	"time"
@@ -49,7 +50,7 @@ func DefaultTreeOptions() TreeOptions {
 func BuildTree(root *Element, opts TreeOptions) (*TreeNode, error) {
 	if root == nil {
 		logger.Debug("BuildTree called with nil root element")
-		return nil, nil
+		return nil, fmt.Errorf("root element is nil")
 	}
 
 	// Try to get from cache first
@@ -215,13 +216,13 @@ func buildChildrenParallel(parent *TreeNode, children []*Element, depth int, opt
 	}
 
 	results := make(chan childResult, len(children))
-	var wg sync.WaitGroup
+	var waitGroup sync.WaitGroup
 
 	// Process children in parallel
-	for i, child := range children {
-		wg.Add(1)
+	for index, child := range children {
+		waitGroup.Add(1)
 		go func(idx int, elem *Element) {
-			defer wg.Done()
+			defer waitGroup.Done()
 
 			// Try cache first (cache must be thread-safe!)
 			info := opts.Cache.Get(elem)
@@ -253,12 +254,12 @@ func buildChildrenParallel(parent *TreeNode, children []*Element, depth int, opt
 			buildTreeRecursive(childNode, depth+1, opts, windowBounds)
 
 			results <- childResult{node: childNode, index: idx}
-		}(i, child)
+		}(index, child)
 	}
 
 	// Close results channel when all goroutines complete
 	go func() {
-		wg.Wait()
+		waitGroup.Wait()
 		close(results)
 	}()
 
@@ -325,16 +326,6 @@ func (n *TreeNode) FindClickableElements() []*TreeNode {
 }
 
 // FindScrollableElements finds all scrollable elements in the tree
-func (n *TreeNode) FindScrollableElements() []*TreeNode {
-	var result []*TreeNode
-	n.walkTree(func(node *TreeNode) bool {
-		if node.Element.IsScrollable() {
-			result = append(result, node)
-		}
-		return true
-	})
-	return result
-}
 
 // walkTree walks the tree and calls the visitor function for each node
 func (n *TreeNode) walkTree(visitor func(*TreeNode) bool) {

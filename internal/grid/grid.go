@@ -88,121 +88,13 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 	}
 
 	// Automatically determine optimal cell size constraints based on screen characteristics
-	screenArea := width * height
-	screenAspect := float64(width) / float64(height)
-
-	var minCellSize, maxCellSize int
-
-	// Calculate optimal cell size ranges based on screen size and pixel density
-	if screenArea < 1500000 {
-		minCellSize = 30
-		maxCellSize = 60
-	} else if screenArea < 2500000 {
-		minCellSize = 30
-		maxCellSize = 80
-	} else if screenArea < 4000000 {
-		minCellSize = 40
-		maxCellSize = 100
-	} else {
-		minCellSize = 50
-		maxCellSize = 120
-	}
-
-	// Adjust cell size constraints for extreme aspect ratios
-	if screenAspect > 2.5 || screenAspect < 0.4 {
-		maxCellSize = int(float64(maxCellSize) * 1.2)
-	}
+	minCellSize, maxCellSize := calculateOptimalCellSizes(width, height)
 
 	// Find all valid grid configurations and pick the one with best aspect ratio match
-	type candidate struct {
-		cols, rows   int
-		cellW, cellH int
-		score        float64
-	}
-
-	var candidates []candidate
-
-	// Calculate search ranges
-	minCols := width / maxCellSize
-	if minCols < 1 {
-		minCols = 1
-	}
-	maxCols := width / minCellSize
-	if maxCols < 1 {
-		maxCols = 1
-	}
-
-	minRows := height / maxCellSize
-	if minRows < 1 {
-		minRows = 1
-	}
-	maxRows := height / minCellSize
-	if maxRows < 1 {
-		maxRows = 1
-	}
-
-	// Search through all valid grid configurations
-	for c := maxCols; c >= minCols && c >= 1; c-- {
-		cellW := width / c
-		if cellW < minCellSize || cellW > maxCellSize {
-			continue
-		}
-
-		for r := maxRows; r >= minRows && r >= 1; r-- {
-			cellH := height / r
-			if cellH < minCellSize || cellH > maxCellSize {
-				continue
-			}
-
-			// Calculate cell aspect ratio
-			cellAspect := float64(cellW) / float64(cellH)
-
-			// Score based on how close cell is to being square
-			aspectDiff := cellAspect - 1.0
-			if aspectDiff < 0 {
-				aspectDiff = -aspectDiff
-			}
-
-			// Also consider cell count - prefer more cells for better precision
-			totalCells := float64(c * r)
-			maxCells := float64(maxCols * maxRows)
-			cellScore := (maxCells - totalCells) / maxCells * 0.1
-
-			aspectScore := aspectDiff + cellScore
-
-			candidates = append(candidates, candidate{
-				cols:  c,
-				rows:  r,
-				cellW: cellW,
-				cellH: cellH,
-				score: aspectScore,
-			})
-		}
-	}
+	candidates := findValidGridConfigurations(width, height, minCellSize, maxCellSize)
 
 	// Pick the candidate with the best (lowest) score
-	var gridCols, gridRows int
-	if len(candidates) > 0 {
-		best := candidates[0]
-		for _, cand := range candidates[1:] {
-			if cand.score < best.score {
-				best = cand
-			}
-		}
-		gridCols = best.cols
-		gridRows = best.rows
-	} else {
-		// Fallback: if no valid candidates, use simple best-fit approach
-		findBestFit := func(dimension, minSize, maxSize int) int {
-			count := max(dimension/minSize, 1)
-			for dimension/count > maxSize {
-				count++
-			}
-			return count
-		}
-		gridCols = findBestFit(width, minCellSize, maxCellSize)
-		gridRows = findBestFit(height, minCellSize, maxCellSize)
-	}
+	gridCols, gridRows := selectBestCandidate(candidates, width, height, minCellSize, maxCellSize)
 
 	// Safety check: ensure we always have at least a 2x2 grid
 	if gridCols < 2 {
@@ -221,20 +113,13 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 	// Cap totalCells to what we can actually label
 	if totalCells > maxPossibleCells {
 		totalCells = maxPossibleCells
-		gridCols = max(int(math.Sqrt(float64(totalCells)*float64(width)/float64(height))), 1)
-		gridRows = max(totalCells/gridCols, 1)
+		gridCols = gridMax(int(math.Sqrt(float64(totalCells)*float64(width)/float64(height))), 1)
+		gridRows = gridMax(totalCells/gridCols, 1)
 		totalCells = gridRows * gridCols
 	}
 
 	// Determine optimal label length based on total cells
-	var labelLength int
-	if totalCells <= numChars*numChars {
-		labelLength = 2
-	} else if totalCells <= numChars*numChars*numChars {
-		labelLength = 3
-	} else {
-		labelLength = 4
-	}
+	labelLength := calculateLabelLength(totalCells, numChars)
 
 	// Calculate base cell sizes and remainders
 	baseCellWidth := width / gridCols
@@ -318,20 +203,20 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 	// Precompute x/y starts to avoid inner summation loops
 	xStarts := make([]int, gridCols)
 	yStarts := make([]int, gridRows)
-	for i := 0; i < gridCols; i++ {
-		xStarts[i] = bounds.Min.X + i*baseCellWidth
-		if i < remainderWidth {
-			xStarts[i] += i
+	for colIndex := 0; colIndex < gridCols; colIndex++ {
+		xStarts[colIndex] = bounds.Min.X + colIndex*baseCellWidth
+		if colIndex < remainderWidth {
+			xStarts[colIndex] += colIndex
 		} else {
-			xStarts[i] += remainderWidth
+			xStarts[colIndex] += remainderWidth
 		}
 	}
-	for j := 0; j < gridRows; j++ {
-		yStarts[j] = bounds.Min.Y + j*baseCellHeight
-		if j < remainderHeight {
-			yStarts[j] += j
+	for rowIndex := 0; rowIndex < gridRows; rowIndex++ {
+		yStarts[rowIndex] = bounds.Min.Y + rowIndex*baseCellHeight
+		if rowIndex < remainderHeight {
+			yStarts[rowIndex] += rowIndex
 		} else {
-			yStarts[j] += remainderHeight
+			yStarts[rowIndex] += remainderHeight
 		}
 	}
 
@@ -350,17 +235,17 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 
 		// Calculate how many columns this region can occupy
 		colsAvailable := gridCols - currentCol
-		colsForRegion := min(regionCols, colsAvailable)
+		colsForRegion := gridMin(regionCols, colsAvailable)
 
 		// Calculate how many rows this region can occupy
 		rowsAvailable := gridRows - currentRow
-		rowsForRegion := min(regionRows, rowsAvailable)
+		rowsForRegion := gridMin(regionRows, rowsAvailable)
 
 		// Fill this region
-		for r := range rowsForRegion {
-			for c := range colsForRegion {
-				globalCol := currentCol + c
-				globalRow := currentRow + r
+		for rowIndex := range rowsForRegion {
+			for colIndex := range colsForRegion {
+				globalCol := currentCol + colIndex
+				globalRow := currentRow + rowIndex
 
 				if globalCol >= gridCols || globalRow >= gridRows {
 					break
@@ -371,16 +256,16 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 				var coord string
 				switch labelLength {
 				case 2:
-					coord = string(regionChar1) + string(chars[c])
+					coord = string(regionChar1) + string(chars[colIndex])
 				case 3:
 					// First char = region, second char = column, third char = row
-					char2 := chars[c%numChars] // column
-					char3 := chars[r%numChars] // row
+					char2 := chars[colIndex%numChars] // column
+					char3 := chars[rowIndex%numChars] // row
 					coord = string(regionChar1) + string(char2) + string(char3)
 				default: // 4 chars
 					// First 2 chars = region, third char = column, fourth char = row
-					char3 := chars[c%numChars] // column
-					char4 := chars[r%numChars] // row
+					char3 := chars[colIndex%numChars] // column
+					char4 := chars[rowIndex%numChars] // row
 					coord = string(regionChar1) + string(regionChar2) + string(char3) + string(char4)
 				}
 
@@ -394,18 +279,18 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 					cellHeight++
 				}
 
-				x := xStarts[globalCol]
-				y := yStarts[globalRow]
+				xCoordinate := xStarts[globalCol]
+				yCoordinate := yStarts[globalRow]
 
 				cell := &Cell{
 					Coordinate: coord,
 					Bounds: image.Rect(
-						x, y,
-						x+cellWidth, y+cellHeight,
+						xCoordinate, yCoordinate,
+						xCoordinate+cellWidth, yCoordinate+cellHeight,
 					),
 					Center: image.Point{
-						X: x + cellWidth/2,
-						Y: y + cellHeight/2,
+						X: xCoordinate + cellWidth/2,
+						Y: yCoordinate + cellHeight/2,
 					},
 				}
 				cells = append(cells, cell)
@@ -432,6 +317,149 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 	return cells
 }
 
+// candidate represents a valid grid configuration
+type candidate struct {
+	cols, rows   int
+	cellW, cellH int
+	score        float64
+}
+
+// calculateOptimalCellSizes determines optimal cell size constraints based on screen characteristics
+func calculateOptimalCellSizes(width, height int) (int, int) {
+	screenArea := width * height
+	screenAspect := float64(width) / float64(height)
+
+	var minCellSize, maxCellSize int
+
+	// Calculate optimal cell size ranges based on screen size and pixel density
+	switch {
+	case screenArea < 1500000:
+		minCellSize = 30
+		maxCellSize = 60
+	case screenArea < 2500000:
+		minCellSize = 30
+		maxCellSize = 80
+	case screenArea < 4000000:
+		minCellSize = 40
+		maxCellSize = 100
+	default:
+		minCellSize = 50
+		maxCellSize = 120
+	}
+
+	// Adjust cell size constraints for extreme aspect ratios
+	if screenAspect > 2.5 || screenAspect < 0.4 {
+		maxCellSize = int(float64(maxCellSize) * 1.2)
+	}
+
+	return minCellSize, maxCellSize
+}
+
+// calculateLabelLength determines the optimal label length based on total cells
+func calculateLabelLength(totalCells, numChars int) int {
+	switch {
+	case totalCells <= numChars*numChars:
+		return 2
+	case totalCells <= numChars*numChars*numChars:
+		return 3
+	default:
+		return 4
+	}
+}
+
+// selectBestCandidate picks the candidate with the best (lowest) score
+func selectBestCandidate(candidates []candidate, width, height, minCellSize, maxCellSize int) (int, int) {
+	var gridCols, gridRows int
+
+	if len(candidates) > 0 {
+		best := candidates[0]
+		for _, cand := range candidates[1:] {
+			if cand.score < best.score {
+				best = cand
+			}
+		}
+		gridCols = best.cols
+		gridRows = best.rows
+	} else {
+		// Fallback: if no valid candidates, use simple best-fit approach
+		findBestFit := func(dimension, minSize, maxSize int) int {
+			count := gridMax(dimension/minSize, 1)
+			for dimension/count > maxSize {
+				count++
+			}
+			return count
+		}
+		gridCols = findBestFit(width, minCellSize, maxCellSize)
+		gridRows = findBestFit(height, minCellSize, maxCellSize)
+	}
+	return gridCols, gridRows
+}
+
+// findValidGridConfigurations searches through all valid grid configurations
+func findValidGridConfigurations(width, height, minCellSize, maxCellSize int) []candidate {
+	var candidates []candidate
+
+	// Calculate search ranges
+	minCols := width / maxCellSize
+	if minCols < 1 {
+		minCols = 1
+	}
+	maxCols := width / minCellSize
+	if maxCols < 1 {
+		maxCols = 1
+	}
+
+	minRows := height / maxCellSize
+	if minRows < 1 {
+		minRows = 1
+	}
+	maxRows := height / minCellSize
+	if maxRows < 1 {
+		maxRows = 1
+	}
+
+	// Search through all valid grid configurations
+	for colIndex := maxCols; colIndex >= minCols && colIndex >= 1; colIndex-- {
+		cellWidth := width / colIndex
+		if cellWidth < minCellSize || cellWidth > maxCellSize {
+			continue
+		}
+
+		for rowIndex := maxRows; rowIndex >= minRows && rowIndex >= 1; rowIndex-- {
+			cellHeight := height / rowIndex
+			if cellHeight < minCellSize || cellHeight > maxCellSize {
+				continue
+			}
+
+			// Calculate cell aspect ratio
+			cellAspect := float64(cellWidth) / float64(cellHeight)
+
+			// Score based on how close cell is to being square
+			aspectDiff := cellAspect - 1.0
+			if aspectDiff < 0 {
+				aspectDiff = -aspectDiff
+			}
+
+			// Also consider cell count - prefer more cells for better precision
+			totalCells := float64(colIndex * rowIndex)
+			maxCells := float64(maxCols * maxRows)
+			cellScore := (maxCells - totalCells) / maxCells * 0.1
+
+			aspectScore := aspectDiff + cellScore
+
+			candidates = append(candidates, candidate{
+				cols:  colIndex,
+				rows:  rowIndex,
+				cellW: cellWidth,
+				cellH: cellHeight,
+				score: aspectScore,
+			})
+		}
+	}
+
+	return candidates
+}
+
 // GetAllCells returns all grid cells
 func (g *Grid) GetAllCells() []*Cell {
 	return g.cells
@@ -456,7 +484,7 @@ func (g *Grid) GetCellByCoordinate(coord string) *Cell {
 }
 
 // CalculateOptimalGrid calculates optimal character count for coverage
-func CalculateOptimalGrid(characters string) (rows, cols int) {
+func CalculateOptimalGrid(characters string) (int, int) {
 	// For flat 3-char grid, we don't use rows/cols
 	// Just return sensible defaults (will be ignored)
 	numChars := len(characters)
@@ -466,14 +494,14 @@ func CalculateOptimalGrid(characters string) (rows, cols int) {
 	return numChars, numChars
 }
 
-func max(a, b int) int {
+func gridMax(a, b int) int {
 	if a > b {
 		return a
 	}
 	return b
 }
 
-func min(a, b int) int {
+func gridMin(a, b int) int {
 	if a < b {
 		return a
 	}

@@ -1,6 +1,89 @@
 version: "2"
-# Options for analysis running.
 run:
-    # Include test files or not.
-    # Default: true
-    tests: false
+  tests: true
+  skip-dirs:
+    - .direnv
+linters:
+  enable:
+    - errorlint
+    - forcetypeassert
+    - goconst
+    # Additional linters for improved code quality
+    - unused
+    - staticcheck
+    - ineffassign
+    - misspell
+    - errcheck
+    - nakedret
+    - gocyclo
+    - dupl
+    - gosec
+    - prealloc
+    - unparam
+    - revive
+    - thelper
+    - tparallel
+    - wastedassign
+    - whitespace
+    # Additional linters for production readiness
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - decorder
+    - dogsled
+    - durationcheck
+    - errchkjson
+    - errname
+    - gocheckcompilerdirectives
+    - gomoddirectives
+    - grouper
+    - importas
+    - makezero
+    - mirror
+    - musttag
+    - nilerr
+    - nilnil
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - reassign
+    - rowserrcheck
+    - sqlclosecheck
+    - testableexamples
+    - testpackage
+    - usestdlibvars
+    - varnamelen
+    - wrapcheck
+  disable:
+    - unconvert
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+  varnamelen:
+    max-distance: 10
+    min-name-length: 2
+    check-receiver: false
+    check-return: false
+    check-type-param: false
+  revive:
+    confidence: 0.8
+  stylecheck:
+    checks: ["all"]
+  errcheck:
+    exclude-functions:
+      - fmt.Print
+      - fmt.Printf
+      - fmt.Println

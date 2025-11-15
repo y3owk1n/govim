@@ -1,3 +1,4 @@
+// Package accessibility provides accessibility functionality for the Neru application.
 package accessibility
 
 import (
@@ -43,6 +44,7 @@ func (c *InfoCache) Get(elem *Element) *ElementInfo {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
+	// #nosec G103 -- Using pointer address as map key is safe for cache
 	key := uintptr(unsafe.Pointer(elem))
 	cached, exists := c.data[key]
 
@@ -71,6 +73,7 @@ func (c *InfoCache) Set(elem *Element, info *ElementInfo) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	// #nosec G103 -- Using pointer address as map key is safe for cache
 	key := uintptr(unsafe.Pointer(elem))
 	c.data[key] = &CachedInfo{
 		Info:      info,

@@ -1,3 +1,4 @@
+// Package logger provides logging functionality for the Neru application.
 package logger
 
 import (
@@ -17,6 +18,9 @@ var (
 	logFile      *lumberjack.Logger
 	logFileMu    sync.Mutex
 )
+
+// Package logger provides structured logging functionality for the Neru application
+// using the zap logging library with file rotation support.
 
 // Init initializes the global logger
 func Init(logLevel, logFilePath string, structured bool, disableFileLogging bool, maxFileSize, maxBackups, maxAge int) error {
@@ -83,7 +87,7 @@ func Init(logLevel, logFilePath string, structured bool, disableFileLogging bool
 
 		// Create log directory
 		logDir := filepath.Dir(logFilePath)
-		if err := os.MkdirAll(logDir, 0755); err != nil {
+		if err := os.MkdirAll(logDir, 0750); err != nil {
 			return fmt.Errorf("failed to create log directory: %w", err)
 		}
 
@@ -130,7 +134,7 @@ func Get() *zap.Logger {
 func Sync() error {
 	if globalLogger != nil {
 		if err := globalLogger.Sync(); err != nil {
-			return err
+			return fmt.Errorf("failed to sync logger: %w", err)
 		}
 	}
 	return nil

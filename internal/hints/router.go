@@ -6,6 +6,7 @@ import "go.uber.org/zap"
 // It parses keys like Escape/Tab and delegates incremental label input
 // to the Manager, returning a concise result for the caller (App) to act on.
 
+// Router handles hint mode key routing.
 type Router struct {
 	manager *Manager
 	logger  *zap.Logger
@@ -18,6 +19,7 @@ type KeyResult struct {
 	ExactHint *Hint // Exact label match selected
 }
 
+// NewRouter creates a new hints router.
 func NewRouter(m *Manager, logger *zap.Logger) *Router {
 	return &Router{
 		manager: m,

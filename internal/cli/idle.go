@@ -9,10 +9,10 @@ var idleCmd = &cobra.Command{
 	Use:   "idle",
 	Short: "Set mode to idle",
 	Long:  `Exit the current mode and return to idle state.`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(_ *cobra.Command, _ []string) error {
 		return requiresRunningInstance()
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, args []string) error {
 		logger.Debug("Setting mode to idle")
 		return sendCommand("idle", args)
 	},

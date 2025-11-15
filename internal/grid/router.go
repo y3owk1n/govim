@@ -19,6 +19,7 @@ type KeyResult struct {
 	Complete    bool        // Coordinate selection complete
 }
 
+// NewRouter creates a new grid router.
 func NewRouter(m *Manager, logger *zap.Logger) *Router {
 	return &Router{
 		manager: m,

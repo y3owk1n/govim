@@ -46,15 +46,15 @@ func gridResizeCompletionCallback(context unsafe.Pointer) {
 	gridCallbackLock.Unlock()
 }
 
-// GridOverlay manages grid-specific overlay rendering
-type GridOverlay struct {
+// Overlay manages grid-specific overlay rendering
+type Overlay struct {
 	window C.OverlayWindow
 	cfg    config.GridConfig
 	logger *zap.Logger
 }
 
-// NewGridOverlay creates a new grid overlay with its own window
-func NewGridOverlay(cfg config.GridConfig, logger *zap.Logger) *GridOverlay {
+// NewOverlay creates a new grid overlay with its own window
+func NewOverlay(cfg config.GridConfig, logger *zap.Logger) *Overlay {
 	window := C.createOverlayWindow()
 	gridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
 	gridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
@@ -73,15 +73,15 @@ func NewGridOverlay(cfg config.GridConfig, logger *zap.Logger) *GridOverlay {
 		image.Rect(0, 0, 3440, 1440),
 		image.Rect(0, 0, 3840, 2160),
 	})
-	return &GridOverlay{
+	return &Overlay{
 		window: window,
 		cfg:    cfg,
 		logger: logger,
 	}
 }
 
-// NewGridOverlayWithWindow creates a grid overlay using a shared window
-func NewGridOverlayWithWindow(cfg config.GridConfig, logger *zap.Logger, windowPtr unsafe.Pointer) *GridOverlay {
+// NewOverlayWithWindow creates a grid overlay using a shared window
+func NewOverlayWithWindow(cfg config.GridConfig, logger *zap.Logger, windowPtr unsafe.Pointer) *Overlay {
 	gridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
 	gridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
 	subgridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
@@ -99,7 +99,7 @@ func NewGridOverlayWithWindow(cfg config.GridConfig, logger *zap.Logger, windowP
 		image.Rect(0, 0, 3440, 1440),
 		image.Rect(0, 0, 3840, 2160),
 	})
-	return &GridOverlay{
+	return &Overlay{
 		window: (C.OverlayWindow)(windowPtr),
 		cfg:    cfg,
 		logger: logger,
@@ -107,12 +107,12 @@ func NewGridOverlayWithWindow(cfg config.GridConfig, logger *zap.Logger, windowP
 }
 
 // UpdateConfig updates the overlay's config (e.g., after config reload)
-func (o *GridOverlay) UpdateConfig(cfg config.GridConfig) {
+func (o *Overlay) UpdateConfig(cfg config.GridConfig) {
 	o.cfg = cfg
 }
 
 // SetHideUnmatched sets whether to hide unmatched cells
-func (o *GridOverlay) SetHideUnmatched(hide bool) {
+func (o *Overlay) SetHideUnmatched(hide bool) {
 	C.setHideUnmatched(o.window, C.int(boolToInt(hide)))
 }
 
@@ -125,22 +125,22 @@ func boolToInt(b bool) int {
 }
 
 // Show displays the grid overlay
-func (o *GridOverlay) Show() {
+func (o *Overlay) Show() {
 	C.showOverlayWindow(o.window)
 }
 
 // Hide hides the grid overlay
-func (o *GridOverlay) Hide() {
+func (o *Overlay) Hide() {
 	C.hideOverlayWindow(o.window)
 }
 
 // Clear clears the grid overlay
-func (o *GridOverlay) Clear() {
+func (o *Overlay) Clear() {
 	C.clearOverlay(o.window)
 }
 
 // Destroy destroys the grid overlay window
-func (o *GridOverlay) Destroy() {
+func (o *Overlay) Destroy() {
 	C.destroyOverlayWindow(o.window)
 }
 
@@ -148,34 +148,34 @@ func (o *GridOverlay) Destroy() {
 // CleanupCallbackMap removed: centralized overlay manager controls resizes
 
 // ReplaceWindow atomically replaces the underlying overlay window on the main thread
-func (o *GridOverlay) ReplaceWindow() {
+func (o *Overlay) ReplaceWindow() {
 	C.replaceOverlayWindow(&o.window)
 }
 
 // ResizeToMainScreen resizes the overlay window to the current main screen
-func (o *GridOverlay) ResizeToMainScreen() {
+func (o *Overlay) ResizeToMainScreen() {
 	C.resizeOverlayToMainScreen(o.window)
 }
 
 // ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor
-func (o *GridOverlay) ResizeToActiveScreen() {
+func (o *Overlay) ResizeToActiveScreen() {
 	C.resizeOverlayToActiveScreen(o.window)
 }
 
 // ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification
-func (o *GridOverlay) ResizeToActiveScreenSync() {
+func (o *Overlay) ResizeToActiveScreenSync() {
 	done := make(chan struct{})
 
 	// Generate unique ID for this callback
-	id := atomic.AddUint64(&gridCallbackID, 1)
+	callbackID := atomic.AddUint64(&gridCallbackID, 1)
 
 	// Store channel in map
 	gridCallbackLock.Lock()
-	gridCallbackMap[id] = done
+	gridCallbackMap[callbackID] = done
 	gridCallbackLock.Unlock()
 
 	if o.logger != nil {
-		o.logger.Debug("Grid overlay resize started", zap.Uint64("callback_id", id))
+		o.logger.Debug("Grid overlay resize started", zap.Uint64("callback_id", callbackID))
 	}
 
 	// Pass ID as context (safe - no Go pointers)
@@ -183,7 +183,7 @@ func (o *GridOverlay) ResizeToActiveScreenSync() {
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
 		(C.ResizeCompletionCallback)(unsafe.Pointer(C.gridResizeCompletionCallback)),
-		*(*unsafe.Pointer)(unsafe.Pointer(&id)),
+		*(*unsafe.Pointer)(unsafe.Pointer(&callbackID)),
 	)
 
 	// Don't wait for callback - continue immediately for better UX
@@ -191,31 +191,31 @@ func (o *GridOverlay) ResizeToActiveScreenSync() {
 	// Start a goroutine to handle cleanup when callback eventually arrives
 	go func() {
 		if o.logger != nil {
-			o.logger.Debug("Grid overlay resize background cleanup started", zap.Uint64("callback_id", id))
+			o.logger.Debug("Grid overlay resize background cleanup started", zap.Uint64("callback_id", callbackID))
 		}
 
 		select {
 		case <-done:
 			// Callback received, normal cleanup already handled in callback
 			if o.logger != nil {
-				o.logger.Debug("Grid overlay resize callback received", zap.Uint64("callback_id", id))
+				o.logger.Debug("Grid overlay resize callback received", zap.Uint64("callback_id", callbackID))
 			}
 		case <-time.After(2 * time.Second):
 			// Long timeout for cleanup only - callback likely failed
 			gridCallbackLock.Lock()
-			delete(gridCallbackMap, id)
+			delete(gridCallbackMap, callbackID)
 			gridCallbackLock.Unlock()
 
 			if o.logger != nil {
 				o.logger.Debug("Grid overlay resize cleanup timeout - removed callback from map",
-					zap.Uint64("callback_id", id))
+					zap.Uint64("callback_id", callbackID))
 			}
 		}
 	}()
 }
 
 // Draw renders the flat grid with all 3-char cells visible
-func (o *GridOverlay) Draw(grid *Grid, currentInput string, style GridStyle) error {
+func (o *Overlay) Draw(grid *Grid, currentInput string, style Style) error {
 	o.logger.Debug("Drawing grid overlay",
 		zap.Int("cell_count", len(grid.GetAllCells())),
 		zap.String("current_input", currentInput))
@@ -248,7 +248,7 @@ func (o *GridOverlay) Draw(grid *Grid, currentInput string, style GridStyle) err
 }
 
 // UpdateMatches updates matched state without redrawing all cells
-func (o *GridOverlay) UpdateMatches(prefix string) {
+func (o *Overlay) UpdateMatches(prefix string) {
 	o.logger.Debug("Updating grid matches", zap.String("prefix", prefix))
 
 	cPrefix := C.CString(prefix)
@@ -259,7 +259,7 @@ func (o *GridOverlay) UpdateMatches(prefix string) {
 }
 
 // ShowSubgrid draws a 3x3 subgrid inside the selected cell
-func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
+func (o *Overlay) ShowSubgrid(cell *Cell, style Style) {
 	o.logger.Debug("Showing subgrid",
 		zap.Int("cell_x", cell.Bounds.Min.X),
 		zap.Int("cell_y", cell.Bounds.Min.Y),
@@ -280,7 +280,8 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
 		count = len(chars)
 	}
 
-	cellsPtr := subgridCellSlicePool.Get().(*[]C.GridCell)
+	tmpCells := subgridCellSlicePool.Get()
+	cellsPtr, _ := tmpCells.(*[]C.GridCell)
 	if cap(*cellsPtr) < count {
 		s := make([]C.GridCell, count)
 		cellsPtr = &s
@@ -288,7 +289,8 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
 		*cellsPtr = (*cellsPtr)[:count]
 	}
 	cells := *cellsPtr
-	labelsPtr := subgridLabelSlicePool.Get().(*[]*C.char)
+	tmpLabels := subgridLabelSlicePool.Get()
+	labelsPtr, _ := tmpLabels.(*[]*C.char)
 	if cap(*labelsPtr) < count {
 		s := make([]*C.char, count)
 		labelsPtr = &s
@@ -297,47 +299,47 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
 	}
 	labels := *labelsPtr
 
-	b := cell.Bounds
+	cellBounds := cell.Bounds
 	// Build breakpoints that evenly distribute remainders to fully cover the cell
 	xBreaks := make([]int, cols+1)
 	yBreaks := make([]int, rows+1)
-	xBreaks[0] = b.Min.X
-	yBreaks[0] = b.Min.Y
-	for i := 1; i <= cols; i++ {
+	xBreaks[0] = cellBounds.Min.X
+	yBreaks[0] = cellBounds.Min.Y
+	for breakIndex := 1; breakIndex <= cols; breakIndex++ {
 		// round(i * width / cols)
-		val := float64(i) * float64(b.Dx()) / float64(cols)
-		xBreaks[i] = b.Min.X + int(val+0.5)
+		val := float64(breakIndex) * float64(cellBounds.Dx()) / float64(cols)
+		xBreaks[breakIndex] = cellBounds.Min.X + int(val+0.5)
 	}
-	for j := 1; j <= rows; j++ {
-		val := float64(j) * float64(b.Dy()) / float64(rows)
-		yBreaks[j] = b.Min.Y + int(val+0.5)
+	for breakIndex := 1; breakIndex <= rows; breakIndex++ {
+		val := float64(breakIndex) * float64(cellBounds.Dy()) / float64(rows)
+		yBreaks[breakIndex] = cellBounds.Min.Y + int(val+0.5)
 	}
 
 	// Ensure last break exactly matches bounds max to avoid 1px drift
-	xBreaks[cols] = b.Max.X
-	yBreaks[rows] = b.Max.Y
+	xBreaks[cols] = cellBounds.Max.X
+	yBreaks[rows] = cellBounds.Max.Y
 
-	for i := 0; i < count; i++ {
-		r := i / cols
-		c := i % cols
-		label := strings.ToUpper(string(chars[i]))
-		labels[i] = C.CString(label)
-		left := xBreaks[c]
-		right := xBreaks[c+1]
-		top := yBreaks[r]
-		bottom := yBreaks[r+1]
+	for cellIndex := 0; cellIndex < count; cellIndex++ {
+		rowIndex := cellIndex / cols
+		colIndex := cellIndex % cols
+		label := strings.ToUpper(string(chars[cellIndex]))
+		labels[cellIndex] = C.CString(label)
+		left := xBreaks[colIndex]
+		right := xBreaks[colIndex+1]
+		top := yBreaks[rowIndex]
+		bottom := yBreaks[rowIndex+1]
 
-		var cell C.GridCell
-		cell.label = labels[i]
-		cell.bounds.origin.x = C.double(left)
-		cell.bounds.origin.y = C.double(top)
-		cell.bounds.size.width = C.double(right - left)
-		cell.bounds.size.height = C.double(bottom - top)
-		cell.isMatched = C.int(0)
-		cell.isSubgrid = C.int(1)           // Mark as subgrid cell
-		cell.matchedPrefixLength = C.int(0) // Subgrid cells don't have matched prefixes
+		var gridCell C.GridCell
+		gridCell.label = labels[cellIndex]
+		gridCell.bounds.origin.x = C.double(left)
+		gridCell.bounds.origin.y = C.double(top)
+		gridCell.bounds.size.width = C.double(right - left)
+		gridCell.bounds.size.height = C.double(bottom - top)
+		gridCell.isMatched = C.int(0)
+		gridCell.isSubgrid = C.int(1)           // Mark as subgrid cell
+		gridCell.matchedPrefixLength = C.int(0) // Subgrid cells don't have matched prefixes
 
-		cells[i] = cell
+		cells[cellIndex] = gridCell
 	}
 
 	fontFamily := C.CString(style.FontFamily)
@@ -365,8 +367,8 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
 	C.clearOverlay(o.window)
 	C.drawGridCells(o.window, &cells[0], C.int(len(cells)), finalStyle)
 
-	for i := range labels {
-		C.free(unsafe.Pointer(labels[i]))
+	for labelIndex := range labels {
+		C.free(unsafe.Pointer(labels[labelIndex]))
 	}
 	*cellsPtr = (*cellsPtr)[:0]
 	*labelsPtr = (*labelsPtr)[:0]
@@ -384,60 +386,74 @@ func (o *GridOverlay) ShowSubgrid(cell *Cell, style GridStyle) {
 }
 
 // DrawScrollHighlight draws a scroll highlight
-func (o *GridOverlay) DrawScrollHighlight(x, y, w, h int, color string, width int) {
+func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height int, color string, borderWidth int) {
 	cColor := C.CString(color)
 	defer C.free(unsafe.Pointer(cColor))
 	// Build 4 border lines around the rectangle
 	lines := make([]C.CGRect, 4)
 	// Bottom
 	lines[0] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x), y: C.double(y)},
-		size:   C.CGSize{width: C.double(w), height: C.double(width)},
+		origin: C.CGPoint{x: C.double(xCoordinate), y: C.double(yCoordinate)},
+		size:   C.CGSize{width: C.double(width), height: C.double(borderWidth)},
 	}
 	// Top
 	lines[1] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x), y: C.double(y + h - width)},
-		size:   C.CGSize{width: C.double(w), height: C.double(width)},
+		origin: C.CGPoint{x: C.double(xCoordinate), y: C.double(yCoordinate + height - borderWidth)},
+		size:   C.CGSize{width: C.double(width), height: C.double(borderWidth)},
 	}
 	// Left
 	lines[2] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x), y: C.double(y)},
-		size:   C.CGSize{width: C.double(width), height: C.double(h)},
+		origin: C.CGPoint{x: C.double(xCoordinate), y: C.double(yCoordinate)},
+		size:   C.CGSize{width: C.double(borderWidth), height: C.double(height)},
 	}
 	// Right
 	lines[3] = C.CGRect{
-		origin: C.CGPoint{x: C.double(x + w - width), y: C.double(y)},
-		size:   C.CGSize{width: C.double(width), height: C.double(h)},
+		origin: C.CGPoint{x: C.double(xCoordinate + width - borderWidth), y: C.double(yCoordinate)},
+		size:   C.CGSize{width: C.double(borderWidth), height: C.double(height)},
 	}
-	C.drawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(width), C.double(1.0))
+	C.drawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(borderWidth), C.double(1.0))
 }
 
 // drawGridCells draws all grid cells with their labels
-func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style GridStyle) {
+func (o *Overlay) drawGridCells(cellsGo []*Cell, currentInput string, style Style) {
 	o.logger.Debug("Drawing grid cells",
 		zap.Int("cell_count", len(cellsGo)),
 		zap.String("current_input", currentInput))
 
-	cGridCellsPtr := gridCellSlicePool.Get().(*[]C.GridCell)
-	if cap(*cGridCellsPtr) < len(cellsGo) {
+	tmpCells := gridCellSlicePool.Get()
+	cGridCellsPtr, ok := tmpCells.(*[]C.GridCell)
+	if !ok {
+		// If type assertion fails, create a new slice
 		s := make([]C.GridCell, len(cellsGo))
 		cGridCellsPtr = &s
 	} else {
-		*cGridCellsPtr = (*cGridCellsPtr)[:len(cellsGo)]
+		if cap(*cGridCellsPtr) < len(cellsGo) {
+			s := make([]C.GridCell, len(cellsGo))
+			cGridCellsPtr = &s
+		} else {
+			*cGridCellsPtr = (*cGridCellsPtr)[:len(cellsGo)]
+		}
 	}
 	cGridCells := *cGridCellsPtr
-	cLabelsPtr := gridLabelSlicePool.Get().(*[]*C.char)
-	if cap(*cLabelsPtr) < len(cellsGo) {
+	tmpLabels := gridLabelSlicePool.Get()
+	cLabelsPtr, typeOk := tmpLabels.(*[]*C.char)
+	if !typeOk {
+		// If type assertion fails, create a new slice
 		s := make([]*C.char, len(cellsGo))
 		cLabelsPtr = &s
 	} else {
-		*cLabelsPtr = (*cLabelsPtr)[:len(cellsGo)]
+		if cap(*cLabelsPtr) < len(cellsGo) {
+			s := make([]*C.char, len(cellsGo))
+			cLabelsPtr = &s
+		} else {
+			*cLabelsPtr = (*cLabelsPtr)[:len(cellsGo)]
+		}
 	}
 	cLabels := *cLabelsPtr
 
 	matchedCount := 0
-	for i, cell := range cellsGo {
-		cLabels[i] = C.CString(cell.Coordinate)
+	for cellIndex, cell := range cellsGo {
+		cLabels[cellIndex] = C.CString(cell.Coordinate)
 
 		isMatched := 0
 		matchedPrefixLength := 0
@@ -448,7 +464,7 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 		}
 
 		var cGridCell C.GridCell
-		cGridCell.label = cLabels[i]
+		cGridCell.label = cLabels[cellIndex]
 		cGridCell.bounds.origin.x = C.double(cell.Bounds.Min.X)
 		cGridCell.bounds.origin.y = C.double(cell.Bounds.Min.Y)
 		cGridCell.bounds.size.width = C.double(cell.Bounds.Dx())
@@ -457,7 +473,7 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 		cGridCell.isSubgrid = C.int(0) // Mark as regular grid cell
 		cGridCell.matchedPrefixLength = C.int(matchedPrefixLength)
 
-		cGridCells[i] = cGridCell
+		cGridCells[cellIndex] = cGridCell
 	}
 
 	o.logger.Debug("Grid cell match statistics",
@@ -486,10 +502,11 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 		textOpacity:            C.double(1.0),
 	}
 
+	C.clearOverlay(o.window)
 	C.drawGridCells(o.window, &cGridCells[0], C.int(len(cGridCells)), finalStyle)
 
-	for _, cLabel := range cLabels {
-		C.free(unsafe.Pointer(cLabel))
+	for labelIndex := range cLabels {
+		C.free(unsafe.Pointer(cLabels[labelIndex]))
 	}
 	*cGridCellsPtr = (*cGridCellsPtr)[:0]
 	*cLabelsPtr = (*cLabelsPtr)[:0]
@@ -502,12 +519,10 @@ func (o *GridOverlay) drawGridCells(cellsGo []*Cell, currentInput string, style 
 	C.free(unsafe.Pointer(matchedBackgroundColor))
 	C.free(unsafe.Pointer(matchedBorderColor))
 	C.free(unsafe.Pointer(borderColor))
-
-	o.logger.Debug("Grid cells drawn successfully")
 }
 
-// GridStyle represents the visual style for grid cells
-type GridStyle struct {
+// Style represents the visual style for grid cells
+type Style struct {
 	FontSize               int
 	FontFamily             string
 	Opacity                float64
@@ -520,9 +535,9 @@ type GridStyle struct {
 	BorderColor            string
 }
 
-// BuildStyle returns GridStyle based on action name using the provided config
-func BuildStyle(cfg config.GridConfig) GridStyle {
-	style := GridStyle{
+// BuildStyle returns Style based on action name using the provided config
+func BuildStyle(cfg config.GridConfig) Style {
+	style := Style{
 		FontSize:               cfg.FontSize,
 		FontFamily:             cfg.FontFamily,
 		Opacity:                cfg.Opacity,
@@ -534,6 +549,5 @@ func BuildStyle(cfg config.GridConfig) GridStyle {
 		MatchedBorderColor:     cfg.MatchedBorderColor,
 		BorderColor:            cfg.BorderColor,
 	}
-
 	return style
 }

@@ -17,8 +17,10 @@ var (
 	// LaunchFunc is set by main to handle daemon launch
 	LaunchFunc func(configPath string)
 	// Version information (set via ldflags at build time)
-	Version   = "dev"
+	Version = "dev"
+	// GitCommit represents the git commit hash of the build.
 	GitCommit = "unknown"
+	// BuildDate represents the build date.
 	BuildDate = "unknown"
 )
 
@@ -109,7 +111,7 @@ func sendCommand(action string, args []string) error {
 		logger.Error("Failed to send command",
 			zap.String("action", action),
 			zap.Error(err))
-		return err
+		return fmt.Errorf("failed to send command: %w", err)
 	}
 
 	if !response.Success {

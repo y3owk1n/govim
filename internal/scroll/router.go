@@ -5,7 +5,7 @@ import "go.uber.org/zap"
 // ParseKey maps a key press and last key state to a scroll operation.
 // Returns op (one of: down, up, left, right, half_down, half_up, top, bottom, tab),
 // updated lastKey, and ok indicating whether an action should be executed now.
-func ParseKey(key string, lastKey string, logger *zap.Logger) (op string, newLastKey string, ok bool) {
+func ParseKey(key string, lastKey string, logger *zap.Logger) (string, string, bool) {
 	logger.Debug("Scroll router processing key",
 		zap.String("key", key),
 		zap.String("last_key", lastKey))

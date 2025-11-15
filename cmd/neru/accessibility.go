@@ -1,3 +1,4 @@
+// Package main provides the main entry point for the Neru application.
 package main
 
 import (

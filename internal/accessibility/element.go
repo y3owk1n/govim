@@ -28,9 +28,6 @@ type Element struct {
 var (
 	clickableRoles   = make(map[string]struct{})
 	clickableRolesMu sync.RWMutex
-
-	scrollableRoles   = make(map[string]struct{})
-	scrollableRolesMu sync.RWMutex
 )
 
 // SetClickableRoles configures which accessibility roles are treated as clickable.
@@ -52,25 +49,6 @@ func SetClickableRoles(roles []string) {
 		zap.Strings("roles", roles))
 }
 
-// SetScrollableRoles configures which accessibility roles are treated as scrollable.
-func SetScrollableRoles(roles []string) {
-	scrollableRolesMu.Lock()
-	defer scrollableRolesMu.Unlock()
-
-	scrollableRoles = make(map[string]struct{}, len(roles))
-	for _, role := range roles {
-		trimmed := strings.TrimSpace(role)
-		if trimmed == "" {
-			continue
-		}
-		scrollableRoles[trimmed] = struct{}{}
-	}
-
-	logger.Debug("Updated scrollable roles",
-		zap.Int("count", len(scrollableRoles)),
-		zap.Strings("roles", roles))
-}
-
 // GetClickableRoles returns the configured clickable roles.
 func GetClickableRoles() []string {
 	clickableRolesMu.RLock()
@@ -78,19 +56,6 @@ func GetClickableRoles() []string {
 
 	roles := make([]string, 0, len(clickableRoles))
 	for role := range clickableRoles {
-		roles = append(roles, role)
-	}
-	sort.Strings(roles)
-	return roles
-}
-
-// GetScrollableRoles returns the configured scrollable roles.
-func GetScrollableRoles() []string {
-	scrollableRolesMu.RLock()
-	defer scrollableRolesMu.RUnlock()
-
-	roles := make([]string, 0, len(scrollableRoles))
-	for role := range scrollableRoles {
 		roles = append(roles, role)
 	}
 	sort.Strings(roles)
@@ -393,7 +358,7 @@ func MoveMouseToPoint(p image.Point) {
 	C.moveMouse(pos)
 }
 
-// Point-based actions that do not require an accessibility element
+// LeftClickAtPoint performs a left mouse click at the specified point.
 func LeftClickAtPoint(p image.Point, restoreCursor bool) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performLeftClickAtPosition(pos, C.bool(restoreCursor))
@@ -403,6 +368,7 @@ func LeftClickAtPoint(p image.Point, restoreCursor bool) error {
 	return nil
 }
 
+// RightClickAtPoint performs a right mouse click at the specified point.
 func RightClickAtPoint(p image.Point, restoreCursor bool) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performRightClickAtPosition(pos, C.bool(restoreCursor))
@@ -412,6 +378,7 @@ func RightClickAtPoint(p image.Point, restoreCursor bool) error {
 	return nil
 }
 
+// MiddleClickAtPoint performs a middle mouse click at the specified point.
 func MiddleClickAtPoint(p image.Point, restoreCursor bool) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performMiddleClickAtPosition(pos, C.bool(restoreCursor))
@@ -421,6 +388,7 @@ func MiddleClickAtPoint(p image.Point, restoreCursor bool) error {
 	return nil
 }
 
+// LeftMouseDownAtPoint performs a left mouse down action at the specified point.
 func LeftMouseDownAtPoint(p image.Point) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performLeftMouseDownAtPosition(pos)
@@ -430,6 +398,7 @@ func LeftMouseDownAtPoint(p image.Point) error {
 	return nil
 }
 
+// LeftMouseUpAtPoint performs a left mouse up action at the specified point.
 func LeftMouseUpAtPoint(p image.Point) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performLeftMouseUpAtPosition(pos)
@@ -439,7 +408,7 @@ func LeftMouseUpAtPoint(p image.Point) error {
 	return nil
 }
 
-// ScrollAtCursor keeps existing behavior for scroll domain
+// LeftMouseUp performs a left mouse up action at the current cursor position.
 func LeftMouseUp() error {
 	result := C.performLeftMouseUpAtCursor()
 	if result == 0 {
@@ -448,6 +417,7 @@ func LeftMouseUp() error {
 	return nil
 }
 
+// ScrollAtCursor scrolls the element at the current cursor position by the specified deltas.
 func ScrollAtCursor(deltaX, deltaY int) error {
 	result := C.scrollAtCursor(C.int(deltaX), C.int(deltaY))
 	if result == 0 {
@@ -516,32 +486,8 @@ func (e *Element) IsClickable() bool {
 }
 
 // IsClickable checks if the element is clickable
-func (e *Element) IsScrollable() bool {
-	if e.ref == nil {
-		return false
-	}
 
-	info := globalCache.Get(e)
-	if info == nil {
-		var err error
-		info, err = e.GetInfo()
-		if err != nil {
-			return false
-		}
-		globalCache.Set(e, info)
-	}
-
-	// First check if the role is in the clickable roles list
-	scrollableRolesMu.RLock()
-	_, ok := scrollableRoles[info.Role]
-	scrollableRolesMu.RUnlock()
-
-	return ok
-}
-
-// Check if is mission control is active
-// Hopefully works on all OS versions
-// Works on Tohoe 26.1 as of now
+// IsMissionControlActive checks if Mission Control is currently active.
 func IsMissionControlActive() bool {
 	result := C.isMissionControlActive()
 	return bool(result)
