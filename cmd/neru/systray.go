@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/atotto/clipboard"
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/cli"
@@ -15,7 +13,7 @@ func onReady() {
 	systray.SetTooltip("Neru - Keyboard Navigation")
 
 	// Status submenu for version
-	mVersion := systray.AddMenuItem(fmt.Sprintf("Version %s", cli.Version), "Show version")
+	mVersion := systray.AddMenuItem("Version "+cli.Version, "Show version")
 	mVersion.Disable()
 	mVersionCopy := systray.AddMenuItem("Copy version", "Copy version to clipboard")
 

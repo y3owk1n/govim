@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// handleIPCCommand handles IPC commands from the CLI
+// handleIPCCommand handles IPC commands from the CLI.
 func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 	a.logger.Info("Handling IPC command", zap.String("action", cmd.Action), zap.String("params", strings.Join(cmd.Args, ", ")))
 
@@ -35,7 +34,7 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 	case "status":
 		return a.handleStatus(cmd)
 	default:
-		return ipc.Response{Success: false, Message: fmt.Sprintf("unknown command: %s", cmd.Action)}
+		return ipc.Response{Success: false, Message: "unknown command: " + cmd.Action}
 	}
 }
 
@@ -139,11 +138,11 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 			a.logger.Info("Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom, Esc to exit")
 			return ipc.Response{Success: true, Message: "scroll mode activated"}
 		default:
-			return ipc.Response{Success: false, Message: fmt.Sprintf("unknown action: %s", param)}
+			return ipc.Response{Success: false, Message: "unknown action: " + param}
 		}
 
 		if err != nil {
-			return ipc.Response{Success: false, Message: fmt.Sprintf("action failed: %v", err)}
+			return ipc.Response{Success: false, Message: "action failed: " + err.Error()}
 		}
 	}
 
@@ -168,7 +167,7 @@ func (a *App) handleStatus(_ ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Data: statusData}
 }
 
-// resolveConfigPath resolves the config path for status display
+// resolveConfigPath resolves the config path for status display.
 func (a *App) resolveConfigPath() string {
 	cfgPath := a.ConfigPath
 
@@ -179,17 +178,25 @@ func (a *App) resolveConfigPath() string {
 	}
 
 	// If config file doesn't exist, return default config
-	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
+	var err error
+	_, err = os.Stat(cfgPath)
+	if os.IsNotExist(err) {
 		return "No config file found, using default config without config file"
 	}
 
 	// Expand ~ to home dir and resolve relative paths to absolute
 	if strings.HasPrefix(cfgPath, "~") {
-		if home, err := os.UserHomeDir(); err == nil {
+		var home string
+		var err error
+		home, err = os.UserHomeDir()
+		if err == nil {
 			cfgPath = filepath.Join(home, cfgPath[1:])
 		}
 	}
-	if abs, err := filepath.Abs(cfgPath); err == nil {
+	var abs string
+	var err2 error
+	abs, err2 = filepath.Abs(cfgPath)
+	if err2 == nil {
 		cfgPath = abs
 	}
 

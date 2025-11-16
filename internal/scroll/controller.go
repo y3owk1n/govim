@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Direction represents scroll direction
+// Direction represents scroll direction.
 type Direction int
 
 const (
@@ -23,7 +23,7 @@ const (
 	DirectionRight
 )
 
-// Amount represents the amount to scroll
+// Amount represents the amount to scroll.
 type Amount int
 
 const (
@@ -35,13 +35,13 @@ const (
 	AmountEnd
 )
 
-// Controller manages scrolling operations
+// Controller manages scrolling operations.
 type Controller struct {
 	config *config.ScrollConfig
 	logger *zap.Logger
 }
 
-// NewController creates a new scroll controller
+// NewController creates a new scroll controller.
 func NewController(cfg config.ScrollConfig, logger *zap.Logger) *Controller {
 	logger.Debug("Scroll controller: Initializing",
 		zap.Int("scroll_step", cfg.ScrollStep),
@@ -54,7 +54,7 @@ func NewController(cfg config.ScrollConfig, logger *zap.Logger) *Controller {
 	}
 }
 
-// Scroll scrolls in the specified direction
+// Scroll scrolls in the specified direction.
 func (c *Controller) Scroll(dir Direction, amount Amount) error {
 	deltaX, deltaY := c.calculateDelta(dir, amount)
 
@@ -64,7 +64,8 @@ func (c *Controller) Scroll(dir Direction, amount Amount) error {
 		zap.Int("deltaX", deltaX),
 		zap.Int("deltaY", deltaY))
 
-	if err := accessibility.ScrollAtCursor(deltaX, deltaY); err != nil {
+	err := accessibility.ScrollAtCursor(deltaX, deltaY)
+	if err != nil {
 		c.logger.Error("Scroll failed", zap.Error(err))
 		return fmt.Errorf("failed to scroll at cursor: %w", err)
 	}
@@ -78,7 +79,57 @@ func (c *Controller) Scroll(dir Direction, amount Amount) error {
 	return nil
 }
 
-// calculateDelta calculates the scroll delta based on direction and amount
+// ScrollUp scrolls up by character.
+func (c *Controller) ScrollUp() error {
+	c.logger.Debug("ScrollUp called")
+	// Use positive delta for up (scroll wheel convention)
+	return c.Scroll(DirectionUp, AmountChar)
+}
+
+// ScrollDown scrolls down by character.
+func (c *Controller) ScrollDown() error {
+	c.logger.Debug("ScrollDown called")
+	// Use negative delta for down (scroll wheel convention)
+	return c.Scroll(DirectionDown, AmountChar)
+}
+
+// ScrollLeft scrolls left by character.
+func (c *Controller) ScrollLeft() error {
+	c.logger.Debug("ScrollLeft called")
+	return c.Scroll(DirectionLeft, AmountChar)
+}
+
+// ScrollRight scrolls right by character.
+func (c *Controller) ScrollRight() error {
+	c.logger.Debug("ScrollRight called")
+	return c.Scroll(DirectionRight, AmountChar)
+}
+
+// ScrollUpHalfPage scrolls up by half page (Ctrl+U in Vim).
+func (c *Controller) ScrollUpHalfPage() error {
+	c.logger.Debug("ScrollUpHalfPage called")
+	return c.Scroll(DirectionUp, AmountHalfPage)
+}
+
+// ScrollDownHalfPage scrolls down by half page (Ctrl+D in Vim).
+func (c *Controller) ScrollDownHalfPage() error {
+	c.logger.Debug("ScrollDownHalfPage called")
+	return c.Scroll(DirectionDown, AmountHalfPage)
+}
+
+// ScrollToTop scrolls to the top (gg in Vim).
+func (c *Controller) ScrollToTop() error {
+	c.logger.Debug("ScrollToTop called")
+	return c.Scroll(DirectionUp, AmountEnd)
+}
+
+// ScrollToBottom scrolls to the bottom (G in Vim).
+func (c *Controller) ScrollToBottom() error {
+	c.logger.Debug("ScrollToBottom called")
+	return c.Scroll(DirectionDown, AmountEnd)
+}
+
+// calculateDelta calculates the scroll delta based on direction and amount.
 func (c *Controller) calculateDelta(dir Direction, amount Amount) (int, int) {
 	var deltaX, deltaY int
 
@@ -119,7 +170,7 @@ func (c *Controller) calculateDelta(dir Direction, amount Amount) (int, int) {
 	return deltaX, deltaY
 }
 
-// directionString converts direction to string
+// directionString converts direction to string.
 func (c *Controller) directionString(dir Direction) string {
 	switch dir {
 	case DirectionUp:
@@ -135,7 +186,7 @@ func (c *Controller) directionString(dir Direction) string {
 	}
 }
 
-// amountString converts scroll amount to string
+// amountString converts scroll amount to string.
 func (c *Controller) amountString(amount Amount) string {
 	switch amount {
 	case AmountChar:
@@ -147,54 +198,4 @@ func (c *Controller) amountString(amount Amount) string {
 	default:
 		return "unknown"
 	}
-}
-
-// ScrollUp scrolls up by character
-func (c *Controller) ScrollUp() error {
-	c.logger.Debug("ScrollUp called")
-	// Use positive delta for up (scroll wheel convention)
-	return c.Scroll(DirectionUp, AmountChar)
-}
-
-// ScrollDown scrolls down by character
-func (c *Controller) ScrollDown() error {
-	c.logger.Debug("ScrollDown called")
-	// Use negative delta for down (scroll wheel convention)
-	return c.Scroll(DirectionDown, AmountChar)
-}
-
-// ScrollLeft scrolls left by character
-func (c *Controller) ScrollLeft() error {
-	c.logger.Debug("ScrollLeft called")
-	return c.Scroll(DirectionLeft, AmountChar)
-}
-
-// ScrollRight scrolls right by character
-func (c *Controller) ScrollRight() error {
-	c.logger.Debug("ScrollRight called")
-	return c.Scroll(DirectionRight, AmountChar)
-}
-
-// ScrollUpHalfPage scrolls up by half page (Ctrl+U in Vim)
-func (c *Controller) ScrollUpHalfPage() error {
-	c.logger.Debug("ScrollUpHalfPage called")
-	return c.Scroll(DirectionUp, AmountHalfPage)
-}
-
-// ScrollDownHalfPage scrolls down by half page (Ctrl+D in Vim)
-func (c *Controller) ScrollDownHalfPage() error {
-	c.logger.Debug("ScrollDownHalfPage called")
-	return c.Scroll(DirectionDown, AmountHalfPage)
-}
-
-// ScrollToTop scrolls to the top (gg in Vim)
-func (c *Controller) ScrollToTop() error {
-	c.logger.Debug("ScrollToTop called")
-	return c.Scroll(DirectionUp, AmountEnd)
-}
-
-// ScrollToBottom scrolls to the bottom (G in Vim)
-func (c *Controller) ScrollToBottom() error {
-	c.logger.Debug("ScrollToBottom called")
-	return c.Scroll(DirectionDown, AmountEnd)
 }

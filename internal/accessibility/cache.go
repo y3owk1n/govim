@@ -10,13 +10,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// CachedInfo wraps ElementInfo with expiration time
+// CachedInfo wraps ElementInfo with expiration time.
 type CachedInfo struct {
 	Info      *ElementInfo
 	ExpiresAt time.Time
 }
 
-// InfoCache is a thread-safe cache with TTL
+// InfoCache is a thread-safe cache with TTL.
 type InfoCache struct {
 	mu      sync.RWMutex
 	data    map[uintptr]*CachedInfo
@@ -25,7 +25,7 @@ type InfoCache struct {
 	stopped bool
 }
 
-// NewInfoCache creates a cache with the given TTL
+// NewInfoCache creates a cache with the given TTL.
 func NewInfoCache(ttl time.Duration) *InfoCache {
 	cache := &InfoCache{
 		data:   make(map[uintptr]*CachedInfo, 100),
@@ -39,7 +39,7 @@ func NewInfoCache(ttl time.Duration) *InfoCache {
 	return cache
 }
 
-// Get retrieves a cached value if it exists and hasn't expired
+// Get retrieves a cached value if it exists and hasn't expired.
 func (c *InfoCache) Get(elem *Element) *ElementInfo {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -68,7 +68,7 @@ func (c *InfoCache) Get(elem *Element) *ElementInfo {
 	return cached.Info
 }
 
-// Set stores a value with TTL
+// Set stores a value with TTL.
 func (c *InfoCache) Set(elem *Element, info *ElementInfo) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -87,7 +87,33 @@ func (c *InfoCache) Set(elem *Element, info *ElementInfo) {
 		zap.Time("expires_at", time.Now().Add(c.ttl)))
 }
 
-// cleanupLoop periodically removes expired entries
+// Size returns the number of cached entries.
+func (c *InfoCache) Size() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	size := len(c.data)
+	logger.Debug("Cache size queried", zap.Int("size", size))
+	return size
+}
+
+// Clear removes all entries.
+func (c *InfoCache) Clear() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.data = make(map[uintptr]*CachedInfo, 100)
+	logger.Debug("Cache cleared")
+}
+
+// Stop stops the cleanup goroutine.
+func (c *InfoCache) Stop() {
+	if !c.stopped {
+		close(c.stopCh)
+		c.stopped = true
+		logger.Debug("Cache stopped")
+	}
+}
+
+// cleanupLoop periodically removes expired entries.
 func (c *InfoCache) cleanupLoop() {
 	ticker := time.NewTicker(c.ttl / 2) // Cleanup at half the TTL interval
 	defer ticker.Stop()
@@ -103,7 +129,7 @@ func (c *InfoCache) cleanupLoop() {
 	}
 }
 
-// cleanup removes expired entries
+// cleanup removes expired entries.
 func (c *InfoCache) cleanup() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -122,30 +148,4 @@ func (c *InfoCache) cleanup() {
 			zap.Int("removed_entries", removedCount),
 			zap.Int("remaining_entries", len(c.data)))
 	}
-}
-
-// Stop stops the cleanup goroutine
-func (c *InfoCache) Stop() {
-	if !c.stopped {
-		close(c.stopCh)
-		c.stopped = true
-		logger.Debug("Cache stopped")
-	}
-}
-
-// Clear removes all entries
-func (c *InfoCache) Clear() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.data = make(map[uintptr]*CachedInfo, 100)
-	logger.Debug("Cache cleared")
-}
-
-// Size returns the number of cached entries
-func (c *InfoCache) Size() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	size := len(c.data)
-	logger.Debug("Cache size queried", zap.Int("size", size))
-	return size
 }

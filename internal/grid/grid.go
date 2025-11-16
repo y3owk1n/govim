@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Grid represents a flat 3-character coordinate grid (all positions visible at once)
+// Grid represents a flat 3-character coordinate grid (all positions visible at once).
 type Grid struct {
 	characters string          // Characters used for coordinates (e.g., "asdfghjkl")
 	bounds     image.Rectangle // Screen bounds
@@ -16,7 +16,7 @@ type Grid struct {
 	index      map[string]*Cell
 }
 
-// Cell represents a grid cell with a 3-character coordinate
+// Cell represents a grid cell with a 3-character coordinate.
 type Cell struct {
 	Coordinate string          // 3-character coordinate (e.g., "AAA", "ABC")
 	Bounds     image.Rectangle // Cell bounds
@@ -24,22 +24,22 @@ type Cell struct {
 }
 
 // NewGrid creates a grid with automatically optimized cell sizes for the screen.
-// Cell sizes are dynamically calculated based on screen dimensions, resolution, and aspect ratio
+// Cell sizes are dynamically calculated based on screen dimensions, resolution, and aspect ratio.
 // to ensure optimal precision and usability across all display types.
 //
-// Grid layout uses spatial regions for predictable navigation:
-//   - Each region is identified by the first character (Region A, Region B, etc.)
-//   - Within each region, coordinates flow left-to-right, top-to-bottom
-//   - Region A: AAA, ABA, ACA (left-to-right), then AAB, ABB, ACB (next row)
-//   - Regions flow left-to-right until screen width is filled
-//   - Next region starts on new row below, continuing the pattern
-//   - This allows users to think: "C** coordinates are in region C on the screen"
+// Grid layout uses spatial regions for predictable navigation.
+//   - Each region is identified by the first character (Region A, Region B, etc.).
+//   - Within each region, coordinates flow left-to-right, top-to-bottom.
+//   - Region A: AAA, ABA, ACA (left-to-right), then AAB, ABB, ACB (next row).
+//   - Regions flow left-to-right until screen width is filled.
+//   - Next region starts on new row below, continuing the pattern.
+//   - This allows users to think: "C** coordinates are in region C on the screen".
 //
-// Cell sizing is fully automatic based on screen characteristics:
-//   - Very small screens (<1.5M pixels): 25-60px cells for maximum precision
-//   - Small-medium screens (1.5-2.5M pixels): 30-80px cells
-//   - Medium-large screens (2.5-4M pixels): 40-100px cells
-//   - Very large screens (>4M pixels): 50-120px cells
+// Cell sizing is fully automatic based on screen characteristics.
+//   - Very small screens (<1.5M pixels): 25-60px cells for maximum precision.
+//   - Small-medium screens (1.5-2.5M pixels): 30-80px cells.
+//   - Medium-large screens (2.5-4M pixels): 40-100px cells.
+//   - Very large screens (>4M pixels): 50-120px cells.
 func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Grid {
 	logger.Debug("Creating new grid",
 		zap.String("characters", characters),
@@ -156,9 +156,9 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 	}
 }
 
-// generateCellsWithRegions creates cells using spatial region logic
-// Each region (identified by first char) fills left-to-right, top-to-bottom
-// Regions flow across screen, wrapping to next row when width is exhausted
+// generateCellsWithRegions creates cells using spatial region logic.
+// Each region (identified by first char) fills left-to-right, top-to-bottom.
+// Regions flow across screen, wrapping to next row when width is exhausted.
 func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelLength int,
 	bounds image.Rectangle, baseCellWidth, baseCellHeight, remainderWidth, remainderHeight int,
 	logger *zap.Logger,
@@ -203,7 +203,7 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 	// Precompute x/y starts to avoid inner summation loops
 	xStarts := make([]int, gridCols)
 	yStarts := make([]int, gridRows)
-	for colIndex := 0; colIndex < gridCols; colIndex++ {
+	for colIndex := range xStarts {
 		xStarts[colIndex] = bounds.Min.X + colIndex*baseCellWidth
 		if colIndex < remainderWidth {
 			xStarts[colIndex] += colIndex
@@ -211,7 +211,7 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 			xStarts[colIndex] += remainderWidth
 		}
 	}
-	for rowIndex := 0; rowIndex < gridRows; rowIndex++ {
+	for rowIndex := range yStarts {
 		yStarts[rowIndex] = bounds.Min.Y + rowIndex*baseCellHeight
 		if rowIndex < remainderHeight {
 			yStarts[rowIndex] += rowIndex
@@ -317,14 +317,14 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 	return cells
 }
 
-// candidate represents a valid grid configuration
+// candidate represents a valid grid configuration.
 type candidate struct {
 	cols, rows   int
 	cellW, cellH int
 	score        float64
 }
 
-// calculateOptimalCellSizes determines optimal cell size constraints based on screen characteristics
+// calculateOptimalCellSizes determines optimal cell size constraints based on screen characteristics.
 func calculateOptimalCellSizes(width, height int) (int, int) {
 	screenArea := width * height
 	screenAspect := float64(width) / float64(height)
@@ -355,7 +355,7 @@ func calculateOptimalCellSizes(width, height int) (int, int) {
 	return minCellSize, maxCellSize
 }
 
-// calculateLabelLength determines the optimal label length based on total cells
+// calculateLabelLength determines the optimal label length based on total cells.
 func calculateLabelLength(totalCells, numChars int) int {
 	switch {
 	case totalCells <= numChars*numChars:
@@ -367,7 +367,7 @@ func calculateLabelLength(totalCells, numChars int) int {
 	}
 }
 
-// selectBestCandidate picks the candidate with the best (lowest) score
+// selectBestCandidate picks the candidate with the best (lowest) score.
 func selectBestCandidate(candidates []candidate, width, height, minCellSize, maxCellSize int) (int, int) {
 	var gridCols, gridRows int
 
@@ -395,28 +395,16 @@ func selectBestCandidate(candidates []candidate, width, height, minCellSize, max
 	return gridCols, gridRows
 }
 
-// findValidGridConfigurations searches through all valid grid configurations
+// findValidGridConfigurations searches through all valid grid configurations.
 func findValidGridConfigurations(width, height, minCellSize, maxCellSize int) []candidate {
 	var candidates []candidate
 
 	// Calculate search ranges
-	minCols := width / maxCellSize
-	if minCols < 1 {
-		minCols = 1
-	}
-	maxCols := width / minCellSize
-	if maxCols < 1 {
-		maxCols = 1
-	}
+	minCols := max(width/maxCellSize, 1)
+	maxCols := max(width/minCellSize, 1)
 
-	minRows := height / maxCellSize
-	if minRows < 1 {
-		minRows = 1
-	}
-	maxRows := height / minCellSize
-	if maxRows < 1 {
-		maxRows = 1
-	}
+	minRows := max(height/maxCellSize, 1)
+	maxRows := max(height/minCellSize, 1)
 
 	// Search through all valid grid configurations
 	for colIndex := maxCols; colIndex >= minCols && colIndex >= 1; colIndex-- {
@@ -460,12 +448,12 @@ func findValidGridConfigurations(width, height, minCellSize, maxCellSize int) []
 	return candidates
 }
 
-// GetAllCells returns all grid cells
+// GetAllCells returns all grid cells.
 func (g *Grid) GetAllCells() []*Cell {
 	return g.cells
 }
 
-// GetCellByCoordinate returns the cell for a given coordinate (2, 3, or 4 characters)
+// GetCellByCoordinate returns the cell for a given coordinate. (2, 3, or 4 characters).
 func (g *Grid) GetCellByCoordinate(coord string) *Cell {
 	coord = strings.ToUpper(coord)
 
@@ -483,7 +471,7 @@ func (g *Grid) GetCellByCoordinate(coord string) *Cell {
 	return nil
 }
 
-// CalculateOptimalGrid calculates optimal character count for coverage
+// CalculateOptimalGrid calculates optimal character count for coverage.
 func CalculateOptimalGrid(characters string) (int, int) {
 	// For flat 3-char grid, we don't use rows/cols
 	// Just return sensible defaults (will be ignored)

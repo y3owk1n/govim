@@ -5,7 +5,7 @@ package grid
 #include "../bridge/overlay.h"
 #include <stdlib.h>
 
-// Callback function that Go can reference
+// Callback function that Go can reference.
 extern void gridResizeCompletionCallback(void* context);
 */
 import "C"
@@ -46,14 +46,14 @@ func gridResizeCompletionCallback(context unsafe.Pointer) {
 	gridCallbackLock.Unlock()
 }
 
-// Overlay manages grid-specific overlay rendering
+// Overlay manages grid-specific overlay rendering.
 type Overlay struct {
 	window C.OverlayWindow
 	cfg    config.GridConfig
 	logger *zap.Logger
 }
 
-// NewOverlay creates a new grid overlay with its own window
+// NewOverlay creates a new grid overlay with its own window.
 func NewOverlay(cfg config.GridConfig, logger *zap.Logger) *Overlay {
 	window := C.createOverlayWindow()
 	gridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
@@ -80,7 +80,7 @@ func NewOverlay(cfg config.GridConfig, logger *zap.Logger) *Overlay {
 	}
 }
 
-// NewOverlayWithWindow creates a grid overlay using a shared window
+// NewOverlayWithWindow creates a grid overlay using a shared window.
 func NewOverlayWithWindow(cfg config.GridConfig, logger *zap.Logger, windowPtr unsafe.Pointer) *Overlay {
 	gridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
 	gridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
@@ -106,17 +106,17 @@ func NewOverlayWithWindow(cfg config.GridConfig, logger *zap.Logger, windowPtr u
 	}
 }
 
-// UpdateConfig updates the overlay's config (e.g., after config reload)
+// UpdateConfig updates the overlay's config (e.g., after config reload).
 func (o *Overlay) UpdateConfig(cfg config.GridConfig) {
 	o.cfg = cfg
 }
 
-// SetHideUnmatched sets whether to hide unmatched cells
+// SetHideUnmatched sets whether to hide unmatched cells.
 func (o *Overlay) SetHideUnmatched(hide bool) {
 	C.setHideUnmatched(o.window, C.int(boolToInt(hide)))
 }
 
-// boolToInt converts a boolean to an integer (1 for true, 0 for false)
+// boolToInt converts a boolean to an integer (1 for true, 0 for false).
 func boolToInt(b bool) int {
 	if b {
 		return 1
@@ -124,22 +124,22 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-// Show displays the grid overlay
+// Show displays the grid overlay.
 func (o *Overlay) Show() {
 	C.showOverlayWindow(o.window)
 }
 
-// Hide hides the grid overlay
+// Hide hides the grid overlay.
 func (o *Overlay) Hide() {
 	C.hideOverlayWindow(o.window)
 }
 
-// Clear clears the grid overlay
+// Clear clears the grid overlay.
 func (o *Overlay) Clear() {
 	C.clearOverlay(o.window)
 }
 
-// Destroy destroys the grid overlay window
+// Destroy destroys the grid overlay window.
 func (o *Overlay) Destroy() {
 	C.destroyOverlayWindow(o.window)
 }
@@ -147,22 +147,22 @@ func (o *Overlay) Destroy() {
 // CleanupCallbackMap cleans up any pending callbacks in the map
 // CleanupCallbackMap removed: centralized overlay manager controls resizes
 
-// ReplaceWindow atomically replaces the underlying overlay window on the main thread
+// ReplaceWindow atomically replaces the underlying overlay window on the main thread.
 func (o *Overlay) ReplaceWindow() {
 	C.replaceOverlayWindow(&o.window)
 }
 
-// ResizeToMainScreen resizes the overlay window to the current main screen
+// ResizeToMainScreen resizes the overlay window to the current main screen.
 func (o *Overlay) ResizeToMainScreen() {
 	C.resizeOverlayToMainScreen(o.window)
 }
 
-// ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor
+// ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor.
 func (o *Overlay) ResizeToActiveScreen() {
 	C.resizeOverlayToActiveScreen(o.window)
 }
 
-// ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification
+// ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification.
 func (o *Overlay) ResizeToActiveScreenSync() {
 	done := make(chan struct{})
 
@@ -182,7 +182,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	// Note: uintptr conversion must happen in same expression to satisfy go vet
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
-		(C.ResizeCompletionCallback)(unsafe.Pointer(C.gridResizeCompletionCallback)),
+		(C.ResizeCompletionCallback)(unsafe.Pointer(C.gridResizeCompletionCallback)), //nolint:unconvert
 		*(*unsafe.Pointer)(unsafe.Pointer(&callbackID)),
 	)
 
@@ -214,7 +214,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	}()
 }
 
-// Draw renders the flat grid with all 3-char cells visible
+// Draw renders the flat grid with all 3-char cells visible.
 func (o *Overlay) Draw(grid *Grid, currentInput string, style Style) error {
 	o.logger.Debug("Drawing grid overlay",
 		zap.Int("cell_count", len(grid.GetAllCells())),
@@ -247,7 +247,7 @@ func (o *Overlay) Draw(grid *Grid, currentInput string, style Style) error {
 	return nil
 }
 
-// UpdateMatches updates matched state without redrawing all cells
+// UpdateMatches updates matched state without redrawing all cells.
 func (o *Overlay) UpdateMatches(prefix string) {
 	o.logger.Debug("Updating grid matches", zap.String("prefix", prefix))
 
@@ -258,7 +258,7 @@ func (o *Overlay) UpdateMatches(prefix string) {
 	o.logger.Debug("Grid matches updated successfully")
 }
 
-// ShowSubgrid draws a 3x3 subgrid inside the selected cell
+// ShowSubgrid draws a 3x3 subgrid inside the selected cell.
 func (o *Overlay) ShowSubgrid(cell *Cell, style Style) {
 	o.logger.Debug("Showing subgrid",
 		zap.Int("cell_x", cell.Bounds.Min.X),
@@ -319,7 +319,7 @@ func (o *Overlay) ShowSubgrid(cell *Cell, style Style) {
 	xBreaks[cols] = cellBounds.Max.X
 	yBreaks[rows] = cellBounds.Max.Y
 
-	for cellIndex := 0; cellIndex < count; cellIndex++ {
+	for cellIndex := range cells {
 		rowIndex := cellIndex / cols
 		colIndex := cellIndex % cols
 		label := strings.ToUpper(string(chars[cellIndex]))
@@ -385,7 +385,7 @@ func (o *Overlay) ShowSubgrid(cell *Cell, style Style) {
 	o.logger.Debug("Subgrid shown successfully")
 }
 
-// DrawScrollHighlight draws a scroll highlight
+// DrawScrollHighlight draws a scroll highlight.
 func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height int, color string, borderWidth int) {
 	cColor := C.CString(color)
 	defer C.free(unsafe.Pointer(cColor))
@@ -414,7 +414,7 @@ func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height in
 	C.drawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(borderWidth), C.double(1.0))
 }
 
-// drawGridCells draws all grid cells with their labels
+// drawGridCells draws all grid cells with their labels.
 func (o *Overlay) drawGridCells(cellsGo []*Cell, currentInput string, style Style) {
 	o.logger.Debug("Drawing grid cells",
 		zap.Int("cell_count", len(cellsGo)),
@@ -521,7 +521,7 @@ func (o *Overlay) drawGridCells(cellsGo []*Cell, currentInput string, style Styl
 	C.free(unsafe.Pointer(borderColor))
 }
 
-// Style represents the visual style for grid cells
+// Style represents the visual style for grid cells.
 type Style struct {
 	FontSize               int
 	FontFamily             string
@@ -535,7 +535,7 @@ type Style struct {
 	BorderColor            string
 }
 
-// BuildStyle returns Style based on action name using the provided config
+// BuildStyle returns Style based on action name using the provided config.
 func BuildStyle(cfg config.GridConfig) Style {
 	style := Style{
 		FontSize:               cfg.FontSize,

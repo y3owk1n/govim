@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Hint represents a hint label for a UI element
+// Hint represents a hint label for a UI element.
 type Hint struct {
 	Label         string
 	Element       *accessibility.TreeNode
@@ -20,13 +20,13 @@ type Hint struct {
 	MatchedPrefix string // Characters that have been typed
 }
 
-// Generator generates hints for UI elements
+// Generator generates hints for UI elements.
 type Generator struct {
 	characters string
 	maxHints   int
 }
 
-// NewGenerator creates a new hint generator
+// NewGenerator creates a new hint generator.
 func NewGenerator(characters string) *Generator {
 	// Ensure we have at least some characters
 	if characters == "" {
@@ -46,7 +46,7 @@ func NewGenerator(characters string) *Generator {
 	}
 }
 
-// Generate generates hints for the given elements
+// Generate generates hints for the given elements.
 func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error) {
 	if len(elements) == 0 {
 		return []*Hint{}, nil
@@ -93,8 +93,8 @@ func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error
 	return hints, nil
 }
 
-// generateAlphabetLabels generates alphabet-based hint labels
-// Uses a strategy that avoids prefixes (no "a" if "aa" exists)
+// generateAlphabetLabels generates alphabet-based hint labels.
+// Uses a strategy that avoids prefixes (no "a" if "aa" exists).
 func (g *Generator) generateAlphabetLabels(count int) []string {
 	if count <= 0 {
 		return []string{}
@@ -118,7 +118,7 @@ func (g *Generator) generateAlphabetLabels(count int) []string {
 	switch length {
 	case 1:
 		// Single character labels
-		for i := 0; i < count; i++ {
+		for i := range chars[:count] {
 			labels = append(labels, string(chars[i]))
 		}
 	case 2:
@@ -153,13 +153,13 @@ func (h *Hint) GetBounds() image.Rectangle {
 	}
 }
 
-// IsVisible checks if the hint is visible on screen
+// IsVisible checks if the hint is visible on screen.
 func (h *Hint) IsVisible(screenBounds image.Rectangle) bool {
 	bounds := h.GetBounds()
 	return bounds.Overlaps(screenBounds)
 }
 
-// HintCollection manages a collection of hints
+// HintCollection manages a collection of hints.
 type HintCollection struct {
 	hints   []*Hint
 	active  bool
@@ -168,7 +168,7 @@ type HintCollection struct {
 	prefix2 map[string][]*Hint
 }
 
-// NewHintCollection creates a new hint collection
+// NewHintCollection creates a new hint collection.
 func NewHintCollection(hints []*Hint) *HintCollection {
 	hintCollection := &HintCollection{
 		hints:   hints,
@@ -192,17 +192,17 @@ func NewHintCollection(hints []*Hint) *HintCollection {
 	return hintCollection
 }
 
-// GetHints returns all hints
+// GetHints returns all hints.
 func (hc *HintCollection) GetHints() []*Hint {
 	return hc.hints
 }
 
-// FindByLabel finds a hint by label
+// FindByLabel finds a hint by label.
 func (hc *HintCollection) FindByLabel(label string) *Hint {
 	return hc.byLabel[strings.ToUpper(label)]
 }
 
-// FilterByPrefix filters hints by prefix
+// FilterByPrefix filters hints by prefix.
 func (hc *HintCollection) FilterByPrefix(prefix string) []*Hint {
 	if prefix == "" {
 		return hc.hints
@@ -233,17 +233,17 @@ func (hc *HintCollection) FilterByPrefix(prefix string) []*Hint {
 	return []*Hint{}
 }
 
-// IsActive returns whether the collection is active
+// IsActive returns whether the collection is active.
 func (hc *HintCollection) IsActive() bool {
 	return hc.active
 }
 
-// Deactivate deactivates the collection
+// Deactivate deactivates the collection.
 func (hc *HintCollection) Deactivate() {
 	hc.active = false
 }
 
-// Count returns the number of hints
+// Count returns the number of hints.
 func (hc *HintCollection) Count() int {
 	return len(hc.hints)
 }

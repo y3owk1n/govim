@@ -19,17 +19,18 @@ var (
 	logFileMu    sync.Mutex
 )
 
-// Package logger provides structured logging functionality for the Neru application
+// Package logger provides structured logging functionality for the Neru application.
 // using the zap logging library with file rotation support.
 
-// Init initializes the global logger
+// Init initializes the global logger.
 func Init(logLevel, logFilePath string, structured bool, disableFileLogging bool, maxFileSize, maxBackups, maxAge int) error {
 	logFileMu.Lock()
 	defer logFileMu.Unlock()
 
 	// Close existing log file if any
 	if logFile != nil {
-		if err := logFile.Close(); err != nil {
+		err := logFile.Close()
+		if err != nil {
 			return fmt.Errorf("failed to close existing log file: %w", err)
 		}
 		logFile = nil
@@ -87,7 +88,8 @@ func Init(logLevel, logFilePath string, structured bool, disableFileLogging bool
 
 		// Create log directory
 		logDir := filepath.Dir(logFilePath)
-		if err := os.MkdirAll(logDir, 0750); err != nil {
+		err := os.MkdirAll(logDir, 0750)
+		if err != nil {
 			return fmt.Errorf("failed to create log directory: %w", err)
 		}
 
@@ -121,7 +123,7 @@ func Init(logLevel, logFilePath string, structured bool, disableFileLogging bool
 	return nil
 }
 
-// Get returns the global logger
+// Get returns the global logger.
 func Get() *zap.Logger {
 	if globalLogger == nil {
 		// Fallback to development logger
@@ -130,23 +132,25 @@ func Get() *zap.Logger {
 	return globalLogger
 }
 
-// Sync flushes any buffered log entries
+// Sync flushes any buffered log entries.
 func Sync() error {
 	if globalLogger != nil {
-		if err := globalLogger.Sync(); err != nil {
+		err := globalLogger.Sync()
+		if err != nil {
 			return fmt.Errorf("failed to sync logger: %w", err)
 		}
 	}
 	return nil
 }
 
-// Close closes the log file and syncs the logger
+// Close closes the log file and syncs the logger.
 func Close() error {
 	logFileMu.Lock()
 	defer logFileMu.Unlock()
 
 	if globalLogger != nil {
-		if err := globalLogger.Sync(); err != nil {
+		err := globalLogger.Sync()
+		if err != nil {
 			// Ignore common sync errors that occur during shutdown
 			if !strings.Contains(err.Error(), "invalid argument") &&
 				!strings.Contains(err.Error(), "inappropriate ioctl for device") {
@@ -158,7 +162,8 @@ func Close() error {
 
 	if logFile != nil {
 		// lumberjack.Logger doesn't have a Sync method, but Close will flush
-		if err := logFile.Close(); err != nil {
+		err := logFile.Close()
+		if err != nil {
 			return fmt.Errorf("failed to close log file: %w", err)
 		}
 		logFile = nil
@@ -167,32 +172,32 @@ func Close() error {
 	return nil
 }
 
-// Debug logs a debug message
+// Debug logs a debug message.
 func Debug(msg string, fields ...zap.Field) {
 	Get().Debug(msg, fields...)
 }
 
-// Info logs an info message
+// Info logs an info message.
 func Info(msg string, fields ...zap.Field) {
 	Get().Info(msg, fields...)
 }
 
-// Warn logs a warning message
+// Warn logs a warning message.
 func Warn(msg string, fields ...zap.Field) {
 	Get().Warn(msg, fields...)
 }
 
-// Error logs an error message
+// Error logs an error message.
 func Error(msg string, fields ...zap.Field) {
 	Get().Error(msg, fields...)
 }
 
-// Fatal logs a fatal message and exits
+// Fatal logs a fatal message and exits.
 func Fatal(msg string, fields ...zap.Field) {
 	Get().Fatal(msg, fields...)
 }
 
-// With creates a child logger with the given fields
+// With creates a child logger with the given fields.
 func With(fields ...zap.Field) *zap.Logger {
 	return Get().With(fields...)
 }

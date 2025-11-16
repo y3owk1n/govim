@@ -6,7 +6,7 @@ typedef struct {
     CFRunLoopSourceRef runLoopSource;
     EventTapCallback callback;
     void* userData;
-    NSMutableArray *hotkeys;  // Changed to NSMutableArray for ARC compatibility
+    NSMutableArray *hotkeys;
     dispatch_queue_t accessQueue;  // For thread-safe access
 } EventTapContext;
 

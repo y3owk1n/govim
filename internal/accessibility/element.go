@@ -8,7 +8,7 @@ package accessibility
 import "C"
 
 import (
-	"fmt"
+	"errors"
 	"image"
 	"sort"
 	"strings"
@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Element represents an accessibility UI element
+// Element represents an accessibility UI element.
 type Element struct {
 	ref unsafe.Pointer
 }
@@ -62,7 +62,7 @@ func GetClickableRoles() []string {
 	return roles
 }
 
-// ElementInfo contains information about a UI element
+// ElementInfo contains information about a UI element.
 type ElementInfo struct {
 	Position        image.Point
 	Size            image.Point
@@ -74,13 +74,13 @@ type ElementInfo struct {
 	PID             int
 }
 
-// CheckAccessibilityPermissions checks if the app has accessibility permissions
+// CheckAccessibilityPermissions checks if the app has accessibility permissions.
 func CheckAccessibilityPermissions() bool {
 	result := C.checkAccessibilityPermissions()
 	return result == 1
 }
 
-// GetSystemWideElement returns the system-wide accessibility element
+// GetSystemWideElement returns the system-wide accessibility element.
 func GetSystemWideElement() *Element {
 	ref := C.getSystemWideElement()
 	if ref == nil {
@@ -89,7 +89,7 @@ func GetSystemWideElement() *Element {
 	return &Element{ref: ref}
 }
 
-// GetFocusedApplication returns the currently focused application
+// GetFocusedApplication returns the currently focused application.
 func GetFocusedApplication() *Element {
 	ref := C.getFocusedApplication()
 	if ref == nil {
@@ -98,7 +98,7 @@ func GetFocusedApplication() *Element {
 	return &Element{ref: ref}
 }
 
-// GetApplicationByPID returns an application element by its process ID
+// GetApplicationByPID returns an application element by its process ID.
 func GetApplicationByPID(pid int) *Element {
 	ref := C.getApplicationByPID(C.int(pid))
 	if ref == nil {
@@ -107,7 +107,7 @@ func GetApplicationByPID(pid int) *Element {
 	return &Element{ref: ref}
 }
 
-// GetApplicationByBundleID returns an application element by bundle identifier
+// GetApplicationByBundleID returns an application element by bundle identifier.
 func GetApplicationByBundleID(bundleID string) *Element {
 	cBundle := C.CString(bundleID)
 	defer C.free(unsafe.Pointer(cBundle))
@@ -119,7 +119,7 @@ func GetApplicationByBundleID(bundleID string) *Element {
 	return &Element{ref: ref}
 }
 
-// GetElementAtPosition returns the element at the specified screen position
+// GetElementAtPosition returns the element at the specified screen position.
 func GetElementAtPosition(x, y int) *Element {
 	pos := C.CGPoint{x: C.double(x), y: C.double(y)}
 	ref := C.getElementAtPosition(pos)
@@ -129,15 +129,15 @@ func GetElementAtPosition(x, y int) *Element {
 	return &Element{ref: ref}
 }
 
-// GetInfo returns information about the element
+// GetInfo returns information about the element.
 func (e *Element) GetInfo() (*ElementInfo, error) {
 	if e.ref == nil {
-		return nil, fmt.Errorf("element is nil")
+		return nil, errors.New("element is nil")
 	}
 
 	cInfo := C.getElementInfo(e.ref)
 	if cInfo == nil {
-		return nil, fmt.Errorf("failed to get element info")
+		return nil, errors.New("failed to get element info")
 	}
 	defer C.freeElementInfo(cInfo)
 
@@ -168,10 +168,10 @@ func (e *Element) GetInfo() (*ElementInfo, error) {
 	return info, nil
 }
 
-// GetChildren returns all child elements with optional occlusion checking
+// GetChildren returns all child elements with optional occlusion checking.
 func (e *Element) GetChildren() ([]*Element, error) {
 	if e.ref == nil {
-		return nil, fmt.Errorf("element is nil")
+		return nil, errors.New("element is nil")
 	}
 
 	var count C.int
@@ -215,23 +215,23 @@ func (e *Element) GetChildren() ([]*Element, error) {
 	return children, nil
 }
 
-// SetFocus sets focus to the element
+// SetFocus sets focus to the element.
 func (e *Element) SetFocus() error {
 	if e.ref == nil {
-		return fmt.Errorf("element is nil")
+		return errors.New("element is nil")
 	}
 
 	result := C.setFocus(e.ref)
 	if result == 0 {
-		return fmt.Errorf("set focus failed")
+		return errors.New("set focus failed")
 	}
 	return nil
 }
 
-// GetAttribute gets a custom attribute value
+// GetAttribute gets a custom attribute value.
 func (e *Element) GetAttribute(name string) (string, error) {
 	if e.ref == nil {
-		return "", fmt.Errorf("element is nil")
+		return "", errors.New("element is nil")
 	}
 
 	cName := C.CString(name)
@@ -239,14 +239,14 @@ func (e *Element) GetAttribute(name string) (string, error) {
 
 	cValue := C.getElementAttribute(e.ref, cName)
 	if cValue == nil {
-		return "", fmt.Errorf("attribute not found")
+		return "", errors.New("attribute not found")
 	}
 	defer C.freeString(cValue)
 
 	return C.GoString(cValue), nil
 }
 
-// Release releases the element reference
+// Release releases the element reference.
 func (e *Element) Release() {
 	if e.ref != nil {
 		C.releaseElement(e.ref)
@@ -254,7 +254,7 @@ func (e *Element) Release() {
 	}
 }
 
-// ReleaseAll releases all elements in a slice
+// ReleaseAll releases all elements in a slice.
 func ReleaseAll(elements []*Element) {
 	for _, elem := range elements {
 		if elem != nil {
@@ -263,7 +263,7 @@ func ReleaseAll(elements []*Element) {
 	}
 }
 
-// GetAllWindows returns all windows of the focused application
+// GetAllWindows returns all windows of the focused application.
 func GetAllWindows() ([]*Element, error) {
 	var count C.int
 	windows := C.getAllWindows(&count)
@@ -275,14 +275,14 @@ func GetAllWindows() ([]*Element, error) {
 	windowSlice := (*[1 << 30]unsafe.Pointer)(unsafe.Pointer(windows))[:count:count]
 	result := make([]*Element, count)
 
-	for i := 0; i < int(count); i++ {
+	for i := range result {
 		result[i] = &Element{ref: windowSlice[i]}
 	}
 
 	return result, nil
 }
 
-// GetFrontmostWindow returns the frontmost window
+// GetFrontmostWindow returns the frontmost window.
 func GetFrontmostWindow() *Element {
 	ref := C.getFrontmostWindow()
 	if ref == nil {
@@ -291,7 +291,7 @@ func GetFrontmostWindow() *Element {
 	return &Element{ref: ref}
 }
 
-// GetMenuBar returns the menu bar element for the given application element
+// GetMenuBar returns the menu bar element for the given application element.
 func (e *Element) GetMenuBar() *Element {
 	if e.ref == nil {
 		return nil
@@ -303,7 +303,7 @@ func (e *Element) GetMenuBar() *Element {
 	return &Element{ref: ref}
 }
 
-// GetApplicationName returns the application name
+// GetApplicationName returns the application name.
 func (e *Element) GetApplicationName() string {
 	if e.ref == nil {
 		return ""
@@ -318,7 +318,7 @@ func (e *Element) GetApplicationName() string {
 	return C.GoString(cName)
 }
 
-// GetBundleIdentifier returns the bundle identifier
+// GetBundleIdentifier returns the bundle identifier.
 func (e *Element) GetBundleIdentifier() string {
 	if e.ref == nil {
 		return ""
@@ -333,7 +333,7 @@ func (e *Element) GetBundleIdentifier() string {
 	return C.GoString(cBundleID)
 }
 
-// GetScrollBounds returns the scroll area bounds
+// GetScrollBounds returns the scroll area bounds.
 func (e *Element) GetScrollBounds() image.Rectangle {
 	if e.ref == nil {
 		return image.Rectangle{}
@@ -352,7 +352,7 @@ func (e *Element) GetScrollBounds() image.Rectangle {
 	}
 }
 
-// MoveMouseToPoint moves the cursor to a specific screen point
+// MoveMouseToPoint moves the cursor to a specific screen point.
 func MoveMouseToPoint(p image.Point) {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	C.moveMouse(pos)
@@ -363,7 +363,7 @@ func LeftClickAtPoint(p image.Point, restoreCursor bool) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performLeftClickAtPosition(pos, C.bool(restoreCursor))
 	if result == 0 {
-		return fmt.Errorf("left-click at point failed")
+		return errors.New("left-click at point failed")
 	}
 	return nil
 }
@@ -373,7 +373,7 @@ func RightClickAtPoint(p image.Point, restoreCursor bool) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performRightClickAtPosition(pos, C.bool(restoreCursor))
 	if result == 0 {
-		return fmt.Errorf("right-click at point failed")
+		return errors.New("right-click at point failed")
 	}
 	return nil
 }
@@ -383,7 +383,7 @@ func MiddleClickAtPoint(p image.Point, restoreCursor bool) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performMiddleClickAtPosition(pos, C.bool(restoreCursor))
 	if result == 0 {
-		return fmt.Errorf("middle-click at point failed")
+		return errors.New("middle-click at point failed")
 	}
 	return nil
 }
@@ -393,7 +393,7 @@ func LeftMouseDownAtPoint(p image.Point) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performLeftMouseDownAtPosition(pos)
 	if result == 0 {
-		return fmt.Errorf("left-mouse-down at point failed")
+		return errors.New("left-mouse-down at point failed")
 	}
 	return nil
 }
@@ -403,7 +403,7 @@ func LeftMouseUpAtPoint(p image.Point) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performLeftMouseUpAtPosition(pos)
 	if result == 0 {
-		return fmt.Errorf("left-mouse-up at point failed")
+		return errors.New("left-mouse-up at point failed")
 	}
 	return nil
 }
@@ -412,7 +412,7 @@ func LeftMouseUpAtPoint(p image.Point) error {
 func LeftMouseUp() error {
 	result := C.performLeftMouseUpAtCursor()
 	if result == 0 {
-		return fmt.Errorf("left-mouse-up failed")
+		return errors.New("left-mouse-up failed")
 	}
 	return nil
 }
@@ -421,18 +421,18 @@ func LeftMouseUp() error {
 func ScrollAtCursor(deltaX, deltaY int) error {
 	result := C.scrollAtCursor(C.int(deltaX), C.int(deltaY))
 	if result == 0 {
-		return fmt.Errorf("failed to scroll element")
+		return errors.New("failed to scroll element")
 	}
 	return nil
 }
 
-// GetCurrentCursorPosition returns the current cursor position in screen coordinates
+// GetCurrentCursorPosition returns the current cursor position in screen coordinates.
 func GetCurrentCursorPosition() image.Point {
 	pos := C.getCurrentCursorPosition()
 	return image.Point{X: int(pos.x), Y: int(pos.y)}
 }
 
-// IsClickable checks if the element is clickable
+// IsClickable checks if the element is clickable.
 func (e *Element) IsClickable() bool {
 	if e.ref == nil {
 		return false

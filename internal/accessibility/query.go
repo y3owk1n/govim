@@ -1,8 +1,10 @@
 package accessibility
 
 import (
+	"errors"
 	"fmt"
 	"image"
+	"strings"
 	"sync"
 	"time"
 
@@ -29,19 +31,19 @@ func PrintTree(node *TreeNode, depth int) {
 	if node == nil || node.Info == nil {
 		return
 	}
-	indent := ""
+	var indent strings.Builder
 	for range depth {
-		indent += "  "
+		indent.WriteString("  ")
 	}
-	fmt.Printf("%sRole: %s, Title: %s, Size: %dx%d\n",
-		indent, node.Info.Role, node.Info.Title, node.Info.Size.X, node.Info.Size.Y)
+	logger.Info(fmt.Sprintf("%sRole: %s, Title: %s, Size: %dx%d",
+		indent.String(), node.Info.Role, node.Info.Title, node.Info.Size.X, node.Info.Size.Y))
 
 	for _, child := range node.Children {
 		PrintTree(child, depth+1)
 	}
 }
 
-// GetClickableElements returns all clickable elements in the frontmost window
+// GetClickableElements returns all clickable elements in the frontmost window.
 func GetClickableElements() ([]*TreeNode, error) {
 	logger.Debug("Getting clickable elements for frontmost window")
 
@@ -52,7 +54,7 @@ func GetClickableElements() ([]*TreeNode, error) {
 	window := GetFrontmostWindow()
 	if window == nil {
 		logger.Warn("No frontmost window found")
-		return nil, fmt.Errorf("no frontmost window")
+		return nil, errors.New("no frontmost window")
 	}
 	defer window.Release()
 
@@ -70,9 +72,9 @@ func GetClickableElements() ([]*TreeNode, error) {
 	return elements, nil
 }
 
-// GetScrollableElements returns all scrollable elements in the frontmost window
+// GetScrollableElements returns all scrollable elements in the frontmost window.
 
-// GetMenuBarClickableElements returns clickable elements from the focused app's menu bar
+// GetMenuBarClickableElements returns clickable elements from the focused app's menu bar.
 func GetMenuBarClickableElements() ([]*TreeNode, error) {
 	logger.Debug("Getting clickable elements for menu bar")
 

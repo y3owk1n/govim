@@ -5,13 +5,13 @@ package scroll
 #include "../bridge/overlay.h"
 #include <stdlib.h>
 
-// Callback function that Go can reference
+// Callback function that Go can reference.
 extern void resizeScrollCompletionCallback(void* context);
 */
 import "C"
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,11 +47,11 @@ type Overlay struct {
 	logger *zap.Logger
 }
 
-// NewOverlay creates a new overlay
+// NewOverlay creates a new overlay.
 func NewOverlay(cfg config.ScrollConfig, logger *zap.Logger) (*Overlay, error) {
 	window := C.createOverlayWindow()
 	if window == nil {
-		return nil, fmt.Errorf("failed to create overlay window")
+		return nil, errors.New("failed to create overlay window")
 	}
 	return &Overlay{
 		window: window,
@@ -60,7 +60,7 @@ func NewOverlay(cfg config.ScrollConfig, logger *zap.Logger) (*Overlay, error) {
 	}, nil
 }
 
-// NewOverlayWithWindow creates a scroll overlay using a shared window
+// NewOverlayWithWindow creates a scroll overlay using a shared window.
 func NewOverlayWithWindow(cfg config.ScrollConfig, logger *zap.Logger, windowPtr unsafe.Pointer) (*Overlay, error) {
 	return &Overlay{
 		window: (C.OverlayWindow)(windowPtr),
@@ -69,33 +69,33 @@ func NewOverlayWithWindow(cfg config.ScrollConfig, logger *zap.Logger, windowPtr
 	}, nil
 }
 
-// Show shows the overlay
+// Show shows the overlay.
 func (o *Overlay) Show() {
 	o.logger.Debug("Showing scroll overlay")
 	C.showOverlayWindow(o.window)
 	o.logger.Debug("Scroll overlay shown successfully")
 }
 
-// Hide hides the overlay
+// Hide hides the overlay.
 func (o *Overlay) Hide() {
 	o.logger.Debug("Hiding scroll overlay")
 	C.hideOverlayWindow(o.window)
 	o.logger.Debug("Scroll overlay hidden successfully")
 }
 
-// Clear clears all scroll from the overlay
+// Clear clears all scroll from the overlay.
 func (o *Overlay) Clear() {
 	o.logger.Debug("Clearing scroll overlay")
 	C.clearOverlay(o.window)
 	o.logger.Debug("Scroll overlay cleared successfully")
 }
 
-// ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor
+// ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor.
 func (o *Overlay) ResizeToActiveScreen() {
 	C.resizeOverlayToActiveScreen(o.window)
 }
 
-// ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification
+// ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification.
 func (o *Overlay) ResizeToActiveScreenSync() {
 	done := make(chan struct{})
 
@@ -115,7 +115,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	// Note: uintptr conversion must happen in same expression to satisfy go vet
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
-		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeScrollCompletionCallback)),
+		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeScrollCompletionCallback)), //nolint:unconvert
 		*(*unsafe.Pointer)(unsafe.Pointer(&callbackID)),
 	)
 
@@ -147,7 +147,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	}()
 }
 
-// DrawScrollHighlight draws a highlight border around the screen
+// DrawScrollHighlight draws a highlight border around the screen.
 func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height int) {
 	o.logger.Debug("DrawScrollHighlight called")
 
@@ -188,7 +188,7 @@ func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height in
 	C.drawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(borderWidth), C.double(1.0))
 }
 
-// Destroy destroys the overlay
+// Destroy destroys the overlay.
 func (o *Overlay) Destroy() {
 	if o.window != nil {
 		C.destroyOverlayWindow(o.window)

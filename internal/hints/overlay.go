@@ -5,13 +5,13 @@ package hints
 #include "../bridge/overlay.h"
 #include <stdlib.h>
 
-// Callback function that Go can reference
+// Callback function that Go can reference.
 extern void resizeHintCompletionCallback(void* context);
 */
 import "C"
 
 import (
-	"fmt"
+	"errors"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -43,7 +43,7 @@ func resizeHintCompletionCallback(context unsafe.Pointer) {
 	hintCallbackLock.Unlock()
 }
 
-// Overlay manages the hint overlay window
+// Overlay manages the hint overlay window.
 type Overlay struct {
 	window C.OverlayWindow
 	config config.HintsConfig
@@ -64,11 +64,11 @@ type StyleMode struct {
 	BorderColor      string
 }
 
-// NewOverlay creates a new overlay
+// NewOverlay creates a new overlay.
 func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	window := C.createOverlayWindow()
 	if window == nil {
-		return nil, fmt.Errorf("failed to create overlay window")
+		return nil, errors.New("failed to create overlay window")
 	}
 	hintDataPool = sync.Pool{New: func() any { s := make([]C.HintData, 0); return &s }}
 	cLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
@@ -80,7 +80,7 @@ func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	}, nil
 }
 
-// NewOverlayWithWindow creates an overlay using a shared window
+// NewOverlayWithWindow creates an overlay using a shared window.
 func NewOverlayWithWindow(cfg config.HintsConfig, logger *zap.Logger, windowPtr unsafe.Pointer) (*Overlay, error) {
 	hintDataPool = sync.Pool{New: func() any { s := make([]C.HintData, 0); return &s }}
 	cLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
@@ -91,33 +91,33 @@ func NewOverlayWithWindow(cfg config.HintsConfig, logger *zap.Logger, windowPtr 
 	}, nil
 }
 
-// Show shows the overlay
+// Show shows the overlay.
 func (o *Overlay) Show() {
 	o.logger.Debug("Showing hint overlay")
 	C.showOverlayWindow(o.window)
 	o.logger.Debug("Hint overlay shown successfully")
 }
 
-// Hide hides the overlay
+// Hide hides the overlay.
 func (o *Overlay) Hide() {
 	o.logger.Debug("Hiding hint overlay")
 	C.hideOverlayWindow(o.window)
 	o.logger.Debug("Hint overlay hidden successfully")
 }
 
-// Clear clears all hints from the overlay
+// Clear clears all hints from the overlay.
 func (o *Overlay) Clear() {
 	o.logger.Debug("Clearing hint overlay")
 	C.clearOverlay(o.window)
 	o.logger.Debug("Hint overlay cleared successfully")
 }
 
-// ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor
+// ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor.
 func (o *Overlay) ResizeToActiveScreen() {
 	C.resizeOverlayToActiveScreen(o.window)
 }
 
-// ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification
+// ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification.
 func (o *Overlay) ResizeToActiveScreenSync() {
 	done := make(chan struct{})
 
@@ -137,7 +137,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	// Note: uintptr conversion must happen in same expression to satisfy go vet
 	C.resizeOverlayToActiveScreenWithCallback(
 		o.window,
-		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeHintCompletionCallback)),
+		(C.ResizeCompletionCallback)(unsafe.Pointer(C.resizeHintCompletionCallback)), //nolint:unconvert
 		*(*unsafe.Pointer)(unsafe.Pointer(&callbackID)),
 	)
 
@@ -169,12 +169,85 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	}()
 }
 
-// DrawHintsWithStyle draws hints on the overlay with custom style
+// DrawHintsWithStyle draws hints on the overlay with custom style.
 func (o *Overlay) DrawHintsWithStyle(hints []*Hint, style StyleMode) error {
 	return o.drawHintsInternal(hints, style, true)
 }
 
-// drawHintsInternal is the internal implementation for drawing hints
+// GetWindow returns the underlying C overlay window.
+func (o *Overlay) GetWindow() C.OverlayWindow {
+	return o.window
+}
+
+// DrawTargetDot draws a small circular dot at the target position.
+func (o *Overlay) DrawTargetDot(x, y int, radius float64, color, borderColor string, borderWidth float64) error {
+	center := C.CGPoint{
+		x: C.double(x),
+		y: C.double(y),
+	}
+
+	cColor := C.CString(color)
+	defer C.free(unsafe.Pointer(cColor))
+
+	var cBorderColor *C.char
+	if borderColor != "" {
+		cBorderColor = C.CString(borderColor)
+		defer C.free(unsafe.Pointer(cBorderColor))
+	}
+
+	C.drawTargetDot(o.window, center, C.double(radius), cColor, cBorderColor, C.double(borderWidth))
+
+	return nil
+}
+
+// DrawScrollHighlight draws a highlight around a scroll area.
+func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height int, color string, borderWidth int) {
+	o.logger.Debug("DrawScrollHighlight called")
+
+	renderBounds := C.CGRect{
+		origin: C.CGPoint{
+			x: C.double(xCoordinate),
+			y: C.double(yCoordinate),
+		},
+		size: C.CGSize{
+			width:  C.double(width),
+			height: C.double(height),
+		},
+	}
+
+	cColor := C.CString(color)
+	defer C.free(unsafe.Pointer(cColor))
+
+	C.drawScrollHighlight(o.window, renderBounds, cColor, C.int(borderWidth))
+}
+
+// BuildStyle returns StyleMode based on action name using the provided config.
+func BuildStyle(cfg config.HintsConfig) StyleMode {
+	style := StyleMode{
+		FontSize:         cfg.FontSize,
+		FontFamily:       cfg.FontFamily,
+		BorderRadius:     cfg.BorderRadius,
+		Padding:          cfg.Padding,
+		BorderWidth:      cfg.BorderWidth,
+		Opacity:          cfg.Opacity,
+		BackgroundColor:  cfg.BackgroundColor,
+		TextColor:        cfg.TextColor,
+		MatchedTextColor: cfg.MatchedTextColor,
+		BorderColor:      cfg.BorderColor,
+	}
+
+	return style
+}
+
+// Destroy destroys the overlay.
+func (o *Overlay) Destroy() {
+	if o.window != nil {
+		C.destroyOverlayWindow(o.window)
+		o.window = nil
+	}
+}
+
+// drawHintsInternal is the internal implementation for drawing hints.
 func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bool) error {
 	o.logger.Debug("Drawing hints internally",
 		zap.Int("hint_count", len(hints)),
@@ -285,77 +358,4 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 		zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
 		zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
 	return nil
-}
-
-// GetWindow returns the underlying C overlay window
-func (o *Overlay) GetWindow() C.OverlayWindow {
-	return o.window
-}
-
-// DrawTargetDot draws a small circular dot at the target position
-func (o *Overlay) DrawTargetDot(x, y int, radius float64, color, borderColor string, borderWidth float64) error {
-	center := C.CGPoint{
-		x: C.double(x),
-		y: C.double(y),
-	}
-
-	cColor := C.CString(color)
-	defer C.free(unsafe.Pointer(cColor))
-
-	var cBorderColor *C.char
-	if borderColor != "" {
-		cBorderColor = C.CString(borderColor)
-		defer C.free(unsafe.Pointer(cBorderColor))
-	}
-
-	C.drawTargetDot(o.window, center, C.double(radius), cColor, cBorderColor, C.double(borderWidth))
-
-	return nil
-}
-
-// DrawScrollHighlight draws a highlight around a scroll area
-func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height int, color string, borderWidth int) {
-	o.logger.Debug("DrawScrollHighlight called")
-
-	renderBounds := C.CGRect{
-		origin: C.CGPoint{
-			x: C.double(xCoordinate),
-			y: C.double(yCoordinate),
-		},
-		size: C.CGSize{
-			width:  C.double(width),
-			height: C.double(height),
-		},
-	}
-
-	cColor := C.CString(color)
-	defer C.free(unsafe.Pointer(cColor))
-
-	C.drawScrollHighlight(o.window, renderBounds, cColor, C.int(borderWidth))
-}
-
-// BuildStyle returns StyleMode based on action name using the provided config
-func BuildStyle(cfg config.HintsConfig) StyleMode {
-	style := StyleMode{
-		FontSize:         cfg.FontSize,
-		FontFamily:       cfg.FontFamily,
-		BorderRadius:     cfg.BorderRadius,
-		Padding:          cfg.Padding,
-		BorderWidth:      cfg.BorderWidth,
-		Opacity:          cfg.Opacity,
-		BackgroundColor:  cfg.BackgroundColor,
-		TextColor:        cfg.TextColor,
-		MatchedTextColor: cfg.MatchedTextColor,
-		BorderColor:      cfg.BorderColor,
-	}
-
-	return style
-}
-
-// Destroy destroys the overlay
-func (o *Overlay) Destroy() {
-	if o.window != nil {
-		C.destroyOverlayWindow(o.window)
-		o.window = nil
-	}
 }

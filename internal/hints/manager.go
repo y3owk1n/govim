@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Manager handles common hint input and filtering logic
+// Manager handles common hint input and filtering logic.
 type Manager struct {
 	currentInput string
 	currentHints *HintCollection
@@ -14,7 +14,7 @@ type Manager struct {
 	logger       *zap.Logger
 }
 
-// NewManager creates a new hint manager
+// NewManager creates a new hint manager.
 func NewManager(onHintUpdate func([]*Hint), logger *zap.Logger) *Manager {
 	return &Manager{
 		onHintUpdate: onHintUpdate,
@@ -22,7 +22,7 @@ func NewManager(onHintUpdate func([]*Hint), logger *zap.Logger) *Manager {
 	}
 }
 
-// SetHints sets the current hint collection
+// SetHints sets the current hint collection.
 func (m *Manager) SetHints(hints *HintCollection) {
 	m.currentHints = hints
 	m.currentInput = ""
@@ -30,14 +30,14 @@ func (m *Manager) SetHints(hints *HintCollection) {
 	m.updateHints()
 }
 
-// Reset resets the current input and redraws all hints
+// Reset resets the current input and redraws all hints.
 func (m *Manager) Reset() {
 	m.currentInput = ""
 	m.logger.Debug("Hint manager: Resetting input")
 	m.updateHints()
 }
 
-// HandleInput processes an input character and returns true if an exact match was found
+// HandleInput processes an input character and returns true if an exact match was found.
 func (m *Manager) HandleInput(key string) (*Hint, bool) {
 	if m.currentHints == nil {
 		m.logger.Debug("Hint manager: No current hints available")
@@ -97,11 +97,17 @@ func (m *Manager) HandleInput(key string) (*Hint, bool) {
 	return nil, false
 }
 
-// GetInput returns the current input string
+// GetInput returns the current input string.
 func (m *Manager) GetInput() string {
 	return m.currentInput
 }
 
+// GetHints returns the current hints.
+func (m *Manager) GetHints() []*Hint {
+	return m.currentHints.GetHints()
+}
+
+// updateHints updates the hints based on the current input.
 func (m *Manager) updateHints() {
 	var filtered []*Hint
 	if m.currentInput == "" {
@@ -123,9 +129,4 @@ func (m *Manager) updateHints() {
 
 func isLetter(c byte) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-}
-
-// GetHints returns the current hints.
-func (m *Manager) GetHints() []*Hint {
-	return m.currentHints.GetHints()
 }

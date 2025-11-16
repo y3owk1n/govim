@@ -6,14 +6,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// updateRolesForCurrentApp updates clickable and scrollable roles based on the current focused app
+// updateRolesForCurrentApp updates clickable and scrollable roles based on the current focused app.
 func (a *App) updateRolesForCurrentApp() {
 	// Get the focused application
 	focusedApp := accessibility.GetFocusedApplication()
 	if focusedApp == nil {
 		a.logger.Debug("No focused application, using global roles only")
 		// Use global roles
-		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles) // Changed from a.config.Accessibility.ClickableRoles
+		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles)
 		return
 	}
 	defer focusedApp.Release()
@@ -23,7 +23,7 @@ func (a *App) updateRolesForCurrentApp() {
 	if bundleID == "" {
 		a.logger.Debug("Could not get bundle ID, using global roles only")
 		// Use global roles
-		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles) // Changed from a.config.Accessibility.ClickableRoles
+		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles)
 		return
 	}
 
@@ -62,7 +62,7 @@ func (a *App) isFocusedAppExcluded() bool {
 	return false
 }
 
-// collectElementsForMode collects UI elements based on the current mode
+// collectElementsForMode collects UI elements based on the current mode.
 func (a *App) collectElements() []*accessibility.TreeNode {
 	var elements []*accessibility.TreeNode
 
@@ -76,7 +76,7 @@ func (a *App) collectElements() []*accessibility.TreeNode {
 	return elements
 }
 
-// collectClickableElements collects clickable elements from the frontmost window
+// collectClickableElements collects clickable elements from the frontmost window.
 func (a *App) collectClickableElements(missionControlActive bool) []*accessibility.TreeNode {
 	if missionControlActive {
 		a.logger.Info("Mission Control is active, skipping frontmost window clickable elements")
@@ -97,7 +97,7 @@ func (a *App) collectClickableElements(missionControlActive bool) []*accessibili
 	return clickableElements
 }
 
-// addSupplementaryElements adds menubar, dock, and notification center elements
+// addSupplementaryElements adds menubar, dock, and notification center elements.
 func (a *App) addSupplementaryElements(elements []*accessibility.TreeNode, missionControlActive bool) []*accessibility.TreeNode {
 	// Menubar elements
 	if !missionControlActive {
@@ -117,16 +117,19 @@ func (a *App) addSupplementaryElements(elements []*accessibility.TreeNode, missi
 	return elements
 }
 
-// addMenubarElements adds menubar clickable elements
+// addMenubarElements adds menubar clickable elements.
 func (a *App) addMenubarElements(elements []*accessibility.TreeNode) []*accessibility.TreeNode {
-	if !a.config.Hints.IncludeMenubarHints { // Changed from a.config.General.IncludeMenubarHints
+	if !a.config.Hints.IncludeMenubarHints {
 		return elements
 	}
 
 	a.logger.Info("Adding menubar elements")
 
 	// Add standard menubar elements
-	if mbElems, err := accessibility.GetMenuBarClickableElements(); err == nil {
+	var mbElems []*accessibility.TreeNode
+	var err error
+	mbElems, err = accessibility.GetMenuBarClickableElements()
+	if err == nil {
 		elements = append(elements, mbElems...)
 		a.logger.Debug("Included menubar elements", zap.Int("count", len(mbElems)))
 	} else {
@@ -134,8 +137,11 @@ func (a *App) addMenubarElements(elements []*accessibility.TreeNode) []*accessib
 	}
 
 	// Add additional menubar elements from specific bundle IDs
-	for _, bundleID := range a.config.Hints.AdditionalMenubarHintsTargets { // Changed from a.config.General.AdditionalMenubarHintsTargets
-		if additionalElems, err := accessibility.GetClickableElementsFromBundleID(bundleID); err == nil {
+	for _, bundleID := range a.config.Hints.AdditionalMenubarHintsTargets {
+		var additionalElems []*accessibility.TreeNode
+		var err error
+		additionalElems, err = accessibility.GetClickableElementsFromBundleID(bundleID)
+		if err == nil {
 			elements = append(elements, additionalElems...)
 			a.logger.Debug("Included additional menubar elements",
 				zap.String("bundle_id", bundleID),
@@ -150,13 +156,16 @@ func (a *App) addMenubarElements(elements []*accessibility.TreeNode) []*accessib
 	return elements
 }
 
-// addDockElements adds dock clickable elements
+// addDockElements adds dock clickable elements.
 func (a *App) addDockElements(elements []*accessibility.TreeNode) []*accessibility.TreeNode {
-	if !a.config.Hints.IncludeDockHints { // Changed from a.config.General.IncludeDockHints
+	if !a.config.Hints.IncludeDockHints {
 		return elements
 	}
 
-	if dockElems, err := accessibility.GetClickableElementsFromBundleID("com.apple.dock"); err == nil {
+	var dockElems []*accessibility.TreeNode
+	var err error
+	dockElems, err = accessibility.GetClickableElementsFromBundleID("com.apple.dock")
+	if err == nil {
 		elements = append(elements, dockElems...)
 		a.logger.Debug("Included dock elements", zap.Int("count", len(dockElems)))
 	} else {
@@ -166,15 +175,18 @@ func (a *App) addDockElements(elements []*accessibility.TreeNode) []*accessibili
 	return elements
 }
 
-// addNotificationCenterElements adds notification center clickable elements
+// addNotificationCenterElements adds notification center clickable elements.
 func (a *App) addNotificationCenterElements(elements []*accessibility.TreeNode) []*accessibility.TreeNode {
-	if !a.config.Hints.IncludeNCHints { // Changed from a.config.General.IncludeNCHints
+	if !a.config.Hints.IncludeNCHints {
 		return elements
 	}
 
 	a.logger.Info("Adding notification center elements")
 
-	if ncElems, err := accessibility.GetClickableElementsFromBundleID("com.apple.notificationcenterui"); err == nil {
+	var ncElems []*accessibility.TreeNode
+	var err error
+	ncElems, err = accessibility.GetClickableElementsFromBundleID("com.apple.notificationcenterui")
+	if err == nil {
 		elements = append(elements, ncElems...)
 		a.logger.Debug("Included notification center elements", zap.Int("count", len(ncElems)))
 	} else {
