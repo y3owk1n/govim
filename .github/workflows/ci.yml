@@ -23,7 +23,7 @@ jobs:
                   go-version: ${{ matrix.go }}
             - name: golangci-lint
               if: ${{ matrix.check == 'lint' || matrix.check == 'formatting' }}
-              uses: golangci/golangci-lint-action@v8
+              uses: golangci/golangci-lint-action@v9
               with:
                   version: v2.6
                   install-only: true
