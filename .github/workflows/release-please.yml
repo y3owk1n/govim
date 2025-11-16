@@ -1,99 +1,99 @@
 on:
-  push:
-    branches:
-      - main
+    push:
+        branches:
+            - main
 permissions:
-  contents: write
-  pull-requests: write
+    contents: write
+    pull-requests: write
 name: release-please
 jobs:
-  release-please:
-    strategy:
-      matrix:
-        go: ["1.25.2"]
-        os: [macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      # Create a release using the release-please action.
-      - uses: googleapis/release-please-action@v4
-        id: release
-        with:
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-          release-type: go
-      # Checkout the repository.
-      - uses: actions/checkout@v4
-        if: ${{ steps.release.outputs.release_created }}
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.head_ref }}
-      # Set up Go.
-      - uses: actions/setup-go@v5
-        if: ${{ steps.release.outputs.release_created }}
-        with:
-          go-version: ${{ matrix.go }}
-      # Build artifacts for multiple platforms.
-      - name: Build neru artifacts
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          mkdir -p bin
-          # Build for darwin-arm64
-          env CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/neru-darwin-arm64 ./cmd/neru
-          # Build for darwin-amd64
-          env CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/neru-darwin-amd64 ./cmd/neru
+    release-please:
+        strategy:
+            matrix:
+                go: ["1.25.2"]
+                os: [macos-latest]
+        runs-on: ${{ matrix.os }}
+        steps:
+            # Create a release using the release-please action.
+            - uses: googleapis/release-please-action@v4
+              id: release
+              with:
+                  token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+                  release-type: go
+            # Checkout the repository.
+            - uses: actions/checkout@v4
+              if: ${{ steps.release.outputs.release_created }}
+              with:
+                  repository: ${{ github.event.pull_request.head.repo.full_name }}
+                  ref: ${{ github.head_ref }}
+            # Set up Go.
+            - uses: actions/setup-go@v6
+              if: ${{ steps.release.outputs.release_created }}
+              with:
+                  go-version: ${{ matrix.go }}
+            # Build artifacts for multiple platforms.
+            - name: Build neru artifacts
+              if: ${{ steps.release.outputs.release_created }}
+              run: |
+                  mkdir -p bin
+                  # Build for darwin-arm64
+                  env CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/neru-darwin-arm64 ./cmd/neru
+                  # Build for darwin-amd64
+                  env CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X github.com/y3owk1n/neru/internal/cli.Version=${{ steps.release.outputs.tag_name }}" -trimpath -o bin/neru-darwin-amd64 ./cmd/neru
 
-      # Bundle arm64 app
-      - name: Bundle neru-darwin-arm64
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          mkdir -p build/arm64/Neru.app/Contents/{MacOS,Resources}
-          cp bin/neru-darwin-arm64 build/arm64/Neru.app/Contents/MacOS/Neru
-          chmod +x build/arm64/Neru.app/Contents/MacOS/Neru
-          sed "s/VERSION/${{ steps.release.outputs.tag_name }}/g" resources/Info.plist.template > build/arm64/Neru.app/Contents/Info.plist
+            # Bundle arm64 app
+            - name: Bundle neru-darwin-arm64
+              if: ${{ steps.release.outputs.release_created }}
+              run: |
+                  mkdir -p build/arm64/Neru.app/Contents/{MacOS,Resources}
+                  cp bin/neru-darwin-arm64 build/arm64/Neru.app/Contents/MacOS/Neru
+                  chmod +x build/arm64/Neru.app/Contents/MacOS/Neru
+                  sed "s/VERSION/${{ steps.release.outputs.tag_name }}/g" resources/Info.plist.template > build/arm64/Neru.app/Contents/Info.plist
 
-          # Copy binary to distribution folder
-          mkdir -p build/arm64/bin
-          cp bin/neru-darwin-arm64 build/arm64/bin/neru
-          chmod +x build/arm64/bin/neru
+                  # Copy binary to distribution folder
+                  mkdir -p build/arm64/bin
+                  cp bin/neru-darwin-arm64 build/arm64/bin/neru
+                  chmod +x build/arm64/bin/neru
 
-          # Create zip
-          cd build/arm64
-          zip -r ../../neru-darwin-arm64.zip bin Neru.app
-          cd ../..
+                  # Create zip
+                  cd build/arm64
+                  zip -r ../../neru-darwin-arm64.zip bin Neru.app
+                  cd ../..
 
-      # Bundle amd64 app
-      - name: Bundle neru-darwin-amd64
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          mkdir -p build/amd64/Neru.app/Contents/{MacOS,Resources}
-          cp bin/neru-darwin-amd64 build/amd64/Neru.app/Contents/MacOS/Neru
-          chmod +x build/amd64/Neru.app/Contents/MacOS/Neru
-          sed "s/VERSION/${{ steps.release.outputs.tag_name }}/g" resources/Info.plist.template > build/amd64/Neru.app/Contents/Info.plist
+            # Bundle amd64 app
+            - name: Bundle neru-darwin-amd64
+              if: ${{ steps.release.outputs.release_created }}
+              run: |
+                  mkdir -p build/amd64/Neru.app/Contents/{MacOS,Resources}
+                  cp bin/neru-darwin-amd64 build/amd64/Neru.app/Contents/MacOS/Neru
+                  chmod +x build/amd64/Neru.app/Contents/MacOS/Neru
+                  sed "s/VERSION/${{ steps.release.outputs.tag_name }}/g" resources/Info.plist.template > build/amd64/Neru.app/Contents/Info.plist
 
-          # Copy binary to distribution folder
-          mkdir -p build/amd64/bin
-          cp bin/neru-darwin-amd64 build/amd64/bin/neru
-          chmod +x build/amd64/bin/neru
+                  # Copy binary to distribution folder
+                  mkdir -p build/amd64/bin
+                  cp bin/neru-darwin-amd64 build/amd64/bin/neru
+                  chmod +x build/amd64/bin/neru
 
-          # Create zip
-          cd build/amd64
-          zip -r ../../neru-darwin-amd64.zip bin Neru.app
-          cd ../..
+                  # Create zip
+                  cd build/amd64
+                  zip -r ../../neru-darwin-amd64.zip bin Neru.app
+                  cd ../..
 
-      # Generate SHA256 checksum files for zip artifacts
-      - name: Generate Checksums
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          shasum -a 256 neru-darwin-arm64.zip | awk '{print $1}' > neru-darwin-arm64.zip.sha256
-          shasum -a 256 neru-darwin-amd64.zip | awk '{print $1}' > neru-darwin-amd64.zip.sha256
-          ls -l *.zip*
+            # Generate SHA256 checksum files for zip artifacts
+            - name: Generate Checksums
+              if: ${{ steps.release.outputs.release_created }}
+              run: |
+                  shasum -a 256 neru-darwin-arm64.zip | awk '{print $1}' > neru-darwin-arm64.zip.sha256
+                  shasum -a 256 neru-darwin-amd64.zip | awk '{print $1}' > neru-darwin-amd64.zip.sha256
+                  ls -l *.zip*
 
-      # Upload release artifacts and their respective checksum files
-      - name: Upload Release Artifacts
-        if: ${{ steps.release.outputs.release_created }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-        run: |
-          gh release upload "${{ steps.release.outputs.tag_name }}" neru-darwin-arm64.zip
-          gh release upload "${{ steps.release.outputs.tag_name }}" neru-darwin-arm64.zip.sha256
-          gh release upload "${{ steps.release.outputs.tag_name }}" neru-darwin-amd64.zip
-          gh release upload "${{ steps.release.outputs.tag_name }}" neru-darwin-amd64.zip.sha256
+            # Upload release artifacts and their respective checksum files
+            - name: Upload Release Artifacts
+              if: ${{ steps.release.outputs.release_created }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+              run: |
+                  gh release upload "${{ steps.release.outputs.tag_name }}" neru-darwin-arm64.zip
+                  gh release upload "${{ steps.release.outputs.tag_name }}" neru-darwin-arm64.zip.sha256
+                  gh release upload "${{ steps.release.outputs.tag_name }}" neru-darwin-amd64.zip
+                  gh release upload "${{ steps.release.outputs.tag_name }}" neru-darwin-amd64.zip.sha256
