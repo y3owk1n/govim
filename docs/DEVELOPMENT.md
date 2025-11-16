@@ -263,6 +263,26 @@ TOML configuration parsing and validation.
 - Validate configuration
 - Provide defaults
 
+#### Cursor Position Restoration
+
+**Overview:**
+- Stores the initial cursor coordinates and screen bounds when entering a mode.
+- Restores the cursor on exit if enabled via `general.restore_cursor_position`.
+- Adjusts for screen resolution/origin changes by mapping the original position proportionally to the current active screen.
+
+**Key points:**
+- Config flag: `general.restore_cursor_position` (default `true`).
+- Entry points: `activateHintModeInternal`, `activateGridMode` capture once per activation.
+- Exit path: `exitMode` restores and clears state.
+
+**Usage example (config API):**
+```go
+cfg := config.Global()
+if cfg != nil && cfg.General.RestoreCursorPosition {
+    // restoration is enabled
+}
+```
+
 #### `internal/cli`
 
 Cobra-based CLI commands.

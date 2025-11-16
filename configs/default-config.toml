@@ -12,6 +12,9 @@ excluded_apps = []
 # Whether to check for accessibility permissions on startup
 accessibility_check_on_start = true
 
+# Whether to restore cursor position after exiting modes
+restore_cursor_position = false
+
 [hotkeys]
 # Hotkey bindings - key = action
 # Supported modifiers: Cmd, Ctrl, Alt, Shift, Option
