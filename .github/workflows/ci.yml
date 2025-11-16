@@ -29,8 +29,11 @@ jobs:
         uses: extractions/setup-just@v2
       - name: Setup clang-tools
         run: |
-          brew install llvm
-          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+          # Xcode's clang tools are already available
+          xcrun --find clang-format
+          xcrun --find clang-tidy
+          # Add to PATH if needed
+          echo "$(dirname $(xcrun --find clang-format))" >> $GITHUB_PATH
       - name: Run just lint
         run: just lint
   go-checks:
@@ -53,8 +56,11 @@ jobs:
         uses: extractions/setup-just@v2
       - name: Setup clang-tools
         run: |
-          brew install llvm
-          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+          # Xcode's clang tools are already available
+          xcrun --find clang-format
+          xcrun --find clang-tidy
+          # Add to PATH if needed
+          echo "$(dirname $(xcrun --find clang-format))" >> $GITHUB_PATH
       - name: Run just fmt
         if: ${{ matrix.check == 'formatting' }}
         run: just fmt-check
