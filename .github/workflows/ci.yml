@@ -27,22 +27,6 @@ jobs:
           install-only: true
       - name: Install just
         uses: extractions/setup-just@v2
-      - name: Setup clang-tools
-        run: |
-          brew install llvm
-          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
-      - name: Debug clang-format
-        run: |
-          which clang-format
-          clang-format --version
-          echo "Files to format:"
-          find internal/bridge \( -name "*.h" -o -name "*.m" \)
-          echo "Testing clang-format on first file:"
-          FIRST_FILE=$(find internal/bridge \( -name "*.h" -o -name "*.m" \) | head -1)
-          if [ -n "$FIRST_FILE" ]; then
-            echo "Testing on: $FIRST_FILE"
-            clang-format --dry-run --style=file "$FIRST_FILE" -Werror || echo "Failed with exit code $?"
-          fi
       - name: Run just lint
         run: just lint
   go-checks:
@@ -67,12 +51,25 @@ jobs:
         run: |
           brew install llvm
           echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+      - name: Debug clang-format config
+        run: |
+          echo "Checking .clang-format file:"
+          cat .clang-format
+          echo ""
+          echo "Testing config validity:"
+          clang-format --style=file --dump-config internal/bridge/accessibility.m 2>&1 || true
       - name: Debug clang-format
         run: |
           which clang-format
           clang-format --version
           echo "Files to format:"
           find internal/bridge \( -name "*.h" -o -name "*.m" \)
+          echo "Testing clang-format on first file:"
+          FIRST_FILE=$(find internal/bridge \( -name "*.h" -o -name "*.m" \) | head -1)
+          if [ -n "$FIRST_FILE" ]; then
+            echo "Testing on: $FIRST_FILE"
+            clang-format --dry-run --style=file "$FIRST_FILE" -Werror || echo "Failed with exit code $?"
+          fi
       - name: Run just fmt
         if: ${{ matrix.check == 'formatting' }}
         run: just fmt-check
