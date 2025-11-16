@@ -55,6 +55,30 @@ test-race:
     @echo "Running tests with race detection..."
     go test -race -v ./...
 
+# Check if files are formatted correctly
+fmt-check:
+    #!/usr/bin/env bash
+    echo "Not checking formatting for go files... It will be checked in lint"
+    echo "Checking Objective-C file formatting..."
+    EXIT_CODE=0
+    while IFS= read -r -d '' file; do
+        OUTPUT=$(clang-format --dry-run -Werror --style=file --assume-filename=file.m "$file" 2>&1)
+        RESULT=$?
+        # Filter out the "does not support C++" warnings
+        FILTERED=$(echo "$OUTPUT" | grep -v "Configuration file(s) do(es) not support C++")
+        if [ -n "$FILTERED" ]; then
+            echo "$FILTERED"
+        fi
+        if [ $RESULT -ne 0 ] && [ -n "$FILTERED" ]; then
+            EXIT_CODE=1
+        fi
+    done < <(find internal/bridge \( -name "*.h" -o -name "*.m" \) -print0)
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo "Some Objective-C files are not properly formatted. Run 'just fmt' to fix them."
+        exit 1
+    fi
+    echo "✓ All Objective-C files are properly formatted"
+
 # Run benchmarks
 bench:
     @echo "Running benchmarks..."
@@ -70,14 +94,18 @@ clean:
 
 # Format code
 fmt:
-    @echo "Formatting code..."
-    go fmt ./...
+    @echo "Formatting Go files..."
+    golangci-lint fmt
+    @echo "Formatting Objective-C files..."
+    @find internal/bridge \( -name "*.h" -o -name "*.m" \) -exec clang-format -i --style=file --assume-filename=file.m {} \;
     @echo "✓ Format complete"
 
 # Lint code
 lint:
     @echo "Linting code..."
     golangci-lint run
+    @echo "Linting Objective-C files..."
+    echo "Skipping Objective-C linting due to header issues"
     @echo "✓ Lint complete"
 
 # Vet
