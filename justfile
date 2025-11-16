@@ -57,10 +57,21 @@ test-race:
 
 # Check if files are formatted correctly
 fmt-check:
-    @echo "Not checking formatting for go files... It will be checked in lint"
-    @echo "Checking Objective-C file formatting..."
-    @find internal/bridge \( -name "*.h" -o -name "*.m" \) -exec clang-format --dry-run -Werror --style=file --assume-filename=file.m {} \; || (echo "Some Objective-C files are not properly formatted. Run 'just fmt' to fix them." && exit 1)
-    @echo "✓ All files are properly formatted"
+    #!/usr/bin/env bash
+    set -e
+    echo "Not checking formatting for go files... It will be checked in lint"
+    echo "Checking Objective-C file formatting..."
+    EXIT_CODE=0
+    while IFS= read -r -d '' file; do
+        if ! clang-format --dry-run -Werror --style=file --assume-filename=file.m "$file"; then
+            EXIT_CODE=1
+        fi
+    done < <(find internal/bridge \( -name "*.h" -o -name "*.m" \) -print0)
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo "Some Objective-C files are not properly formatted. Run 'just fmt' to fix them."
+        exit 1
+    fi
+    echo "✓ All Objective-C files are properly formatted"
 
 # Run benchmarks
 bench:
