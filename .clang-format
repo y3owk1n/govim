@@ -1,49 +1,43 @@
 # Clang-Format Configuration for Objective-C
-# Based on LLVM style with Objective-C specific settings
-
-Language:        ObjC
-BasedOnStyle:    LLVM
+# Compatible with LLVM 21+
+Language: ObjC
+BasedOnStyle: LLVM
 
 # Indentation
-IndentWidth:     4
-TabWidth:        4
-UseTab:          Never
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
 
 # Braces
 BreakBeforeBraces: Attach
-AllowShortIfStatementsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 
 # Line Length
-ColumnLimit:     120
+ColumnLimit: 120
 
 # Spaces
 SpacesBeforeTrailingComments: 1
 SpacesInContainerLiterals: true
 SpacesInSquareBrackets: false
-SpacesInCStyleCastParentheses: false
 SpaceAfterCStyleCast: false
-SpaceAfterTemplateKeyword: true
 SpaceBeforeAssignmentOperators: true
-SpaceBeforeCpp11BracedList: false
 SpaceBeforeParens: ControlStatements
-SpaceBeforeRangeBasedForLoopColon: true
 SpaceInEmptyParentheses: false
-SpacesInAngles: false
-SpacesInConditionalStatement: false
 SpacesInParentheses: false
 
 # Wrapping
 AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
-AlignOperands: true
-AlignTrailingComments: true
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+AlignOperands: Align
+AlignTrailingComments:
+    Kind: Always
+    OverEmptyLines: 0
 
 # Penalties
 PenaltyBreakBeforeFirstCallParameter: 100
 PenaltyBreakComment: 300
-PenaltyBreakFirstLessLess: 120
 PenaltyBreakString: 1000
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 60
