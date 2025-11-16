@@ -5,12 +5,13 @@ name: CI
 permissions:
   contents: read
 jobs:
-  lint:
-    name: lint
+  checks:
+    name: ${{ matrix.check }}
     strategy:
       matrix:
         go: ["1.25.2"]
         os: [macos-latest]
+        check: [lint, formatting, vet, test]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -21,30 +22,11 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       - name: golangci-lint
+        if: ${{ matrix.check == 'lint' || matrix.check == 'formatting' }}
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.6
           install-only: true
-      - name: Install just
-        uses: extractions/setup-just@v2
-      - name: Run just lint
-        run: just lint
-  go-checks:
-    name: ${{ matrix.check }}
-    strategy:
-      matrix:
-        go: ["1.25.2"]
-        os: [macos-latest]
-        check: [formatting, vet, test]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.head_ref }}
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go }}
       - name: Install just
         uses: extractions/setup-just@v2
       - name: Setup clang-tools
@@ -52,18 +34,15 @@ jobs:
         run: |
           brew install llvm
           echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
-      - name: Test find command directly
-        if: ${{ matrix.check == 'formatting' }}
-        run: |
-          echo "Testing find with backslash semicolon:"
-          find internal/bridge \( -name "*.h" -o -name "*.m" \) -exec clang-format --dry-run -Werror --style=file --assume-filename=file.m {} \; 2>&1
-          echo "Exit code: $?"
-      - name: Run just fmt
+      - name: Run just lint
+        if: ${{ matrix.check == 'lint' }}
+        run: just lint
+      - name: Run just fmt-check
         if: ${{ matrix.check == 'formatting' }}
         run: just fmt-check
       - name: Run just vet
         if: ${{ matrix.check == 'vet' }}
         run: just vet
-      - name: Run test
+      - name: Run just test
         if: ${{ matrix.check == 'test' }}
         run: just test
