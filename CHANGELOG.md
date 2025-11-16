@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/y3owk1n/neru/compare/v1.8.0...v1.9.0) (2025-11-16)
+
+
+### Features
+
+* implement restore cursor after escape mode ([#150](https://github.com/y3owk1n/neru/issues/150)) ([131570f](https://github.com/y3owk1n/neru/commit/131570f93173af22f6532e7d493e04713494c92f))
+
 ## [1.8.0](https://github.com/y3owk1n/neru/compare/v1.7.1...v1.8.0) (2025-11-16)
 
 
