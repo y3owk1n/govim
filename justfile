@@ -58,7 +58,7 @@ test-race:
 # Check if Objective-C files are formatted correctly
 fmt-check:
     @echo "Checking Objective-C file formatting..."
-    find internal/bridge -name "*.h" -o -name "*.m" | xargs clang-format --dry-run -Werror --style=file || (echo "Some Objective-C files are not properly formatted. Run 'just fmt' to fix them." && exit 1)
+    @find internal/bridge \( -name "*.h" -o -name "*.m" \) -print0 | xargs -0 -r clang-format --dry-run -Werror --style=file || (echo "Some Objective-C files are not properly formatted. Run 'just fmt' to fix them." && exit 1)
     @echo "✓ All Objective-C files are properly formatted"
 
 # Run benchmarks
@@ -80,7 +80,7 @@ fmt:
     # go fmt ./...
     golangci-lint fmt
     @echo "Formatting Objective-C files..."
-    find internal/bridge -name "*.h" -o -name "*.m" | xargs clang-format -i --style=file
+    @find internal/bridge \( -name "*.h" -o -name "*.m" \) -print0 | xargs -0 -r clang-format -i --style=file
     @echo "✓ Format complete"
 
 # Lint code

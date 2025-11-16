@@ -28,20 +28,9 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v2
       - name: Setup clang-tools
-        uses: KyleMayes/install-llvm-action@v2
-        with:
-          version: "21.1"
-          cached: true
-      - name: Verify and fix clang-format path
         run: |
-          ls -la ${{ github.workspace }}/llvm/bin/ || echo "LLVM bin directory not found"
-          if [ -f "${{ github.workspace }}/llvm/bin/clang-format" ]; then
-            echo "${{ github.workspace }}/llvm/bin" >> $GITHUB_PATH
-          else
-            echo "clang-format not found, installing via brew"
-            brew install llvm
-            echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
-          fi
+          brew install llvm
+          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
       - name: Run just lint
         run: just lint
   go-checks:
@@ -63,20 +52,9 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v2
       - name: Setup clang-tools
-        uses: KyleMayes/install-llvm-action@v2
-        with:
-          version: "21.1"
-          cached: true
-      - name: Verify and fix clang-format path
         run: |
-          ls -la ${{ github.workspace }}/llvm/bin/ || echo "LLVM bin directory not found"
-          if [ -f "${{ github.workspace }}/llvm/bin/clang-format" ]; then
-            echo "${{ github.workspace }}/llvm/bin" >> $GITHUB_PATH
-          else
-            echo "clang-format not found, installing via brew"
-            brew install llvm
-            echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
-          fi
+          brew install llvm
+          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
       - name: Run just fmt
         if: ${{ matrix.check == 'formatting' }}
         run: just fmt-check
