@@ -30,7 +30,7 @@ jobs:
       - name: Setup clang-tools
         run: |
           brew install llvm
-          echo "/usr/local/opt/llvm/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
       - name: Run just lint
         run: just lint
   go-checks:
@@ -54,7 +54,7 @@ jobs:
       - name: Setup clang-tools
         run: |
           brew install llvm
-          echo "/usr/local/opt/llvm/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
       - name: Run just fmt
         if: ${{ matrix.check == 'formatting' }}
         run: just fmt-check
