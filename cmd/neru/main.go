@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"image"
 	"os"
 	"strings"
 
@@ -75,6 +76,10 @@ type App struct {
 	hintOverlayNeedsRefresh bool
 	hotkeyRefreshPending    bool
 	idleScrollLastKey       string // Track last scroll key in idle mode for gg support
+
+	initialCursorPos      image.Point
+	initialScreenBounds   image.Rectangle
+	cursorRestoreCaptured bool
 }
 
 // NewApp creates a new application instance.

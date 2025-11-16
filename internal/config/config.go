@@ -41,7 +41,8 @@ type Config struct {
 // GeneralConfig represents general application configuration.
 type GeneralConfig struct {
 	ExcludedApps              []string `toml:"excluded_apps"`
-	AccessibilityCheckOnStart bool     `toml:"accessibility_check_on_start"` // Moved from AccessibilityConfig
+	AccessibilityCheckOnStart bool     `toml:"accessibility_check_on_start"`
+	RestoreCursorPosition     bool     `toml:"restore_cursor_position"`
 }
 
 // AppConfig represents application-specific configuration.
@@ -160,6 +161,7 @@ func DefaultConfig() *Config {
 		General: GeneralConfig{
 			ExcludedApps:              []string{},
 			AccessibilityCheckOnStart: true,
+			RestoreCursorPosition:     false,
 		},
 		Hotkeys: HotkeysConfig{
 			Bindings: map[string]string{
@@ -212,7 +214,7 @@ func DefaultConfig() *Config {
 			},
 			IgnoreClickableCheck: false,
 
-			AppConfigs: []AppConfig{}, // Moved from AccessibilityConfig
+			AppConfigs: []AppConfig{},
 
 			AdditionalAXSupport: AdditionalAXSupport{
 				Enable:                    false,

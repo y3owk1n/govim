@@ -87,7 +87,14 @@ excluded_apps = [
     "com.microsoft.rdc.macos",
 ]
 accessibility_check_on_start = true
+restore_cursor_position = true
 ```
+
+**Cursor restoration:**
+
+- When `restore_cursor_position = true`, the cursor returns to its original coordinates after exiting any mode.
+- Handles screen resolution changes by restoring proportionally within the current active screen.
+- Default is `false` if omitted.
 
 **Finding Bundle IDs:**
 
@@ -415,6 +422,7 @@ A full configuration example:
 [general]
 excluded_apps = ["com.apple.Terminal", "com.googlecode.iterm2"]
 accessibility_check_on_start = true
+restore_cursor_position = false
 
 [hints]
 enabled = true

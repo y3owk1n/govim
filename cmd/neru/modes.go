@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"math"
 	"runtime"
 	"strings"
 
@@ -68,6 +69,8 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 	if a.isFocusedAppExcluded() {
 		return
 	}
+
+	a.captureInitialCursorPosition()
 
 	action := ActionMoveMouse
 	actionString := getActionString(action)
@@ -193,6 +196,8 @@ func (a *App) activateGridMode() {
 	if a.isFocusedAppExcluded() {
 		return
 	}
+
+	a.captureInitialCursorPosition()
 
 	action := ActionMoveMouse
 	actionString := getActionString(action)
@@ -852,6 +857,13 @@ func (a *App) exitMode() {
 		a.hotkeyRefreshPending = false
 		go a.refreshHotkeysForAppOrCurrent("")
 	}
+
+	if a.config != nil && a.config.General.RestoreCursorPosition && a.cursorRestoreCaptured {
+		currentBounds := bridge.GetActiveScreenBounds()
+		target := computeRestoredPosition(a.initialCursorPos, a.initialScreenBounds, currentBounds)
+		accessibility.MoveMouseToPoint(target)
+	}
+	a.cursorRestoreCaptured = false
 }
 
 func getModeString(mode Mode) string {
@@ -891,6 +903,57 @@ func getActionString(action Action) string {
 // getCurrModeString returns the current mode as a string.
 func (a *App) getCurrModeString() string {
 	return getModeString(a.currentMode)
+}
+
+func (a *App) captureInitialCursorPosition() {
+	if a.cursorRestoreCaptured {
+		return
+	}
+	a.initialCursorPos = accessibility.GetCurrentCursorPosition()
+	a.initialScreenBounds = bridge.GetActiveScreenBounds()
+	a.cursorRestoreCaptured = true
+}
+
+func computeRestoredPosition(initPos image.Point, from, to image.Rectangle) image.Point {
+	if from == to {
+		return initPos
+	}
+	if from.Dx() == 0 || from.Dy() == 0 || to.Dx() == 0 || to.Dy() == 0 {
+		return initPos
+	}
+
+	rx := float64(initPos.X-from.Min.X) / float64(from.Dx())
+	ry := float64(initPos.Y-from.Min.Y) / float64(from.Dy())
+
+	if rx < 0 {
+		rx = 0
+	}
+	if rx > 1 {
+		rx = 1
+	}
+	if ry < 0 {
+		ry = 0
+	}
+	if ry > 1 {
+		ry = 1
+	}
+
+	nx := to.Min.X + int(math.Round(rx*float64(to.Dx())))
+	ny := to.Min.Y + int(math.Round(ry*float64(to.Dy())))
+
+	if nx < to.Min.X {
+		nx = to.Min.X
+	}
+	if nx > to.Max.X {
+		nx = to.Max.X
+	}
+	if ny < to.Min.Y {
+		ny = to.Min.Y
+	}
+	if ny > to.Max.Y {
+		ny = to.Max.Y
+	}
+	return image.Point{X: nx, Y: ny}
 }
 
 // handleActionKey handles action keys for both hints and grid modes.
