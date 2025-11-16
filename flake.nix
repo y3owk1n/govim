@@ -27,8 +27,10 @@
               gotools
               gofumpt
               golangci-lint
+              golines
+              gci
               just # just a command runner like make
-              clang-tools # clang-format and clang-tidy for C/Objective-C
+              clang-tools
             ];
           };
         }
