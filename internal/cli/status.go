@@ -30,20 +30,20 @@ var statusCmd = &cobra.Command{
 		}
 
 		// Pretty print the status data
-		fmt.Println("Neru Status:")
+		logger.Info("Neru Status:")
 		if data, ok := response.Data.(map[string]any); ok {
 			if enabled, ok := data["enabled"].(bool); ok {
 				status := "stopped"
 				if enabled {
 					status = "running"
 				}
-				fmt.Printf("  Status: %s\n", status)
+				logger.Info("  Status: " + status)
 			}
 			if mode, ok := data["mode"].(string); ok {
-				fmt.Printf("  Mode: %s\n", mode)
+				logger.Info("  Mode: " + mode)
 			}
 			if configPath, ok := data["config"].(string); ok {
-				fmt.Printf("  Config: %s\n", configPath)
+				logger.Info("  Config: " + configPath)
 			}
 		} else {
 			// Fallback to JSON output if structure is unexpected
@@ -52,7 +52,7 @@ var statusCmd = &cobra.Command{
 				logger.Error("Failed to marshal status data to JSON", zap.Error(err))
 				return fmt.Errorf("failed to marshal status data: %w", err)
 			}
-			fmt.Println(string(jsonData))
+			logger.Info(string(jsonData))
 		}
 
 		return nil

@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Manager handles variable-length grid input (2, 3, or 4 characters)
+// Manager handles variable-length grid input (2, 3, or 4 characters).
 type Manager struct {
 	grid          *Grid
 	currentInput  string
@@ -24,7 +24,7 @@ type Manager struct {
 	logger  *zap.Logger
 }
 
-// NewManager creates a new grid manager
+// NewManager creates a new grid manager.
 func NewManager(grid *Grid, subRows int, subCols int, subKeys string, onUpdate func(redraw bool), onShowSub func(cell *Cell), logger *zap.Logger) *Manager {
 	// Determine label length from first cell (if grid exists)
 	labelLength := 3 // Default
@@ -45,7 +45,7 @@ func NewManager(grid *Grid, subRows int, subCols int, subKeys string, onUpdate f
 }
 
 // HandleInput processes variable-length coordinate input
-// Returns the target point when complete (labelLength characters entered or subgrid selection)
+// Returns the target point when complete (labelLength characters entered or subgrid selection).
 func (m *Manager) HandleInput(key string) (image.Point, bool) {
 	m.logger.Debug("Grid manager: Processing input", zap.String("key", key), zap.String("current_input", m.currentInput))
 
@@ -99,7 +99,34 @@ func (m *Manager) HandleInput(key string) (image.Point, bool) {
 	return image.Point{}, false
 }
 
-// handleLabelLengthReached handles the case when label length is reached
+// GetInput returns the current partial coordinate input.
+func (m *Manager) GetInput() string {
+	return m.currentInput
+}
+
+// GetCurrentGrid returns the grid.
+func (m *Manager) GetCurrentGrid() *Grid {
+	return m.grid
+}
+
+// Reset resets the input state.
+func (m *Manager) Reset() {
+	m.currentInput = ""
+	m.mainGridInput = ""
+	m.inSubgrid = false
+	m.selectedCell = nil
+	m.logger.Debug("Grid manager: Resetting input state")
+	if m.onUpdate != nil {
+		m.onUpdate(false)
+	}
+}
+
+// GetGrid returns the grid.
+func (m *Manager) GetGrid() *Grid {
+	return m.grid
+}
+
+// handleLabelLengthReached handles the case when label length is reached.
 func (m *Manager) handleLabelLengthReached() (image.Point, bool) {
 	coord := m.currentInput[:m.labelLength]
 	if m.grid != nil {
@@ -128,7 +155,7 @@ func (m *Manager) handleLabelLengthReached() (image.Point, bool) {
 	return image.Point{}, false
 }
 
-// validateInputKey validates the input key
+// validateInputKey validates the input key.
 func (m *Manager) validateInputKey(key string) bool {
 	// Check if character is valid for grid
 	if m.grid != nil && !strings.Contains(m.grid.characters, key) {
@@ -157,7 +184,7 @@ func (m *Manager) validateInputKey(key string) bool {
 	return true
 }
 
-// handleSubgridSelection handles subgrid selection
+// handleSubgridSelection handles subgrid selection.
 func (m *Manager) handleSubgridSelection(key string) (image.Point, bool) {
 	keyIndex := strings.Index(m.subKeys, key)
 	if keyIndex < 0 {
@@ -201,7 +228,7 @@ func (m *Manager) handleSubgridSelection(key string) (image.Point, bool) {
 	return image.Point{X: xCoordinate, Y: yCoordinate}, true
 }
 
-// handleBackspace handles the backspace key input
+// handleBackspace handles the backspace key input.
 func (m *Manager) handleBackspace() (image.Point, bool) {
 	if len(m.currentInput) > 0 {
 		m.currentInput = m.currentInput[:len(m.currentInput)-1]
@@ -232,39 +259,12 @@ func (m *Manager) handleBackspace() (image.Point, bool) {
 	return image.Point{}, false
 }
 
-// handleResetKey handles the reset key input
+// handleResetKey handles the reset key input.
 func (m *Manager) handleResetKey(redraw bool) {
 	m.Reset()
 	if m.onUpdate != nil {
 		m.onUpdate(redraw)
 	}
-}
-
-// GetInput returns the current partial coordinate input
-func (m *Manager) GetInput() string {
-	return m.currentInput
-}
-
-// GetCurrentGrid returns the grid
-func (m *Manager) GetCurrentGrid() *Grid {
-	return m.grid
-}
-
-// Reset resets the input state
-func (m *Manager) Reset() {
-	m.currentInput = ""
-	m.mainGridInput = ""
-	m.inSubgrid = false
-	m.selectedCell = nil
-	m.logger.Debug("Grid manager: Resetting input state")
-	if m.onUpdate != nil {
-		m.onUpdate(false)
-	}
-}
-
-// GetGrid returns the grid
-func (m *Manager) GetGrid() *Grid {
-	return m.grid
 }
 
 func isLetter(c byte) bool {

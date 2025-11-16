@@ -6,13 +6,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// Router handles grid mode key routing
+// Router handles grid mode key routing.
 type Router struct {
 	manager *Manager
 	logger  *zap.Logger
 }
 
-// KeyResult captures routing decisions for grid mode
+// KeyResult captures routing decisions for grid mode.
 type KeyResult struct {
 	Exit        bool        // Escape pressed -> exit mode
 	TargetPoint image.Point // Complete coordinate entered
@@ -27,7 +27,7 @@ func NewRouter(m *Manager, logger *zap.Logger) *Router {
 	}
 }
 
-// RouteKey processes a keypress for grid mode
+// RouteKey processes a keypress for grid mode.
 func (r *Router) RouteKey(key string) KeyResult {
 	var res KeyResult
 

@@ -125,18 +125,6 @@ func (m *Manager) Unsubscribe(id uint64) {
 	m.mu.Unlock()
 }
 
-func (m *Manager) publish(event StateChange) {
-	m.mu.Lock()
-	subs := make([]func(StateChange), 0, len(m.subs))
-	for _, sub := range m.subs {
-		subs = append(subs, sub)
-	}
-	m.mu.Unlock()
-	for _, sub := range subs {
-		sub(event)
-	}
-}
-
 // Destroy destroys the overlay window.
 func (m *Manager) Destroy() {
 	if m.window != nil {
@@ -146,7 +134,7 @@ func (m *Manager) Destroy() {
 }
 
 // UseHintOverlay sets the hint overlay renderer.
-// Wiring overlay renderers
+// Wiring overlay renderers.
 func (m *Manager) UseHintOverlay(o *hints.Overlay) { m.hintOverlay = o }
 
 // UseGridOverlay sets the grid overlay renderer.
@@ -159,12 +147,13 @@ func (m *Manager) UseActionOverlay(o *action.Overlay) { m.actionOverlay = o }
 func (m *Manager) UseScrollOverlay(o *scroll.Overlay) { m.scrollOverlay = o }
 
 // DrawHintsWithStyle draws hints with the specified style.
-// Centralized draw methods
+// Centralized draw methods.
 func (m *Manager) DrawHintsWithStyle(hs []*hints.Hint, style hints.StyleMode) error {
 	if m.hintOverlay == nil {
 		return nil
 	}
-	if err := m.hintOverlay.DrawHintsWithStyle(hs, style); err != nil {
+	err := m.hintOverlay.DrawHintsWithStyle(hs, style)
+	if err != nil {
 		return fmt.Errorf("failed to draw hints with style: %w", err)
 	}
 	return nil
@@ -191,7 +180,8 @@ func (m *Manager) DrawGrid(g *grid.Grid, input string, style grid.Style) error {
 	if m.gridOverlay == nil {
 		return nil
 	}
-	if err := m.gridOverlay.Draw(g, input, style); err != nil {
+	err := m.gridOverlay.Draw(g, input, style)
+	if err != nil {
 		return fmt.Errorf("failed to draw grid: %w", err)
 	}
 	return nil
@@ -219,4 +209,17 @@ func (m *Manager) SetHideUnmatched(hide bool) {
 		return
 	}
 	m.gridOverlay.SetHideUnmatched(hide)
+}
+
+// publish publishes a state change to all subscribers.
+func (m *Manager) publish(event StateChange) {
+	m.mu.Lock()
+	subs := make([]func(StateChange), 0, len(m.subs))
+	for _, sub := range m.subs {
+		subs = append(subs, sub)
+	}
+	m.mu.Unlock()
+	for _, sub := range subs {
+		sub(event)
+	}
 }

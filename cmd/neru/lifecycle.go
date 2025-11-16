@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Run runs the application
+// Run runs the application.
 func (a *App) Run() error {
 	a.logger.Info("Starting Neru")
 
@@ -41,7 +41,7 @@ func (a *App) Run() error {
 	return a.waitForShutdown()
 }
 
-// setupAppWatcherCallbacks configures the app watcher callbacks
+// setupAppWatcherCallbacks configures the app watcher callbacks.
 func (a *App) setupAppWatcherCallbacks() {
 	a.appWatcher.OnActivate(func(_, bundleID string) {
 		a.handleAppActivation(bundleID)
@@ -52,7 +52,7 @@ func (a *App) setupAppWatcherCallbacks() {
 	})
 }
 
-// handleScreenParametersChange handles display changes and resizes/regenerates overlays
+// handleScreenParametersChange handles display changes and resizes/regenerates overlays.
 func (a *App) handleScreenParametersChange() {
 	if a.screenChangeProcessing {
 		return
@@ -78,7 +78,8 @@ func (a *App) handleScreenParametersChange() {
 			}
 
 			// Regenerate the grid cells with updated screen bounds
-			if err := a.setupGrid(); err != nil {
+			err := a.setupGrid()
+			if err != nil {
 				a.logger.Error("Failed to refresh grid after screen change", zap.Error(err))
 				return
 			}
@@ -102,7 +103,8 @@ func (a *App) handleScreenParametersChange() {
 			a.updateRolesForCurrentApp()
 			elements := a.collectElements()
 			if len(elements) > 0 {
-				if err := a.setupHints(elements); err != nil {
+				err := a.setupHints(elements)
+				if err != nil {
 					a.logger.Error("Failed to refresh hints after screen change", zap.Error(err))
 					return
 				}
@@ -120,7 +122,7 @@ func (a *App) handleScreenParametersChange() {
 	}
 }
 
-// handleAppActivation handles application activation events
+// handleAppActivation handles application activation events.
 func (a *App) handleAppActivation(bundleID string) {
 	a.logger.Debug("App activated", zap.String("bundle_id", bundleID))
 
@@ -143,7 +145,7 @@ func (a *App) handleAppActivation(bundleID string) {
 	a.logger.Debug("Done handling app activation")
 }
 
-// handleAdditionalAccessibility handles electron/chromium/firefox accessibility
+// handleAdditionalAccessibility handles electron/chromium/firefox accessibility.
 func (a *App) handleAdditionalAccessibility(bundleID string) {
 	cfg := a.config.Hints.AdditionalAXSupport
 
@@ -166,9 +168,9 @@ func (a *App) handleAdditionalAccessibility(bundleID string) {
 	}
 }
 
-// printStartupInfo prints startup information to console
+// printStartupInfo prints startup information to console.
 func (a *App) printStartupInfo() {
-	fmt.Println("✓ Neru is running")
+	a.logger.Info("✓ Neru is running")
 
 	for key, value := range a.config.Hotkeys.Bindings {
 		// Skip showing bindings for disabled modes
@@ -190,11 +192,11 @@ func (a *App) printStartupInfo() {
 				toShow = string(runes[:30]) + "..."
 			}
 		}
-		fmt.Printf("  %s: %s\n", key, toShow)
+		a.logger.Info(fmt.Sprintf("  %s: %s", key, toShow))
 	}
 }
 
-// waitForShutdown waits for shutdown signal with force-quit support
+// waitForShutdown waits for shutdown signal with force-quit support.
 func (a *App) waitForShutdown() error {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -202,7 +204,7 @@ func (a *App) waitForShutdown() error {
 	// First signal: graceful shutdown
 	<-sigChan
 	a.logger.Info("Received shutdown signal, starting graceful shutdown...")
-	fmt.Println("\n⚠️  Shutting down gracefully... (press Ctrl+C again to force quit)")
+	a.logger.Info("\n⚠️  Shutting down gracefully... (press Ctrl+C again to force quit)")
 
 	// Start cleanup in goroutine
 	done := make(chan struct{})
@@ -220,19 +222,19 @@ func (a *App) waitForShutdown() error {
 	case <-sigChan:
 		// Second signal: force quit
 		a.logger.Warn("Received second signal, forcing shutdown")
-		fmt.Println("⚠️  Force quitting...")
+		a.logger.Info("⚠️  Force quitting...")
 		os.Exit(1)
 	case <-time.After(10 * time.Second):
 		// Timeout: force quit
 		a.logger.Error("Shutdown timeout exceeded, forcing shutdown")
-		fmt.Println("⚠️  Shutdown timeout, force quitting...")
+		a.logger.Info("⚠️  Shutdown timeout, force quitting...")
 		os.Exit(1)
 	}
 
 	return nil
 }
 
-// Cleanup cleans up resources
+// Cleanup cleans up resources.
 func (a *App) Cleanup() {
 	a.logger.Info("Cleaning up")
 
@@ -241,7 +243,8 @@ func (a *App) Cleanup() {
 
 	// Stop IPC server first to prevent new requests
 	if a.ipcServer != nil {
-		if err := a.ipcServer.Stop(); err != nil {
+		err := a.ipcServer.Stop()
+		if err != nil {
 			a.logger.Error("Failed to stop IPC server", zap.Error(err))
 		}
 	}
@@ -262,7 +265,8 @@ func (a *App) Cleanup() {
 	}
 
 	// Sync and close logger at the end
-	if err := logger.Sync(); err != nil {
+	err := logger.Sync()
+	if err != nil {
 		// Ignore "inappropriate ioctl for device" error which occurs when syncing stdout/stderr
 		if !strings.Contains(err.Error(), "inappropriate ioctl for device") {
 			a.logger.Error("Failed to sync logger", zap.Error(err))
@@ -273,7 +277,8 @@ func (a *App) Cleanup() {
 	a.appWatcher.Stop()
 
 	// Close logger (syncs and closes log file)
-	if err := logger.Close(); err != nil {
+	err2 := logger.Close()
+	if err2 != nil {
 		// Can't log this since logger is being closed
 		fmt.Fprintf(os.Stderr, "Warning: failed to close logger: %v\n", err)
 	}

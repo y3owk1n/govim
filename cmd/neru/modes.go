@@ -28,7 +28,7 @@ type GridContext struct {
 	inActionMode bool
 }
 
-// activateMode activates a mode with a given action (for hints mode)
+// activateMode activates a mode with a given action (for hints mode).
 func (a *App) activateMode(mode Mode) {
 	if mode == ModeIdle {
 		// Explicit idle transition
@@ -47,12 +47,12 @@ func (a *App) activateMode(mode Mode) {
 	a.logger.Warn("Unknown mode", zap.String("mode", getModeString(mode)))
 }
 
-// activateHintMode activates hint mode, with an option to preserve action mode state
+// activateHintMode activates hint mode, with an option to preserve action mode state.
 func (a *App) activateHintMode() {
 	a.activateHintModeInternal(false)
 }
 
-// activateHintModeInternal activates hint mode with option to preserve action mode state
+// activateHintModeInternal activates hint mode with option to preserve action mode state.
 func (a *App) activateHintModeInternal(preserveActionMode bool) {
 	if !a.enabled {
 		a.logger.Debug("Neru is disabled, ignoring hint mode activation")
@@ -101,7 +101,8 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 	}
 
 	// Generate and setup hints
-	if err := a.setupHints(elements); err != nil {
+	err := a.setupHints(elements)
+	if err != nil {
 		a.logger.Error("Failed to setup hints", zap.Error(err), zap.String("action", actionString))
 		return
 	}
@@ -119,7 +120,7 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 	}
 }
 
-// setupHints generates hints and draws them with appropriate styling
+// setupHints generates hints and draws them with appropriate styling.
 func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 	var msBefore runtime.MemStats
 	runtime.ReadMemStats(&msBefore)
@@ -157,12 +158,14 @@ func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 	// Draw hints with mode-specific styling
 	style := hints.BuildStyle(a.config.Hints)
 	if overlay.Get() != nil {
-		if err := overlay.Get().DrawHintsWithStyle(hintList, style); err != nil {
+		err := overlay.Get().DrawHintsWithStyle(hintList, style)
+		if err != nil {
 			return fmt.Errorf("failed to draw hints: %w", err)
 		}
 		overlay.Get().Show()
 	} else {
-		if err := a.hintOverlay.DrawHintsWithStyle(hintList, style); err != nil {
+		err := a.hintOverlay.DrawHintsWithStyle(hintList, style)
+		if err != nil {
 			return fmt.Errorf("failed to draw hints: %w", err)
 		}
 	}
@@ -204,7 +207,8 @@ func (a *App) activateGridMode() {
 		a.gridOverlayNeedsRefresh = false
 	}
 
-	if err := a.setupGrid(); err != nil {
+	err := a.setupGrid()
+	if err != nil {
 		a.logger.Error("Failed to setup grid", zap.Error(err), zap.String("action", actionString))
 		return
 	}
@@ -224,7 +228,7 @@ func (a *App) activateGridMode() {
 	a.logger.Info("Type a grid label to select a location")
 }
 
-// setupGrid generates grid and draws it
+// setupGrid generates grid and draws it.
 func (a *App) setupGrid() error {
 	// Create grid with active screen bounds (screen containing mouse cursor)
 	// This ensures proper multi-monitor support
@@ -274,13 +278,15 @@ func (a *App) setupGrid() error {
 		if forceRedraw {
 			if overlay.Get() != nil {
 				overlay.Get().Clear()
-				if err := overlay.Get().DrawGrid(gridInstance, input, gridStyle); err != nil {
+				err := overlay.Get().DrawGrid(gridInstance, input, gridStyle)
+				if err != nil {
 					return
 				}
 				overlay.Get().Show()
 			} else {
 				(*a.gridCtx.gridOverlay).Clear()
-				if err := (*a.gridCtx.gridOverlay).Draw(gridInstance, input, gridStyle); err != nil {
+				err := (*a.gridCtx.gridOverlay).Draw(gridInstance, input, gridStyle)
+				if err != nil {
 					return
 				}
 			}
@@ -307,12 +313,14 @@ func (a *App) setupGrid() error {
 
 	// Draw initial grid
 	if overlay.Get() != nil {
-		if err := overlay.Get().DrawGrid(gridInstance, "", gridStyle); err != nil {
+		err := overlay.Get().DrawGrid(gridInstance, "", gridStyle)
+		if err != nil {
 			return fmt.Errorf("failed to draw grid: %w", err)
 		}
 		overlay.Get().Show()
 	} else {
-		if err := (*a.gridCtx.gridOverlay).Draw(gridInstance, "", gridStyle); err != nil {
+		err := (*a.gridCtx.gridOverlay).Draw(gridInstance, "", gridStyle)
+		if err != nil {
 			return fmt.Errorf("failed to draw grid: %w", err)
 		}
 	}
@@ -320,7 +328,7 @@ func (a *App) setupGrid() error {
 	return nil
 }
 
-// handleActiveKey dispatches key events by current mode
+// handleActiveKey dispatches key events by current mode.
 func (a *App) handleKeyPress(key string) {
 	// If in idle mode, check if we should handle scroll keys
 	if a.currentMode == ModeIdle {
@@ -359,7 +367,7 @@ func (a *App) handleKeyPress(key string) {
 	a.handleModeSpecificKey(key)
 }
 
-// handleTabKey handles the tab key to toggle between overlay mode and action mode
+// handleTabKey handles the tab key to toggle between overlay mode and action mode.
 func (a *App) handleTabKey() {
 	switch a.currentMode {
 	case ModeHints:
@@ -399,7 +407,8 @@ func (a *App) handleTabKey() {
 				overlay.Get().Hide()
 			}
 			// Re-setup grid to show grid again with proper refresh
-			if err := a.setupGrid(); err != nil {
+			err := a.setupGrid()
+			if err != nil {
 				a.logger.Error("Failed to re-setup grid", zap.Error(err))
 			}
 			a.logger.Info("Switched back to grid overlay mode")
@@ -428,7 +437,7 @@ func (a *App) handleTabKey() {
 	}
 }
 
-// handleEscapeKey handles the escape key to exit action mode or current mode
+// handleEscapeKey handles the escape key to exit action mode or current mode.
 func (a *App) handleEscapeKey() {
 	switch a.currentMode {
 	case ModeHints:
@@ -473,7 +482,7 @@ func (a *App) handleEscapeKey() {
 	}
 }
 
-// handleModeSpecificKey handles mode-specific key processing
+// handleModeSpecificKey handles mode-specific key processing.
 func (a *App) handleModeSpecificKey(key string) {
 	switch a.currentMode {
 	case ModeHints:
@@ -556,7 +565,7 @@ func (a *App) handleModeSpecificKey(key string) {
 	}
 }
 
-// handleGenericScrollKey handles scroll keys in a generic way
+// handleGenericScrollKey handles scroll keys in a generic way.
 func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
 	// Local storage for scroll state if not provided
 	var localLastKey string
@@ -667,7 +676,7 @@ done:
 	}
 }
 
-// drawHintsActionHighlight draws a highlight border around the active screen for hints action mode
+// drawHintsActionHighlight draws a highlight border around the active screen for hints action mode.
 func (a *App) drawHintsActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
 	if overlay.Get() != nil {
@@ -693,7 +702,7 @@ func (a *App) drawHintsActionHighlight() {
 		zap.Int("height", localBounds.Dy()))
 }
 
-// drawGridActionHighlight draws a highlight border around the active screen for grid action mode
+// drawGridActionHighlight draws a highlight border around the active screen for grid action mode.
 func (a *App) drawGridActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
 	if overlay.Get() != nil {
@@ -736,7 +745,7 @@ func (a *App) drawScrollHighlightBorder() {
 	}
 }
 
-// exitMode exits the current mode
+// exitMode exits the current mode.
 func (a *App) exitMode() {
 	if a.currentMode == ModeIdle {
 		return
@@ -863,12 +872,12 @@ func getActionString(action Action) string {
 	}
 }
 
-// getCurrModeString returns the current mode as a string
+// getCurrModeString returns the current mode as a string.
 func (a *App) getCurrModeString() string {
 	return getModeString(a.currentMode)
 }
 
-// handleActionKey handles action keys for both hints and grid modes
+// handleActionKey handles action keys for both hints and grid modes.
 func (a *App) handleActionKey(key string, mode string) {
 	// Get the current cursor position
 	cursorPos := accessibility.GetCurrentCursorPosition()
@@ -876,46 +885,46 @@ func (a *App) handleActionKey(key string, mode string) {
 	// Map action keys to actions using configurable keys
 	switch key {
 	case a.config.Action.LeftClickKey: // Left click
-		a.logger.Info(fmt.Sprintf("%s action: Left click", mode))
+		a.logger.Info(mode + " action: Left click")
 		err := accessibility.LeftClickAtPoint(cursorPos, false)
 		if err != nil {
 			a.logger.Error("Failed to perform left click", zap.Error(err))
 		}
 	case a.config.Action.RightClickKey: // Right click
-		a.logger.Info(fmt.Sprintf("%s action: Right click", mode))
+		a.logger.Info(mode + " action: Right click")
 		err := accessibility.RightClickAtPoint(cursorPos, false)
 		if err != nil {
 			a.logger.Error("Failed to perform right click", zap.Error(err))
 		}
 	case a.config.Action.MiddleClickKey: // Middle click
-		a.logger.Info(fmt.Sprintf("%s action: Middle click", mode))
+		a.logger.Info(mode + " action: Middle click")
 		err := accessibility.MiddleClickAtPoint(cursorPos, false)
 		if err != nil {
 			a.logger.Error("Failed to perform middle click", zap.Error(err))
 		}
 	case a.config.Action.MouseDownKey: // Mouse down
-		a.logger.Info(fmt.Sprintf("%s action: Mouse down", mode))
+		a.logger.Info(mode + " action: Mouse down")
 		err := accessibility.LeftMouseDownAtPoint(cursorPos)
 		if err != nil {
 			a.logger.Error("Failed to perform mouse down", zap.Error(err))
 		}
 	case a.config.Action.MouseUpKey: // Mouse up
-		a.logger.Info(fmt.Sprintf("%s action: Mouse up", mode))
+		a.logger.Info(mode + " action: Mouse up")
 		err := accessibility.LeftMouseUpAtPoint(cursorPos)
 		if err != nil {
 			a.logger.Error("Failed to perform mouse up", zap.Error(err))
 		}
 	default:
-		a.logger.Debug(fmt.Sprintf("Unknown %s action key", mode), zap.String("key", key))
+		a.logger.Debug("Unknown "+mode+" action key", zap.String("key", key))
 	}
 }
 
-// handleHintsActionKey handles action keys when in hints action mode
+// handleHintsActionKey handles action keys when in hints action mode.
 func (a *App) handleHintsActionKey(key string) {
 	a.handleActionKey(key, "Hints")
 }
 
-// handleGridActionKey handles action keys when in grid action mode
+// handleGridActionKey handles action keys when in grid action mode.
 func (a *App) handleGridActionKey(key string) {
 	a.handleActionKey(key, "Grid")
 }

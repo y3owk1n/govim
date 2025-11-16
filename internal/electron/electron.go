@@ -76,7 +76,7 @@ func EnsureElectronAccessibility(bundleID string) bool {
 	return true
 }
 
-// ensureAccessibility enables AXEnhancedUserInterface for the specified application
+// ensureAccessibility enables AXEnhancedUserInterface for the specified application.
 func ensureAccessibility(bundleID string, appType string, enabledPIDs map[int]struct{}, pidsMu *sync.Mutex) bool {
 	app := accessibility.GetApplicationByBundleID(bundleID)
 
@@ -127,12 +127,12 @@ func ensureAccessibility(bundleID string, appType string, enabledPIDs map[int]st
 	return true
 }
 
-// EnsureChromiumAccessibility enables AXEnhancedUserInterface for Chromium-based applications
+// EnsureChromiumAccessibility enables AXEnhancedUserInterface for Chromium-based applications.
 func EnsureChromiumAccessibility(bundleID string) bool {
 	return ensureAccessibility(bundleID, "Chromium", chromiumEnabledPIDs, &chromiumPIDsMu)
 }
 
-// EnsureFirefoxAccessibility enables AXEnhancedUserInterface for Firefox-based applications
+// EnsureFirefoxAccessibility enables AXEnhancedUserInterface for Firefox-based applications.
 func EnsureFirefoxAccessibility(bundleID string) bool {
 	return ensureAccessibility(bundleID, "Firefox", firefoxEnabledPIDs, &firefoxPIDsMu)
 }
@@ -277,8 +277,7 @@ func matchesAdditionalBundle(bundleID string, additionalBundles []string) bool {
 		if trimmed == "" {
 			continue
 		}
-		if strings.HasSuffix(trimmed, "*") {
-			prefix := strings.TrimSuffix(trimmed, "*")
+		if prefix, found := strings.CutSuffix(trimmed, "*"); found {
 			if strings.HasPrefix(lower, prefix) {
 				logger.Debug("Bundle matches wildcard pattern",
 					zap.String("bundle_id", bundleID),

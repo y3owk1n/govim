@@ -2,6 +2,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/y3owk1n/neru/internal/logger"
+	"go.uber.org/zap"
 )
 
 // ActionConfig represents the configuration for action mode.
@@ -24,7 +27,7 @@ type ActionConfig struct {
 	MouseUpKey     string `toml:"mouse_up_key"`
 }
 
-// Config represents the complete application configuration
+// Config represents the complete application configuration.
 type Config struct {
 	General GeneralConfig `toml:"general"`
 	Hotkeys HotkeysConfig `toml:"hotkeys"`
@@ -151,7 +154,7 @@ type AdditionalAXSupport struct {
 	AdditionalFirefoxBundles  []string `toml:"additional_firefox_bundles"`
 }
 
-// DefaultConfig returns the default configuration
+// DefaultConfig returns the default configuration.
 func DefaultConfig() *Config {
 	return &Config{
 		General: GeneralConfig{
@@ -271,7 +274,7 @@ func DefaultConfig() *Config {
 	}
 }
 
-// Load loads configuration from the specified path
+// Load loads configuration from the specified path.
 func Load(path string) (*Config, error) {
 	cfg := DefaultConfig()
 
@@ -280,22 +283,25 @@ func Load(path string) (*Config, error) {
 		path = FindConfigFile()
 	}
 
-	fmt.Printf("Loading config from: %s\n", path)
+	logger.Info("Loading config from", zap.String("path", path))
 
 	// If config file doesn't exist, return default config
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		fmt.Println("Config file not found, using default configuration")
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		logger.Info("Config file not found, using default configuration")
 		return cfg, nil
 	}
 
 	// Parse TOML file into the typed config
-	if _, err := toml.DecodeFile(path, cfg); err != nil {
+	_, err = toml.DecodeFile(path, cfg)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
 	// Decode the hotkeys table into a generic map and populate cfg.Hotkeys.Bindings.
-	var raw map[string]map[string]interface{}
-	if _, err := toml.DecodeFile(path, &raw); err == nil {
+	var raw map[string]map[string]any
+	_, err = toml.DecodeFile(path, &raw)
+	if err == nil {
 		if hot, ok := raw["hotkeys"]; ok {
 			// Clear default bindings and initialize with empty map when user provides hotkeys config
 			if len(hot) > 0 {
@@ -311,12 +317,13 @@ func Load(path string) (*Config, error) {
 			}
 		}
 	}
-	// Validate configuration
-	if err := cfg.Validate(); err != nil {
+	// Validate configuration.
+	err = cfg.Validate()
+	if err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	fmt.Println("Configuration loaded successfully")
+	logger.Info("Configuration loaded successfully")
 	return cfg, nil
 }
 
@@ -329,31 +336,34 @@ func FindConfigFile() string {
 
 	// Try ~/.config/neru/config.toml
 	configPath := filepath.Join(homeDir, ".config", "neru", "config.toml")
-	if _, err := os.Stat(configPath); err == nil {
-		fmt.Printf("Found config at: %s\n", configPath)
+	_, err = os.Stat(configPath)
+	if err == nil {
+		logger.Info("Found config at", zap.String("path", configPath))
 		return configPath
 	}
 
 	// Try ~/Library/Application Support/neru/config.toml
 	configPath = filepath.Join(homeDir, "Library", "Application Support", "neru", "config.toml")
-	if _, err := os.Stat(configPath); err == nil {
-		fmt.Printf("Found config at: %s\n", configPath)
+	_, err = os.Stat(configPath)
+	if err == nil {
+		logger.Info("Found config at", zap.String("path", configPath))
 		return configPath
 	}
 
-	fmt.Println("No config file found in default locations")
+	logger.Info("No config file found in default locations")
 	return ""
 }
 
-// Validate validates the configuration
+// Validate validates the configuration.
 func (c *Config) Validate() error {
 	// At least one mode must be enabled
 	if !c.Hints.Enabled && !c.Grid.Enabled {
-		return fmt.Errorf("at least one mode must be enabled: hints.enabled or grid.enabled")
+		return errors.New("at least one mode must be enabled: hints.enabled or grid.enabled")
 	}
 
 	// Validate hints configuration
-	if err := c.validateHints(); err != nil {
+	err := c.validateHints()
+	if err != nil {
 		return err
 	}
 
@@ -365,111 +375,215 @@ func (c *Config) Validate() error {
 		"error": true,
 	}
 	if !validLogLevels[c.Logging.LogLevel] {
-		return fmt.Errorf("log_level must be one of: debug, info, warn, error")
+		return errors.New("log_level must be one of: debug, info, warn, error")
 	}
 
 	// Validate scroll settings
 	if c.Scroll.ScrollStep < 1 {
-		return fmt.Errorf("scroll.scroll_speed must be at least 1")
+		return errors.New("scroll.scroll_speed must be at least 1")
 	}
 	if c.Scroll.ScrollStepHalf < 1 {
-		return fmt.Errorf("scroll.half_page_multiplier must be at least 1")
+		return errors.New("scroll.half_page_multiplier must be at least 1")
 	}
 	if c.Scroll.ScrollStepFull < 1 {
-		return fmt.Errorf("scroll.full_page_multiplier must be at least 1")
+		return errors.New("scroll.full_page_multiplier must be at least 1")
 	}
 
 	// Validate app configs
-	if err := c.validateAppConfigs(); err != nil {
+	err = c.validateAppConfigs()
+	if err != nil {
 		return err
 	}
 
 	// Validate grid settings
-	if err := c.validateGrid(); err != nil {
+	err = c.validateGrid()
+	if err != nil {
 		return err
 	}
 
 	// Validate action settings
-	if err := c.validateAction(); err != nil {
+	err = c.validateAction()
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// validateHints validates the hints configuration
+// Save saves the configuration to the specified path.
+func (c *Config) Save(path string) error {
+	// Create directory if it doesn't exist
+	var err error
+	dir := filepath.Dir(path)
+	err = os.MkdirAll(dir, 0o750)
+	if err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	// Create file
+	var closeErr error
+	// #nosec G304 -- Path is validated and controlled by the application
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create config file: %w", err)
+	}
+	defer func() {
+		cerr := file.Close()
+		if cerr != nil && closeErr == nil {
+			closeErr = fmt.Errorf("failed to close config file: %w", cerr)
+		}
+	}()
+
+	// Encode to TOML
+	encoder := toml.NewEncoder(file)
+	err = encoder.Encode(c)
+	if err != nil {
+		return fmt.Errorf("failed to encode config: %w", err)
+	}
+
+	return closeErr
+}
+
+// IsAppExcluded checks if the given bundle ID is in the excluded apps list.
+func (c *Config) IsAppExcluded(bundleID string) bool {
+	if bundleID == "" {
+		return false
+	}
+
+	// Normalize bundle ID for case-insensitive comparison
+	bundleID = strings.ToLower(strings.TrimSpace(bundleID))
+
+	for _, excludedApp := range c.General.ExcludedApps {
+		excludedApp = strings.ToLower(strings.TrimSpace(excludedApp))
+		if excludedApp == bundleID {
+			return true
+		}
+	}
+	return false
+}
+
+// GetClickableRolesForApp returns the merged clickable roles for a specific app.
+// It combines global clickable roles with app-specific additional roles.
+func (c *Config) GetClickableRolesForApp(bundleID string) []string {
+	// Start with global roles
+	rolesMap := make(map[string]struct{})
+	for _, role := range c.Hints.ClickableRoles {
+		trimmed := strings.TrimSpace(role)
+		if trimmed != "" {
+			rolesMap[trimmed] = struct{}{}
+		}
+	}
+
+	// Add app-specific roles
+	for _, appConfig := range c.Hints.AppConfigs {
+		if appConfig.BundleID == bundleID {
+			for _, role := range appConfig.AdditionalClickable {
+				trimmed := strings.TrimSpace(role)
+				if trimmed != "" {
+					rolesMap[trimmed] = struct{}{}
+				}
+			}
+			break
+		}
+	}
+
+	// Add menubar roles if enabled
+	if c.Hints.IncludeMenubarHints {
+		rolesMap["AXMenuBarItem"] = struct{}{}
+	}
+
+	// Add dock roles if enabled
+	if c.Hints.IncludeDockHints {
+		rolesMap["AXDockItem"] = struct{}{}
+	}
+
+	// Convert map to slice
+	roles := make([]string, 0, len(rolesMap))
+	for role := range rolesMap {
+		roles = append(roles, role)
+	}
+	return roles
+}
+
+// validateHints validates the hints configuration.
 func (c *Config) validateHints() error {
+	var err error
 	// Validate hint characters
 	if strings.TrimSpace(c.Hints.HintCharacters) == "" {
-		return fmt.Errorf("hint_characters cannot be empty")
+		return errors.New("hint_characters cannot be empty")
 	}
 	if len(c.Hints.HintCharacters) < 2 {
-		return fmt.Errorf("hint_characters must contain at least 2 characters")
+		return errors.New("hint_characters must contain at least 2 characters")
 	}
 
 	// Validate opacity values
 	if c.Hints.Opacity < 0 || c.Hints.Opacity > 1 {
-		return fmt.Errorf("hints.opacity must be between 0 and 1")
+		return errors.New("hints.opacity must be between 0 and 1")
 	}
 
 	// Validate colors
-	if err := validateColor(c.Hints.BackgroundColor, "hints.background_color"); err != nil {
+	err = validateColor(c.Hints.BackgroundColor, "hints.background_color")
+	if err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.TextColor, "hints.text_color"); err != nil {
+	err = validateColor(c.Hints.TextColor, "hints.text_color")
+	if err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.MatchedTextColor, "hints.matched_text_color"); err != nil {
+	err = validateColor(c.Hints.MatchedTextColor, "hints.matched_text_color")
+	if err != nil {
 		return err
 	}
-	if err := validateColor(c.Hints.BorderColor, "hints.border_color"); err != nil {
+	err = validateColor(c.Hints.BorderColor, "hints.border_color")
+	if err != nil {
 		return err
 	}
 
 	// Validate hints settings
 	if c.Hints.FontSize < 6 || c.Hints.FontSize > 72 {
-		return fmt.Errorf("hints.font_size must be between 6 and 72")
+		return errors.New("hints.font_size must be between 6 and 72")
 	}
 	if c.Hints.BorderRadius < 0 {
-		return fmt.Errorf("hints.border_radius must be non-negative")
+		return errors.New("hints.border_radius must be non-negative")
 	}
 	if c.Hints.Padding < 0 {
-		return fmt.Errorf("hints.padding must be non-negative")
+		return errors.New("hints.padding must be non-negative")
 	}
 	if c.Hints.BorderWidth < 0 {
-		return fmt.Errorf("hints.border_width must be non-negative")
+		return errors.New("hints.border_width must be non-negative")
 	}
 
-	for _, role := range c.Hints.ClickableRoles { // Changed from c.Accessibility.ClickableRoles
+	for _, role := range c.Hints.ClickableRoles {
 		if strings.TrimSpace(role) == "" {
-			return fmt.Errorf("hints.clickable_roles cannot contain empty values")
+			return errors.New("hints.clickable_roles cannot contain empty values")
 		}
 	}
 
-	for _, bundle := range c.Hints.AdditionalAXSupport.AdditionalElectronBundles { // Changed from c.Accessibility.AdditionalAXSupport.AdditionalElectronBundles
+	for _, bundle := range c.Hints.AdditionalAXSupport.AdditionalElectronBundles {
 		if strings.TrimSpace(bundle) == "" {
-			return fmt.Errorf("hints.electron_support.additional_electron_bundles cannot contain empty values")
+			return errors.New("hints.electron_support.additional_electron_bundles cannot contain empty values")
 		}
 	}
 
-	for _, bundle := range c.Hints.AdditionalAXSupport.AdditionalChromiumBundles { // Changed from c.Accessibility.AdditionalAXSupport.AdditionalChromiumBundles
+	for _, bundle := range c.Hints.AdditionalAXSupport.AdditionalChromiumBundles {
 		if strings.TrimSpace(bundle) == "" {
-			return fmt.Errorf("hints.electron_support.additional_chromium_bundles cannot contain empty values")
+			return errors.New("hints.electron_support.additional_chromium_bundles cannot contain empty values")
 		}
 	}
 
-	for _, bundle := range c.Hints.AdditionalAXSupport.AdditionalFirefoxBundles { // Changed from c.Accessibility.AdditionalAXSupport.AdditionalFirefoxBundles
+	for _, bundle := range c.Hints.AdditionalAXSupport.AdditionalFirefoxBundles {
 		if strings.TrimSpace(bundle) == "" {
-			return fmt.Errorf("hints.electron_support.additional_firefox_bundles cannot contain empty values")
+			return errors.New("hints.electron_support.additional_firefox_bundles cannot contain empty values")
 		}
 	}
 
 	return nil
 }
 
-// validateAppConfigs validates the app configurations
+// validateAppConfigs validates the app configurations.
 func (c *Config) validateAppConfigs() error {
-	for index, appConfig := range c.Hints.AppConfigs { // Changed from c.Accessibility.AppConfigs
+	var err error
+	for index, appConfig := range c.Hints.AppConfigs {
 		if strings.TrimSpace(appConfig.BundleID) == "" {
 			return fmt.Errorf("hints.app_configs[%d].bundle_id cannot be empty", index)
 		}
@@ -477,9 +591,10 @@ func (c *Config) validateAppConfigs() error {
 		// Validate hotkey bindings
 		for key, value := range c.Hotkeys.Bindings {
 			if strings.TrimSpace(key) == "" {
-				return fmt.Errorf("hotkeys.bindings contains an empty key")
+				return errors.New("hotkeys.bindings contains an empty key")
 			}
-			if err := validateHotkey(key, "hotkeys.bindings"); err != nil {
+			err = validateHotkey(key, "hotkeys.bindings")
+			if err != nil {
 				return err
 			}
 			if strings.TrimSpace(value) == "" {
@@ -495,41 +610,48 @@ func (c *Config) validateAppConfigs() error {
 	return nil
 }
 
-// validateGrid validates the grid configuration
+// validateGrid validates the grid configuration.
 func (c *Config) validateGrid() error {
+	var err error
 	if strings.TrimSpace(c.Grid.Characters) == "" {
-		return fmt.Errorf("grid.characters cannot be empty")
+		return errors.New("grid.characters cannot be empty")
 	}
 	if len(c.Grid.Characters) < 2 {
-		return fmt.Errorf("grid.characters must contain at least 2 characters")
+		return errors.New("grid.characters must contain at least 2 characters")
 	}
 	if c.Grid.FontSize < 6 || c.Grid.FontSize > 72 {
-		return fmt.Errorf("grid.font_size must be between 6 and 72")
+		return errors.New("grid.font_size must be between 6 and 72")
 	}
 	if c.Grid.BorderWidth < 0 {
-		return fmt.Errorf("grid.border_width must be non-negative")
+		return errors.New("grid.border_width must be non-negative")
 	}
 	if c.Grid.Opacity < 0 || c.Grid.Opacity > 1 {
-		return fmt.Errorf("grid.opacity must be between 0 and 1")
+		return errors.New("grid.opacity must be between 0 and 1")
 	}
 
 	// Validate per-action grid colors
-	if err := validateColor(c.Grid.BackgroundColor, "grid.background_color"); err != nil {
+	err = validateColor(c.Grid.BackgroundColor, "grid.background_color")
+	if err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.TextColor, "grid.text_color"); err != nil {
+	err = validateColor(c.Grid.TextColor, "grid.text_color")
+	if err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.MatchedTextColor, "grid.matched_text_color"); err != nil {
+	err = validateColor(c.Grid.MatchedTextColor, "grid.matched_text_color")
+	if err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.MatchedBackgroundColor, "grid.matched_background_color"); err != nil {
+	err = validateColor(c.Grid.MatchedBackgroundColor, "grid.matched_background_color")
+	if err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.MatchedBorderColor, "grid.matched_border_color"); err != nil {
+	err = validateColor(c.Grid.MatchedBorderColor, "grid.matched_border_color")
+	if err != nil {
 		return err
 	}
-	if err := validateColor(c.Grid.BorderColor, "grid.border_color"); err != nil {
+	err = validateColor(c.Grid.BorderColor, "grid.border_color")
+	if err != nil {
 		return err
 	}
 
@@ -548,109 +670,20 @@ func (c *Config) validateGrid() error {
 	return nil
 }
 
-// validateAction validates the action configuration
+// validateAction validates the action configuration.
 func (c *Config) validateAction() error {
+	var err error
 	if c.Action.HighlightWidth < 1 {
-		return fmt.Errorf("action.highlight_width must be at least 1")
+		return errors.New("action.highlight_width must be at least 1")
 	}
-	if err := validateColor(c.Action.HighlightColor, "action.highlight_color"); err != nil {
+	err = validateColor(c.Action.HighlightColor, "action.highlight_color")
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// GetClickableRolesForApp returns the merged clickable roles for a specific app.
-// It combines global clickable roles with app-specific additional roles.
-func (c *Config) GetClickableRolesForApp(bundleID string) []string {
-	// Start with global roles
-	rolesMap := make(map[string]struct{})
-	for _, role := range c.Hints.ClickableRoles { // Changed from c.Accessibility.ClickableRoles
-		trimmed := strings.TrimSpace(role)
-		if trimmed != "" {
-			rolesMap[trimmed] = struct{}{}
-		}
-	}
-
-	// Add app-specific roles
-	for _, appConfig := range c.Hints.AppConfigs { // Changed from c.Accessibility.AppConfigs
-		if appConfig.BundleID == bundleID {
-			for _, role := range appConfig.AdditionalClickable {
-				trimmed := strings.TrimSpace(role)
-				if trimmed != "" {
-					rolesMap[trimmed] = struct{}{}
-				}
-			}
-			break
-		}
-	}
-
-	// Add menubar roles if enabled
-	if c.Hints.IncludeMenubarHints { // Changed from c.General.IncludeMenubarHints
-		rolesMap["AXMenuBarItem"] = struct{}{}
-	}
-
-	// Add dock roles if enabled
-	if c.Hints.IncludeDockHints { // Changed from c.General.IncludeDockHints
-		rolesMap["AXDockItem"] = struct{}{}
-	}
-
-	// Convert map to slice
-	roles := make([]string, 0, len(rolesMap))
-	for role := range rolesMap {
-		roles = append(roles, role)
-	}
-	return roles
-}
-
-// IsAppExcluded checks if the given bundle ID is in the excluded apps list
-func (c *Config) IsAppExcluded(bundleID string) bool {
-	if bundleID == "" {
-		return false
-	}
-
-	// Normalize bundle ID for case-insensitive comparison
-	bundleID = strings.ToLower(strings.TrimSpace(bundleID))
-
-	for _, excludedApp := range c.General.ExcludedApps {
-		excludedApp = strings.ToLower(strings.TrimSpace(excludedApp))
-		if excludedApp == bundleID {
-			return true
-		}
-	}
-	return false
-}
-
-// Save saves the configuration to the specified path
-func (c *Config) Save(path string) error {
-	// Create directory if it doesn't exist
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o750); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
-	}
-
-	// Create file
-	var closeErr error
-	// #nosec G304 -- Path is validated and controlled by the application
-	file, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("failed to create config file: %w", err)
-	}
-	defer func() {
-		if cerr := file.Close(); cerr != nil && closeErr == nil {
-			closeErr = fmt.Errorf("failed to close config file: %w", cerr)
-		}
-	}()
-
-	// Encode to TOML
-	encoder := toml.NewEncoder(file)
-	if err := encoder.Encode(c); err != nil {
-		return fmt.Errorf("failed to encode config: %w", err)
-	}
-
-	return closeErr
-}
-
-// validateHotkey validates a hotkey string format
+// validateHotkey validates a hotkey string format.
 func validateHotkey(hotkey, fieldName string) error {
 	if strings.TrimSpace(hotkey) == "" {
 		return nil // Allow empty hotkey to disable the action
@@ -674,7 +707,7 @@ func validateHotkey(hotkey, fieldName string) error {
 	}
 
 	// Check all parts except the last (which is the key)
-	for i := 0; i < len(parts)-1; i++ {
+	for i := range parts[:len(parts)-1] {
 		modifier := strings.TrimSpace(parts[i])
 		if !validModifiers[modifier] {
 			return fmt.Errorf("%s has invalid modifier '%s' in: %s (valid: Cmd, Ctrl, Alt, Shift, Option)",
@@ -691,7 +724,7 @@ func validateHotkey(hotkey, fieldName string) error {
 	return nil
 }
 
-// validateColor validates a color string (hex format)
+// validateColor validates a color string (hex format).
 func validateColor(color, fieldName string) error {
 	if strings.TrimSpace(color) == "" {
 		return fmt.Errorf("%s cannot be empty", fieldName)

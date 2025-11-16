@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -16,7 +17,7 @@ const (
 	modeGrid  = "grid"
 )
 
-// registerHotkeys registers all global hotkeys
+// registerHotkeys registers all global hotkeys.
 func (a *App) registerHotkeys() {
 	// Note: Escape key for exiting modes is hardcoded in handleKeyPress, not registered as global hotkey
 
@@ -46,7 +47,8 @@ func (a *App) registerHotkeys() {
 		bindKey := key
 		bindAction := action
 
-		if _, err := a.hotkeyManager.Register(bindKey, func() {
+		var err error
+		_, err = a.hotkeyManager.Register(bindKey, func() {
 			// Run handler in separate goroutine so the hotkey callback returns quickly.
 			go func() {
 				defer func() {
@@ -55,14 +57,16 @@ func (a *App) registerHotkeys() {
 					}
 				}()
 
-				if err := a.executeHotkeyAction(bindKey, bindAction); err != nil {
+				err := a.executeHotkeyAction(bindKey, bindAction)
+				if err != nil {
 					a.logger.Error("hotkey action failed",
 						zap.String("key", bindKey),
 						zap.String("action", bindAction),
 						zap.Error(err))
 				}
 			}()
-		}); err != nil {
+		})
+		if err != nil {
 			a.logger.Error("Failed to register hotkey binding", zap.String("key", key), zap.String("action", action), zap.Error(err))
 			// continue registering other bindings
 			continue
@@ -70,7 +74,7 @@ func (a *App) registerHotkeys() {
 	}
 }
 
-// executeHotkeyAction executes a hotkey action (either exec or IPC command)
+// executeHotkeyAction executes a hotkey action (either exec or IPC command).
 func (a *App) executeHotkeyAction(key, action string) error {
 	// Exec mode: run arbitrary bash command
 	if strings.HasPrefix(action, "exec ") {
@@ -92,12 +96,12 @@ func (a *App) executeHotkeyAction(key, action string) error {
 	return nil
 }
 
-// executeShellCommand executes a shell command from a hotkey
+// executeShellCommand executes a shell command from a hotkey.
 func (a *App) executeShellCommand(key, action string) error {
 	cmdStr := strings.TrimSpace(strings.TrimPrefix(action, "exec"))
 	if cmdStr == "" {
 		a.logger.Error("hotkey exec has empty command", zap.String("key", key))
-		return fmt.Errorf("empty command")
+		return errors.New("empty command")
 	}
 
 	a.logger.Debug("Executing shell command from hotkey", zap.String("key", key), zap.String("cmd", cmdStr))

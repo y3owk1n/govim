@@ -27,11 +27,11 @@ import (
 )
 
 var (
-	// Global logger instance for the bridge package
+	// Global logger instance for the bridge package.
 	bridgeLogger *zap.Logger
 )
 
-// InitializeLogger initializes the logger for the bridge package
+// InitializeLogger initializes the logger for the bridge package.
 func InitializeLogger(logger *zap.Logger) {
 	bridgeLogger = logger
 }
@@ -99,7 +99,7 @@ var (
 	appWatcherOnce sync.Once
 )
 
-// AppWatcher interface defines the methods for application watching
+// AppWatcher interface defines the methods for application watching.
 type AppWatcher interface {
 	HandleLaunch(appName, bundleID string)
 	HandleTerminate(appName, bundleID string)
@@ -108,7 +108,7 @@ type AppWatcher interface {
 	HandleScreenParametersChanged()
 }
 
-// SetAppWatcher sets the application watcher implementation
+// SetAppWatcher sets the application watcher implementation.
 func SetAppWatcher(w AppWatcher) {
 	if bridgeLogger != nil {
 		bridgeLogger.Debug("Bridge: Setting app watcher")
@@ -116,7 +116,7 @@ func SetAppWatcher(w AppWatcher) {
 	appWatcher = w
 }
 
-// StartAppWatcher starts watching for application events
+// StartAppWatcher starts watching for application events.
 func StartAppWatcher() {
 	if bridgeLogger != nil {
 		bridgeLogger.Debug("Bridge: Starting app watcher")
@@ -124,7 +124,7 @@ func StartAppWatcher() {
 	C.startAppWatcher()
 }
 
-// StopAppWatcher stops watching for application events
+// StopAppWatcher stops watching for application events.
 func StopAppWatcher() {
 	if bridgeLogger != nil {
 		bridgeLogger.Debug("Bridge: Stopping app watcher")
@@ -227,7 +227,7 @@ func handleAppDeactivate(cAppName *C.char, cBundleID *C.char) {
 	}
 }
 
-// GetActiveScreenBounds returns the bounds of the screen containing the mouse cursor
+// GetActiveScreenBounds returns the bounds of the screen containing the mouse cursor.
 func GetActiveScreenBounds() image.Rectangle {
 	if bridgeLogger != nil {
 		bridgeLogger.Debug("Bridge: GetActiveScreenBounds called")

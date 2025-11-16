@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -23,7 +24,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Mode represents the current application mode
+// Mode represents the current application mode.
 type Mode int
 
 const (
@@ -32,7 +33,7 @@ const (
 	ModeGrid
 )
 
-// Action represents the current action within hints mode
+// Action represents the current action within hints mode.
 type Action int
 
 const (
@@ -45,7 +46,7 @@ const (
 	ActionScroll
 )
 
-// App represents the main application
+// App represents the main application.
 type App struct {
 	config           *config.Config
 	ConfigPath       string
@@ -76,10 +77,11 @@ type App struct {
 	idleScrollLastKey       string // Track last scroll key in idle mode for gg support
 }
 
-// NewApp creates a new application instance
+// NewApp creates a new application instance.
 func NewApp(cfg *config.Config) (*App, error) {
 	// Initialize logger
-	if err := logger.Init(
+	var err error
+	err = logger.Init(
 		cfg.Logging.LogLevel,
 		cfg.Logging.LogFile,
 		cfg.Logging.StructuredLogging,
@@ -87,7 +89,8 @@ func NewApp(cfg *config.Config) (*App, error) {
 		cfg.Logging.MaxFileSize,
 		cfg.Logging.MaxBackups,
 		cfg.Logging.MaxAge,
-	); err != nil {
+	)
+	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
@@ -100,13 +103,13 @@ func NewApp(cfg *config.Config) (*App, error) {
 	overlayManager := overlay.Init(log)
 
 	// Check accessibility permissions
-	if cfg.General.AccessibilityCheckOnStart { // Changed from cfg.Accessibility.AccessibilityCheckOnStart
+	if cfg.General.AccessibilityCheckOnStart {
 		if !accessibility.CheckAccessibilityPermissions() {
 			log.Warn("Accessibility permissions not granted. Please grant permissions in System Settings.")
-			fmt.Println("⚠️  Neru requires Accessibility permissions to function.")
-			fmt.Println("Please go to: System Settings → Privacy & Security → Accessibility")
-			fmt.Println("and enable Neru.")
-			return nil, fmt.Errorf("accessibility permissions required")
+			log.Info("⚠️  Neru requires Accessibility permissions to function.")
+			log.Info("Please go to: System Settings → Privacy & Security → Accessibility")
+			log.Info("and enable Neru.")
+			return nil, errors.New("accessibility permissions required")
 		}
 	}
 
@@ -116,9 +119,9 @@ func NewApp(cfg *config.Config) (*App, error) {
 	if cfg.Hints.Enabled {
 		// Apply clickable and scrollable roles from config
 		log.Info("Applying clickable roles",
-			zap.Int("count", len(cfg.Hints.ClickableRoles)), // Changed from cfg.Accessibility.ClickableRoles
-			zap.Strings("roles", cfg.Hints.ClickableRoles))  // Changed from cfg.Accessibility.ClickableRoles
-		accessibility.SetClickableRoles(cfg.Hints.ClickableRoles) // Changed from cfg.Accessibility.ClickableRoles
+			zap.Int("count", len(cfg.Hints.ClickableRoles)),
+			zap.Strings("roles", cfg.Hints.ClickableRoles))
+		accessibility.SetClickableRoles(cfg.Hints.ClickableRoles)
 	}
 
 	// Create app watcher
@@ -164,7 +167,8 @@ func NewApp(cfg *config.Config) (*App, error) {
 	if cfg.Hints.Enabled {
 		app.hintManager = hints.NewManager(func(hs []*hints.Hint) {
 			style := hints.BuildStyle(app.config.Hints)
-			if err := app.hintOverlay.DrawHintsWithStyle(hs, style); err != nil {
+			err := app.hintOverlay.DrawHintsWithStyle(hs, style)
+			if err != nil {
 				app.logger.Error("Failed to redraw hints", zap.Error(err))
 			}
 		}, app.logger)
@@ -285,7 +289,7 @@ func main() {
 	cli.Execute()
 }
 
-// LaunchDaemon is called by the CLI to launch the daemon
+// LaunchDaemon is called by the CLI to launch the daemon.
 func LaunchDaemon(configPath string) {
 	// Load configuration
 	cfg, err := config.Load(configPath)
@@ -307,7 +311,8 @@ func LaunchDaemon(configPath string) {
 
 	// Start app in goroutine
 	go func() {
-		if err := app.Run(); err != nil {
+		err := app.Run()
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error running app: %v\n", err)
 		}
 	}()

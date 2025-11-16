@@ -2,12 +2,74 @@ version: "2"
 run:
   tests: true
 linters:
-  default: standard
-  enable:
-    - exhaustive
-    - godox
-    - lll
-    - promlinter
+  default: all
+  disable:
+    - bodyclose # too many false-positive
+    - containedctx # too many false-positive
+    - contextcheck # too many false-positive
+    - cyclop # duplicate of gocyclo
+    - depguard # import restrictions
+    - dupl # Too strict
+    - err113 # Too strict
+    - exhaustive # Not relevant
+    - exhaustruct # Not relevant
+    - forcetypeassert # Too strict
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit # Too strict
+    - gocyclo
+    - gosec # Too strict
+    - gosmopolitan # not relevant
+    - ireturn # Not relevant
+    - lll # Not relevant
+    - maintidx # kind of duplicate of gocyclo
+    - makezero # Not relevant
+    - mnd # Too strict
+    - nestif # Too many false-positive.
+    - nilnil # Not relevant
+    - nlreturn # Not relevant
+    - noctx # Too strict
+    - nonamedreturns # Too strict
+    - paralleltest # Not relevant
+    - prealloc # Too many false-positive.
+    - rowserrcheck # not relevant (SQL)
+    - sqlclosecheck # not relevant (SQL)
+    - tagliatelle # Too strict
+    - testpackage # Too strict
+    - tparallel # Not relevant
+    - varnamelen # Not relevant
+    - wrapcheck # Too strict
+    - wsl # Too strict
+    - wsl_v5
+
   settings:
-    lll:
-      line-length: 200
+    funlen:
+      lines: -1
+      statements: 120
+    goconst:
+      min-len: 3
+      min-occurrences: 4
+    gocyclo:
+      min-complexity: 14
+    godox:
+      keywords:
+        - FIXME
+    govet:
+      enable-all: true
+      disable:
+        - shadow
+        - fieldalignment
+    misspell:
+      locale: US
+    perfsprint:
+      err-error: true
+      errorf: true
+      sprintf1: true
+      strconcat: false
+    gocritic:
+      disabled-checks:
+        - dupSubExpr
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

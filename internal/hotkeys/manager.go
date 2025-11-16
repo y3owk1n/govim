@@ -15,19 +15,20 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/y3owk1n/neru/internal/logger"
 	"go.uber.org/zap"
 )
 
 // Package hotkeys provides functionality for registering and handling global hotkeys
 // in the Neru application using the Carbon Event Manager API.
 
-// HotkeyID represents a unique hotkey identifier
+// HotkeyID represents a unique hotkey identifier.
 type HotkeyID int
 
-// Callback is called when a hotkey is pressed
+// Callback is called when a hotkey is pressed.
 type Callback func()
 
-// Manager manages global hotkeys
+// Manager manages global hotkeys.
 type Manager struct {
 	callbacks map[HotkeyID]Callback
 	mu        sync.RWMutex
@@ -35,7 +36,7 @@ type Manager struct {
 	nextID    HotkeyID
 }
 
-// NewManager creates a new hotkey manager
+// NewManager creates a new hotkey manager.
 func NewManager(logger *zap.Logger) *Manager {
 	manager := &Manager{
 		callbacks: make(map[HotkeyID]Callback),
@@ -46,7 +47,7 @@ func NewManager(logger *zap.Logger) *Manager {
 	return manager
 }
 
-// Register registers a global hotkey
+// Register registers a global hotkey.
 func (m *Manager) Register(keyString string, callback Callback) (HotkeyID, error) {
 	m.logger.Debug("Registering hotkey", zap.String("key", keyString))
 
@@ -93,7 +94,7 @@ func (m *Manager) Register(keyString string, callback Callback) (HotkeyID, error
 	return hotkeyID, nil
 }
 
-// Unregister unregisters a hotkey
+// Unregister unregisters a hotkey.
 func (m *Manager) Unregister(hotkeyID HotkeyID) {
 	m.logger.Debug("Unregistering hotkey", zap.Int("id", int(hotkeyID)))
 
@@ -106,7 +107,7 @@ func (m *Manager) Unregister(hotkeyID HotkeyID) {
 	m.logger.Info("Unregistered hotkey", zap.Int("id", int(hotkeyID)))
 }
 
-// UnregisterAll unregisters all hotkeys
+// UnregisterAll unregisters all hotkeys.
 func (m *Manager) UnregisterAll() {
 	m.logger.Debug("Unregistering all hotkeys")
 
@@ -119,7 +120,7 @@ func (m *Manager) UnregisterAll() {
 	m.logger.Info("Unregistered all hotkeys")
 }
 
-// handleCallback handles a hotkey callback from C
+// handleCallback handles a hotkey callback from C.
 func (m *Manager) handleCallback(hotkeyID HotkeyID) {
 	m.logger.Debug("Handling hotkey callback", zap.Int("id", int(hotkeyID)))
 
@@ -135,16 +136,16 @@ func (m *Manager) handleCallback(hotkeyID HotkeyID) {
 	}
 }
 
-// Global manager instance for C callbacks
+// Global manager instance for C callbacks.
 var globalManager *Manager
 
-// SetGlobalManager sets the global manager for C callbacks
+// SetGlobalManager sets the global manager for C callbacks.
 func SetGlobalManager(manager *Manager) {
 	if manager != nil {
 		manager.logger.Debug("Setting global hotkey manager")
 	} else {
 		// This would be unusual but let's log it
-		fmt.Println("Setting global hotkey manager to nil")
+		logger.Get().Info("Setting global hotkey manager to nil")
 	}
 	globalManager = manager
 }

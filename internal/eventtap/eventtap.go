@@ -20,17 +20,17 @@ import (
 // Package eventtap provides functionality for capturing and handling global keyboard events
 // on macOS using the Carbon Event Manager API.
 
-// Callback is called when a key is pressed
+// Callback is called when a key is pressed.
 type Callback func(key string)
 
-// EventTap manages keyboard event interception
+// EventTap manages keyboard event interception.
 type EventTap struct {
 	handle   C.EventTap
 	callback Callback
 	logger   *zap.Logger
 }
 
-// NewEventTap creates a new event tap
+// NewEventTap creates a new event tap.
 func NewEventTap(callback Callback, logger *zap.Logger) *EventTap {
 	eventTap := &EventTap{
 		callback: callback,
@@ -51,7 +51,7 @@ func NewEventTap(callback Callback, logger *zap.Logger) *EventTap {
 	return eventTap
 }
 
-// Enable enables the event tap
+// Enable enables the event tap.
 func (eventTap *EventTap) Enable() {
 	eventTap.logger.Debug("Enabling event tap")
 	if eventTap.handle != nil {
@@ -62,7 +62,7 @@ func (eventTap *EventTap) Enable() {
 	}
 }
 
-// SetHotkeys configures which hotkey combinations should pass through to the system
+// SetHotkeys configures which hotkey combinations should pass through to the system.
 func (eventTap *EventTap) SetHotkeys(hotkeys []string) {
 	eventTap.logger.Debug("Setting event tap hotkeys", zap.Int("count", len(hotkeys)))
 
@@ -93,7 +93,7 @@ func (eventTap *EventTap) SetHotkeys(hotkeys []string) {
 	eventTap.logger.Debug("Event tap hotkeys set")
 }
 
-// Disable disables the event tap
+// Disable disables the event tap.
 func (eventTap *EventTap) Disable() {
 	eventTap.logger.Debug("Disabling event tap")
 	if eventTap.handle != nil {
@@ -104,7 +104,7 @@ func (eventTap *EventTap) Disable() {
 	}
 }
 
-// Destroy destroys the event tap
+// Destroy destroys the event tap.
 func (eventTap *EventTap) Destroy() {
 	eventTap.logger.Debug("Destroying event tap")
 	if eventTap.handle != nil {
@@ -131,7 +131,7 @@ func (eventTap *EventTap) Destroy() {
 	}
 }
 
-// handleCallback handles a key press callback from C
+// handleCallback handles a key press callback from C.
 func (eventTap *EventTap) handleCallback(key string) {
 	eventTap.logger.Debug("Key pressed", zap.String("key", key))
 
@@ -143,7 +143,7 @@ func (eventTap *EventTap) handleCallback(key string) {
 	}
 }
 
-// Global event tap instance for C callbacks with thread safety
+// Global event tap instance for C callbacks with thread safety.
 var (
 	globalEventTap   *EventTap
 	globalEventTapMu sync.RWMutex

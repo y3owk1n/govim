@@ -9,7 +9,7 @@ package accessibility
 import "C"
 
 import (
-	"fmt"
+	"errors"
 	"image"
 	"sync"
 	"time"
@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// TreeNode represents a node in the accessibility tree
+// TreeNode represents a node in the accessibility tree.
 type TreeNode struct {
 	Element  *Element
 	Info     *ElementInfo
@@ -26,7 +26,7 @@ type TreeNode struct {
 	Parent   *TreeNode
 }
 
-// TreeOptions configures tree traversal
+// TreeOptions configures tree traversal.
 type TreeOptions struct {
 	FilterFunc         func(*ElementInfo) bool
 	IncludeOutOfBounds bool
@@ -35,7 +35,7 @@ type TreeOptions struct {
 	MaxParallelDepth   int
 }
 
-// DefaultTreeOptions returns default tree traversal options
+// DefaultTreeOptions returns default tree traversal options.
 func DefaultTreeOptions() TreeOptions {
 	return TreeOptions{
 		FilterFunc:         nil,
@@ -46,11 +46,11 @@ func DefaultTreeOptions() TreeOptions {
 	}
 }
 
-// BuildTree builds an accessibility tree from the given root element
+// BuildTree builds an accessibility tree from the given root element.
 func BuildTree(root *Element, opts TreeOptions) (*TreeNode, error) {
 	if root == nil {
 		logger.Debug("BuildTree called with nil root element")
-		return nil, fmt.Errorf("root element is nil")
+		return nil, errors.New("root element is nil")
 	}
 
 	// Try to get from cache first
@@ -87,14 +87,14 @@ func BuildTree(root *Element, opts TreeOptions) (*TreeNode, error) {
 	return node, nil
 }
 
-// Roles that typically don't contain interactive elements
+// Roles that typically don't contain interactive elements.
 var nonInteractiveRoles = map[string]bool{
 	"AXStaticText": true,
 	"AXImage":      true,
 	"AXHeading":    true,
 }
 
-// Roles that are themselves interactive (leaf nodes)
+// Roles that are themselves interactive (leaf nodes).
 var interactiveLeafRoles = map[string]bool{
 	"AXButton":             true,
 	"AXComboBox":           true,
@@ -286,7 +286,7 @@ func buildChildrenParallel(parent *TreeNode, children []*Element, depth int, opt
 		zap.Int("total_children", len(children)))
 }
 
-// shouldIncludeElement combines all filtering logic into one function
+// shouldIncludeElement combines all filtering logic into one function.
 func shouldIncludeElement(info *ElementInfo, opts TreeOptions, windowBounds image.Rectangle) bool {
 	if !opts.IncludeOutOfBounds {
 		elementRect := rectFromInfo(info)
@@ -313,7 +313,7 @@ func shouldIncludeElement(info *ElementInfo, opts TreeOptions, windowBounds imag
 	return true
 }
 
-// FindClickableElements finds all clickable elements in the tree
+// FindClickableElements finds all clickable elements in the tree.
 func (n *TreeNode) FindClickableElements() []*TreeNode {
 	var result []*TreeNode
 	n.walkTree(func(node *TreeNode) bool {
@@ -327,7 +327,7 @@ func (n *TreeNode) FindClickableElements() []*TreeNode {
 
 // FindScrollableElements finds all scrollable elements in the tree
 
-// walkTree walks the tree and calls the visitor function for each node
+// walkTree walks the tree and calls the visitor function for each node.
 func (n *TreeNode) walkTree(visitor func(*TreeNode) bool) {
 	if !visitor(n) {
 		return

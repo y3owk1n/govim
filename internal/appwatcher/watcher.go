@@ -15,7 +15,7 @@ import (
 // AppCallback is a callback function type for application events.
 type AppCallback func(appName string, bundleID string)
 
-// Watcher represents an application watcher
+// Watcher represents an application watcher.
 type Watcher struct {
 	mu sync.RWMutex
 	// Callbacks for different events
@@ -50,35 +50,35 @@ func (w *Watcher) Stop() {
 	bridge.StopAppWatcher()
 }
 
-// OnScreenParametersChanged registers a callback for screen parameter change events
+// OnScreenParametersChanged registers a callback for screen parameter change events.
 func (w *Watcher) OnScreenParametersChanged(callback func()) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.screenChangeCallbacks = append(w.screenChangeCallbacks, callback)
 }
 
-// OnTerminate registers a callback for application termination events
+// OnTerminate registers a callback for application termination events.
 func (w *Watcher) OnTerminate(callback AppCallback) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.terminateCallbacks = append(w.terminateCallbacks, callback)
 }
 
-// OnActivate registers a callback for application activation events
+// OnActivate registers a callback for application activation events.
 func (w *Watcher) OnActivate(callback AppCallback) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.activateCallbacks = append(w.activateCallbacks, callback)
 }
 
-// OnDeactivate registers a callback for application deactivation events
+// OnDeactivate registers a callback for application deactivation events.
 func (w *Watcher) OnDeactivate(callback AppCallback) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.deactivateCallbacks = append(w.deactivateCallbacks, callback)
 }
 
-// HandleLaunch is called from the bridge when an application launches
+// HandleLaunch is called from the bridge when an application launches.
 func (w *Watcher) HandleLaunch(appName, bundleID string) {
 	w.logger.Debug("App watcher: Application launched",
 		zap.String("app_name", appName),
@@ -90,7 +90,7 @@ func (w *Watcher) HandleLaunch(appName, bundleID string) {
 	}
 }
 
-// HandleTerminate is called from the bridge when an application terminates
+// HandleTerminate is called from the bridge when an application terminates.
 func (w *Watcher) HandleTerminate(appName, bundleID string) {
 	w.logger.Debug("App watcher: Application terminated",
 		zap.String("app_name", appName),
@@ -102,7 +102,7 @@ func (w *Watcher) HandleTerminate(appName, bundleID string) {
 	}
 }
 
-// HandleActivate is called from the bridge when an application is activated
+// HandleActivate is called from the bridge when an application is activated.
 func (w *Watcher) HandleActivate(appName, bundleID string) {
 	w.logger.Debug("App watcher: Application activated",
 		zap.String("app_name", appName),
@@ -114,7 +114,7 @@ func (w *Watcher) HandleActivate(appName, bundleID string) {
 	}
 }
 
-// HandleDeactivate is called from the bridge when an application is deactivated
+// HandleDeactivate is called from the bridge when an application is deactivated.
 func (w *Watcher) HandleDeactivate(appName, bundleID string) {
 	w.logger.Debug("App watcher: Application deactivated",
 		zap.String("app_name", appName),
@@ -126,7 +126,7 @@ func (w *Watcher) HandleDeactivate(appName, bundleID string) {
 	}
 }
 
-// HandleScreenParametersChanged is called from the bridge when display parameters change
+// HandleScreenParametersChanged is called from the bridge when display parameters change.
 func (w *Watcher) HandleScreenParametersChanged() {
 	w.logger.Debug("App watcher: Screen parameters changed")
 	w.mu.RLock()
