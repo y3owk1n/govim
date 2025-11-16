@@ -15,7 +15,7 @@
 /// @return 1 if permissions are granted, 0 otherwise
 int checkAccessibilityPermissions(void) {
     @autoreleasepool {
-			NSDictionary *options = @{(__bridge id)kAXTrustedCheckOptionPrompt : @YES};
+        NSDictionary *options = @{(__bridge id)kAXTrustedCheckOptionPrompt : @YES};
         Boolean trusted = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
         return trusted ? 1 : 0;
     }
