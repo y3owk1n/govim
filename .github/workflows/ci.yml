@@ -70,6 +70,23 @@ jobs:
             echo "Testing on: $FIRST_FILE"
             clang-format --dry-run --style=file "$FIRST_FILE" -Werror || echo "Failed with exit code $?"
           fi
+      - name: Test clang-format directly on one file
+        run: |
+          echo "Testing on accessibility.m:"
+          clang-format --dry-run -Werror --style=file internal/bridge/accessibility.m 2>&1
+          echo "Exit code: $?"
+          echo ""
+          echo "Testing with assume-filename on accessibility.h:"
+          clang-format --dry-run -Werror --style=file --assume-filename=file.m internal/bridge/accessibility.h 2>&1
+          echo "Exit code: $?"
+          echo ""
+          echo "Testing accessibility.h without assume-filename:"
+          clang-format --dry-run -Werror --style=file internal/bridge/accessibility.h 2>&1
+          echo "Exit code: $?"
+          echo ""
+          echo "Now testing the exact find command from justfile:"
+          find internal/bridge \( -name "*.h" -o -name "*.m" \) -exec clang-format --dry-run -Werror --style=file --assume-filename=file.m {} + 2>&1
+          echo "Exit code: $?"
       - name: Run just fmt
         if: ${{ matrix.check == 'formatting' }}
         run: just fmt-check
