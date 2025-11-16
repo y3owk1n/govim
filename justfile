@@ -55,11 +55,12 @@ test-race:
     @echo "Running tests with race detection..."
     go test -race -v ./...
 
-# Check if Objective-C files are formatted correctly
+# Check if files are formatted correctly
 fmt-check:
+    @echo "Not checking formatting for go files... It will be checked in lint"
     @echo "Checking Objective-C file formatting..."
     @find internal/bridge \( -name "*.h" -o -name "*.m" \) -exec clang-format --dry-run -Werror --style=file --assume-filename=file.m {} \; || (echo "Some Objective-C files are not properly formatted. Run 'just fmt' to fix them." && exit 1)
-    @echo "✓ All Objective-C files are properly formatted"
+    @echo "✓ All files are properly formatted"
 
 # Run benchmarks
 bench:
@@ -76,8 +77,7 @@ clean:
 
 # Format code
 fmt:
-    @echo "Formatting code..."
-    # go fmt ./...
+    @echo "Formatting Go files..."
     golangci-lint fmt
     @echo "Formatting Objective-C files..."
     @find internal/bridge \( -name "*.h" -o -name "*.m" \) -exec clang-format -i --style=file --assume-filename=file.m {} \;
