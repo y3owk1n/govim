@@ -28,12 +28,10 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v2
       - name: Setup clang-tools
-        run: |
-          # Xcode's clang tools are already available
-          xcrun --find clang-format
-          xcrun --find clang-tidy
-          # Add to PATH if needed
-          echo "$(dirname $(xcrun --find clang-format))" >> $GITHUB_PATH
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "21.1"
+          cached: true
       - name: Run just lint
         run: just lint
   go-checks:
@@ -55,12 +53,10 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v2
       - name: Setup clang-tools
-        run: |
-          # Xcode's clang tools are already available
-          xcrun --find clang-format
-          xcrun --find clang-tidy
-          # Add to PATH if needed
-          echo "$(dirname $(xcrun --find clang-format))" >> $GITHUB_PATH
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "21.1"
+          cached: true
       - name: Run just fmt
         if: ${{ matrix.check == 'formatting' }}
         run: just fmt-check
