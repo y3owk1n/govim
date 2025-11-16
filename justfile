@@ -58,12 +58,18 @@ test-race:
 # Check if files are formatted correctly
 fmt-check:
     #!/usr/bin/env bash
-    set -e
     echo "Not checking formatting for go files... It will be checked in lint"
     echo "Checking Objective-C file formatting..."
     EXIT_CODE=0
     while IFS= read -r -d '' file; do
-        if ! clang-format --dry-run -Werror --style=file --assume-filename=file.m "$file"; then
+        OUTPUT=$(clang-format --dry-run -Werror --style=file --assume-filename=file.m "$file" 2>&1)
+        RESULT=$?
+        # Filter out the "does not support C++" warnings
+        FILTERED=$(echo "$OUTPUT" | grep -v "Configuration file(s) do(es) not support C++")
+        if [ -n "$FILTERED" ]; then
+            echo "$FILTERED"
+        fi
+        if [ $RESULT -ne 0 ] && [ -n "$FILTERED" ]; then
             EXIT_CODE=1
         fi
     done < <(find internal/bridge \( -name "*.h" -o -name "*.m" \) -print0)
