@@ -277,9 +277,9 @@ func (a *App) Cleanup() {
 	a.appWatcher.Stop()
 
 	// Close logger (syncs and closes log file)
-    err2 := logger.Close()
-    if err2 != nil {
-        // Can't log this since logger is being closed
-        fmt.Fprintf(os.Stderr, "Warning: failed to close logger: %v\n", err2)
-    }
+	err2 := logger.Close()
+	if err2 != nil {
+		// Can't log this since logger is being closed
+		fmt.Fprintf(os.Stderr, "Warning: failed to close logger: %v\n", err2)
+	}
 }
