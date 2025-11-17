@@ -80,6 +80,8 @@ type App struct {
 	initialCursorPos      image.Point
 	initialScreenBounds   image.Rectangle
 	cursorRestoreCaptured bool
+	isScrollingActive     bool
+	skipCursorRestoreOnce bool
 }
 
 // NewApp creates a new application instance.

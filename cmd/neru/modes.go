@@ -347,6 +347,7 @@ func (a *App) handleKeyPress(key string) {
 			if a.eventTap != nil {
 				a.eventTap.Disable()
 			}
+			a.isScrollingActive = false
 			a.idleScrollLastKey = "" // Reset scroll state
 			return
 		}
@@ -858,12 +859,14 @@ func (a *App) exitMode() {
 		go a.refreshHotkeysForAppOrCurrent("")
 	}
 
-	if a.config != nil && a.config.General.RestoreCursorPosition && a.cursorRestoreCaptured {
+	shouldRestore := a.shouldRestoreCursorOnExit()
+	if shouldRestore {
 		currentBounds := bridge.GetActiveScreenBounds()
 		target := computeRestoredPosition(a.initialCursorPos, a.initialScreenBounds, currentBounds)
 		accessibility.MoveMouseToPoint(target)
 	}
 	a.cursorRestoreCaptured = false
+	a.isScrollingActive = false
 }
 
 func getModeString(mode Mode) string {
@@ -912,6 +915,26 @@ func (a *App) captureInitialCursorPosition() {
 	a.initialCursorPos = accessibility.GetCurrentCursorPosition()
 	a.initialScreenBounds = bridge.GetActiveScreenBounds()
 	a.cursorRestoreCaptured = true
+}
+
+func (a *App) shouldRestoreCursorOnExit() bool {
+	if a.config == nil {
+		return false
+	}
+	if !a.config.General.RestoreCursorPosition {
+		return false
+	}
+	if !a.cursorRestoreCaptured {
+		return false
+	}
+	if a.isScrollingActive {
+		return false
+	}
+	if a.skipCursorRestoreOnce {
+		a.skipCursorRestoreOnce = false
+		return false
+	}
+	return true
 }
 
 func computeRestoredPosition(initPos image.Point, from, to image.Rectangle) image.Point {
