@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -68,6 +69,7 @@ type Server struct {
 	logger     *zap.Logger
 	handler    CommandHandler
 	socketPath string
+	wg         sync.WaitGroup
 }
 
 // CommandHandler handles IPC commands.
@@ -96,6 +98,11 @@ func NewServer(handler CommandHandler, logger *zap.Logger) (*Server, error) {
 		return nil, fmt.Errorf("failed to create socket: %w", err)
 	}
 
+	updateSocketPermissionsErr := os.Chmod(socketPath, 0o600)
+	if updateSocketPermissionsErr != nil {
+		return nil, fmt.Errorf("failed to set socket permissions: %w", updateSocketPermissionsErr)
+	}
+
 	logger.Info("IPC server created", zap.String("socket", socketPath))
 
 	return &Server{
@@ -121,6 +128,7 @@ func (s *Server) Start() {
 				continue
 			}
 
+			s.wg.Add(1)
 			go s.handleConnection(conn)
 		}
 	}()
@@ -133,6 +141,16 @@ func (s *Server) Stop() error {
 		if err != nil {
 			return fmt.Errorf("failed to close listener: %w", err)
 		}
+	}
+
+	done := make(chan struct{})
+	go func() {
+		s.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
 	}
 
 	// Clean up socket file
@@ -153,6 +171,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 		if err != nil {
 			log.Error("Failed to close connection", zap.Error(err))
 		}
+		s.wg.Done()
 	}()
 
 	// Set read deadline to prevent hanging connections
@@ -163,6 +182,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 
 	decoder := json.NewDecoder(conn)
+	decoder.DisallowUnknownFields()
 	encoder := json.NewEncoder(conn)
 
 	var cmd Command
@@ -172,6 +192,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 		encErr := encoder.Encode(Response{
 			Success: false,
 			Message: fmt.Sprintf("failed to decode command: %v", err),
+			Code:    CodeInvalidInput,
 		})
 		if encErr != nil {
 			log.Error("Failed to encode error response", zap.Error(encErr))
@@ -274,6 +295,6 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 // IsServerRunning checks if the IPC server is running.
 func IsServerRunning() bool {
 	client := NewClient()
-	_, err := client.Send(Command{Action: "ping"})
+	_, err := client.SendWithTimeout(Command{Action: "ping"}, 500*time.Millisecond)
 	return err == nil
 }
