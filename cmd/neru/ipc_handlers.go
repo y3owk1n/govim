@@ -17,7 +17,7 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 	a.logger.Info(
 		"Handling IPC command",
 		zap.String("action", cmd.Action),
-		zap.String("params", strings.Join(cmd.Args, ", ")),
+		zap.String("args", strings.Join(cmd.Args, ", ")),
 	)
 
 	switch cmd.Action {
@@ -183,7 +183,7 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 			a.logger.Info(
 				"Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom, Esc to exit",
 			)
-			return ipc.Response{Success: true, Message: "scroll mode activated"}
+			return ipc.Response{Success: true, Message: "scroll mode activated", Code: ipc.CodeOK}
 		default:
 			return ipc.Response{
 				Success: false,

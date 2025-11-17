@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/y3owk1n/neru/internal/ipc"
@@ -23,6 +24,8 @@ var (
 	GitCommit = "unknown"
 	// BuildDate represents the build date.
 	BuildDate = "unknown"
+	// timeoutSec controls IPC timeouts via a global flag.
+	timeoutSec = 5
 )
 
 // rootCmd represents the base command when called without any subcommands.
@@ -61,6 +64,9 @@ func init() {
 			BuildDate,
 		),
 	)
+
+	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Path to config file")
+	rootCmd.PersistentFlags().IntVar(&timeoutSec, "timeout", 5, "IPC timeout in seconds")
 }
 
 // isRunningFromAppBundle checks if the binary is running from a macOS app bundle.
@@ -114,7 +120,10 @@ func sendCommand(action string, args []string) error {
 
 	client := ipc.NewClient()
 
-	response, err := client.Send(ipc.Command{Action: action, Args: args})
+	response, err := client.SendWithTimeout(
+		ipc.Command{Action: action, Args: args},
+		time.Duration(timeoutSec)*time.Second,
+	)
 	if err != nil {
 		logger.Error("Failed to send command",
 			zap.String("action", action),
