@@ -18,14 +18,25 @@ import (
 )
 
 const (
-	// SocketName is the name of the Unix socket file.
-	SocketName = "neru.sock"
+    // SocketName is the name of the Unix socket file.
+    SocketName = "neru.sock"
 
 	// DefaultTimeout is the default timeout for IPC operations.
 	DefaultTimeout = 5 * time.Second
 
-	// ConnectionTimeout is the timeout for establishing a connection.
-	ConnectionTimeout = 2 * time.Second
+    // ConnectionTimeout is the timeout for establishing a connection.
+    ConnectionTimeout = 2 * time.Second
+)
+
+// Standard response codes for IPC operations.
+const (
+    CodeOK               = "OK"
+    CodeUnknownCommand   = "ERR_UNKNOWN_COMMAND"
+    CodeNotRunning       = "ERR_NOT_RUNNING"
+    CodeAlreadyRunning   = "ERR_ALREADY_RUNNING"
+    CodeModeDisabled     = "ERR_MODE_DISABLED"
+    CodeInvalidInput     = "ERR_INVALID_INPUT"
+    CodeActionFailed     = "ERR_ACTION_FAILED"
 )
 
 // Command represents an IPC command.
@@ -37,9 +48,17 @@ type Command struct {
 
 // Response represents an IPC response.
 type Response struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Data    any    `json:"data,omitempty"`
+    Success bool   `json:"success"`
+    Message string `json:"message,omitempty"`
+    Code    string `json:"code,omitempty"`
+    Data    any    `json:"data,omitempty"`
+}
+
+// StatusData is the typed payload for the "status" IPC response.
+type StatusData struct {
+    Enabled bool   `json:"enabled"`
+    Mode    string `json:"mode"`
+    Config  string `json:"config"`
 }
 
 // Server represents the IPC server.
@@ -126,44 +145,46 @@ func (s *Server) Stop() error {
 
 // handleConnection handles a single connection.
 func (s *Server) handleConnection(conn net.Conn) {
-	defer func() {
-		err := conn.Close()
-		if err != nil {
-			s.logger.Error("Failed to close connection", zap.Error(err))
-		}
-	}()
+    reqID := fmt.Sprintf("%d", time.Now().UnixNano())
+    log := s.logger.With(zap.String("req_id", reqID))
+    defer func() {
+        err := conn.Close()
+        if err != nil {
+            log.Error("Failed to close connection", zap.Error(err))
+        }
+    }()
 
 	// Set read deadline to prevent hanging connections
-	err := conn.SetDeadline(time.Now().Add(30 * time.Second))
-	if err != nil {
-		s.logger.Error("Failed to set connection deadline", zap.Error(err))
-		return
-	}
+    err := conn.SetDeadline(time.Now().Add(30 * time.Second))
+    if err != nil {
+        log.Error("Failed to set connection deadline", zap.Error(err))
+        return
+    }
 
 	decoder := json.NewDecoder(conn)
 	encoder := json.NewEncoder(conn)
 
 	var cmd Command
-	err = decoder.Decode(&cmd)
-	if err != nil {
-		s.logger.Error("Failed to decode command", zap.Error(err))
-		encErr := encoder.Encode(Response{
-			Success: false,
-			Message: fmt.Sprintf("failed to decode command: %v", err),
-		})
-		if encErr != nil {
-			s.logger.Error("Failed to encode error response", zap.Error(encErr))
-		}
-		return
-	}
+    err = decoder.Decode(&cmd)
+    if err != nil {
+        log.Error("Failed to decode command", zap.Error(err))
+        encErr := encoder.Encode(Response{
+            Success: false,
+            Message: fmt.Sprintf("failed to decode command: %v", err),
+        })
+        if encErr != nil {
+            log.Error("Failed to encode error response", zap.Error(encErr))
+        }
+        return
+    }
 
-	s.logger.Info("Received command", zap.String("action", cmd.Action))
+    log.Info("Received command", zap.String("action", cmd.Action))
 
 	response := s.handler(cmd)
-	err = encoder.Encode(response)
-	if err != nil {
-		s.logger.Error("Failed to encode response", zap.Error(err))
-	}
+    err = encoder.Encode(response)
+    if err != nil {
+        log.Error("Failed to encode response", zap.Error(err))
+    }
 }
 
 // Client represents an IPC client.

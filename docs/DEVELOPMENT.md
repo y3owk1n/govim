@@ -251,6 +251,8 @@ Unix socket-based IPC for CLI ↔ daemon communication.
 - Client: Send commands to daemon
 - Protocol: JSON messages
 - Error handling and timeouts
+- Structured response codes (`code` field) for reliable scripting
+- Per-connection correlation IDs (`req_id`) for log tracing
 
 #### `internal/config`
 

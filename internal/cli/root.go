@@ -85,11 +85,10 @@ func launchProgram(cfgPath string) {
 	logger.Debug("Launching program", zap.String("config_path", cfgPath))
 
 	// Check if already running
-	if ipc.IsServerRunning() {
-		logger.Info("Neru is already running")
-		logger.Info("Neru is already running")
-		os.Exit(0)
-	}
+    if ipc.IsServerRunning() {
+        logger.Info("Neru is already running")
+        os.Exit(0)
+    }
 
 	// Call the launch function set by main
 	if LaunchFunc != nil {
@@ -123,12 +122,16 @@ func sendCommand(action string, args []string) error {
 		return fmt.Errorf("failed to send command: %w", err)
 	}
 
-	if !response.Success {
-		logger.Warn("Command failed",
-			zap.String("action", action),
-			zap.String("message", response.Message))
-		return fmt.Errorf("%s", response.Message)
-	}
+    if !response.Success {
+        logger.Warn("Command failed",
+            zap.String("action", action),
+            zap.String("message", response.Message),
+            zap.String("code", response.Code))
+        if response.Code != "" {
+            return fmt.Errorf("%s (code: %s)", response.Message, response.Code)
+        }
+        return fmt.Errorf("%s", response.Message)
+    }
 
 	logger.Debug("Command succeeded",
 		zap.String("action", action),

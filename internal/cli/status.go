@@ -25,35 +25,58 @@ var statusCmd = &cobra.Command{
 			return fmt.Errorf("failed to send status command: %w", err)
 		}
 
-		if !response.Success {
-			return fmt.Errorf("%s", response.Message)
-		}
+        if !response.Success {
+            if response.Code != "" {
+                return fmt.Errorf("%s (code: %s)", response.Message, response.Code)
+            }
+            return fmt.Errorf("%s", response.Message)
+        }
 
-		// Pretty print the status data
-		logger.Info("Neru Status:")
-		if data, ok := response.Data.(map[string]any); ok {
-			if enabled, ok := data["enabled"].(bool); ok {
-				status := "stopped"
-				if enabled {
-					status = "running"
-				}
-				logger.Info("  Status: " + status)
-			}
-			if mode, ok := data["mode"].(string); ok {
-				logger.Info("  Mode: " + mode)
-			}
-			if configPath, ok := data["config"].(string); ok {
-				logger.Info("  Config: " + configPath)
-			}
-		} else {
-			// Fallback to JSON output if structure is unexpected
-			jsonData, err := json.MarshalIndent(response.Data, "  ", "  ")
-			if err != nil {
-				logger.Error("Failed to marshal status data to JSON", zap.Error(err))
-				return fmt.Errorf("failed to marshal status data: %w", err)
-			}
-			logger.Info(string(jsonData))
-		}
+        // Prefer typed decode for status
+        logger.Info("Neru Status:")
+        var sd ipc.StatusData
+        if raw, err := json.Marshal(response.Data); err == nil {
+            if err2 := json.Unmarshal(raw, &sd); err2 == nil {
+                status := "stopped"
+                if sd.Enabled {
+                    status = "running"
+                }
+                logger.Info("  Status: " + status)
+                logger.Info("  Mode: " + sd.Mode)
+                logger.Info("  Config: " + sd.Config)
+            } else {
+                // Fallback to previous behavior
+                if data, ok := response.Data.(map[string]any); ok {
+                    if enabled, ok := data["enabled"].(bool); ok {
+                        status := "stopped"
+                        if enabled {
+                            status = "running"
+                        }
+                        logger.Info("  Status: " + status)
+                    }
+                    if mode, ok := data["mode"].(string); ok {
+                        logger.Info("  Mode: " + mode)
+                    }
+                    if configPath, ok := data["config"].(string); ok {
+                        logger.Info("  Config: " + configPath)
+                    }
+                } else {
+                    jsonData, err := json.MarshalIndent(response.Data, "  ", "  ")
+                    if err != nil {
+                        logger.Error("Failed to marshal status data to JSON", zap.Error(err))
+                        return fmt.Errorf("failed to marshal status data: %w", err)
+                    }
+                    logger.Info(string(jsonData))
+                }
+            }
+        } else {
+            jsonData, err := json.MarshalIndent(response.Data, "  ", "  ")
+            if err != nil {
+                logger.Error("Failed to marshal status data to JSON", zap.Error(err))
+                return fmt.Errorf("failed to marshal status data: %w", err)
+            }
+            logger.Info(string(jsonData))
+        }
 
 		return nil
 	},
