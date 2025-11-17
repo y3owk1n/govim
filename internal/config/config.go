@@ -89,7 +89,7 @@ type HintsConfig struct {
 	MatchedTextColor string `toml:"matched_text_color"`
 	BorderColor      string `toml:"border_color"`
 
-	// Addidiotanl hints
+	// Additional hints
 	IncludeMenubarHints           bool     `toml:"include_menubar_hints"`
 	AdditionalMenubarHintsTargets []string `toml:"additional_menubar_hints_targets"`
 	IncludeDockHints              bool     `toml:"include_dock_hints"`

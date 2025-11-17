@@ -28,6 +28,7 @@ var (
 	hintCallbackLock sync.Mutex
 	hintDataPool     sync.Pool
 	cLabelSlicePool  sync.Pool
+	hintPoolOnce     sync.Once
 )
 
 //export resizeHintCompletionCallback
@@ -64,14 +65,21 @@ type StyleMode struct {
 	BorderColor      string
 }
 
+// initPools initializes the object pools once.
+func initPools() {
+	hintPoolOnce.Do(func() {
+		hintDataPool = sync.Pool{New: func() any { s := make([]C.HintData, 0); return &s }}
+		cLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	})
+}
+
 // NewOverlay creates a new overlay.
 func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	window := C.createOverlayWindow()
 	if window == nil {
 		return nil, errors.New("failed to create overlay window")
 	}
-	hintDataPool = sync.Pool{New: func() any { s := make([]C.HintData, 0); return &s }}
-	cLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	initPools()
 
 	return &Overlay{
 		window: window,
@@ -86,8 +94,7 @@ func NewOverlayWithWindow(
 	logger *zap.Logger,
 	windowPtr unsafe.Pointer,
 ) (*Overlay, error) {
-	hintDataPool = sync.Pool{New: func() any { s := make([]C.HintData, 0); return &s }}
-	cLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	initPools()
 	return &Overlay{
 		window: (C.OverlayWindow)(windowPtr),
 		config: cfg,

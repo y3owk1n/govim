@@ -49,22 +49,14 @@ func (c *InfoCache) Get(elem *Element) *ElementInfo {
 	cached, exists := c.data[key]
 
 	if !exists {
-		logger.Debug("Cache miss - element not found in cache", zap.Uintptr("element_ptr", key))
 		return nil
 	}
 
 	// Check if expired
 	if time.Now().After(cached.ExpiresAt) {
-		logger.Debug("Cache miss - element expired",
-			zap.Uintptr("element_ptr", key),
-			zap.Time("expires_at", cached.ExpiresAt),
-			zap.Time("current_time", time.Now()))
 		return nil
 	}
 
-	logger.Debug("Cache hit",
-		zap.Uintptr("element_ptr", key),
-		zap.Time("expires_at", cached.ExpiresAt))
 	return cached.Info
 }
 
@@ -75,25 +67,24 @@ func (c *InfoCache) Set(elem *Element, info *ElementInfo) {
 
 	// #nosec G103 -- Using pointer address as map key is safe for cache
 	key := uintptr(unsafe.Pointer(elem))
+	expiresAt := time.Now().Add(c.ttl)
 	c.data[key] = &CachedInfo{
 		Info:      info,
-		ExpiresAt: time.Now().Add(c.ttl),
+		ExpiresAt: expiresAt,
 	}
 
 	logger.Debug("Cached element info",
 		zap.Uintptr("element_ptr", key),
 		zap.String("role", info.Role),
 		zap.String("title", info.Title),
-		zap.Time("expires_at", time.Now().Add(c.ttl)))
+		zap.Time("expires_at", expiresAt))
 }
 
 // Size returns the number of cached entries.
 func (c *InfoCache) Size() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	size := len(c.data)
-	logger.Debug("Cache size queried", zap.Int("size", size))
-	return size
+	return len(c.data)
 }
 
 // Clear removes all entries.

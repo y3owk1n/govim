@@ -9,6 +9,7 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"sort"
 	"strings"
@@ -132,12 +133,12 @@ func GetElementAtPosition(x, y int) *Element {
 // GetInfo returns information about the element.
 func (e *Element) GetInfo() (*ElementInfo, error) {
 	if e.ref == nil {
-		return nil, errors.New("element is nil")
+		return nil, errors.New("element reference is nil")
 	}
 
 	cInfo := C.getElementInfo(e.ref)
 	if cInfo == nil {
-		return nil, errors.New("failed to get element info")
+		return nil, errors.New("failed to retrieve element info from accessibility API")
 	}
 	defer C.freeElementInfo(cInfo)
 
@@ -171,7 +172,7 @@ func (e *Element) GetInfo() (*ElementInfo, error) {
 // GetChildren returns all child elements with optional occlusion checking.
 func (e *Element) GetChildren() ([]*Element, error) {
 	if e.ref == nil {
-		return nil, errors.New("element is nil")
+		return nil, errors.New("cannot get children: element reference is nil")
 	}
 
 	var count C.int
@@ -182,7 +183,7 @@ func (e *Element) GetChildren() ([]*Element, error) {
 		var err error
 		info, err = e.GetInfo()
 		if err != nil {
-			return nil, nil
+			return nil, fmt.Errorf("failed to get element info: %w", err)
 		}
 		globalCache.Set(e, info)
 	}
@@ -218,12 +219,12 @@ func (e *Element) GetChildren() ([]*Element, error) {
 // SetFocus sets focus to the element.
 func (e *Element) SetFocus() error {
 	if e.ref == nil {
-		return errors.New("element is nil")
+		return errors.New("cannot set focus: element reference is nil")
 	}
 
 	result := C.setFocus(e.ref)
 	if result == 0 {
-		return errors.New("set focus failed")
+		return errors.New("failed to set focus on element")
 	}
 	return nil
 }
@@ -231,7 +232,7 @@ func (e *Element) SetFocus() error {
 // GetAttribute gets a custom attribute value.
 func (e *Element) GetAttribute(name string) (string, error) {
 	if e.ref == nil {
-		return "", errors.New("element is nil")
+		return "", errors.New("cannot get attribute: element reference is nil")
 	}
 
 	cName := C.CString(name)
@@ -239,7 +240,7 @@ func (e *Element) GetAttribute(name string) (string, error) {
 
 	cValue := C.getElementAttribute(e.ref, cName)
 	if cValue == nil {
-		return "", errors.New("attribute not found")
+		return "", fmt.Errorf("attribute %q not found on element", name)
 	}
 	defer C.freeString(cValue)
 
@@ -363,7 +364,7 @@ func LeftClickAtPoint(p image.Point, restoreCursor bool) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performLeftClickAtPosition(pos, C.bool(restoreCursor))
 	if result == 0 {
-		return errors.New("left-click at point failed")
+		return fmt.Errorf("failed to perform left-click at position (%d, %d)", p.X, p.Y)
 	}
 	return nil
 }
@@ -373,7 +374,7 @@ func RightClickAtPoint(p image.Point, restoreCursor bool) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performRightClickAtPosition(pos, C.bool(restoreCursor))
 	if result == 0 {
-		return errors.New("right-click at point failed")
+		return fmt.Errorf("failed to perform right-click at position (%d, %d)", p.X, p.Y)
 	}
 	return nil
 }
@@ -383,7 +384,7 @@ func MiddleClickAtPoint(p image.Point, restoreCursor bool) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performMiddleClickAtPosition(pos, C.bool(restoreCursor))
 	if result == 0 {
-		return errors.New("middle-click at point failed")
+		return fmt.Errorf("failed to perform middle-click at position (%d, %d)", p.X, p.Y)
 	}
 	return nil
 }
@@ -393,7 +394,7 @@ func LeftMouseDownAtPoint(p image.Point) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performLeftMouseDownAtPosition(pos)
 	if result == 0 {
-		return errors.New("left-mouse-down at point failed")
+		return fmt.Errorf("failed to perform left-mouse-down at position (%d, %d)", p.X, p.Y)
 	}
 	return nil
 }
@@ -403,7 +404,7 @@ func LeftMouseUpAtPoint(p image.Point) error {
 	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
 	result := C.performLeftMouseUpAtPosition(pos)
 	if result == 0 {
-		return errors.New("left-mouse-up at point failed")
+		return fmt.Errorf("failed to perform left-mouse-up at position (%d, %d)", p.X, p.Y)
 	}
 	return nil
 }
@@ -412,7 +413,7 @@ func LeftMouseUpAtPoint(p image.Point) error {
 func LeftMouseUp() error {
 	result := C.performLeftMouseUpAtCursor()
 	if result == 0 {
-		return errors.New("left-mouse-up failed")
+		return errors.New("failed to perform left-mouse-up at cursor")
 	}
 	return nil
 }
@@ -421,7 +422,7 @@ func LeftMouseUp() error {
 func ScrollAtCursor(deltaX, deltaY int) error {
 	result := C.scrollAtCursor(C.int(deltaX), C.int(deltaY))
 	if result == 0 {
-		return errors.New("failed to scroll element")
+		return fmt.Errorf("failed to scroll at cursor with delta (%d, %d)", deltaX, deltaY)
 	}
 	return nil
 }
