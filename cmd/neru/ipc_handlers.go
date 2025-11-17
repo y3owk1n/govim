@@ -37,67 +37,105 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 		return a.handleIdle(cmd)
 	case "status":
 		return a.handleStatus(cmd)
+	case "config":
+		return a.handleConfig(cmd)
 	default:
-		return ipc.Response{Success: false, Message: "unknown command: " + cmd.Action}
+		return ipc.Response{
+			Success: false,
+			Message: "unknown command: " + cmd.Action,
+			Code:    ipc.CodeUnknownCommand,
+		}
 	}
 }
 
 func (a *App) handlePing(_ ipc.Command) ipc.Response {
-	return ipc.Response{Success: true, Message: "pong"}
+	return ipc.Response{Success: true, Message: "pong", Code: ipc.CodeOK}
 }
 
 func (a *App) handleStart(_ ipc.Command) ipc.Response {
 	if a.enabled {
-		return ipc.Response{Success: false, Message: "neru is already running"}
+		return ipc.Response{
+			Success: false,
+			Message: "neru is already running",
+			Code:    ipc.CodeAlreadyRunning,
+		}
 	}
 	a.enabled = true
-	return ipc.Response{Success: true, Message: "neru started"}
+	return ipc.Response{Success: true, Message: "neru started", Code: ipc.CodeOK}
 }
 
 func (a *App) handleStop(_ ipc.Command) ipc.Response {
 	if !a.enabled {
-		return ipc.Response{Success: false, Message: "neru is already stopped"}
+		return ipc.Response{
+			Success: false,
+			Message: "neru is already stopped",
+			Code:    ipc.CodeNotRunning,
+		}
 	}
 	a.enabled = false
 	a.exitMode()
-	return ipc.Response{Success: true, Message: "neru stopped"}
+	return ipc.Response{Success: true, Message: "neru stopped", Code: ipc.CodeOK}
 }
 
 func (a *App) handleHints(_ ipc.Command) ipc.Response {
 	if !a.enabled {
-		return ipc.Response{Success: false, Message: "neru is not running"}
+		return ipc.Response{
+			Success: false,
+			Message: "neru is not running",
+			Code:    ipc.CodeNotRunning,
+		}
 	}
 	if !a.config.Hints.Enabled {
-		return ipc.Response{Success: false, Message: "hints mode is disabled by config"}
+		return ipc.Response{
+			Success: false,
+			Message: "hints mode is disabled by config",
+			Code:    ipc.CodeModeDisabled,
+		}
 	}
 
 	a.activateMode(ModeHints)
 
-	return ipc.Response{Success: true, Message: "hint mode activated"}
+	return ipc.Response{Success: true, Message: "hint mode activated", Code: ipc.CodeOK}
 }
 
 func (a *App) handleGrid(_ ipc.Command) ipc.Response {
 	if !a.enabled {
-		return ipc.Response{Success: false, Message: "neru is not running"}
+		return ipc.Response{
+			Success: false,
+			Message: "neru is not running",
+			Code:    ipc.CodeNotRunning,
+		}
 	}
 	if !a.config.Grid.Enabled {
-		return ipc.Response{Success: false, Message: "grid mode is disabled by config"}
+		return ipc.Response{
+			Success: false,
+			Message: "grid mode is disabled by config",
+			Code:    ipc.CodeModeDisabled,
+		}
 	}
 
 	a.activateMode(ModeGrid)
 
-	return ipc.Response{Success: true, Message: "grid mode activated"}
+	return ipc.Response{Success: true, Message: "grid mode activated", Code: ipc.CodeOK}
 }
 
 func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 	if !a.enabled {
-		return ipc.Response{Success: false, Message: "neru is not running"}
+		return ipc.Response{
+			Success: false,
+			Message: "neru is not running",
+			Code:    ipc.CodeNotRunning,
+		}
 	}
 
 	// Parse params
 	params := cmd.Args
 	if len(params) == 0 {
-		return ipc.Response{Success: false, Message: "no action specified"}
+		return ipc.Response{
+			Success: false,
+			Message: "no action specified",
+			Code:    ipc.CodeInvalidInput,
+		}
 	}
 
 	// Get the current cursor position
@@ -147,33 +185,52 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 			)
 			return ipc.Response{Success: true, Message: "scroll mode activated"}
 		default:
-			return ipc.Response{Success: false, Message: "unknown action: " + param}
+			return ipc.Response{
+				Success: false,
+				Message: "unknown action: " + param,
+				Code:    ipc.CodeInvalidInput,
+			}
 		}
 
 		if err != nil {
-			return ipc.Response{Success: false, Message: "action failed: " + err.Error()}
+			return ipc.Response{
+				Success: false,
+				Message: "action failed: " + err.Error(),
+				Code:    ipc.CodeActionFailed,
+			}
 		}
 	}
 
-	return ipc.Response{Success: true, Message: "action performed at cursor"}
+	return ipc.Response{Success: true, Message: "action performed at cursor", Code: ipc.CodeOK}
 }
 
 func (a *App) handleIdle(_ ipc.Command) ipc.Response {
 	if !a.enabled {
-		return ipc.Response{Success: false, Message: "neru is not running"}
+		return ipc.Response{
+			Success: false,
+			Message: "neru is not running",
+			Code:    ipc.CodeNotRunning,
+		}
 	}
 	a.exitMode()
-	return ipc.Response{Success: true, Message: "mode set to idle"}
+	return ipc.Response{Success: true, Message: "mode set to idle", Code: ipc.CodeOK}
 }
 
 func (a *App) handleStatus(_ ipc.Command) ipc.Response {
 	cfgPath := a.resolveConfigPath()
-	statusData := map[string]any{
-		"enabled": a.enabled,
-		"mode":    a.getCurrModeString(),
-		"config":  cfgPath,
+	statusData := ipc.StatusData{
+		Enabled: a.enabled,
+		Mode:    a.getCurrModeString(),
+		Config:  cfgPath,
 	}
-	return ipc.Response{Success: true, Data: statusData}
+	return ipc.Response{Success: true, Data: statusData, Code: ipc.CodeOK}
+}
+
+func (a *App) handleConfig(_ ipc.Command) ipc.Response {
+	if a.config == nil {
+		return ipc.Response{Success: false, Message: "config unavailable", Code: ipc.CodeNotRunning}
+	}
+	return ipc.Response{Success: true, Data: a.config, Code: ipc.CodeOK}
 }
 
 // resolveConfigPath resolves the config path for status display.

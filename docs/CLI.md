@@ -173,13 +173,23 @@ Neru Status:
 **Possible statuses:**
 
 - `running` - Daemon active and responsive
-- `paused` - Daemon paused via `neru stop`
+- `disabled` - Daemon paused via `neru stop`
 
 **Possible modes:**
 
 - `idle` - No active hint/grid mode
 - `hints` - Hint mode active
 - `grid` - Grid mode active
+
+### Config
+
+Print the effective configuration currently loaded by the daemon:
+
+```bash
+neru config
+```
+
+This dumps the full config as pretty JSON. Use this to verify what the daemon is using without opening files.
 
 ### Version
 
@@ -305,18 +315,23 @@ Action: Run script above
 
 ### Socket Location
 
-Unix domain socket: `/tmp/neru.sock`
+Unix domain socket in the OS temporary directory. The exact path is printed in logs when the daemon starts, for example:
+
+```
+IPC server created {"socket":"/var/folders/xx/xxxxxxxxx/T/neru.sock"}
+```
 
 ### Communication Protocol
 
-The CLI and daemon communicate via JSON messages over the Unix socket:
+The CLI and daemon communicate via JSON messages over the Unix socket.
 
 **Request format:**
 
 ```json
 {
-  "command": "hints",
-  "action": "left_click"
+  "action": "hints",
+  "params": {"key": "value"},
+  "args": ["optional", "args"]
 }
 ```
 
@@ -325,25 +340,35 @@ The CLI and daemon communicate via JSON messages over the Unix socket:
 ```json
 {
   "success": true,
-  "message": "Hints activated"
+  "message": "Hints activated",
+  "code": "OK",
+  "data": {"optional": "payload"}
 }
 ```
 
 ### Error Handling
 
-When the daemon is not running:
+CLI errors include structured `code` values to aid scripting. Examples:
+
+- Daemon not running:
 
 ```bash
 $ neru hints
-Error: Failed to connect to Neru daemon
-Is Neru running? Try: neru launch
+failed to send command: failed to connect to neru (is it running?): ...
 ```
 
-When a mode is disabled:
+- Mode disabled by configuration:
 
 ```bash
 $ neru hints
-Error: hints mode is disabled
+hints mode is disabled by config (code: ERR_MODE_DISABLED)
+```
+
+- Unknown command:
+
+```bash
+$ neru foobar
+unknown command: foobar (code: ERR_UNKNOWN_COMMAND)
 ```
 
 ### Rate Limiting

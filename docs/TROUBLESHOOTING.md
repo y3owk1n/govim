@@ -390,8 +390,8 @@ neru launch
 # Check status
 neru status
 
-# If still failing, check for stale socket
-rm -f /tmp/neru.sock
+# If still failing, check for stale socket (path is printed in logs; typically under /var/folders/.../T)
+rm -f /var/folders/*/*/T/neru.sock
 neru launch
 ```
 
@@ -431,8 +431,8 @@ neru launch
 # Force quit
 pkill -9 neru
 
-# Clean up socket
-rm -f /tmp/neru.sock
+# Clean up socket (path is printed in logs; typically under /var/folders/.../T)
+rm -f /var/folders/*/*/T/neru.sock
 
 # Restart
 neru launch
@@ -722,7 +722,8 @@ rm -f /usr/local/bin/neru
 rm -rf ~/.config/neru
 rm -rf ~/Library/Application\ Support/neru
 rm -rf ~/Library/Logs/neru
-rm -f /tmp/neru.sock
+# IPC socket lives under the OS temp directory
+rm -f /var/folders/*/*/T/neru.sock
 
 # 3. Reinstall
 brew reinstall --cask neru
