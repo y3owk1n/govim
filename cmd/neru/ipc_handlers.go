@@ -117,6 +117,7 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 		case "middle_click":
 			err = accessibility.MiddleClickAtPoint(cursorPos, false)
 		case "scroll":
+			a.skipCursorRestoreOnce = true
 			a.exitMode()
 
 			// Enable event tap and let user scroll interactively at current position
@@ -137,6 +138,8 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 			if a.eventTap != nil {
 				a.eventTap.Enable()
 			}
+
+			a.isScrollingActive = true
 
 			a.logger.Info("Interactive scroll activated")
 			a.logger.Info(
