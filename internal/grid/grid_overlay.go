@@ -31,6 +31,7 @@ var (
 	gridLabelSlicePool    sync.Pool
 	subgridCellSlicePool  sync.Pool
 	subgridLabelSlicePool sync.Pool
+	gridPoolOnce          sync.Once
 )
 
 //export gridResizeCompletionCallback
@@ -53,13 +54,20 @@ type Overlay struct {
 	logger *zap.Logger
 }
 
+// initGridPools initializes the grid object pools once.
+func initGridPools() {
+	gridPoolOnce.Do(func() {
+		gridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
+		gridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+		subgridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
+		subgridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	})
+}
+
 // NewOverlay creates a new grid overlay with its own window.
 func NewOverlay(cfg config.GridConfig, logger *zap.Logger) *Overlay {
 	window := C.createOverlayWindow()
-	gridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
-	gridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
-	subgridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
-	subgridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	initGridPools()
 	chars := cfg.Characters
 	if strings.TrimSpace(chars) == "" {
 		chars = cfg.Characters
@@ -86,10 +94,7 @@ func NewOverlayWithWindow(
 	logger *zap.Logger,
 	windowPtr unsafe.Pointer,
 ) *Overlay {
-	gridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
-	gridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
-	subgridCellSlicePool = sync.Pool{New: func() any { s := make([]C.GridCell, 0); return &s }}
-	subgridLabelSlicePool = sync.Pool{New: func() any { s := make([]*C.char, 0); return &s }}
+	initGridPools()
 	chars := cfg.Characters
 	if strings.TrimSpace(chars) == "" {
 		chars = cfg.Characters

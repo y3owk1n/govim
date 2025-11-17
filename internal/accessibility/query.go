@@ -54,7 +54,7 @@ func GetClickableElements() ([]*TreeNode, error) {
 	window := GetFrontmostWindow()
 	if window == nil {
 		logger.Warn("No frontmost window found")
-		return nil, errors.New("no frontmost window")
+		return nil, errors.New("no frontmost window found")
 	}
 	defer window.Release()
 

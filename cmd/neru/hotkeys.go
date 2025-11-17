@@ -102,7 +102,7 @@ func (a *App) executeHotkeyAction(key, action string) error {
 	// Otherwise treat the action as an internal neru command and dispatch it
 	resp := a.handleIPCCommand(ipc.Command{Action: action, Args: params})
 	if !resp.Success {
-		return fmt.Errorf("%s", resp.Message)
+		return errors.New(resp.Message)
 	}
 
 	a.logger.Info("hotkey action executed", zap.String("key", key), zap.String("action", action))

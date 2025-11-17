@@ -100,6 +100,7 @@ func NewServer(handler CommandHandler, logger *zap.Logger) (*Server, error) {
 
 	updateSocketPermissionsErr := os.Chmod(socketPath, 0o600)
 	if updateSocketPermissionsErr != nil {
+		_ = listener.Close()
 		return nil, fmt.Errorf("failed to set socket permissions: %w", updateSocketPermissionsErr)
 	}
 
@@ -150,7 +151,10 @@ func (s *Server) Stop() error {
 	}()
 	select {
 	case <-done:
+		// All connections closed successfully
 	case <-time.After(1 * time.Second):
+		// Timeout waiting for connections to close
+		s.logger.Warn("IPC server: timeout waiting for connections to close")
 	}
 
 	// Clean up socket file
