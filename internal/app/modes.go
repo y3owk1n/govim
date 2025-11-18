@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -18,11 +18,13 @@ import (
 
 const unknownAction = "unknown"
 
+// HintsContext is the context for hints.
 type HintsContext struct {
 	selectedHint *hints.Hint
 	inActionMode bool
 }
 
+// GridContext is the context for grid.
 type GridContext struct {
 	gridInstance **grid.Grid
 	gridOverlay  **grid.Overlay

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/atotto/clipboard"
 	"github.com/getlantern/systray"
+	"github.com/y3owk1n/neru/internal/app"
 	"github.com/y3owk1n/neru/internal/cli"
 	"github.com/y3owk1n/neru/internal/logger"
 	"go.uber.org/zap"
@@ -28,13 +29,13 @@ func onReady() {
 
 	// Hints submenu
 	mHints := systray.AddMenuItem("Hints", "Hint mode actions")
-	if globalApp != nil && globalApp.config != nil && !globalApp.config.Hints.Enabled {
+	if globalApp != nil && !globalApp.HintsEnabled() {
 		mHints.Hide()
 	}
 
 	// Grid submenu
 	mGrid := systray.AddMenuItem("Grid", "Grid mode actions")
-	if globalApp != nil && globalApp.config != nil && !globalApp.config.Grid.Enabled {
+	if globalApp != nil && !globalApp.GridEnabled() {
 		mGrid.Hide()
 	}
 
@@ -62,9 +63,9 @@ func handleSystrayEvents(
 		case <-mToggle.ClickedCh:
 			handleToggleEnable(mStatus, mToggle)
 		case <-mHints.ClickedCh:
-			activateModeFromSystray(ModeHints)
+			activateModeFromSystray(app.ModeHints)
 		case <-mGrid.ClickedCh:
-			activateModeFromSystray(ModeGrid)
+			activateModeFromSystray(app.ModeGrid)
 		case <-mQuit.ClickedCh:
 			systray.Quit()
 			return
@@ -84,20 +85,20 @@ func handleToggleEnable(mStatus, mToggle *systray.MenuItem) {
 		return
 	}
 
-	if globalApp.enabled {
-		globalApp.enabled = false
+	if globalApp.IsEnabled() {
+		globalApp.SetEnabled(false)
 		mStatus.SetTitle("Status: Disabled")
 		mToggle.SetTitle("Enable")
 	} else {
-		globalApp.enabled = true
+		globalApp.SetEnabled(true)
 		mStatus.SetTitle("Status: Enabled")
 		mToggle.SetTitle("Disable")
 	}
 }
 
-func activateModeFromSystray(mode Mode) {
+func activateModeFromSystray(mode app.Mode) {
 	if globalApp != nil {
-		globalApp.activateMode(mode)
+		globalApp.ActivateMode(mode)
 	}
 }
 

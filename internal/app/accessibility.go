@@ -1,5 +1,4 @@
-// Package main provides the main entry point for the Neru application.
-package main
+package app
 
 import (
 	"github.com/y3owk1n/neru/internal/accessibility"
