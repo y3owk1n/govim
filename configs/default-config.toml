@@ -159,7 +159,7 @@ move_mouse_enabled = false
 steps = 10
 
 # Delay between steps in milliseconds
-delay = 5
+delay = 1
 
 [logging]
 # Log level: debug, info, warn, error

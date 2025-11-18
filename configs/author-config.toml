@@ -24,7 +24,7 @@ mouse_up_key = "r"
 [smooth_cursor]
 move_mouse_enabled = true
 steps = 10
-delay = 5
+delay = 1
 
 [logging]
 # Log level: "debug", "info", "warn", "error"

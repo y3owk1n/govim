@@ -284,7 +284,7 @@ func DefaultConfig() *Config {
 		SmoothCursor: SmoothCursorConfig{
 			MoveMouseEnabled: false,
 			Steps:            10,
-			Delay:            5, // 5ms delay between steps
+			Delay:            1, // 1ms delay between steps
 		},
 	}
 }

@@ -380,8 +380,8 @@ Configure smooth cursor movement for mouse operations:
 ```toml
 [smooth_cursor]
 move_mouse_enabled = true  # Enable smooth mouse movement
-steps = 20                  # Number of steps for smooth movement
-delay = 5                   # Delay between steps in milliseconds
+steps = 10                 # Number of steps for smooth movement
+delay = 1                   # Delay between steps in milliseconds
 ```
 
 **Parameters:**
@@ -396,13 +396,13 @@ delay = 5                   # Delay between steps in milliseconds
 # Very smooth, slow movement
 [smooth_cursor]
 move_mouse_enabled = true
-steps = 50
+steps = 10
 delay = 10
 
 # Fast, less smooth movement
 [smooth_cursor]
 move_mouse_enabled = true
-steps = 10
+steps = 5
 delay = 2
 
 # Disable smooth movement entirely
@@ -522,6 +522,11 @@ middle_click_key = "m"
 mouse_down_key = "i"
 mouse_up_key = "u"
 
+[smooth_cursor]
+move_mouse_enabled = true
+steps = 10
+delay = 1
+
 [logging]
 log_level = "info"
 structured_logging = true
@@ -530,11 +535,6 @@ disable_file_logging = false
 max_file_size = 10
 max_backups = 5
 max_age = 30
-
-[smooth_cursor]
-move_mouse_enabled = true
-steps = 20
-delay = 5
 ```
 
 ---
