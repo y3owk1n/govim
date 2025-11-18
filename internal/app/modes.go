@@ -150,11 +150,11 @@ func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 	a.hintManager.SetHints(hintCollection)
 
 	// Draw hints with mode-specific styling
-	drawErr := a.overlayManager.DrawHintsWithStyle(hintList, a.hintStyle)
+	drawErr := a.renderer.drawHints(hintList)
 	if drawErr != nil {
 		return fmt.Errorf("failed to draw hints: %w", drawErr)
 	}
-	a.overlayManager.Show()
+	a.renderer.show()
 	var msAfter runtime.MemStats
 	runtime.ReadMemStats(&msAfter)
 	a.logger.Info("Hints setup perf",
@@ -190,7 +190,7 @@ func (a *App) activateGridMode() {
 
 	// Always resize overlay to the active screen (where mouse is) before drawing grid
 	// This ensures proper positioning when switching between multiple displays
-	a.overlayManager.ResizeToActiveScreenSync()
+	a.renderer.resizeActive()
 	a.gridOverlayNeedsRefresh = false
 
 	err := a.setupGrid()
@@ -250,30 +250,30 @@ func (a *App) setupGrid() error {
 
 		// special case to handle only when exiting subgrid
 		if forceRedraw {
-			a.overlayManager.Clear()
-			gridErr := a.overlayManager.DrawGrid(gridInstance, input, a.gridStyle)
+			a.renderer.clear()
+			gridErr := a.renderer.drawGrid(gridInstance, input)
 			if gridErr != nil {
 				return
 			}
-			a.overlayManager.Show()
+			a.renderer.show()
 		}
 
 		// Set hideUnmatched based on whether we have input and the config setting
 		hideUnmatched := a.config.Grid.HideUnmatched && len(input) > 0
-		a.overlayManager.SetHideUnmatched(hideUnmatched)
-		a.overlayManager.UpdateGridMatches(input)
+		a.renderer.setHideUnmatched(hideUnmatched)
+		a.renderer.updateGridMatches(input)
 	}, func(cell *grid.Cell) {
 		// Draw 3x3 subgrid inside selected cell
-		a.overlayManager.ShowSubgrid(cell, a.gridStyle)
+		a.renderer.showSubgrid(cell)
 	}, a.logger)
 	a.gridRouter = grid.NewRouter(a.gridManager, a.logger)
 
 	// Draw initial grid
-	initErr := a.overlayManager.DrawGrid(gridInstance, "", a.gridStyle)
+	initErr := a.renderer.drawGrid(gridInstance, "")
 	if initErr != nil {
 		return fmt.Errorf("failed to draw grid: %w", initErr)
 	}
-	a.overlayManager.Show()
+	a.renderer.show()
 
 	return nil
 }

@@ -79,6 +79,7 @@ type App struct {
 	gridCtx          *GridContext
 	hintStyle        hints.StyleMode
 	gridStyle        grid.Style
+	renderer         *overlayRenderer
 
 	enabled                 bool
 	hotkeysRegistered       bool
@@ -278,6 +279,8 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 			gridInstance: &gridInstance,
 		}
 	}
+
+	app.renderer = newOverlayRenderer(overlayManager, app.hintStyle, app.gridStyle)
 
 	if deps != nil && deps.EventTapFactory != nil {
 		app.eventTap = deps.EventTapFactory.New(app.handleKeyPress, log)
