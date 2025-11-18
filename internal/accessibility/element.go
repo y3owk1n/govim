@@ -354,9 +354,25 @@ func (e *Element) GetScrollBounds() image.Rectangle {
 }
 
 // MoveMouseToPoint moves the cursor to a specific screen point.
+// If smooth cursor movement is enabled in the configuration, it will use smooth movement.
 func MoveMouseToPoint(p image.Point) {
-	pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
-	C.moveMouse(pos)
+	cfg := config.Global()
+	if cfg != nil && cfg.SmoothCursor.MoveMouseEnabled {
+		// Use smooth movement
+		MoveMouseToPointSmooth(p, cfg.SmoothCursor.Steps, cfg.SmoothCursor.Delay)
+	} else {
+		// Use direct movement
+		pos := C.CGPoint{x: C.double(p.X), y: C.double(p.Y)}
+		C.moveMouse(pos)
+	}
+}
+
+// MoveMouseToPointSmooth moves the cursor smoothly to a specific screen point.
+func MoveMouseToPointSmooth(end image.Point, steps, delay int) {
+	start := GetCurrentCursorPosition()
+	startPos := C.CGPoint{x: C.double(start.X), y: C.double(start.Y)}
+	endPos := C.CGPoint{x: C.double(end.X), y: C.double(end.Y)}
+	C.moveMouseSmooth(startPos, endPos, C.int(steps), C.int(delay))
 }
 
 // LeftClickAtPoint performs a left mouse click at the specified point.

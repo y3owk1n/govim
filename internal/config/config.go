@@ -29,13 +29,14 @@ type ActionConfig struct {
 
 // Config represents the complete application configuration structure.
 type Config struct {
-	General GeneralConfig `toml:"general"`
-	Hotkeys HotkeysConfig `toml:"hotkeys"`
-	Hints   HintsConfig   `toml:"hints"`
-	Grid    GridConfig    `toml:"grid"`
-	Scroll  ScrollConfig  `toml:"scroll"`
-	Action  ActionConfig  `toml:"action"`
-	Logging LoggingConfig `toml:"logging"`
+	General      GeneralConfig      `toml:"general"`
+	Hotkeys      HotkeysConfig      `toml:"hotkeys"`
+	Hints        HintsConfig        `toml:"hints"`
+	Grid         GridConfig         `toml:"grid"`
+	Scroll       ScrollConfig       `toml:"scroll"`
+	Action       ActionConfig       `toml:"action"`
+	Logging      LoggingConfig      `toml:"logging"`
+	SmoothCursor SmoothCursorConfig `toml:"smooth_cursor"`
 }
 
 // GeneralConfig defines general application-wide settings.
@@ -145,6 +146,13 @@ type LoggingConfig struct {
 	MaxFileSize        int  `toml:"max_file_size"` // Size in MB
 	MaxBackups         int  `toml:"max_backups"`   // Maximum number of old log files to retain
 	MaxAge             int  `toml:"max_age"`       // Maximum number of days to retain old log files
+}
+
+// SmoothCursorConfig defines the smooth cursor movement settings.
+type SmoothCursorConfig struct {
+	MoveMouseEnabled bool `toml:"move_mouse_enabled"`
+	Steps            int  `toml:"steps"`
+	Delay            int  `toml:"delay"` // Delay in milliseconds
 }
 
 // AdditionalAXSupport defines accessibility support for specific application frameworks.
@@ -272,6 +280,11 @@ func DefaultConfig() *Config {
 			MaxFileSize:        10, // 10MB
 			MaxBackups:         5,  // Keep 5 old log files
 			MaxAge:             30, // Keep log files for 30 days
+		},
+		SmoothCursor: SmoothCursorConfig{
+			MoveMouseEnabled: false,
+			Steps:            10,
+			Delay:            5, // 5ms delay between steps
 		},
 	}
 }
@@ -405,6 +418,12 @@ func (c *Config) Validate() error {
 
 	// Validate action settings
 	err = c.validateAction()
+	if err != nil {
+		return err
+	}
+
+	// Validate smooth cursor settings
+	err = c.validateSmoothCursor()
 	if err != nil {
 		return err
 	}
@@ -759,5 +778,16 @@ func validateColor(color, fieldName string) error {
 		)
 	}
 
+	return nil
+}
+
+// validateSmoothCursor validates the smooth cursor configuration.
+func (c *Config) validateSmoothCursor() error {
+	if c.SmoothCursor.Steps < 1 {
+		return errors.New("smooth_cursor.steps must be at least 1")
+	}
+	if c.SmoothCursor.Delay < 0 {
+		return errors.New("smooth_cursor.delay must be non-negative")
+	}
 	return nil
 }

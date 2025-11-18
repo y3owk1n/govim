@@ -21,6 +21,11 @@ right_click_key = "n"
 mouse_down_key = "c"
 mouse_up_key = "r"
 
+[smooth_cursor]
+move_mouse_enabled = true
+steps = 10
+delay = 5
+
 [logging]
 # Log level: "debug", "info", "warn", "error"
 # Use "debug" for troubleshooting; default is "info".

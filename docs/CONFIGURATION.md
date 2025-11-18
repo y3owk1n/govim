@@ -21,6 +21,7 @@ Neru searches for configuration in the following order:
 - [Hint Mode](#hint-mode)
 - [Grid Mode](#grid-mode)
 - [Scroll Configuration](#scroll-configuration)
+- [Smooth Cursor](#smooth-cursor)
 - [Logging](#logging)
 - [Complete Example](#complete-example)
 
@@ -372,6 +373,45 @@ highlight_width = 3
 
 ---
 
+## Smooth Cursor
+
+Configure smooth cursor movement for mouse operations:
+
+```toml
+[smooth_cursor]
+move_mouse_enabled = true  # Enable smooth mouse movement
+steps = 20                  # Number of steps for smooth movement
+delay = 5                   # Delay between steps in milliseconds
+```
+
+**Parameters:**
+
+- `move_mouse_enabled`: When `true`, mouse movements will be smooth instead of instant
+- `steps`: Number of intermediate positions between start and end (higher = smoother but slower)
+- `delay`: Time in milliseconds between each step (lower = faster but less smooth)
+
+**Example configurations:**
+
+```toml
+# Very smooth, slow movement
+[smooth_cursor]
+move_mouse_enabled = true
+steps = 50
+delay = 10
+
+# Fast, less smooth movement
+[smooth_cursor]
+move_mouse_enabled = true
+steps = 10
+delay = 2
+
+# Disable smooth movement entirely
+[smooth_cursor]
+move_mouse_enabled = false
+```
+
+---
+
 ## Logging
 
 ```toml
@@ -490,6 +530,11 @@ disable_file_logging = false
 max_file_size = 10
 max_backups = 5
 max_age = 30
+
+[smooth_cursor]
+move_mouse_enabled = true
+steps = 20
+delay = 5
 ```
 
 ---
