@@ -8,7 +8,6 @@ import (
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/config"
 	"github.com/y3owk1n/neru/internal/ipc"
-	"github.com/y3owk1n/neru/internal/overlay"
 	"go.uber.org/zap"
 )
 
@@ -144,31 +143,21 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 	for _, param := range params {
 		var err error
 		switch param {
-		case "left_click":
-			err = accessibility.LeftClickAtPoint(cursorPos, false)
-		case "right_click":
-			err = accessibility.RightClickAtPoint(cursorPos, false)
-		case "mouse_up":
-			err = accessibility.LeftMouseUpAtPoint(cursorPos)
-		case "mouse_down":
-			err = accessibility.LeftMouseDownAtPoint(cursorPos)
-		case "middle_click":
-			err = accessibility.MiddleClickAtPoint(cursorPos, false)
 		case "scroll":
 			a.skipCursorRestoreOnce = true
 			a.exitMode()
 
 			// Enable event tap and let user scroll interactively at current position
 			// Resize overlay to active screen for multi-monitor support
-			if overlay.Get() != nil {
-				overlay.Get().ResizeToActiveScreenSync()
+			if a.overlayManager != nil {
+				a.overlayManager.ResizeToActiveScreenSync()
 			}
 
 			// Draw highlight border if enabled
 			if a.config.Scroll.HighlightScrollArea {
 				a.drawScrollHighlightBorder()
-				if overlay.Get() != nil {
-					overlay.Get().Show()
+				if a.overlayManager != nil {
+					a.overlayManager.Show()
 				}
 			}
 
@@ -185,11 +174,14 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 			)
 			return ipc.Response{Success: true, Message: "scroll mode activated", Code: ipc.CodeOK}
 		default:
-			return ipc.Response{
-				Success: false,
-				Message: "unknown action: " + param,
-				Code:    ipc.CodeInvalidInput,
+			if !isKnownAction(param) {
+				return ipc.Response{
+					Success: false,
+					Message: "unknown action: " + param,
+					Code:    ipc.CodeInvalidInput,
+				}
 			}
+			err = performActionAtPoint(param, cursorPos)
 		}
 
 		if err != nil {

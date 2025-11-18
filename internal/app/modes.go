@@ -898,39 +898,30 @@ func (a *App) handleActionKey(key string, mode string) {
 	cursorPos := accessibility.GetCurrentCursorPosition()
 
 	// Map action keys to actions using configurable keys
+	var act string
 	switch key {
-	case a.config.Action.LeftClickKey: // Left click
+	case a.config.Action.LeftClickKey:
 		a.logger.Info(mode + " action: Left click")
-		err := accessibility.LeftClickAtPoint(cursorPos, false)
-		if err != nil {
-			a.logger.Error("Failed to perform left click", zap.Error(err))
-		}
-	case a.config.Action.RightClickKey: // Right click
+		act = actionNameLeftClick
+	case a.config.Action.RightClickKey:
 		a.logger.Info(mode + " action: Right click")
-		err := accessibility.RightClickAtPoint(cursorPos, false)
-		if err != nil {
-			a.logger.Error("Failed to perform right click", zap.Error(err))
-		}
-	case a.config.Action.MiddleClickKey: // Middle click
+		act = actionNameRightClick
+	case a.config.Action.MiddleClickKey:
 		a.logger.Info(mode + " action: Middle click")
-		err := accessibility.MiddleClickAtPoint(cursorPos, false)
-		if err != nil {
-			a.logger.Error("Failed to perform middle click", zap.Error(err))
-		}
-	case a.config.Action.MouseDownKey: // Mouse down
+		act = actionNameMiddleClick
+	case a.config.Action.MouseDownKey:
 		a.logger.Info(mode + " action: Mouse down")
-		err := accessibility.LeftMouseDownAtPoint(cursorPos)
-		if err != nil {
-			a.logger.Error("Failed to perform mouse down", zap.Error(err))
-		}
-	case a.config.Action.MouseUpKey: // Mouse up
+		act = actionNameMouseDown
+	case a.config.Action.MouseUpKey:
 		a.logger.Info(mode + " action: Mouse up")
-		err := accessibility.LeftMouseUpAtPoint(cursorPos)
-		if err != nil {
-			a.logger.Error("Failed to perform mouse up", zap.Error(err))
-		}
+		act = actionNameMouseUp
 	default:
 		a.logger.Debug("Unknown "+mode+" action key", zap.String("key", key))
+		return
+	}
+	err := performActionAtPoint(act, cursorPos)
+	if err != nil {
+		a.logger.Error("Failed to perform action", zap.Error(err))
 	}
 }
 
