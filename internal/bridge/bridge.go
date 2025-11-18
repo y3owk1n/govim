@@ -1,8 +1,6 @@
-// Package bridge provides C bridging functionality for the Neru application.
-package bridge
-
 // Package bridge provides Go bindings for Objective-C APIs used in the Neru application,
 // including accessibility, hotkeys, and overlay functionality for macOS integration.
+package bridge
 
 /*
 #cgo CFLAGS: -x objective-c
@@ -26,20 +24,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// Global logger instance for the bridge package.
+// Global logger instance used for bridge package logging.
 var bridgeLogger *zap.Logger
 
-// InitializeLogger initializes the logger for the bridge package.
+// InitializeLogger sets the global logger instance for the bridge package.
 func InitializeLogger(logger *zap.Logger) {
 	bridgeLogger = logger
 }
 
-// This file ensures the bridge package is properly initialized
-// and the Objective-C files are compiled with CGo
-//
-// The .m files are compiled separately via CGo's automatic source file detection
+// This file ensures the bridge package is properly initialized and the Objective-C files are compiled with CGo.
+// The .m files are compiled separately via CGo's automatic source file detection.
 
-// SetApplicationAttribute toggles an accessibility attribute on the application with the provided PID.
+// SetApplicationAttribute toggles an accessibility attribute for the application identified by PID.
 func SetApplicationAttribute(pid int, attribute string, value bool) bool {
 	if bridgeLogger != nil {
 		bridgeLogger.Debug("Bridge: Setting application attribute",
@@ -73,7 +69,7 @@ func SetApplicationAttribute(pid int, attribute string, value bool) bool {
 	return result == 1
 }
 
-// HasClickAction checks if an element has the AXPress action available.
+// HasClickAction determines if an accessibility element has the AXPress action available.
 func HasClickAction(element unsafe.Pointer) bool {
 	if element == nil {
 		if bridgeLogger != nil {
@@ -97,7 +93,7 @@ var (
 	appWatcherOnce sync.Once
 )
 
-// AppWatcher interface defines the methods for application watching.
+// AppWatcher interface defines callbacks for application lifecycle events.
 type AppWatcher interface {
 	HandleLaunch(appName, bundleID string)
 	HandleTerminate(appName, bundleID string)
@@ -106,7 +102,7 @@ type AppWatcher interface {
 	HandleScreenParametersChanged()
 }
 
-// SetAppWatcher sets the application watcher implementation.
+// SetAppWatcher configures the application watcher implementation.
 func SetAppWatcher(w AppWatcher) {
 	if bridgeLogger != nil {
 		bridgeLogger.Debug("Bridge: Setting app watcher")
@@ -114,7 +110,7 @@ func SetAppWatcher(w AppWatcher) {
 	appWatcher = w
 }
 
-// StartAppWatcher starts watching for application events.
+// StartAppWatcher begins monitoring application lifecycle events.
 func StartAppWatcher() {
 	if bridgeLogger != nil {
 		bridgeLogger.Debug("Bridge: Starting app watcher")
@@ -122,7 +118,7 @@ func StartAppWatcher() {
 	C.startAppWatcher()
 }
 
-// StopAppWatcher stops watching for application events.
+// StopAppWatcher ceases monitoring application lifecycle events.
 func StopAppWatcher() {
 	if bridgeLogger != nil {
 		bridgeLogger.Debug("Bridge: Stopping app watcher")
@@ -225,7 +221,7 @@ func handleAppDeactivate(cAppName *C.char, cBundleID *C.char) {
 	}
 }
 
-// GetActiveScreenBounds returns the bounds of the screen containing the mouse cursor.
+// GetActiveScreenBounds retrieves the screen bounds containing the current mouse cursor position.
 func GetActiveScreenBounds() image.Rectangle {
 	if bridgeLogger != nil {
 		bridgeLogger.Debug("Bridge: GetActiveScreenBounds called")

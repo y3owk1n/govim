@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Manager handles common hint input and filtering logic.
+// Manager handles hint input processing, filtering, and state management.
 type Manager struct {
 	currentInput string
 	currentHints *HintCollection
@@ -14,7 +14,7 @@ type Manager struct {
 	logger       *zap.Logger
 }
 
-// NewManager creates a new hint manager.
+// NewManager initializes a new hint manager with the specified update callback and logger.
 func NewManager(onHintUpdate func([]*Hint), logger *zap.Logger) *Manager {
 	return &Manager{
 		onHintUpdate: onHintUpdate,
@@ -22,7 +22,7 @@ func NewManager(onHintUpdate func([]*Hint), logger *zap.Logger) *Manager {
 	}
 }
 
-// SetHints sets the current hint collection.
+// SetHints updates the current hint collection and resets the input state.
 func (m *Manager) SetHints(hints *HintCollection) {
 	m.currentHints = hints
 	m.currentInput = ""
@@ -30,14 +30,14 @@ func (m *Manager) SetHints(hints *HintCollection) {
 	m.updateHints()
 }
 
-// Reset resets the current input and redraws all hints.
+// Reset clears the current input and refreshes all hints.
 func (m *Manager) Reset() {
 	m.currentInput = ""
 	m.logger.Debug("Hint manager: Resetting input")
 	m.updateHints()
 }
 
-// HandleInput processes an input character and returns true if an exact match was found.
+// HandleInput processes an input character and returns the matched hint if an exact match is found.
 func (m *Manager) HandleInput(key string) (*Hint, bool) {
 	if m.currentHints == nil {
 		m.logger.Debug("Hint manager: No current hints available")

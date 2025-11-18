@@ -18,13 +18,13 @@ import (
 
 const unknownAction = "unknown"
 
-// HintsContext is the context for hints.
+// HintsContext holds the state and context for hint mode operations.
 type HintsContext struct {
 	selectedHint *hints.Hint
 	inActionMode bool
 }
 
-// GridContext is the context for grid.
+// GridContext holds the state and context for grid mode operations.
 type GridContext struct {
 	gridInstance **grid.Grid
 	gridOverlay  **grid.Overlay

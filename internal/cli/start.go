@@ -5,6 +5,8 @@ import (
 	"github.com/y3owk1n/neru/internal/logger"
 )
 
+// startCmd represents the command to start or resume the Neru daemon.
+// It enables Neru functionality if it was previously stopped or paused.
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the neru program (resume if paused)",

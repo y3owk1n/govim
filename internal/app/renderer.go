@@ -6,14 +6,14 @@ import (
 	"github.com/y3owk1n/neru/internal/overlay"
 )
 
-// OverlayRenderer handles rendering operations for the application overlays.
+// OverlayRenderer manages rendering operations for all application overlays.
 type OverlayRenderer struct {
 	mgr       *overlay.Manager
 	hintStyle hints.StyleMode
 	gridStyle grid.Style
 }
 
-// newOverlayRenderer creates a new overlay renderer.
+// newOverlayRenderer initializes a new overlay renderer with the specified components.
 func newOverlayRenderer(mgr *overlay.Manager, hs hints.StyleMode, gs grid.Style) *OverlayRenderer {
 	return &OverlayRenderer{mgr: mgr, hintStyle: hs, gridStyle: gs}
 }

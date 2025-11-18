@@ -6,20 +6,20 @@ import "go.uber.org/zap"
 // It parses keys like Escape/Tab and delegates incremental label input
 // to the Manager, returning a concise result for the caller (App) to act on.
 
-// Router handles hint mode key routing.
+// Router handles key routing for hint mode operations.
 type Router struct {
 	manager *Manager
 	logger  *zap.Logger
 }
 
-// KeyResult captures routing decisions for a single keypress.
-// The App should interpret these flags and perform UI/actions.
+// KeyResult captures the results of key routing decisions in hint mode.
+// The application interprets these flags to perform appropriate UI actions.
 type KeyResult struct {
 	Exit      bool  // Escape pressed -> exit mode
 	ExactHint *Hint // Exact label match selected
 }
 
-// NewRouter creates a new hints router.
+// NewRouter initializes a new hints router with the specified manager and logger.
 func NewRouter(m *Manager, logger *zap.Logger) *Router {
 	return &Router{
 		manager: m,
@@ -27,11 +27,8 @@ func NewRouter(m *Manager, logger *zap.Logger) *Router {
 	}
 }
 
-// RouteKey processes a keypress for hints.
-// - selectedHintPresent: whether a hint is already selected (context menu active)
-// - canScroll: whether we are already in active scroll sub-state
-// - isScrollAction: whether current action is the scroll action
-// RouteKey does NOT execute actions; it only returns routing decisions and exact match.
+// RouteKey processes a keypress and determines the appropriate action in hint mode.
+// RouteKey does NOT execute actions; it only returns routing decisions and exact matches.
 func (r *Router) RouteKey(key string, selectedHintPresent bool) KeyResult {
 	var res KeyResult
 

@@ -40,14 +40,14 @@ func resizeScrollCompletionCallback(context unsafe.Pointer) {
 	scrollCallbackLock.Unlock()
 }
 
-// Overlay represents a scroll overlay.
+// Overlay manages the rendering of scroll mode overlays using native platform APIs.
 type Overlay struct {
 	window C.OverlayWindow
 	config config.ScrollConfig
 	logger *zap.Logger
 }
 
-// NewOverlay creates a new overlay.
+// NewOverlay initializes a new scroll overlay instance with its own window.
 func NewOverlay(cfg config.ScrollConfig, logger *zap.Logger) (*Overlay, error) {
 	window := C.createOverlayWindow()
 	if window == nil {
@@ -60,7 +60,7 @@ func NewOverlay(cfg config.ScrollConfig, logger *zap.Logger) (*Overlay, error) {
 	}, nil
 }
 
-// NewOverlayWithWindow creates a scroll overlay using a shared window.
+// NewOverlayWithWindow initializes a scroll overlay instance using a shared window.
 func NewOverlayWithWindow(
 	cfg config.ScrollConfig,
 	logger *zap.Logger,
@@ -73,42 +73,42 @@ func NewOverlayWithWindow(
 	}, nil
 }
 
-// GetWindow returns the overlay window.
+// GetWindow returns the underlying C overlay window.
 func (o *Overlay) GetWindow() C.OverlayWindow { return o.window }
 
-// GetConfig returns the scroll config.
+// GetConfig returns the scroll configuration.
 func (o *Overlay) GetConfig() config.ScrollConfig { return o.config }
 
 // GetLogger returns the logger.
 func (o *Overlay) GetLogger() *zap.Logger { return o.logger }
 
-// Show shows the overlay.
+// Show displays the scroll overlay window.
 func (o *Overlay) Show() {
 	o.logger.Debug("Showing scroll overlay")
 	C.NeruShowOverlayWindow(o.window)
 	o.logger.Debug("Scroll overlay shown successfully")
 }
 
-// Hide hides the overlay.
+// Hide conceals the scroll overlay window.
 func (o *Overlay) Hide() {
 	o.logger.Debug("Hiding scroll overlay")
 	C.NeruHideOverlayWindow(o.window)
 	o.logger.Debug("Scroll overlay hidden successfully")
 }
 
-// Clear clears all scroll from the overlay.
+// Clear removes all scroll highlights from the overlay.
 func (o *Overlay) Clear() {
 	o.logger.Debug("Clearing scroll overlay")
 	C.NeruClearOverlay(o.window)
 	o.logger.Debug("Scroll overlay cleared successfully")
 }
 
-// ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor.
+// ResizeToActiveScreen adjusts the overlay window size to match the screen containing the mouse cursor.
 func (o *Overlay) ResizeToActiveScreen() {
 	C.NeruResizeOverlayToActiveScreen(o.window)
 }
 
-// ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification.
+// ResizeToActiveScreenSync adjusts the overlay window size synchronously with callback notification.
 func (o *Overlay) ResizeToActiveScreenSync() {
 	done := make(chan struct{})
 
@@ -168,7 +168,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	}()
 }
 
-// DrawScrollHighlight draws a highlight border around the screen.
+// DrawScrollHighlight renders a highlight border around the specified screen area.
 func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height int) {
 	o.logger.Debug("DrawScrollHighlight called")
 
@@ -212,7 +212,7 @@ func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height in
 	C.NeruDrawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(borderWidth), C.double(1.0))
 }
 
-// Destroy destroys the overlay.
+// Destroy releases the overlay window resources.
 func (o *Overlay) Destroy() {
 	if o.window != nil {
 		C.NeruDestroyOverlayWindow(o.window)

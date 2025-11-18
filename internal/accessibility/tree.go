@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// TreeNode represents a node in the accessibility tree.
+// TreeNode represents a node in the accessibility element hierarchy.
 type TreeNode struct {
 	Element  *Element
 	Info     *ElementInfo
@@ -26,7 +26,7 @@ type TreeNode struct {
 	Parent   *TreeNode
 }
 
-// TreeOptions configures tree traversal.
+// TreeOptions configures accessibility tree traversal behavior and filtering.
 type TreeOptions struct {
 	FilterFunc         func(*ElementInfo) bool
 	IncludeOutOfBounds bool
@@ -35,7 +35,7 @@ type TreeOptions struct {
 	MaxParallelDepth   int
 }
 
-// DefaultTreeOptions returns default tree traversal options.
+// DefaultTreeOptions returns the default configuration for accessibility tree traversal.
 func DefaultTreeOptions() TreeOptions {
 	return TreeOptions{
 		FilterFunc:         nil,
@@ -46,7 +46,7 @@ func DefaultTreeOptions() TreeOptions {
 	}
 }
 
-// BuildTree builds an accessibility tree from the given root element.
+// BuildTree constructs an accessibility tree starting from the specified root element.
 func BuildTree(root *Element, opts TreeOptions) (*TreeNode, error) {
 	if root == nil {
 		logger.Debug("BuildTree called with nil root element")

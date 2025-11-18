@@ -44,14 +44,14 @@ func resizeHintCompletionCallback(context unsafe.Pointer) {
 	hintCallbackLock.Unlock()
 }
 
-// Overlay manages the hint overlay window.
+// Overlay manages the rendering of hint overlays using native platform APIs.
 type Overlay struct {
 	window C.OverlayWindow
 	config config.HintsConfig
 	logger *zap.Logger
 }
 
-// StyleMode represents the style configuration for hints.
+// StyleMode represents the visual styling configuration for hint overlays.
 type StyleMode struct {
 	FontSize         int
 	FontFamily       string
@@ -103,7 +103,7 @@ func initPools() {
 	})
 }
 
-// NewOverlay creates a new overlay.
+// NewOverlay creates a new hint overlay instance with its own window.
 func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	window := C.createOverlayWindow()
 	if window == nil {
@@ -118,7 +118,7 @@ func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	}, nil
 }
 
-// NewOverlayWithWindow creates an overlay using a shared window.
+// NewOverlayWithWindow creates a hint overlay instance using a shared window.
 func NewOverlayWithWindow(
 	cfg config.HintsConfig,
 	logger *zap.Logger,

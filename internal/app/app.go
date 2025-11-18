@@ -55,7 +55,7 @@ const (
 	ActionScroll
 )
 
-// App is the main application struct.
+// App represents the main application instance containing all state and dependencies.
 type App struct {
 	config           *config.Config
 	ConfigPath       string

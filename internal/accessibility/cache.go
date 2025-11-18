@@ -10,13 +10,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// CachedInfo wraps ElementInfo with expiration time.
+// CachedInfo wraps ElementInfo with an expiration timestamp for TTL-based caching.
 type CachedInfo struct {
 	Info      *ElementInfo
 	ExpiresAt time.Time
 }
 
-// InfoCache is a thread-safe cache with TTL.
+// InfoCache implements a thread-safe time-to-live cache for element information.
 type InfoCache struct {
 	mu      sync.RWMutex
 	data    map[uintptr]*CachedInfo
@@ -25,7 +25,7 @@ type InfoCache struct {
 	stopped bool
 }
 
-// NewInfoCache creates a cache with the given TTL.
+// NewInfoCache initializes a new cache with the specified time-to-live duration.
 func NewInfoCache(ttl time.Duration) *InfoCache {
 	cache := &InfoCache{
 		data:   make(map[uintptr]*CachedInfo, 100),
@@ -39,7 +39,7 @@ func NewInfoCache(ttl time.Duration) *InfoCache {
 	return cache
 }
 
-// Get retrieves a cached value if it exists and hasn't expired.
+// Get retrieves a cached element information if it exists and hasn't expired.
 func (c *InfoCache) Get(elem *Element) *ElementInfo {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -60,7 +60,7 @@ func (c *InfoCache) Get(elem *Element) *ElementInfo {
 	return cached.Info
 }
 
-// Set stores a value with TTL.
+// Set stores element information in the cache with the configured time-to-live.
 func (c *InfoCache) Set(elem *Element, info *ElementInfo) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -80,14 +80,14 @@ func (c *InfoCache) Set(elem *Element, info *ElementInfo) {
 		zap.Time("expires_at", expiresAt))
 }
 
-// Size returns the number of cached entries.
+// Size returns the current number of entries in the cache.
 func (c *InfoCache) Size() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return len(c.data)
 }
 
-// Clear removes all entries.
+// Clear removes all entries from the cache.
 func (c *InfoCache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -95,7 +95,7 @@ func (c *InfoCache) Clear() {
 	logger.Debug("Cache cleared")
 }
 
-// Stop stops the cleanup goroutine.
+// Stop terminates the cache cleanup goroutine and releases resources.
 func (c *InfoCache) Stop() {
 	if !c.stopped {
 		close(c.stopCh)
@@ -104,7 +104,7 @@ func (c *InfoCache) Stop() {
 	}
 }
 
-// cleanupLoop periodically removes expired entries.
+// cleanupLoop runs a periodic cleanup process to remove expired cache entries.
 func (c *InfoCache) cleanupLoop() {
 	ticker := time.NewTicker(c.ttl / 2) // Cleanup at half the TTL interval
 	defer ticker.Stop()
@@ -120,7 +120,7 @@ func (c *InfoCache) cleanupLoop() {
 	}
 }
 
-// cleanup removes expired entries.
+// cleanup removes all expired entries from the cache.
 func (c *InfoCache) cleanup() {
 	c.mu.Lock()
 	defer c.mu.Unlock()

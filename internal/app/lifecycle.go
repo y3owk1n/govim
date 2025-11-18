@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Run runs the application.
+// Run starts the main application loop and initializes all subsystems.
 func (a *App) Run() error {
 	a.logger.Info("Starting Neru")
 
@@ -40,7 +40,7 @@ func (a *App) Run() error {
 	return a.waitForShutdown()
 }
 
-// setupAppWatcherCallbacks configures the app watcher callbacks.
+// setupAppWatcherCallbacks configures callbacks for application watcher events.
 func (a *App) setupAppWatcherCallbacks() {
 	a.appWatcher.OnActivate(func(_, bundleID string) {
 		a.handleAppActivation(bundleID)
@@ -51,7 +51,7 @@ func (a *App) setupAppWatcherCallbacks() {
 	})
 }
 
-// handleScreenParametersChange handles display changes and resizes/regenerates overlays.
+// handleScreenParametersChange responds to display configuration changes by updating overlays.
 func (a *App) handleScreenParametersChange() {
 	if a.screenChangeProcessing {
 		return
@@ -121,7 +121,7 @@ func (a *App) handleScreenParametersChange() {
 	}
 }
 
-// handleAppActivation handles application activation events.
+// handleAppActivation responds to application activation events.
 func (a *App) handleAppActivation(bundleID string) {
 	a.logger.Debug("App activated", zap.String("bundle_id", bundleID))
 
@@ -144,7 +144,7 @@ func (a *App) handleAppActivation(bundleID string) {
 	a.logger.Debug("Done handling app activation")
 }
 
-// handleAdditionalAccessibility handles electron/chromium/firefox accessibility.
+// handleAdditionalAccessibility configures accessibility support for Electron/Chromium/Firefox applications.
 func (a *App) handleAdditionalAccessibility(bundleID string) {
 	cfg := a.config.Hints.AdditionalAXSupport
 
@@ -167,7 +167,7 @@ func (a *App) handleAdditionalAccessibility(bundleID string) {
 	}
 }
 
-// printStartupInfo prints startup information to console.
+// printStartupInfo displays startup information including registered hotkeys.
 func (a *App) printStartupInfo() {
 	a.logger.Info("✓ Neru is running")
 
@@ -195,7 +195,7 @@ func (a *App) printStartupInfo() {
 	}
 }
 
-// waitForShutdown waits for shutdown signal with force-quit support.
+// waitForShutdown waits for shutdown signals and handles graceful termination.
 func (a *App) waitForShutdown() error {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)

@@ -1,8 +1,6 @@
-// Package grid provides grid mode functionality for the Neru application.
-package grid
-
-// Package grid provides grid-based navigation functionality for the Neru application.
+// Package grid provides grid-based navigation functionality for the Neru application,
 // including grid generation, caching, and overlay rendering.
+package grid
 
 import (
 	"container/list"
@@ -25,7 +23,7 @@ type gridCacheEntry struct {
 	usedAt  time.Time
 }
 
-// Cache implements a cache for grid cells to improve performance.
+// Cache implements an LRU cache for grid cells to improve performance by reusing previously computed grids.
 type Cache struct {
 	mu       sync.Mutex
 	items    map[gridCacheKey]*list.Element
@@ -38,12 +36,12 @@ var (
 	gridCacheEnabled = true
 )
 
-// SetGridCacheEnabled enables or disables the grid cache.
+// SetGridCacheEnabled enables or disables the grid cell caching mechanism.
 func SetGridCacheEnabled(enabled bool) {
 	gridCacheEnabled = enabled
 }
 
-// Prewarm prewarms the grid cache with common grid sizes.
+// Prewarm initializes the grid cache with commonly used grid sizes to improve startup performance.
 func Prewarm(characters string, sizes []image.Rectangle) {
 	if !gridCacheEnabled {
 		return

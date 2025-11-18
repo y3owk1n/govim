@@ -47,7 +47,7 @@ func gridResizeCompletionCallback(context unsafe.Pointer) {
 	gridCallbackLock.Unlock()
 }
 
-// Overlay manages grid-specific overlay rendering.
+// Overlay manages the rendering of grid overlays using native platform APIs.
 type Overlay struct {
 	window C.OverlayWindow
 	cfg    config.GridConfig
@@ -64,7 +64,7 @@ func initGridPools() {
 	})
 }
 
-// NewOverlay creates a new grid overlay with its own window.
+// NewOverlay creates a new grid overlay instance with its own window and prewarms common grid sizes.
 func NewOverlay(cfg config.GridConfig, logger *zap.Logger) *Overlay {
 	window := C.createOverlayWindow()
 	initGridPools()
@@ -88,7 +88,7 @@ func NewOverlay(cfg config.GridConfig, logger *zap.Logger) *Overlay {
 	}
 }
 
-// NewOverlayWithWindow creates a grid overlay using a shared window.
+// NewOverlayWithWindow creates a grid overlay instance using a shared window and prewarms common grid sizes.
 func NewOverlayWithWindow(
 	cfg config.GridConfig,
 	logger *zap.Logger,

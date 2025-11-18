@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Manager handles variable-length grid input (2, 3, or 4 characters).
+// Manager handles variable-length grid coordinate input and manages grid state.
 type Manager struct {
 	grid          *Grid
 	currentInput  string
@@ -24,7 +24,7 @@ type Manager struct {
 	logger  *zap.Logger
 }
 
-// NewManager creates a new grid manager.
+// NewManager initializes a new grid manager with the specified configuration.
 func NewManager(
 	grid *Grid,
 	subRows int,
@@ -52,8 +52,8 @@ func NewManager(
 	}
 }
 
-// HandleInput processes variable-length coordinate input
-// Returns the target point when complete (labelLength characters entered or subgrid selection).
+// HandleInput processes variable-length coordinate input and returns the target point when complete.
+// Completion occurs when labelLength characters are entered or a subgrid selection is made.
 func (m *Manager) HandleInput(key string) (image.Point, bool) {
 	m.logger.Debug(
 		"Grid manager: Processing input",

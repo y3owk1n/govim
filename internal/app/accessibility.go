@@ -5,7 +5,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// updateRolesForCurrentApp updates clickable and scrollable roles based on the current focused app.
+// updateRolesForCurrentApp updates the accessibility roles based on the currently focused application.
 func (a *App) updateRolesForCurrentApp() {
 	// Get the focused application
 	focusedApp := accessibility.GetFocusedApplication()
@@ -38,8 +38,8 @@ func (a *App) updateRolesForCurrentApp() {
 	accessibility.SetClickableRoles(clickableRoles)
 }
 
-// getFocusedBundleID returns the bundle identifier of the currently focused
-// application, or an empty string if it cannot be determined.
+// getFocusedBundleID retrieves the bundle identifier of the currently focused application.
+// Returns an empty string if the bundle ID cannot be determined.
 func (a *App) getFocusedBundleID() string {
 	app := accessibility.GetFocusedApplication()
 	if app == nil {
@@ -49,8 +49,8 @@ func (a *App) getFocusedBundleID() string {
 	return app.GetBundleIdentifier()
 }
 
-// isFocusedAppExcluded returns true if the currently focused application's bundle
-// ID is in the excluded apps list. Logs context for debugging.
+// isFocusedAppExcluded checks if the currently focused application is in the excluded apps list.
+// Returns true if the app should be excluded from Neru functionality.
 func (a *App) isFocusedAppExcluded() bool {
 	bundleID := a.getFocusedBundleID()
 	if bundleID != "" && a.config.IsAppExcluded(bundleID) {

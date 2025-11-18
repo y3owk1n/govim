@@ -10,6 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// statusCmd represents the command to display the current status of the Neru daemon.
+// It retrieves and displays information about the daemon's state, mode, and configuration.
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show neru status",

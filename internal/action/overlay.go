@@ -1,8 +1,6 @@
-// Package action provides overlay functionality for action mode.
-package action
-
 // Package action provides overlay functionality for action mode in the Neru application.
 // Action mode allows users to perform mouse actions at the current cursor position.
+package action
 
 /*
 #cgo CFLAGS: -x objective-c
@@ -44,14 +42,14 @@ func resizeActionCompletionCallback(context unsafe.Pointer) {
 	actionCallbackLock.Unlock()
 }
 
-// Overlay represents an action overlay.
+// Overlay manages the rendering of action mode overlays using native platform APIs.
 type Overlay struct {
 	window C.OverlayWindow
 	config config.ActionConfig
 	logger *zap.Logger
 }
 
-// NewOverlay creates a new action overlay.
+// NewOverlay initializes a new action overlay instance with its own window.
 func NewOverlay(cfg config.ActionConfig, logger *zap.Logger) (*Overlay, error) {
 	window := C.createOverlayWindow()
 	if window == nil {
@@ -64,7 +62,7 @@ func NewOverlay(cfg config.ActionConfig, logger *zap.Logger) (*Overlay, error) {
 	}, nil
 }
 
-// NewOverlayWithWindow creates an action overlay using a shared window.
+// NewOverlayWithWindow initializes an action overlay instance using a shared window.
 func NewOverlayWithWindow(
 	cfg config.ActionConfig,
 	logger *zap.Logger,
@@ -77,42 +75,42 @@ func NewOverlayWithWindow(
 	}, nil
 }
 
-// GetWindow returns the overlay window.
+// GetWindow returns the underlying C overlay window.
 func (o *Overlay) GetWindow() C.OverlayWindow { return o.window }
 
-// GetConfig returns the action config.
+// GetConfig returns the action configuration.
 func (o *Overlay) GetConfig() config.ActionConfig { return o.config }
 
 // GetLogger returns the logger.
 func (o *Overlay) GetLogger() *zap.Logger { return o.logger }
 
-// Show shows the overlay.
+// Show displays the action overlay window.
 func (o *Overlay) Show() {
 	o.logger.Debug("Showing action overlay")
 	C.NeruShowOverlayWindow(o.window)
 	o.logger.Debug("Action overlay shown successfully")
 }
 
-// Hide hides the overlay.
+// Hide conceals the action overlay window.
 func (o *Overlay) Hide() {
 	o.logger.Debug("Hiding action overlay")
 	C.NeruHideOverlayWindow(o.window)
 	o.logger.Debug("Action overlay hidden successfully")
 }
 
-// Clear clears all action highlights from the overlay.
+// Clear removes all action highlights from the overlay.
 func (o *Overlay) Clear() {
 	o.logger.Debug("Clearing action overlay")
 	C.NeruClearOverlay(o.window)
 	o.logger.Debug("Action overlay cleared successfully")
 }
 
-// ResizeToActiveScreen resizes the overlay window to the screen containing the mouse cursor.
+// ResizeToActiveScreen adjusts the overlay window size to match the screen containing the mouse cursor.
 func (o *Overlay) ResizeToActiveScreen() {
 	C.NeruResizeOverlayToActiveScreen(o.window)
 }
 
-// ResizeToActiveScreenSync resizes the overlay window synchronously with callback notification.
+// ResizeToActiveScreenSync adjusts the overlay window size synchronously with callback notification.
 func (o *Overlay) ResizeToActiveScreenSync() {
 	done := make(chan struct{})
 
@@ -172,7 +170,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 	}()
 }
 
-// DrawActionHighlight draws a highlight border around the screen.
+// DrawActionHighlight renders a highlight border around the specified screen area.
 func (o *Overlay) DrawActionHighlight(xCoordinate, yCoordinate, width, height int) {
 	o.logger.Debug("DrawActionHighlight called")
 
@@ -219,7 +217,7 @@ func (o *Overlay) DrawActionHighlight(xCoordinate, yCoordinate, width, height in
 	C.NeruDrawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(highlightWidth), C.double(1.0))
 }
 
-// Destroy destroys the overlay.
+// Destroy releases the overlay window resources.
 func (o *Overlay) Destroy() {
 	if o.window != nil {
 		C.NeruDestroyOverlayWindow(o.window)

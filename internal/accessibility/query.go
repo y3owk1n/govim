@@ -26,7 +26,7 @@ func rectFromInfo(info *ElementInfo) image.Rectangle {
 	)
 }
 
-// PrintTree prints the entire accessibility tree structure for debugging purposes.
+// PrintTree outputs the accessibility tree structure to the log for debugging purposes.
 func PrintTree(node *TreeNode, depth int) {
 	if node == nil || node.Info == nil {
 		return
@@ -43,7 +43,7 @@ func PrintTree(node *TreeNode, depth int) {
 	}
 }
 
-// GetClickableElements returns all clickable elements in the frontmost window.
+// GetClickableElements retrieves all clickable UI elements in the frontmost window.
 func GetClickableElements() ([]*TreeNode, error) {
 	logger.Debug("Getting clickable elements for frontmost window")
 
@@ -72,9 +72,9 @@ func GetClickableElements() ([]*TreeNode, error) {
 	return elements, nil
 }
 
-// GetScrollableElements returns all scrollable elements in the frontmost window.
+// GetScrollableElements retrieves all scrollable UI elements in the frontmost window.
 
-// GetMenuBarClickableElements returns clickable elements from the focused app's menu bar.
+// GetMenuBarClickableElements retrieves clickable UI elements from the focused application's menu bar.
 func GetMenuBarClickableElements() ([]*TreeNode, error) {
 	logger.Debug("Getting clickable elements for menu bar")
 
@@ -114,7 +114,7 @@ func GetMenuBarClickableElements() ([]*TreeNode, error) {
 	return elements, nil
 }
 
-// GetClickableElementsFromBundleID returns clickable elements from the application with the specified bundle ID.
+// GetClickableElementsFromBundleID retrieves clickable UI elements from the application identified by bundle ID.
 func GetClickableElementsFromBundleID(bundleID string) ([]*TreeNode, error) {
 	logger.Debug("Getting clickable elements for bundle ID", zap.String("bundle_id", bundleID))
 

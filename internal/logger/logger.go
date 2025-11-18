@@ -1,4 +1,5 @@
-// Package logger provides logging functionality for the Neru application.
+// Package logger provides structured logging functionality for the Neru application,
+// using the zap logging library with file rotation support.
 package logger
 
 import (
@@ -19,10 +20,9 @@ var (
 	logFileMu    sync.Mutex
 )
 
-// Package logger provides structured logging functionality for the Neru application.
-// using the zap logging library with file rotation support.
-
-// Init initializes the global logger.
+// Init configures and initializes the global logger with the specified settings.
+// It supports both console and file output with configurable log levels, file rotation,
+// and structured or unstructured logging formats.
 func Init(
 	logLevel, logFilePath string,
 	structured bool,
@@ -128,7 +128,8 @@ func Init(
 	return nil
 }
 
-// Get returns the global logger.
+// Get retrieves the global logger instance.
+// If the logger hasn't been initialized, it returns a development logger as a fallback.
 func Get() *zap.Logger {
 	if globalLogger == nil {
 		// Fallback to development logger
@@ -137,7 +138,8 @@ func Get() *zap.Logger {
 	return globalLogger
 }
 
-// Sync flushes any buffered log entries.
+// Sync flushes any buffered log entries to their outputs.
+// This ensures that all pending log messages are written before the application exits.
 func Sync() error {
 	if globalLogger != nil {
 		err := globalLogger.Sync()
@@ -148,7 +150,8 @@ func Sync() error {
 	return nil
 }
 
-// Close closes the log file and syncs the logger.
+// Close releases all logger resources and ensures all pending log entries are written.
+// It synchronizes the logger and closes the log file if file logging is enabled.
 func Close() error {
 	logFileMu.Lock()
 	defer logFileMu.Unlock()
@@ -177,32 +180,38 @@ func Close() error {
 	return nil
 }
 
-// Debug logs a debug message.
+// Debug logs a debug-level message with optional structured fields.
+// Debug messages are typically used for detailed diagnostic information.
 func Debug(msg string, fields ...zap.Field) {
 	Get().Debug(msg, fields...)
 }
 
-// Info logs an info message.
+// Info logs an info-level message with optional structured fields.
+// Info messages are used for general operational information.
 func Info(msg string, fields ...zap.Field) {
 	Get().Info(msg, fields...)
 }
 
-// Warn logs a warning message.
+// Warn logs a warning-level message with optional structured fields.
+// Warning messages indicate potentially harmful situations.
 func Warn(msg string, fields ...zap.Field) {
 	Get().Warn(msg, fields...)
 }
 
-// Error logs an error message.
+// Error logs an error-level message with optional structured fields.
+// Error messages indicate serious problems that need attention.
 func Error(msg string, fields ...zap.Field) {
 	Get().Error(msg, fields...)
 }
 
-// Fatal logs a fatal message and exits.
+// Fatal logs a fatal-level message and immediately exits the application.
+// Fatal messages indicate unrecoverable errors that require immediate termination.
 func Fatal(msg string, fields ...zap.Field) {
 	Get().Fatal(msg, fields...)
 }
 
-// With creates a child logger with the given fields.
+// With creates a new child logger instance with the specified fields added to all log entries.
+// This is useful for adding context to all logs from a specific component or operation.
 func With(fields ...zap.Field) *zap.Logger {
 	return Get().With(fields...)
 }

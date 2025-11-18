@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Hint represents a hint label for a UI element.
+// Hint represents a labeled UI element with positioning and sizing information for hint mode.
 type Hint struct {
 	Label         string
 	Element       *accessibility.TreeNode
@@ -20,13 +20,13 @@ type Hint struct {
 	MatchedPrefix string // Characters that have been typed
 }
 
-// Generator generates hints for UI elements.
+// Generator creates hint labels for UI elements based on their position and size.
 type Generator struct {
 	characters string
 	maxHints   int
 }
 
-// NewGenerator creates a new hint generator.
+// NewGenerator initializes a new hint generator with the specified character set.
 func NewGenerator(characters string) *Generator {
 	// Ensure we have at least some characters
 	if characters == "" {
@@ -56,7 +56,7 @@ func (g *Generator) GetCharacters() string { return g.characters }
 // GetMaxHints returns the maximum number of hints that can be generated.
 func (g *Generator) GetMaxHints() int { return g.maxHints }
 
-// Generate generates hints for the given elements.
+// Generate creates hints for the given UI elements, sorted by position and limited by maximum count.
 func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error) {
 	if len(elements) == 0 {
 		return []*Hint{}, nil
@@ -103,8 +103,8 @@ func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error
 	return hints, nil
 }
 
-// generateAlphabetLabels generates alphabet-based hint labels.
-// Uses a strategy that avoids prefixes (no "a" if "aa" exists).
+// generateAlphabetLabels generates alphabet-based hint labels using a prefix-avoidance strategy.
+// Ensures no single character label conflicts with the start of a multi-character label.
 func (g *Generator) generateAlphabetLabels(count int) []string {
 	if count <= 0 {
 		return []string{}

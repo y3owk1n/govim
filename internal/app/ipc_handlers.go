@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// handleIPCCommand handles IPC commands from the CLI.
+// handleIPCCommand processes IPC commands received from the CLI interface.
 func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 	a.logger.Info(
 		"Handling IPC command",
@@ -180,7 +180,7 @@ func (a *App) handleConfig(_ ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Data: a.config, Code: ipc.CodeOK}
 }
 
-// resolveConfigPath resolves the config path for status display.
+// resolveConfigPath determines the configuration file path for status reporting.
 func (a *App) resolveConfigPath() string {
 	cfgPath := a.ConfigPath
 

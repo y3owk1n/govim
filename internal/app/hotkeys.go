@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// registerHotkeys registers all global hotkeys.
+// registerHotkeys registers all global hotkeys defined in the configuration.
 func (a *App) registerHotkeys() {
 	// Note: Escape key for exiting modes is hardcoded in handleKeyPress, not registered as global hotkey
 
@@ -82,7 +82,7 @@ func (a *App) registerHotkeys() {
 	}
 }
 
-// executeHotkeyAction executes a hotkey action (either exec or IPC command).
+// executeHotkeyAction executes a hotkey action, which can be either a shell command or an IPC command.
 func (a *App) executeHotkeyAction(key, action string) error {
 	// Exec mode: run arbitrary bash command
 	if strings.HasPrefix(action, "exec ") {
@@ -104,7 +104,7 @@ func (a *App) executeHotkeyAction(key, action string) error {
 	return nil
 }
 
-// executeShellCommand executes a shell command from a hotkey.
+// executeShellCommand executes a shell command triggered by a hotkey.
 func (a *App) executeShellCommand(key, action string) error {
 	cmdStr := strings.TrimSpace(strings.TrimPrefix(action, "exec"))
 	if cmdStr == "" {
@@ -142,8 +142,8 @@ func (a *App) executeShellCommand(key, action string) error {
 	return nil
 }
 
-// refreshHotkeysForAppOrCurrent registers or unregisters global hotkeys based on
-// whether Neru is enabled and whether the currently focused app is excluded.
+// refreshHotkeysForAppOrCurrent manages hotkey registration based on Neru's enabled state
+// and whether the currently focused application is excluded.
 func (a *App) refreshHotkeysForAppOrCurrent(bundleID string) {
 	// If disabled, ensure no hotkeys are registered
 	if !a.enabled {

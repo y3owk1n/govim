@@ -7,7 +7,7 @@ var (
 	globalMu     sync.RWMutex
 )
 
-// SetGlobal sets the global configuration that can be accessed from anywhere.
+// SetGlobal sets the global configuration instance for application-wide access.
 // This function is thread-safe.
 func SetGlobal(cfg *Config) {
 	globalMu.Lock()
@@ -15,7 +15,7 @@ func SetGlobal(cfg *Config) {
 	globalConfig = cfg
 }
 
-// Global returns the global configuration.
+// Global returns the global configuration instance.
 // This function is thread-safe.
 func Global() *Config {
 	globalMu.RLock()

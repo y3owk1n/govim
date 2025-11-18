@@ -1,6 +1,6 @@
 package app
 
-// ActionName represents the string name of an action.
+// ActionName represents a named action that can be performed by the application.
 type ActionName string
 
 const (
@@ -18,7 +18,7 @@ const (
 	ActionNameScroll ActionName = "scroll"
 )
 
-// KnownActionNames returns a slice of all known action names.
+// KnownActionNames returns a slice containing all supported action names.
 func KnownActionNames() []ActionName {
 	return []ActionName{
 		ActionNameLeftClick,
@@ -30,7 +30,7 @@ func KnownActionNames() []ActionName {
 	}
 }
 
-// IsKnownActionName checks if an action name is known.
+// IsKnownActionName determines whether the specified action name is supported.
 func IsKnownActionName(action ActionName) bool {
 	switch action {
 	case ActionNameLeftClick,
