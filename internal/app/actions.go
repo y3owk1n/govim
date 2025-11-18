@@ -7,25 +7,20 @@ import (
 	"github.com/y3owk1n/neru/internal/accessibility"
 )
 
-const (
-	actionNameLeftClick   = "left_click"
-	actionNameRightClick  = "right_click"
-	actionNameMiddleClick = "middle_click"
-	actionNameMouseDown   = "mouse_down"
-	actionNameMouseUp     = "mouse_up"
-)
+// Deprecated: Use ActionName constants from action_names.go instead.
 
 func performActionAtPoint(action string, pt image.Point) error {
-	switch action {
-	case actionNameLeftClick:
+	actionName := ActionName(action)
+	switch actionName {
+	case ActionNameLeftClick:
 		return accessibility.LeftClickAtPoint(pt, false)
-	case actionNameRightClick:
+	case ActionNameRightClick:
 		return accessibility.RightClickAtPoint(pt, false)
-	case actionNameMiddleClick:
+	case ActionNameMiddleClick:
 		return accessibility.MiddleClickAtPoint(pt, false)
-	case actionNameMouseDown:
+	case ActionNameMouseDown:
 		return accessibility.LeftMouseDownAtPoint(pt)
-	case actionNameMouseUp:
+	case ActionNameMouseUp:
 		return accessibility.LeftMouseUpAtPoint(pt)
 	default:
 		return fmt.Errorf("unknown action: %s", action)
@@ -33,16 +28,7 @@ func performActionAtPoint(action string, pt image.Point) error {
 }
 
 func isKnownAction(action string) bool {
-	switch action {
-	case actionNameLeftClick,
-		actionNameRightClick,
-		actionNameMiddleClick,
-		actionNameMouseDown,
-		actionNameMouseUp:
-		return true
-	default:
-		return false
-	}
+	return IsKnownActionName(ActionName(action))
 }
 
 func (a *App) startInteractiveScroll() {

@@ -613,14 +613,14 @@ done:
 // drawHintsActionHighlight draws a highlight border around the active screen for hints action mode.
 func (a *App) drawHintsActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	a.overlayManager.ResizeToActiveScreenSync()
+	a.renderer.resizeActive()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
-	// Draw action highlight using action overlay
-	a.overlayManager.DrawActionHighlight(
+	// Draw action highlight using renderer
+	a.renderer.drawActionHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
@@ -637,14 +637,14 @@ func (a *App) drawHintsActionHighlight() {
 // drawGridActionHighlight draws a highlight border around the active screen for grid action mode.
 func (a *App) drawGridActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	a.overlayManager.ResizeToActiveScreenSync()
+	a.renderer.resizeActive()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
-	// Draw action highlight using action overlay
-	a.overlayManager.DrawActionHighlight(
+	// Draw action highlight using renderer
+	a.renderer.drawActionHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
@@ -660,14 +660,14 @@ func (a *App) drawGridActionHighlight() {
 
 func (a *App) drawScrollHighlightBorder() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	a.overlayManager.ResizeToActiveScreenSync()
+	a.renderer.resizeActive()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
-	// Draw scroll highlight using scroll overlay
-	a.overlayManager.DrawScrollHighlight(
+	// Draw scroll highlight using renderer
+	a.renderer.drawScrollHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
@@ -886,19 +886,19 @@ func (a *App) handleActionKey(key string, mode string) {
 	switch key {
 	case a.config.Action.LeftClickKey:
 		a.logger.Info(mode + " action: Left click")
-		act = actionNameLeftClick
+		act = string(ActionNameLeftClick)
 	case a.config.Action.RightClickKey:
 		a.logger.Info(mode + " action: Right click")
-		act = actionNameRightClick
+		act = string(ActionNameRightClick)
 	case a.config.Action.MiddleClickKey:
 		a.logger.Info(mode + " action: Middle click")
-		act = actionNameMiddleClick
+		act = string(ActionNameMiddleClick)
 	case a.config.Action.MouseDownKey:
 		a.logger.Info(mode + " action: Mouse down")
-		act = actionNameMouseDown
+		act = string(ActionNameMouseDown)
 	case a.config.Action.MouseUpKey:
 		a.logger.Info(mode + " action: Mouse up")
-		act = actionNameMouseUp
+		act = string(ActionNameMouseUp)
 	default:
 		a.logger.Debug("Unknown "+mode+" action key", zap.String("key", key))
 		return

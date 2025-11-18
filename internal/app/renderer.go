@@ -35,3 +35,13 @@ func (r *overlayRenderer) show() { r.mgr.Show() }
 func (r *overlayRenderer) clear() { r.mgr.Clear() }
 
 func (r *overlayRenderer) resizeActive() { r.mgr.ResizeToActiveScreenSync() }
+
+// drawActionHighlight draws an action highlight border around the active screen.
+func (r *overlayRenderer) drawActionHighlight(x, y, width, height int) {
+	r.mgr.DrawActionHighlight(x, y, width, height)
+}
+
+// drawScrollHighlight draws a scroll highlight border around the active screen.
+func (r *overlayRenderer) drawScrollHighlight(x, y, width, height int) {
+	r.mgr.DrawScrollHighlight(x, y, width, height)
+}
