@@ -150,6 +150,17 @@ middle_click_key = "m"
 mouse_down_key = "i"
 mouse_up_key = "u"
 
+[smooth_cursor]
+# Whether to enable smooth mouse movement
+# Note that this is not smooth scrolling, but just smooth for moving the mouse cursor from one position to another
+move_mouse_enabled = false
+
+# Number of steps for smooth movement
+steps = 10
+
+# Delay between steps in milliseconds
+delay = 5
+
 [logging]
 # Log level: debug, info, warn, error
 log_level = "info"

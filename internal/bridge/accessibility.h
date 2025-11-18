@@ -101,6 +101,13 @@ int getElementCenter(void *element, CGPoint *outPoint);
 /// @param position Target position
 void moveMouse(CGPoint position);
 
+/// Move mouse cursor smoothly to position
+/// @param startPosition Starting position
+/// @param endPosition Target position
+/// @param steps Number of steps for smooth movement
+/// @param delay Delay between steps in milliseconds
+void moveMouseSmooth(CGPoint startPosition, CGPoint endPosition, int steps, int delay);
+
 /// Check if element has click action
 /// @param element Element reference
 /// @return 1 if element is clickable, 0 otherwise

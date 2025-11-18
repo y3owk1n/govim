@@ -8,6 +8,7 @@
 #import "accessibility.h"
 #import <Cocoa/Cocoa.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #pragma mark - Permission Functions
 
@@ -636,6 +637,34 @@ void moveMouse(CGPoint position) {
         CGEventPost(kCGHIDEventTap, move);
         CFRelease(move);
         CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
+    }
+}
+
+/// Move mouse cursor smoothly to position
+/// @param startPosition Starting position
+/// @param endPosition Target position
+/// @param steps Number of steps for smooth movement
+/// @param delay Delay between steps in milliseconds
+void moveMouseSmooth(CGPoint startPosition, CGPoint endPosition, int steps, int delay) {
+    if (steps <= 0)
+        steps = 10;
+    if (delay <= 0)
+        delay = 5;
+
+    for (int i = 1; i <= steps; i++) {
+        double progress = (double)i / (double)steps;
+        CGPoint currentPos = CGPointMake(startPosition.x + (endPosition.x - startPosition.x) * progress,
+                                         startPosition.y + (endPosition.y - startPosition.y) * progress);
+
+        CGEventRef move = CGEventCreateMouseEvent(NULL, kCGEventMouseMoved, currentPos, kCGMouseButtonLeft);
+        if (move) {
+            CGEventPost(kCGHIDEventTap, move);
+            CFRelease(move);
+            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.001, false);
+        }
+
+        // Small delay for smooth movement
+        usleep(delay * 1000);
     }
 }
 
