@@ -158,8 +158,9 @@ func (a *App) generateAndNormalizeHints(elements []*accessibility.TreeNode) ([]*
 	// Normalize hint positions to window-local coordinates
 	// The overlay window is positioned at the screen origin, but the view uses local coordinates
 	for _, hint := range hintList {
-		hint.Position.X -= screenOffsetX
-		hint.Position.Y -= screenOffsetY
+		pos := hint.GetPosition()
+		hint.Position.X = pos.X - screenOffsetX
+		hint.Position.Y = pos.Y - screenOffsetY
 	}
 
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
