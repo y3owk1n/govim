@@ -41,7 +41,7 @@ type StateChange struct {
 	Next Mode
 }
 
-// Manager manages the overlay window and its state.
+// Manager coordinates overlay window management and mode transitions for all overlay types.
 type Manager struct {
 	window C.OverlayWindow
 	logger *zap.Logger
@@ -62,7 +62,7 @@ var (
 	once sync.Once
 )
 
-// Init initializes the overlay manager.
+// Init initializes the singleton overlay manager with a new overlay window.
 func Init(logger *zap.Logger) *Manager {
 	once.Do(func() {
 		w := C.createOverlayWindow()
@@ -76,13 +76,19 @@ func Init(logger *zap.Logger) *Manager {
 	return mgr
 }
 
-// Get returns the singleton overlay manager.
+// Get returns the singleton instance of the overlay manager.
 func Get() *Manager {
 	return mgr
 }
 
 // GetWindowPtr returns the window pointer.
 func (m *Manager) GetWindowPtr() unsafe.Pointer { return unsafe.Pointer(m.window) }
+
+// GetMode returns the current overlay mode.
+func (m *Manager) GetMode() Mode { return m.mode }
+
+// GetLogger returns the logger.
+func (m *Manager) GetLogger() *zap.Logger { return m.logger }
 
 // Show shows the overlay window.
 func (m *Manager) Show() { C.NeruShowOverlayWindow(m.window) }
@@ -96,7 +102,7 @@ func (m *Manager) Clear() { C.NeruClearOverlay(m.window) }
 // ResizeToActiveScreenSync resizes the overlay window to the active screen synchronously.
 func (m *Manager) ResizeToActiveScreenSync() { C.NeruResizeOverlayToActiveScreen(m.window) }
 
-// SwitchTo switches the overlay to the specified mode.
+// SwitchTo transitions the overlay to the specified mode and notifies subscribers.
 func (m *Manager) SwitchTo(next Mode) {
 	m.mu.Lock()
 	prev := m.mode
@@ -112,7 +118,7 @@ func (m *Manager) SwitchTo(next Mode) {
 	m.publish(StateChange{Prev: prev, Next: next})
 }
 
-// Subscribe registers a callback function for state changes.
+// Subscribe registers a callback function to be notified of overlay mode changes.
 func (m *Manager) Subscribe(fn func(StateChange)) uint64 {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -122,7 +128,7 @@ func (m *Manager) Subscribe(fn func(StateChange)) uint64 {
 	return id
 }
 
-// Unsubscribe removes a callback function for state changes.
+// Unsubscribe removes a previously registered callback function.
 func (m *Manager) Unsubscribe(id uint64) {
 	m.mu.Lock()
 	delete(m.subs, id)
@@ -137,8 +143,7 @@ func (m *Manager) Destroy() {
 	}
 }
 
-// UseHintOverlay sets the hint overlay renderer.
-// Wiring overlay renderers.
+// UseHintOverlay sets the hint overlay renderer for centralized management.
 func (m *Manager) UseHintOverlay(o *hints.Overlay) { m.hintOverlay = o }
 
 // UseGridOverlay sets the grid overlay renderer.
@@ -150,8 +155,20 @@ func (m *Manager) UseActionOverlay(o *action.Overlay) { m.actionOverlay = o }
 // UseScrollOverlay sets the scroll overlay renderer.
 func (m *Manager) UseScrollOverlay(o *scroll.Overlay) { m.scrollOverlay = o }
 
+// GetHintOverlay returns the hint overlay renderer.
+func (m *Manager) GetHintOverlay() *hints.Overlay { return m.hintOverlay }
+
+// GetGridOverlay returns the grid overlay renderer.
+func (m *Manager) GetGridOverlay() *grid.Overlay { return m.gridOverlay }
+
+// GetActionOverlay returns the action overlay renderer.
+func (m *Manager) GetActionOverlay() *action.Overlay { return m.actionOverlay }
+
+// GetScrollOverlay returns the scroll overlay renderer.
+func (m *Manager) GetScrollOverlay() *scroll.Overlay { return m.scrollOverlay }
+
 // DrawHintsWithStyle draws hints with the specified style.
-// Centralized draw methods.
+// DrawHintsWithStyle draws hints with the specified style using the hint overlay renderer.
 func (m *Manager) DrawHintsWithStyle(hs []*hints.Hint, style hints.StyleMode) error {
 	if m.hintOverlay == nil {
 		return nil
@@ -163,7 +180,7 @@ func (m *Manager) DrawHintsWithStyle(hs []*hints.Hint, style hints.StyleMode) er
 	return nil
 }
 
-// DrawActionHighlight draws an action highlight.
+// DrawActionHighlight renders an action highlight border using the action overlay renderer.
 func (m *Manager) DrawActionHighlight(x, y, w, h int) {
 	if m.actionOverlay == nil {
 		return
@@ -171,7 +188,7 @@ func (m *Manager) DrawActionHighlight(x, y, w, h int) {
 	m.actionOverlay.DrawActionHighlight(x, y, w, h)
 }
 
-// DrawScrollHighlight draws a scroll highlight.
+// DrawScrollHighlight renders a scroll highlight border using the scroll overlay renderer.
 func (m *Manager) DrawScrollHighlight(x, y, w, h int) {
 	if m.scrollOverlay == nil {
 		return
@@ -179,7 +196,7 @@ func (m *Manager) DrawScrollHighlight(x, y, w, h int) {
 	m.scrollOverlay.DrawScrollHighlight(x, y, w, h)
 }
 
-// DrawGrid draws a grid with the specified style.
+// DrawGrid renders a grid with the specified style using the grid overlay renderer.
 func (m *Manager) DrawGrid(g *grid.Grid, input string, style grid.Style) error {
 	if m.gridOverlay == nil {
 		return nil

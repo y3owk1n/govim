@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -11,11 +11,10 @@ import (
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/electron"
 	"github.com/y3owk1n/neru/internal/logger"
-	"github.com/y3owk1n/neru/internal/overlay"
 	"go.uber.org/zap"
 )
 
-// Run runs the application.
+// Run starts the main application loop and initializes all subsystems.
 func (a *App) Run() error {
 	a.logger.Info("Starting Neru")
 
@@ -41,7 +40,7 @@ func (a *App) Run() error {
 	return a.waitForShutdown()
 }
 
-// setupAppWatcherCallbacks configures the app watcher callbacks.
+// setupAppWatcherCallbacks configures callbacks for application watcher events.
 func (a *App) setupAppWatcherCallbacks() {
 	a.appWatcher.OnActivate(func(_, bundleID string) {
 		a.handleAppActivation(bundleID)
@@ -52,7 +51,7 @@ func (a *App) setupAppWatcherCallbacks() {
 	})
 }
 
-// handleScreenParametersChange handles display changes and resizes/regenerates overlays.
+// handleScreenParametersChange responds to display configuration changes by updating overlays.
 func (a *App) handleScreenParametersChange() {
 	if a.screenChangeProcessing {
 		return
@@ -61,8 +60,8 @@ func (a *App) handleScreenParametersChange() {
 	defer func() { a.screenChangeProcessing = false }()
 
 	a.logger.Info("Screen parameters changed; adjusting overlays")
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
+	if a.overlayManager != nil {
+		a.overlayManager.ResizeToActiveScreenSync()
 	}
 
 	// Handle grid overlay
@@ -73,8 +72,8 @@ func (a *App) handleScreenParametersChange() {
 		} else {
 			// Grid mode is active - resize the existing overlay window to match new screen bounds
 			// Resize overlay window to current active screen (where mouse is)
-			if overlay.Get() != nil {
-				overlay.Get().ResizeToActiveScreenSync()
+			if a.overlayManager != nil {
+				a.overlayManager.ResizeToActiveScreenSync()
 			}
 
 			// Regenerate the grid cells with updated screen bounds
@@ -95,8 +94,8 @@ func (a *App) handleScreenParametersChange() {
 			a.hintOverlayNeedsRefresh = true
 		} else {
 			// Hints mode is active - resize the overlay and regenerate hints
-			if overlay.Get() != nil {
-				overlay.Get().ResizeToActiveScreenSync()
+			if a.overlayManager != nil {
+				a.overlayManager.ResizeToActiveScreenSync()
 			}
 
 			// Regenerate hints for current action
@@ -117,12 +116,12 @@ func (a *App) handleScreenParametersChange() {
 	}
 
 	// Resize scroll overlay to current active screen (where mouse is)
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
+	if a.overlayManager != nil {
+		a.overlayManager.ResizeToActiveScreenSync()
 	}
 }
 
-// handleAppActivation handles application activation events.
+// handleAppActivation responds to application activation events.
 func (a *App) handleAppActivation(bundleID string) {
 	a.logger.Debug("App activated", zap.String("bundle_id", bundleID))
 
@@ -145,7 +144,7 @@ func (a *App) handleAppActivation(bundleID string) {
 	a.logger.Debug("Done handling app activation")
 }
 
-// handleAdditionalAccessibility handles electron/chromium/firefox accessibility.
+// handleAdditionalAccessibility configures accessibility support for Electron/Chromium/Firefox applications.
 func (a *App) handleAdditionalAccessibility(bundleID string) {
 	cfg := a.config.Hints.AdditionalAXSupport
 
@@ -168,7 +167,7 @@ func (a *App) handleAdditionalAccessibility(bundleID string) {
 	}
 }
 
-// printStartupInfo prints startup information to console.
+// printStartupInfo displays startup information including registered hotkeys.
 func (a *App) printStartupInfo() {
 	a.logger.Info("✓ Neru is running")
 
@@ -196,7 +195,7 @@ func (a *App) printStartupInfo() {
 	}
 }
 
-// waitForShutdown waits for shutdown signal with force-quit support.
+// waitForShutdown waits for shutdown signals and handles graceful termination.
 func (a *App) waitForShutdown() error {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -255,8 +254,8 @@ func (a *App) Cleanup() {
 	}
 
 	// Clean up centralized overlay window
-	if overlay.Get() != nil {
-		overlay.Get().Destroy()
+	if a.overlayManager != nil {
+		a.overlayManager.Destroy()
 	}
 
 	// Cleanup event tap

@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Hint represents a hint label for a UI element.
+// Hint represents a labeled UI element with positioning and sizing information for hint mode.
 type Hint struct {
 	Label         string
 	Element       *accessibility.TreeNode
@@ -20,13 +20,13 @@ type Hint struct {
 	MatchedPrefix string // Characters that have been typed
 }
 
-// Generator generates hints for UI elements.
+// Generator creates hint labels for UI elements based on their position and size.
 type Generator struct {
 	characters string
 	maxHints   int
 }
 
-// NewGenerator creates a new hint generator.
+// NewGenerator initializes a new hint generator with the specified character set.
 func NewGenerator(characters string) *Generator {
 	// Ensure we have at least some characters
 	if characters == "" {
@@ -50,7 +50,13 @@ func NewGenerator(characters string) *Generator {
 	}
 }
 
-// Generate generates hints for the given elements.
+// GetCharacters returns the characters used for hint generation.
+func (g *Generator) GetCharacters() string { return g.characters }
+
+// GetMaxHints returns the maximum number of hints that can be generated.
+func (g *Generator) GetMaxHints() int { return g.maxHints }
+
+// Generate creates hints for the given UI elements, sorted by position and limited by maximum count.
 func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error) {
 	if len(elements) == 0 {
 		return []*Hint{}, nil
@@ -97,15 +103,15 @@ func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error
 	return hints, nil
 }
 
-// generateAlphabetLabels generates alphabet-based hint labels.
-// Uses a strategy that avoids prefixes (no "a" if "aa" exists).
+// generateAlphabetLabels generates alphabet-based hint labels using a prefix-avoidance strategy.
+// Ensures no single character label conflicts with the start of a multi-character label.
 func (g *Generator) generateAlphabetLabels(count int) []string {
 	if count <= 0 {
 		return []string{}
 	}
 
 	labels := make([]string, 0, count)
-	chars := []rune(g.characters)
+	chars := []rune(g.GetCharacters())
 	numChars := len(chars)
 
 	var length int
@@ -149,10 +155,10 @@ func (g *Generator) generateAlphabetLabels(count int) []string {
 // GetBounds returns the bounding rectangle for a hint.
 func (h *Hint) GetBounds() image.Rectangle {
 	return image.Rectangle{
-		Min: h.Position,
+		Min: h.GetPosition(),
 		Max: image.Point{
-			X: h.Position.X + h.Size.X,
-			Y: h.Position.Y + h.Size.Y,
+			X: h.GetPosition().X + h.GetSize().X,
+			Y: h.GetPosition().Y + h.GetSize().Y,
 		},
 	}
 }
@@ -162,6 +168,21 @@ func (h *Hint) IsVisible(screenBounds image.Rectangle) bool {
 	bounds := h.GetBounds()
 	return bounds.Overlaps(screenBounds)
 }
+
+// GetLabel returns the hint label.
+func (h *Hint) GetLabel() string { return h.Label }
+
+// GetElement returns the hint element.
+func (h *Hint) GetElement() *accessibility.TreeNode { return h.Element }
+
+// GetPosition returns the hint position.
+func (h *Hint) GetPosition() image.Point { return h.Position }
+
+// GetSize returns the hint size.
+func (h *Hint) GetSize() image.Point { return h.Size }
+
+// GetMatchedPrefix returns the matched prefix.
+func (h *Hint) GetMatchedPrefix() string { return h.MatchedPrefix }
 
 // HintCollection manages a collection of hints.
 type HintCollection struct {
@@ -182,7 +203,7 @@ func NewHintCollection(hints []*Hint) *HintCollection {
 		prefix2: make(map[string][]*Hint),
 	}
 	for _, hint := range hints {
-		label := strings.ToUpper(hint.Label)
+		label := strings.ToUpper(hint.GetLabel())
 		hintCollection.byLabel[label] = hint
 		if len(label) >= 1 {
 			firstByte := label[0]
@@ -226,7 +247,7 @@ func (hc *HintCollection) FilterByPrefix(prefix string) []*Hint {
 		if bucket, ok := hc.prefix2[upperPrefix[:2]]; ok {
 			out := make([]*Hint, 0, len(bucket))
 			for _, hint := range bucket {
-				if strings.HasPrefix(hint.Label, upperPrefix) {
+				if strings.HasPrefix(hint.GetLabel(), upperPrefix) {
 					out = append(out, hint)
 				}
 			}
@@ -251,3 +272,12 @@ func (hc *HintCollection) Deactivate() {
 func (hc *HintCollection) Count() int {
 	return len(hc.hints)
 }
+
+// GetByLabelMap returns the hint map by label.
+func (hc *HintCollection) GetByLabelMap() map[string]*Hint { return hc.byLabel }
+
+// GetPrefix1Map returns the prefix1 map.
+func (hc *HintCollection) GetPrefix1Map() map[byte][]*Hint { return hc.prefix1 }
+
+// GetPrefix2Map returns the prefix2 map.
+func (hc *HintCollection) GetPrefix2Map() map[string][]*Hint { return hc.prefix2 }

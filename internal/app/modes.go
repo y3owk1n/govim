@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -18,11 +18,13 @@ import (
 
 const unknownAction = "unknown"
 
+// HintsContext holds the state and context for hint mode operations.
 type HintsContext struct {
 	selectedHint *hints.Hint
 	inActionMode bool
 }
 
+// GridContext holds the state and context for grid mode operations.
 type GridContext struct {
 	gridInstance **grid.Grid
 	gridOverlay  **grid.Overlay
@@ -88,10 +90,8 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 
 	// Always resize overlay to the active screen (where mouse is) before collecting elements
 	// This ensures proper positioning when switching between multiple displays
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-		a.hintOverlayNeedsRefresh = false
-	}
+	a.overlayManager.ResizeToActiveScreenSync()
+	a.hintOverlayNeedsRefresh = false
 
 	// Update roles for the current focused app
 	a.updateRolesForCurrentApp()
@@ -110,23 +110,40 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		return
 	}
 
-	// Update mode and enable event tap
-	a.currentMode = ModeHints
 	a.hintsCtx.selectedHint = nil
-
-	// Enable event tap to capture keys (must be last to ensure proper initialization)
-	if a.eventTap != nil {
-		a.eventTap.Enable()
-	}
-	if overlay.Get() != nil {
-		overlay.Get().SwitchTo(overlay.ModeHints)
-	}
+	a.setModeHints()
 }
 
 // setupHints generates hints and draws them with appropriate styling.
 func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 	var msBefore runtime.MemStats
 	runtime.ReadMemStats(&msBefore)
+
+	// Generate and normalize hints
+	hintList, err := a.generateAndNormalizeHints(elements)
+	if err != nil {
+		return err
+	}
+
+	// Set up hints in the hint manager
+	hintCollection := hints.NewHintCollection(hintList)
+	a.hintManager.SetHints(hintCollection)
+
+	// Draw hints with mode-specific styling
+	drawErr := a.renderer.DrawHints(hintList)
+	if drawErr != nil {
+		return fmt.Errorf("failed to draw hints: %w", drawErr)
+	}
+	a.renderer.Show()
+
+	// Log performance metrics
+	a.logHintsSetupPerformance(hintList, msBefore)
+
+	return nil
+}
+
+// generateAndNormalizeHints generates hints and normalizes their positions.
+func (a *App) generateAndNormalizeHints(elements []*accessibility.TreeNode) ([]*hints.Hint, error) {
 	// Get active screen bounds to calculate offset for normalization
 	screenBounds := bridge.GetActiveScreenBounds()
 	screenOffsetX := screenBounds.Min.X
@@ -135,14 +152,15 @@ func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 	// Generate hints
 	hintList, err := a.hintGenerator.Generate(elements)
 	if err != nil {
-		return fmt.Errorf("failed to generate hints: %w", err)
+		return nil, fmt.Errorf("failed to generate hints: %w", err)
 	}
 
 	// Normalize hint positions to window-local coordinates
 	// The overlay window is positioned at the screen origin, but the view uses local coordinates
 	for _, hint := range hintList {
-		hint.Position.X -= screenOffsetX
-		hint.Position.Y -= screenOffsetY
+		pos := hint.GetPosition()
+		hint.Position.X = pos.X - screenOffsetX
+		hint.Position.Y = pos.Y - screenOffsetY
 	}
 
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
@@ -152,33 +170,18 @@ func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 			filtered = append(filtered, h)
 		}
 	}
-	hintList = filtered
 
-	// Set up hints in the hint manager
-	hintCollection := hints.NewHintCollection(hintList)
-	a.hintManager.SetHints(hintCollection)
+	return filtered, nil
+}
 
-	// Draw hints with mode-specific styling
-	style := hints.BuildStyle(a.config.Hints)
-	if overlay.Get() != nil {
-		err := overlay.Get().DrawHintsWithStyle(hintList, style)
-		if err != nil {
-			return fmt.Errorf("failed to draw hints: %w", err)
-		}
-		overlay.Get().Show()
-	} else {
-		err := a.hintOverlay.DrawHintsWithStyle(hintList, style)
-		if err != nil {
-			return fmt.Errorf("failed to draw hints: %w", err)
-		}
-	}
+// logHintsSetupPerformance logs performance metrics for hint setup.
+func (a *App) logHintsSetupPerformance(hintList []*hints.Hint, msBefore runtime.MemStats) {
 	var msAfter runtime.MemStats
 	runtime.ReadMemStats(&msAfter)
 	a.logger.Info("Hints setup perf",
 		zap.Int("hints", len(hintList)),
 		zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
 		zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
-	return nil
 }
 
 func (a *App) activateGridMode() {
@@ -207,10 +210,8 @@ func (a *App) activateGridMode() {
 
 	// Always resize overlay to the active screen (where mouse is) before drawing grid
 	// This ensures proper positioning when switching between multiple displays
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-		a.gridOverlayNeedsRefresh = false
-	}
+	a.renderer.ResizeActive()
+	a.gridOverlayNeedsRefresh = false
 
 	err := a.setupGrid()
 	if err != nil {
@@ -218,16 +219,7 @@ func (a *App) activateGridMode() {
 		return
 	}
 
-	// Update mode and enable event tap
-	a.currentMode = ModeGrid
-
-	// Enable event tap to capture keys
-	if a.eventTap != nil {
-		a.eventTap.Enable()
-	}
-	if overlay.Get() != nil {
-		overlay.Get().SwitchTo(overlay.ModeGrid)
-	}
+	a.setModeGrid()
 
 	a.logger.Info("Grid mode activated", zap.String("action", actionString))
 	a.logger.Info("Type a grid label to select a location")
@@ -237,6 +229,36 @@ func (a *App) activateGridMode() {
 func (a *App) setupGrid() error {
 	// Create grid with active screen bounds (screen containing mouse cursor)
 	// This ensures proper multi-monitor support
+	gridInstance := a.createGridInstance()
+
+	// Update grid overlay configuration
+	a.updateGridOverlayConfig()
+
+	// Ensure the overlay is properly sized for the active screen
+	a.overlayManager.ResizeToActiveScreenSync()
+
+	// Reset the grid manager state when setting up the grid
+	if a.gridManager != nil {
+		a.gridManager.Reset()
+	}
+
+	// Initialize manager with the new grid
+	a.initializeGridManager(gridInstance)
+
+	a.gridRouter = grid.NewRouter(a.gridManager, a.logger)
+
+	// Draw initial grid
+	initErr := a.renderer.DrawGrid(gridInstance, "")
+	if initErr != nil {
+		return fmt.Errorf("failed to draw grid: %w", initErr)
+	}
+	a.renderer.Show()
+
+	return nil
+}
+
+// createGridInstance creates a new grid instance with proper bounds and characters.
+func (a *App) createGridInstance() *grid.Grid {
 	screenBounds := bridge.GetActiveScreenBounds()
 
 	// Normalize bounds to window-local coordinates (0,0 origin)
@@ -250,22 +272,17 @@ func (a *App) setupGrid() error {
 	gridInstance := grid.NewGrid(characters, bounds, a.logger)
 	*a.gridCtx.gridInstance = gridInstance
 
+	return gridInstance
+}
+
+// updateGridOverlayConfig updates the grid overlay configuration.
+func (a *App) updateGridOverlayConfig() {
 	// Grid overlay already created in NewApp - update its config and use it
 	(*a.gridCtx.gridOverlay).UpdateConfig(a.config.Grid)
+}
 
-	// Ensure the overlay is properly sized for the active screen
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-	}
-
-	// Reset the grid manager state when setting up the grid
-	if a.gridManager != nil {
-		a.gridManager.Reset()
-	}
-
-	// Get style for current action
-	gridStyle := grid.BuildStyle(a.config.Grid)
-
+// initializeGridManager initializes the grid manager with the new grid instance.
+func (a *App) initializeGridManager(gridInstance *grid.Grid) {
 	// Subgrid configuration and keys (fallback to grid characters): always 3x3
 	keys := strings.TrimSpace(a.config.Grid.SublayerKeys)
 	if keys == "" {
@@ -281,56 +298,22 @@ func (a *App) setupGrid() error {
 
 		// special case to handle only when exiting subgrid
 		if forceRedraw {
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				err := overlay.Get().DrawGrid(gridInstance, input, gridStyle)
-				if err != nil {
-					return
-				}
-				overlay.Get().Show()
-			} else {
-				(*a.gridCtx.gridOverlay).Clear()
-				err := (*a.gridCtx.gridOverlay).Draw(gridInstance, input, gridStyle)
-				if err != nil {
-					return
-				}
+			a.renderer.Clear()
+			gridErr := a.renderer.DrawGrid(gridInstance, input)
+			if gridErr != nil {
+				return
 			}
+			a.renderer.Show()
 		}
 
 		// Set hideUnmatched based on whether we have input and the config setting
 		hideUnmatched := a.config.Grid.HideUnmatched && len(input) > 0
-		if overlay.Get() != nil {
-			overlay.Get().SetHideUnmatched(hideUnmatched)
-			overlay.Get().UpdateGridMatches(input)
-		} else {
-			(*a.gridCtx.gridOverlay).SetHideUnmatched(hideUnmatched)
-			(*a.gridCtx.gridOverlay).UpdateMatches(input)
-		}
+		a.renderer.SetHideUnmatched(hideUnmatched)
+		a.renderer.UpdateGridMatches(input)
 	}, func(cell *grid.Cell) {
 		// Draw 3x3 subgrid inside selected cell
-		if overlay.Get() != nil {
-			overlay.Get().ShowSubgrid(cell, gridStyle)
-		} else {
-			(*a.gridCtx.gridOverlay).ShowSubgrid(cell, gridStyle)
-		}
+		a.renderer.ShowSubgrid(cell)
 	}, a.logger)
-	a.gridRouter = grid.NewRouter(a.gridManager, a.logger)
-
-	// Draw initial grid
-	if overlay.Get() != nil {
-		err := overlay.Get().DrawGrid(gridInstance, "", gridStyle)
-		if err != nil {
-			return fmt.Errorf("failed to draw grid: %w", err)
-		}
-		overlay.Get().Show()
-	} else {
-		err := (*a.gridCtx.gridOverlay).Draw(gridInstance, "", gridStyle)
-		if err != nil {
-			return fmt.Errorf("failed to draw grid: %w", err)
-		}
-	}
-
-	return nil
 }
 
 // handleActiveKey dispatches key events by current mode.
@@ -340,10 +323,8 @@ func (a *App) handleKeyPress(key string) {
 		// Handle escape to exit standalone scroll
 		if key == "\x1b" || key == "escape" {
 			a.logger.Info("Exiting standalone scroll mode")
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				overlay.Get().Hide()
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			if a.eventTap != nil {
 				a.eventTap.Disable()
 			}
@@ -387,55 +368,39 @@ func (a *App) handleTabKey() {
 			// Re-activate hint mode while preserving action mode state
 			a.activateHintModeInternal(true)
 			a.logger.Info("Switched back to hints overlay mode")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeHints)
-			}
+			a.overlaySwitch(overlay.ModeHints)
 		} else {
 			// Switch to action mode
 			a.hintsCtx.inActionMode = true
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				overlay.Get().Hide()
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			a.drawHintsActionHighlight()
-			overlay.Get().Show()
+			a.overlayManager.Show()
 			a.logger.Info("Switched to hints action mode")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeAction)
-			}
+			a.overlaySwitch(overlay.ModeAction)
 		}
 	case ModeGrid:
 		if a.gridCtx.inActionMode {
 			// Switch back to overlay mode
 			a.gridCtx.inActionMode = false
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				overlay.Get().Hide()
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			// Re-setup grid to show grid again with proper refresh
 			err := a.setupGrid()
 			if err != nil {
 				a.logger.Error("Failed to re-setup grid", zap.Error(err))
 			}
 			a.logger.Info("Switched back to grid overlay mode")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeGrid)
-			}
+			a.overlaySwitch(overlay.ModeGrid)
 		} else {
 			// Switch to action mode
 			a.gridCtx.inActionMode = true
-			if a.gridCtx.gridOverlay != nil {
-				if overlay.Get() != nil {
-					overlay.Get().Clear()
-					overlay.Get().Hide()
-				}
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			a.drawGridActionHighlight()
-			overlay.Get().Show()
+			a.overlayManager.Show()
 			a.logger.Info("Switched to grid action mode")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeAction)
-			}
+			a.overlaySwitch(overlay.ModeAction)
 		}
 	case ModeIdle:
 		// Nothing to do in idle mode
@@ -450,15 +415,11 @@ func (a *App) handleEscapeKey() {
 		if a.hintsCtx.inActionMode {
 			// Exit action mode completely, go back to idle mode
 			a.hintsCtx.inActionMode = false
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				overlay.Get().Hide()
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			a.exitMode()
 			a.logger.Info("Exited hints action mode completely")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeIdle)
-			}
+			a.overlaySwitch(overlay.ModeIdle)
 			return
 		}
 		// Fall through to exit mode
@@ -466,15 +427,11 @@ func (a *App) handleEscapeKey() {
 		if a.gridCtx.inActionMode {
 			// Exit action mode completely, go back to idle mode
 			a.gridCtx.inActionMode = false
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				overlay.Get().Hide()
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			a.exitMode()
 			a.logger.Info("Exited grid action mode completely")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeIdle)
-			}
+			a.overlaySwitch(overlay.ModeIdle)
 			return
 		}
 		// Fall through to exit mode
@@ -483,9 +440,7 @@ func (a *App) handleEscapeKey() {
 		return
 	}
 	a.exitMode()
-	if overlay.Get() != nil {
-		overlay.Get().SwitchTo(overlay.ModeIdle)
-	}
+	a.setModeIdle()
 }
 
 // handleModeSpecificKey handles mode-specific key processing.
@@ -598,24 +553,8 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
 
 	// Check for control characters
 	if len(key) == 1 {
-		byteVal := key[0]
-		a.logger.Info("Checking control char", zap.Uint8("byte", byteVal))
-		// Only handle Ctrl+D / Ctrl+U here; let Tab (9) and other keys fall through to switch
-		if byteVal == 4 || byteVal == 21 {
-			op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
-			if ok {
-				*lastScrollKey = ""
-				switch op {
-				case "half_down":
-					a.logger.Info("Ctrl+D detected - half page down")
-					err = a.scrollController.ScrollDownHalfPage()
-					goto done
-				case "half_up":
-					a.logger.Info("Ctrl+U detected - half page up")
-					err = a.scrollController.ScrollUpHalfPage()
-					goto done
-				}
-			}
+		if a.handleControlScrollKey(key, *lastScrollKey, lastScrollKey) {
+			return
 		}
 	}
 
@@ -626,38 +565,8 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
 		zap.String("keyHex", fmt.Sprintf("%#v", key)),
 	)
 	switch key {
-	case "j":
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
-		if !ok {
-			return
-		}
-		if op == "down" {
-			err = a.scrollController.ScrollDown()
-		}
-	case "k":
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
-		if !ok {
-			return
-		}
-		if op == "up" {
-			err = a.scrollController.ScrollUp()
-		}
-	case "h":
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
-		if !ok {
-			return
-		}
-		if op == "left" {
-			err = a.scrollController.ScrollLeft()
-		}
-	case "l":
-		op, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
-		if !ok {
-			return
-		}
-		if op == "right" {
-			err = a.scrollController.ScrollRight()
-		}
+	case "j", "k", "h", "l":
+		err = a.handleDirectionalScrollKey(key, *lastScrollKey)
 	case "g": // gg for top (need to press twice)
 		operation, newLast, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
@@ -693,19 +602,67 @@ done:
 	}
 }
 
+// handleControlScrollKey handles control character scroll keys.
+func (a *App) handleControlScrollKey(key string, lastKey string, lastScrollKey *string) bool {
+	byteVal := key[0]
+	a.logger.Info("Checking control char", zap.Uint8("byte", byteVal))
+	// Only handle Ctrl+D / Ctrl+U here; let Tab (9) and other keys fall through to switch
+	if byteVal == 4 || byteVal == 21 {
+		op, _, ok := scroll.ParseKey(key, lastKey, a.logger)
+		if ok {
+			*lastScrollKey = ""
+			switch op {
+			case "half_down":
+				a.logger.Info("Ctrl+D detected - half page down")
+				return a.scrollController.ScrollDownHalfPage() != nil
+			case "half_up":
+				a.logger.Info("Ctrl+U detected - half page up")
+				return a.scrollController.ScrollUpHalfPage() != nil
+			}
+		}
+	}
+	return false
+}
+
+// handleDirectionalScrollKey handles directional scroll keys (j, k, h, l).
+func (a *App) handleDirectionalScrollKey(key string, lastKey string) error {
+	op, _, ok := scroll.ParseKey(key, lastKey, a.logger)
+	if !ok {
+		return nil
+	}
+
+	switch key {
+	case "j":
+		if op == "down" {
+			return a.scrollController.ScrollDown()
+		}
+	case "k":
+		if op == "up" {
+			return a.scrollController.ScrollUp()
+		}
+	case "h":
+		if op == "left" {
+			return a.scrollController.ScrollLeft()
+		}
+	case "l":
+		if op == "right" {
+			return a.scrollController.ScrollRight()
+		}
+	}
+	return nil
+}
+
 // drawHintsActionHighlight draws a highlight border around the active screen for hints action mode.
 func (a *App) drawHintsActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-	}
+	a.renderer.ResizeActive()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
-	// Draw action highlight using action overlay
-	a.actionOverlay.DrawActionHighlight(
+	// Draw action highlight using renderer
+	a.renderer.DrawActionHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
@@ -722,16 +679,14 @@ func (a *App) drawHintsActionHighlight() {
 // drawGridActionHighlight draws a highlight border around the active screen for grid action mode.
 func (a *App) drawGridActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-	}
+	a.renderer.ResizeActive()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
-	// Draw action highlight using action overlay
-	a.actionOverlay.DrawActionHighlight(
+	// Draw action highlight using renderer
+	a.renderer.DrawActionHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
@@ -747,24 +702,20 @@ func (a *App) drawGridActionHighlight() {
 
 func (a *App) drawScrollHighlightBorder() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-	}
+	a.renderer.ResizeActive()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
-	// Draw scroll highlight using scroll overlay
-	a.scrollOverlay.DrawScrollHighlight(
+	// Draw scroll highlight using renderer
+	a.renderer.DrawScrollHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
 		localBounds.Dy(),
 	)
-	if overlay.Get() != nil {
-		overlay.Get().SwitchTo(overlay.ModeScroll)
-	}
+	a.overlayManager.SwitchTo(overlay.ModeScroll)
 }
 
 // exitMode exits the current mode.
@@ -776,69 +727,85 @@ func (a *App) exitMode() {
 	a.logger.Info("Exiting current mode", zap.String("mode", a.getCurrModeString()))
 
 	// Mode-specific cleanup
+	a.performModeSpecificCleanup()
+
+	// Common cleanup
+	a.performCommonCleanup()
+
+	// Cursor restoration
+	a.handleCursorRestoration()
+}
+
+// performModeSpecificCleanup handles mode-specific cleanup logic.
+func (a *App) performModeSpecificCleanup() {
 	switch a.currentMode {
 	case ModeHints:
-		// Reset action mode state
-		a.hintsCtx.inActionMode = false
-
-		if a.hintManager != nil {
-			a.hintManager.Reset()
-		}
-		a.hintsCtx.selectedHint = nil
-
-		// Clear and hide overlay for hints
-		if overlay.Get() != nil {
-			overlay.Get().Clear()
-			overlay.Get().Hide()
-		}
-
-		// Also clear and hide action overlay
-		if overlay.Get() != nil {
-			overlay.Get().Clear()
-			overlay.Get().Hide()
-		}
-
-		var ms runtime.MemStats
-		runtime.ReadMemStats(&ms)
-		a.logger.Info("Hints cleanup mem",
-			zap.Uint64("alloc_bytes", ms.Alloc),
-			zap.Uint64("sys_bytes", ms.Sys))
+		a.cleanupHintsMode()
 	case ModeGrid:
-		// Reset action mode state
-		a.gridCtx.inActionMode = false
-
-		if a.gridManager != nil {
-			a.gridManager.Reset()
-		}
-		// Hide overlays
-		if a.gridCtx != nil && a.gridCtx.gridOverlay != nil && *a.gridCtx.gridOverlay != nil {
-			a.logger.Info("Hiding grid overlay")
-			if overlay.Get() != nil {
-				overlay.Get().Hide()
-			}
-		}
-
-		// Also clear and hide action overlay
-		if overlay.Get() != nil {
-			overlay.Get().Clear()
-			overlay.Get().Hide()
-		}
-	case ModeIdle:
-		// Already in idle mode, nothing to do
-		return
+		a.cleanupGridMode()
 	default:
-		// No domain-specific cleanup for other modes yet
-		// But still clear and hide action overlay
-		if overlay.Get() != nil {
-			overlay.Get().Clear()
-			overlay.Get().Hide()
-		}
+		a.cleanupDefaultMode()
 	}
+}
 
-	// Clear scroll overlay
+// cleanupHintsMode handles cleanup for hints mode.
+func (a *App) cleanupHintsMode() {
+	// Reset action mode state
+	a.hintsCtx.inActionMode = false
+
+	if a.hintManager != nil {
+		a.hintManager.Reset()
+	}
+	a.hintsCtx.selectedHint = nil
+
+	// Clear and hide overlay for hints
+	a.overlayManager.Clear()
+	a.overlayManager.Hide()
+
+	// Also clear and hide action overlay
 	if overlay.Get() != nil {
 		overlay.Get().Clear()
+		overlay.Get().Hide()
 	}
+
+	var ms runtime.MemStats
+	runtime.ReadMemStats(&ms)
+	a.logger.Info("Hints cleanup mem",
+		zap.Uint64("alloc_bytes", ms.Alloc),
+		zap.Uint64("sys_bytes", ms.Sys))
+}
+
+// cleanupGridMode handles cleanup for grid mode.
+func (a *App) cleanupGridMode() {
+	// Reset action mode state
+	a.gridCtx.inActionMode = false
+
+	if a.gridManager != nil {
+		a.gridManager.Reset()
+	}
+	// Hide overlays
+	a.logger.Info("Hiding grid overlay")
+	a.overlayManager.Hide()
+
+	// Also clear and hide action overlay
+	a.overlayManager.Clear()
+	a.overlayManager.Hide()
+}
+
+// cleanupDefaultMode handles cleanup for default/unknown modes.
+func (a *App) cleanupDefaultMode() {
+	// No domain-specific cleanup for other modes yet
+	// But still clear and hide action overlay
+	if overlay.Get() != nil {
+		overlay.Get().Clear()
+		overlay.Get().Hide()
+	}
+}
+
+// performCommonCleanup handles common cleanup logic for all modes.
+func (a *App) performCommonCleanup() {
+	// Clear scroll overlay
+	a.overlayManager.Clear()
 
 	// Disable event tap when leaving active modes
 	if a.eventTap != nil {
@@ -849,16 +816,17 @@ func (a *App) exitMode() {
 	a.currentMode = ModeIdle
 	a.logger.Debug("Mode transition complete",
 		zap.String("to", "idle"))
-	if overlay.Get() != nil {
-		overlay.Get().SwitchTo(overlay.ModeIdle)
-	}
+	a.overlayManager.SwitchTo(overlay.ModeIdle)
 
 	// If a hotkey refresh was deferred while in an active mode, perform it now
 	if a.hotkeyRefreshPending {
 		a.hotkeyRefreshPending = false
 		go a.refreshHotkeysForAppOrCurrent("")
 	}
+}
 
+// handleCursorRestoration handles cursor position restoration on exit.
+func (a *App) handleCursorRestoration() {
 	shouldRestore := a.shouldRestoreCursorOnExit()
 	if shouldRestore {
 		currentBounds := bridge.GetActiveScreenBounds()
@@ -985,39 +953,30 @@ func (a *App) handleActionKey(key string, mode string) {
 	cursorPos := accessibility.GetCurrentCursorPosition()
 
 	// Map action keys to actions using configurable keys
+	var act string
 	switch key {
-	case a.config.Action.LeftClickKey: // Left click
+	case a.config.Action.LeftClickKey:
 		a.logger.Info(mode + " action: Left click")
-		err := accessibility.LeftClickAtPoint(cursorPos, false)
-		if err != nil {
-			a.logger.Error("Failed to perform left click", zap.Error(err))
-		}
-	case a.config.Action.RightClickKey: // Right click
+		act = string(ActionNameLeftClick)
+	case a.config.Action.RightClickKey:
 		a.logger.Info(mode + " action: Right click")
-		err := accessibility.RightClickAtPoint(cursorPos, false)
-		if err != nil {
-			a.logger.Error("Failed to perform right click", zap.Error(err))
-		}
-	case a.config.Action.MiddleClickKey: // Middle click
+		act = string(ActionNameRightClick)
+	case a.config.Action.MiddleClickKey:
 		a.logger.Info(mode + " action: Middle click")
-		err := accessibility.MiddleClickAtPoint(cursorPos, false)
-		if err != nil {
-			a.logger.Error("Failed to perform middle click", zap.Error(err))
-		}
-	case a.config.Action.MouseDownKey: // Mouse down
+		act = string(ActionNameMiddleClick)
+	case a.config.Action.MouseDownKey:
 		a.logger.Info(mode + " action: Mouse down")
-		err := accessibility.LeftMouseDownAtPoint(cursorPos)
-		if err != nil {
-			a.logger.Error("Failed to perform mouse down", zap.Error(err))
-		}
-	case a.config.Action.MouseUpKey: // Mouse up
+		act = string(ActionNameMouseDown)
+	case a.config.Action.MouseUpKey:
 		a.logger.Info(mode + " action: Mouse up")
-		err := accessibility.LeftMouseUpAtPoint(cursorPos)
-		if err != nil {
-			a.logger.Error("Failed to perform mouse up", zap.Error(err))
-		}
+		act = string(ActionNameMouseUp)
 	default:
 		a.logger.Debug("Unknown "+mode+" action key", zap.String("key", key))
+		return
+	}
+	err := performActionAtPoint(act, cursorPos)
+	if err != nil {
+		a.logger.Error("Failed to perform action", zap.Error(err))
 	}
 }
 

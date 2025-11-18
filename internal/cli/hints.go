@@ -5,6 +5,8 @@ import (
 	"github.com/y3owk1n/neru/internal/logger"
 )
 
+// hintsCmd represents the command to activate hint mode for direct clicking on UI elements.
+// Hint mode overlays labels on clickable elements for quick navigation.
 var hintsCmd = &cobra.Command{
 	Use:   "hints",
 	Short: "Launch hints mode in left click mode",

@@ -1,3 +1,5 @@
+// Package cli provides the command-line interface for the Neru application.
+// It uses the Cobra framework to handle command parsing and execution.
 package cli
 
 import (
@@ -29,6 +31,7 @@ var (
 )
 
 // rootCmd represents the base command when called without any subcommands.
+// It handles the main entry point and auto-launch functionality when running from an app bundle.
 var rootCmd = &cobra.Command{
 	Use:   "neru",
 	Short: "Neru - Keyboard-driven navigation for macOS",
@@ -46,7 +49,8 @@ vim-like navigation capabilities across all applications using accessibility API
 	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
+// Execute initializes and runs the CLI application.
+// It processes command-line arguments and executes the appropriate commands.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -69,7 +73,8 @@ func init() {
 	rootCmd.PersistentFlags().IntVar(&timeoutSec, "timeout", 5, "IPC timeout in seconds")
 }
 
-// isRunningFromAppBundle checks if the binary is running from a macOS app bundle.
+// isRunningFromAppBundle determines if the binary is executing within a macOS app bundle.
+// This is used to enable auto-launch behavior when Neru is started from its application bundle.
 func isRunningFromAppBundle() bool {
 	execPath, err := os.Executable()
 	if err != nil {
@@ -86,7 +91,8 @@ func isRunningFromAppBundle() bool {
 	return strings.Contains(realPath, ".app/Contents/MacOS")
 }
 
-// launchProgram launches the main neru program.
+// launchProgram starts the main Neru daemon process with the specified configuration.
+// It checks if Neru is already running and prevents duplicate instances.
 func launchProgram(cfgPath string) {
 	logger.Debug("Launching program", zap.String("config_path", cfgPath))
 
@@ -107,7 +113,8 @@ func launchProgram(cfgPath string) {
 	}
 }
 
-// sendCommand sends a command to the running neru instance.
+// sendCommand transmits a command to the running Neru daemon via IPC.
+// It handles timeouts and error responses from the daemon.
 func sendCommand(action string, args []string) error {
 	logger.Debug("Sending command",
 		zap.String("action", action),
@@ -150,7 +157,8 @@ func sendCommand(action string, args []string) error {
 	return nil
 }
 
-// requiresRunningInstance checks if neru is running and exits with error if not.
+// requiresRunningInstance verifies that the Neru daemon is currently running.
+// If the daemon is not running, it prints an error message and exits the program.
 func requiresRunningInstance() error {
 	logger.Debug("Checking if Neru is running")
 	if !ipc.IsServerRunning() {

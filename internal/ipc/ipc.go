@@ -1,8 +1,6 @@
-// Package ipc provides inter-process communication functionality.
-package ipc
-
-// Package ipc provides inter-process communication functionality for the Neru application.
+// Package ipc provides inter-process communication functionality for the Neru application,
 // allowing external commands to control the daemon via Unix domain sockets.
+package ipc
 
 import (
 	"context"
@@ -30,7 +28,7 @@ const (
 	ConnectionTimeout = 2 * time.Second
 )
 
-// Standard response codes for IPC operations.
+// Standard response codes used to indicate the result of IPC operations.
 const (
 	CodeOK             = "OK"
 	CodeUnknownCommand = "ERR_UNKNOWN_COMMAND"
@@ -41,14 +39,14 @@ const (
 	CodeActionFailed   = "ERR_ACTION_FAILED"
 )
 
-// Command represents an IPC command.
+// Command represents a command sent through the IPC interface.
 type Command struct {
 	Action string         `json:"action"`
 	Params map[string]any `json:"params,omitempty"`
 	Args   []string       `json:"args,omitempty"`
 }
 
-// Response represents an IPC response.
+// Response represents a response returned through the IPC interface.
 type Response struct {
 	Success bool   `json:"success"`
 	Message string `json:"message,omitempty"`
@@ -56,14 +54,14 @@ type Response struct {
 	Data    any    `json:"data,omitempty"`
 }
 
-// StatusData is the typed payload for the "status" IPC response.
+// StatusData represents the payload structure for status query responses.
 type StatusData struct {
 	Enabled bool   `json:"enabled"`
 	Mode    string `json:"mode"`
 	Config  string `json:"config"`
 }
 
-// Server represents the IPC server.
+// Server handles incoming IPC connections and routes commands to handlers.
 type Server struct {
 	listener   net.Listener
 	logger     *zap.Logger
@@ -72,16 +70,16 @@ type Server struct {
 	wg         sync.WaitGroup
 }
 
-// CommandHandler handles IPC commands.
+// CommandHandler defines the interface for processing IPC commands.
 type CommandHandler func(cmd Command) Response
 
-// GetSocketPath returns the path to the Unix socket.
+// GetSocketPath returns the filesystem path to the IPC Unix socket.
 func GetSocketPath() string {
 	tmpDir := os.TempDir()
 	return filepath.Join(tmpDir, SocketName)
 }
 
-// NewServer creates a new IPC server.
+// NewServer initializes a new IPC server instance with the specified handler.
 func NewServer(handler CommandHandler, logger *zap.Logger) (*Server, error) {
 	socketPath := GetSocketPath()
 
@@ -114,7 +112,7 @@ func NewServer(handler CommandHandler, logger *zap.Logger) (*Server, error) {
 	}, nil
 }
 
-// Start starts the IPC server.
+// Start begins accepting connections on the IPC server.
 func (s *Server) Start() {
 	go func() {
 		for {
@@ -135,7 +133,7 @@ func (s *Server) Start() {
 	}()
 }
 
-// Stop stops the IPC server.
+// Stop terminates the IPC server and cleans up resources.
 func (s *Server) Stop() error {
 	if s.listener != nil {
 		err := s.listener.Close()
@@ -166,7 +164,7 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-// handleConnection handles a single connection.
+// handleConnection processes a single client connection and executes the received command.
 func (s *Server) handleConnection(conn net.Conn) {
 	reqID := strconv.FormatInt(time.Now().UnixNano(), 10)
 	log := s.logger.With(zap.String("req_id", reqID))
@@ -213,24 +211,24 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 }
 
-// Client represents an IPC client.
+// Client provides an interface for sending commands to the IPC server.
 type Client struct {
 	socketPath string
 }
 
-// NewClient creates a new IPC client.
+// NewClient initializes a new IPC client instance.
 func NewClient() *Client {
 	return &Client{
 		socketPath: GetSocketPath(),
 	}
 }
 
-// Send sends a command to the IPC server with timeout.
+// Send transmits a command to the IPC server using the default timeout.
 func (c *Client) Send(cmd Command) (Response, error) {
 	return c.SendWithTimeout(cmd, DefaultTimeout)
 }
 
-// SendWithTimeout sends a command to the IPC server with a custom timeout.
+// SendWithTimeout transmits a command to the IPC server with a specified timeout.
 func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, error) {
 	// Create a dialer with timeout
 	dialer := net.Dialer{
@@ -296,7 +294,7 @@ func (c *Client) SendWithTimeout(cmd Command, timeout time.Duration) (Response, 
 	return response, nil
 }
 
-// IsServerRunning checks if the IPC server is running.
+// IsServerRunning determines if the IPC server is currently accepting connections.
 func IsServerRunning() bool {
 	client := NewClient()
 	_, err := client.SendWithTimeout(Command{Action: "ping"}, 500*time.Millisecond)

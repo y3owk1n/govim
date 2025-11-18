@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Grid represents a flat 3-character coordinate grid (all positions visible at once).
+// Grid represents a coordinate grid system for spatial navigation with optimized cell sizing.
 type Grid struct {
 	characters string          // Characters used for coordinates (e.g., "asdfghjkl")
 	bounds     image.Rectangle // Screen bounds
@@ -16,30 +16,39 @@ type Grid struct {
 	index      map[string]*Cell
 }
 
-// Cell represents a grid cell with a 3-character coordinate.
+// Cell represents a grid cell containing coordinate, bounds, and center point information.
 type Cell struct {
 	Coordinate string          // 3-character coordinate (e.g., "AAA", "ABC")
 	Bounds     image.Rectangle // Cell bounds
 	Center     image.Point     // Center point
 }
 
+// GetCoordinate returns the 3-character coordinate.
+func (c *Cell) GetCoordinate() string { return c.Coordinate }
+
+// GetBounds returns the cell bounds.
+func (c *Cell) GetBounds() image.Rectangle { return c.Bounds }
+
+// GetCenter returns the center point.
+func (c *Cell) GetCenter() image.Point { return c.Center }
+
 // NewGrid creates a grid with automatically optimized cell sizes for the screen.
-// Cell sizes are dynamically calculated based on screen dimensions, resolution, and aspect ratio.
+// Cell sizes are dynamically calculated based on screen dimensions, resolution, and aspect ratio
 // to ensure optimal precision and usability across all display types.
 //
-// Grid layout uses spatial regions for predictable navigation.
-//   - Each region is identified by the first character (Region A, Region B, etc.).
-//   - Within each region, coordinates flow left-to-right, top-to-bottom.
-//   - Region A: AAA, ABA, ACA (left-to-right), then AAB, ABB, ACB (next row).
-//   - Regions flow left-to-right until screen width is filled.
-//   - Next region starts on new row below, continuing the pattern.
-//   - This allows users to think: "C** coordinates are in region C on the screen".
+// Grid layout uses spatial regions for predictable navigation:
+//   - Each region is identified by the first character (Region A, Region B, etc.)
+//   - Within each region, coordinates flow left-to-right, top-to-bottom
+//   - Region A: AAA, ABA, ACA (left-to-right), then AAB, ABB, ACB (next row)
+//   - Regions flow left-to-right until screen width is filled
+//   - Next region starts on new row below, continuing the pattern
+//   - This allows users to think: "C** coordinates are in region C on the screen"
 //
-// Cell sizing is fully automatic based on screen characteristics.
-//   - Very small screens (<1.5M pixels): 25-60px cells for maximum precision.
-//   - Small-medium screens (1.5-2.5M pixels): 30-80px cells.
-//   - Medium-large screens (2.5-4M pixels): 40-100px cells.
-//   - Very large screens (>4M pixels): 50-120px cells.
+// Cell sizing is fully automatic based on screen characteristics:
+//   - Very small screens (<1.5M pixels): 25-60px cells for maximum precision
+//   - Small-medium screens (1.5-2.5M pixels): 30-80px cells
+//   - Medium-large screens (2.5-4M pixels): 40-100px cells
+//   - Very large screens (>4M pixels): 50-120px cells
 func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Grid {
 	logger.Debug("Creating new grid",
 		zap.String("characters", characters),
@@ -145,7 +154,7 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 
 	idx := make(map[string]*Cell, len(cells))
 	for _, c := range cells {
-		idx[c.Coordinate] = c
+		idx[c.GetCoordinate()] = c
 	}
 
 	return &Grid{
@@ -155,6 +164,18 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 		index:      idx,
 	}
 }
+
+// GetCharacters returns the characters used for coordinates.
+func (g *Grid) GetCharacters() string { return g.characters }
+
+// GetBounds returns the screen bounds.
+func (g *Grid) GetBounds() image.Rectangle { return g.bounds }
+
+// GetCells returns all cells with 3-char coordinates.
+func (g *Grid) GetCells() []*Cell { return g.cells }
+
+// GetIndex returns the cell index map.
+func (g *Grid) GetIndex() map[string]*Cell { return g.index }
 
 // generateCellsWithRegions creates cells using spatial region logic.
 // Each region (identified by first char) fills left-to-right, top-to-bottom.
@@ -474,7 +495,7 @@ func (g *Grid) GetCellByCoordinate(coord string) *Cell {
 		}
 	}
 	for _, cell := range g.cells {
-		if cell.Coordinate == coord {
+		if cell.GetCoordinate() == coord {
 			return cell
 		}
 	}

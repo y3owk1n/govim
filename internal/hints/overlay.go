@@ -44,14 +44,14 @@ func resizeHintCompletionCallback(context unsafe.Pointer) {
 	hintCallbackLock.Unlock()
 }
 
-// Overlay manages the hint overlay window.
+// Overlay manages the rendering of hint overlays using native platform APIs.
 type Overlay struct {
 	window C.OverlayWindow
 	config config.HintsConfig
 	logger *zap.Logger
 }
 
-// StyleMode represents the style configuration for hints.
+// StyleMode represents the visual styling configuration for hint overlays.
 type StyleMode struct {
 	FontSize         int
 	FontFamily       string
@@ -65,6 +65,36 @@ type StyleMode struct {
 	BorderColor      string
 }
 
+// GetFontSize returns the font size.
+func (s StyleMode) GetFontSize() int { return s.FontSize }
+
+// GetFontFamily returns the font family.
+func (s StyleMode) GetFontFamily() string { return s.FontFamily }
+
+// GetBorderRadius returns the border radius.
+func (s StyleMode) GetBorderRadius() int { return s.BorderRadius }
+
+// GetPadding returns the padding.
+func (s StyleMode) GetPadding() int { return s.Padding }
+
+// GetBorderWidth returns the border width.
+func (s StyleMode) GetBorderWidth() int { return s.BorderWidth }
+
+// GetOpacity returns the opacity.
+func (s StyleMode) GetOpacity() float64 { return s.Opacity }
+
+// GetBackgroundColor returns the background color.
+func (s StyleMode) GetBackgroundColor() string { return s.BackgroundColor }
+
+// GetTextColor returns the text color.
+func (s StyleMode) GetTextColor() string { return s.TextColor }
+
+// GetMatchedTextColor returns the matched text color.
+func (s StyleMode) GetMatchedTextColor() string { return s.MatchedTextColor }
+
+// GetBorderColor returns the border color.
+func (s StyleMode) GetBorderColor() string { return s.BorderColor }
+
 // initPools initializes the object pools once.
 func initPools() {
 	hintPoolOnce.Do(func() {
@@ -73,7 +103,7 @@ func initPools() {
 	})
 }
 
-// NewOverlay creates a new overlay.
+// NewOverlay creates a new hint overlay instance with its own window.
 func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	window := C.createOverlayWindow()
 	if window == nil {
@@ -88,7 +118,7 @@ func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	}, nil
 }
 
-// NewOverlayWithWindow creates an overlay using a shared window.
+// NewOverlayWithWindow creates a hint overlay instance using a shared window.
 func NewOverlayWithWindow(
 	cfg config.HintsConfig,
 	logger *zap.Logger,
@@ -101,6 +131,17 @@ func NewOverlayWithWindow(
 		logger: logger,
 	}, nil
 }
+
+// GetWindow returns the underlying C overlay window.
+func (o *Overlay) GetWindow() C.OverlayWindow {
+	return o.window
+}
+
+// GetConfig returns the hints config.
+func (o *Overlay) GetConfig() config.HintsConfig { return o.config }
+
+// GetLogger returns the logger.
+func (o *Overlay) GetLogger() *zap.Logger { return o.logger }
 
 // Show shows the overlay.
 func (o *Overlay) Show() {
@@ -191,11 +232,6 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 // DrawHintsWithStyle draws hints on the overlay with custom style.
 func (o *Overlay) DrawHintsWithStyle(hints []*Hint, style StyleMode) error {
 	return o.drawHintsInternal(hints, style, true)
-}
-
-// GetWindow returns the underlying C overlay window.
-func (o *Overlay) GetWindow() C.OverlayWindow {
-	return o.window
 }
 
 // DrawTargetDot draws a small circular dot at the target position.
@@ -318,21 +354,21 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 
 	matchedCount := 0
 	for i, hint := range hints {
-		cLabels[i] = C.CString(hint.Label)
+		cLabels[i] = C.CString(hint.GetLabel())
 		cHints[i] = C.HintData{
 			label: cLabels[i],
 			position: C.CGPoint{
-				x: C.double(hint.Position.X),
-				y: C.double(hint.Position.Y),
+				x: C.double(hint.GetPosition().X),
+				y: C.double(hint.GetPosition().Y),
 			},
 			size: C.CGSize{
-				width:  C.double(hint.Size.X),
-				height: C.double(hint.Size.Y),
+				width:  C.double(hint.GetSize().X),
+				height: C.double(hint.GetSize().Y),
 			},
-			matchedPrefixLength: C.int(len(hint.MatchedPrefix)),
+			matchedPrefixLength: C.int(len(hint.GetMatchedPrefix())),
 		}
 
-		if len(hint.MatchedPrefix) > 0 {
+		if len(hint.GetMatchedPrefix()) > 0 {
 			matchedCount++
 		}
 	}

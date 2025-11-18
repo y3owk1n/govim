@@ -1,4 +1,6 @@
-// Package electron provides Electron application support functionality.
+// Package electron provides enhanced accessibility support for Electron-based applications.
+// It enables manual accessibility attributes for applications that don't properly expose
+// their UI elements to the macOS accessibility API.
 package electron
 
 import (
@@ -26,6 +28,8 @@ var (
 )
 
 // EnsureElectronAccessibility enables AXManualAccessibility for Electron-based applications.
+// This allows Neru to properly interact with Electron applications that don't expose their
+// UI elements correctly to the macOS accessibility API.
 func EnsureElectronAccessibility(bundleID string) bool {
 	app := accessibility.GetApplicationByBundleID(bundleID)
 
@@ -89,6 +93,7 @@ func EnsureElectronAccessibility(bundleID string) bool {
 }
 
 // ensureAccessibility enables AXEnhancedUserInterface for the specified application.
+// This is a generic function used by both Chromium and Firefox accessibility enablers.
 func ensureAccessibility(
 	bundleID string,
 	appType string,
@@ -145,16 +150,19 @@ func ensureAccessibility(
 }
 
 // EnsureChromiumAccessibility enables AXEnhancedUserInterface for Chromium-based applications.
+// This improves accessibility support for Chromium browsers and applications.
 func EnsureChromiumAccessibility(bundleID string) bool {
 	return ensureAccessibility(bundleID, "Chromium", chromiumEnabledPIDs, &chromiumPIDsMu)
 }
 
 // EnsureFirefoxAccessibility enables AXEnhancedUserInterface for Firefox-based applications.
+// This improves accessibility support for Firefox browsers and applications.
 func EnsureFirefoxAccessibility(bundleID string) bool {
 	return ensureAccessibility(bundleID, "Firefox", firefoxEnabledPIDs, &firefoxPIDsMu)
 }
 
 // KnownChromiumBundles contains known Chromium-based application bundle identifiers.
+// These applications benefit from AXEnhancedUserInterface accessibility improvements.
 var KnownChromiumBundles = []string{
 	"net.imput.helium",
 	"com.google.Chrome",
@@ -163,12 +171,14 @@ var KnownChromiumBundles = []string{
 }
 
 // KnownFirefoxBundles contains known Firefox-based application bundle identifiers.
+// These applications benefit from AXEnhancedUserInterface accessibility improvements.
 var KnownFirefoxBundles = []string{
 	"org.mozilla.firefox",
 	"app.zen-browser.zen",
 }
 
 // KnownElectronBundles contains known Electron-based application bundle identifiers.
+// These applications require manual accessibility attribute toggling to work properly.
 var KnownElectronBundles = []string{
 	// electrons
 	"com.microsoft.VSCode",
@@ -202,6 +212,7 @@ func ShouldEnableElectronSupport(bundleID string, additionalBundles []string) bo
 }
 
 // ShouldEnableChromiumSupport determines if Chromium accessibility should be enabled for the provided bundle.
+// This function checks both known Chromium bundles and user-provided overrides.
 func ShouldEnableChromiumSupport(bundleID string, additionalBundles []string) bool {
 	if bundleID == "" {
 		return false
@@ -223,6 +234,7 @@ func ShouldEnableChromiumSupport(bundleID string, additionalBundles []string) bo
 }
 
 // ShouldEnableFirefoxSupport determines if Firefox accessibility should be enabled for the provided bundle.
+// This function checks both known Firefox bundles and user-provided overrides.
 func ShouldEnableFirefoxSupport(bundleID string, additionalBundles []string) bool {
 	if bundleID == "" {
 		return false
@@ -258,6 +270,7 @@ func IsLikelyElectronBundle(bundleID string) bool {
 }
 
 // IsLikelyChromiumBundle returns true if the provided bundle identifier matches a known Chromium signature.
+// This helps identify applications that would benefit from AXEnhancedUserInterface accessibility improvements.
 func IsLikelyChromiumBundle(bundleID string) bool {
 	lower := strings.ToLower(strings.TrimSpace(bundleID))
 	if lower == "" {
@@ -274,6 +287,7 @@ func IsLikelyChromiumBundle(bundleID string) bool {
 }
 
 // IsLikelyFirefoxBundle returns true if the provided bundle identifier matches a known Firefox signature.
+// This helps identify applications that would benefit from AXEnhancedUserInterface accessibility improvements.
 func IsLikelyFirefoxBundle(bundleID string) bool {
 	lower := strings.ToLower(strings.TrimSpace(bundleID))
 	if lower == "" {
@@ -289,6 +303,8 @@ func IsLikelyFirefoxBundle(bundleID string) bool {
 	return false
 }
 
+// matchesAdditionalBundle checks if a bundle ID matches any user-provided additional bundles.
+// It supports both exact matches and wildcard patterns (ending with *).
 func matchesAdditionalBundle(bundleID string, additionalBundles []string) bool {
 	if len(additionalBundles) == 0 {
 		return false

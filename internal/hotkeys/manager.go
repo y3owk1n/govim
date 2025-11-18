@@ -1,4 +1,5 @@
-// Package hotkeys provides hotkey management functionality.
+// Package hotkeys provides functionality for registering and handling global hotkeys
+// in the Neru application using the Carbon Event Manager API.
 package hotkeys
 
 /*
@@ -19,16 +20,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// Package hotkeys provides functionality for registering and handling global hotkeys
-// in the Neru application using the Carbon Event Manager API.
-
-// HotkeyID represents a unique hotkey identifier.
+// HotkeyID represents a unique identifier for a registered hotkey.
 type HotkeyID int
 
-// Callback is called when a hotkey is pressed.
+// Callback defines the function signature for hotkey event handlers.
 type Callback func()
 
-// Manager manages global hotkeys.
+// Manager handles the registration, unregistration, and dispatching of global hotkeys.
+// It maintains a mapping of hotkey IDs to their corresponding callback functions.
 type Manager struct {
 	callbacks map[HotkeyID]Callback
 	mu        sync.RWMutex
@@ -36,7 +35,8 @@ type Manager struct {
 	nextID    HotkeyID
 }
 
-// NewManager creates a new hotkey manager.
+// NewManager creates and initializes a new hotkey manager instance.
+// The manager is ready to register hotkeys immediately after creation.
 func NewManager(logger *zap.Logger) *Manager {
 	manager := &Manager{
 		callbacks: make(map[HotkeyID]Callback),
@@ -47,7 +47,9 @@ func NewManager(logger *zap.Logger) *Manager {
 	return manager
 }
 
-// Register registers a global hotkey.
+// Register adds a new global hotkey that will trigger the provided callback when pressed.
+// The keyString parameter should follow the format "Cmd+Shift+X" or similar modifier combinations.
+// Returns the assigned HotkeyID and an error if registration fails.
 func (m *Manager) Register(keyString string, callback Callback) (HotkeyID, error) {
 	m.logger.Debug("Registering hotkey", zap.String("key", keyString))
 
@@ -94,7 +96,8 @@ func (m *Manager) Register(keyString string, callback Callback) (HotkeyID, error
 	return hotkeyID, nil
 }
 
-// Unregister unregisters a hotkey.
+// Unregister removes a previously registered hotkey by its ID.
+// After unregistering, the hotkey will no longer trigger its associated callback.
 func (m *Manager) Unregister(hotkeyID HotkeyID) {
 	m.logger.Debug("Unregistering hotkey", zap.Int("id", int(hotkeyID)))
 
@@ -107,7 +110,8 @@ func (m *Manager) Unregister(hotkeyID HotkeyID) {
 	m.logger.Info("Unregistered hotkey", zap.Int("id", int(hotkeyID)))
 }
 
-// UnregisterAll unregisters all hotkeys.
+// UnregisterAll removes all currently registered hotkeys.
+// This is typically called during application shutdown to clean up resources.
 func (m *Manager) UnregisterAll() {
 	m.logger.Debug("Unregistering all hotkeys")
 
@@ -120,7 +124,8 @@ func (m *Manager) UnregisterAll() {
 	m.logger.Info("Unregistered all hotkeys")
 }
 
-// handleCallback handles a hotkey callback from C.
+// handleCallback processes hotkey events received from the C callback bridge.
+// It looks up the appropriate callback function and executes it in a goroutine.
 func (m *Manager) handleCallback(hotkeyID HotkeyID) {
 	m.logger.Debug("Handling hotkey callback", zap.Int("id", int(hotkeyID)))
 
@@ -137,9 +142,11 @@ func (m *Manager) handleCallback(hotkeyID HotkeyID) {
 }
 
 // Global manager instance for C callbacks.
+// This allows the C bridge function to forward events to the appropriate manager instance.
 var globalManager *Manager
 
-// SetGlobalManager sets the global manager for C callbacks.
+// SetGlobalManager assigns the global manager instance used by the C callback bridge.
+// This should be called once during application initialization with the main hotkey manager.
 func SetGlobalManager(manager *Manager) {
 	if manager != nil {
 		manager.logger.Debug("Setting global hotkey manager")
@@ -150,6 +157,9 @@ func SetGlobalManager(manager *Manager) {
 	globalManager = manager
 }
 
+// hotkeyCallbackBridge serves as the C-to-Go callback bridge for hotkey events.
+// It forwards hotkey events to the global manager's handleCallback method.
+//
 //export hotkeyCallbackBridge
 func hotkeyCallbackBridge(hotkeyID C.int, _ unsafe.Pointer) {
 	if globalManager != nil {

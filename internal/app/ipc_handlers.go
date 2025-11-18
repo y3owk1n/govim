@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"os"
@@ -8,11 +8,10 @@ import (
 	"github.com/y3owk1n/neru/internal/accessibility"
 	"github.com/y3owk1n/neru/internal/config"
 	"github.com/y3owk1n/neru/internal/ipc"
-	"github.com/y3owk1n/neru/internal/overlay"
 	"go.uber.org/zap"
 )
 
-// handleIPCCommand handles IPC commands from the CLI.
+// handleIPCCommand processes IPC commands received from the CLI interface.
 func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 	a.logger.Info(
 		"Handling IPC command",
@@ -20,31 +19,13 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 		zap.String("args", strings.Join(cmd.Args, ", ")),
 	)
 
-	switch cmd.Action {
-	case "ping":
-		return a.handlePing(cmd)
-	case "start":
-		return a.handleStart(cmd)
-	case "stop":
-		return a.handleStop(cmd)
-	case modeHints:
-		return a.handleHints(cmd)
-	case modeGrid:
-		return a.handleGrid(cmd)
-	case "action":
-		return a.handleAction(cmd)
-	case "idle":
-		return a.handleIdle(cmd)
-	case "status":
-		return a.handleStatus(cmd)
-	case "config":
-		return a.handleConfig(cmd)
-	default:
-		return ipc.Response{
-			Success: false,
-			Message: "unknown command: " + cmd.Action,
-			Code:    ipc.CodeUnknownCommand,
-		}
+	if h, ok := a.cmdHandlers[cmd.Action]; ok {
+		return h(cmd)
+	}
+	return ipc.Response{
+		Success: false,
+		Message: "unknown command: " + cmd.Action,
+		Code:    ipc.CodeUnknownCommand,
 	}
 }
 
@@ -144,52 +125,18 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 	for _, param := range params {
 		var err error
 		switch param {
-		case "left_click":
-			err = accessibility.LeftClickAtPoint(cursorPos, false)
-		case "right_click":
-			err = accessibility.RightClickAtPoint(cursorPos, false)
-		case "mouse_up":
-			err = accessibility.LeftMouseUpAtPoint(cursorPos)
-		case "mouse_down":
-			err = accessibility.LeftMouseDownAtPoint(cursorPos)
-		case "middle_click":
-			err = accessibility.MiddleClickAtPoint(cursorPos, false)
 		case "scroll":
-			a.skipCursorRestoreOnce = true
-			a.exitMode()
-
-			// Enable event tap and let user scroll interactively at current position
-			// Resize overlay to active screen for multi-monitor support
-			if overlay.Get() != nil {
-				overlay.Get().ResizeToActiveScreenSync()
-			}
-
-			// Draw highlight border if enabled
-			if a.config.Scroll.HighlightScrollArea {
-				a.drawScrollHighlightBorder()
-				if overlay.Get() != nil {
-					overlay.Get().Show()
-				}
-			}
-
-			// Enable event tap for scroll key handling
-			if a.eventTap != nil {
-				a.eventTap.Enable()
-			}
-
-			a.isScrollingActive = true
-
-			a.logger.Info("Interactive scroll activated")
-			a.logger.Info(
-				"Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom, Esc to exit",
-			)
+			a.startInteractiveScroll()
 			return ipc.Response{Success: true, Message: "scroll mode activated", Code: ipc.CodeOK}
 		default:
-			return ipc.Response{
-				Success: false,
-				Message: "unknown action: " + param,
-				Code:    ipc.CodeInvalidInput,
+			if !isKnownAction(param) {
+				return ipc.Response{
+					Success: false,
+					Message: "unknown action: " + param,
+					Code:    ipc.CodeInvalidInput,
+				}
 			}
+			err = performActionAtPoint(param, cursorPos)
 		}
 
 		if err != nil {
@@ -233,7 +180,7 @@ func (a *App) handleConfig(_ ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Data: a.config, Code: ipc.CodeOK}
 }
 
-// resolveConfigPath resolves the config path for status display.
+// resolveConfigPath determines the configuration file path for status reporting.
 func (a *App) resolveConfigPath() string {
 	cfgPath := a.ConfigPath
 

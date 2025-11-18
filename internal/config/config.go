@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// ActionConfig represents the configuration for action mode.
+// ActionConfig defines the visual and behavioral settings for action mode.
 type ActionConfig struct {
 	HighlightColor string `toml:"highlight_color"`
 	HighlightWidth int    `toml:"highlight_width"`
@@ -27,7 +27,7 @@ type ActionConfig struct {
 	MouseUpKey     string `toml:"mouse_up_key"`
 }
 
-// Config represents the complete application configuration.
+// Config represents the complete application configuration structure.
 type Config struct {
 	General GeneralConfig `toml:"general"`
 	Hotkeys HotkeysConfig `toml:"hotkeys"`
@@ -38,21 +38,21 @@ type Config struct {
 	Logging LoggingConfig `toml:"logging"`
 }
 
-// GeneralConfig represents general application configuration.
+// GeneralConfig defines general application-wide settings.
 type GeneralConfig struct {
 	ExcludedApps              []string `toml:"excluded_apps"`
 	AccessibilityCheckOnStart bool     `toml:"accessibility_check_on_start"`
 	RestoreCursorPosition     bool     `toml:"restore_cursor_position"`
 }
 
-// AppConfig represents application-specific configuration.
+// AppConfig defines application-specific settings for role customization.
 type AppConfig struct {
 	BundleID             string   `toml:"bundle_id"`
 	AdditionalClickable  []string `toml:"additional_clickable_roles"`
 	IgnoreClickableCheck bool     `toml:"ignore_clickable_check"`
 }
 
-// HotkeysConfig represents hotkey configuration.
+// HotkeysConfig defines hotkey mappings and their associated actions.
 type HotkeysConfig struct {
 	// Bindings holds hotkey -> action mappings parsed from the [hotkeys] table.
 	// Supported TOML format (preferred):
@@ -62,7 +62,7 @@ type HotkeysConfig struct {
 	Bindings map[string]string `toml:"bindings"`
 }
 
-// ScrollConfig represents scroll mode configuration.
+// ScrollConfig defines the behavior and appearance settings for scroll mode.
 type ScrollConfig struct {
 	ScrollStep          int    `toml:"scroll_step"`
 	ScrollStepHalf      int    `toml:"scroll_step_half"`
@@ -72,7 +72,7 @@ type ScrollConfig struct {
 	HighlightWidth      int    `toml:"highlight_width"`
 }
 
-// HintsConfig represents hints mode configuration.
+// HintsConfig defines the visual and behavioral settings for hints mode.
 type HintsConfig struct {
 	// General configurations
 	Enabled        bool    `toml:"enabled"`
@@ -106,7 +106,7 @@ type HintsConfig struct {
 	AdditionalAXSupport AdditionalAXSupport `toml:"additional_ax_support"`
 }
 
-// GridConfig represents grid mode configuration.
+// GridConfig defines the visual and behavioral settings for grid mode.
 type GridConfig struct {
 	// General configurations
 	Enabled        bool `toml:"enabled"`
@@ -134,7 +134,7 @@ type GridConfig struct {
 	HideUnmatched   bool `toml:"hide_unmatched"`
 }
 
-// LoggingConfig represents logging configuration.
+// LoggingConfig defines the logging behavior and file management settings.
 type LoggingConfig struct {
 	LogLevel          string `toml:"log_level"`
 	LogFile           string `toml:"log_file"`
@@ -147,7 +147,7 @@ type LoggingConfig struct {
 	MaxAge             int  `toml:"max_age"`       // Maximum number of days to retain old log files
 }
 
-// AdditionalAXSupport represents additional accessibility support configuration.
+// AdditionalAXSupport defines accessibility support for specific application frameworks.
 type AdditionalAXSupport struct {
 	Enable                    bool     `toml:"enable"`
 	AdditionalElectronBundles []string `toml:"additional_electron_bundles"`
@@ -155,7 +155,7 @@ type AdditionalAXSupport struct {
 	AdditionalFirefoxBundles  []string `toml:"additional_firefox_bundles"`
 }
 
-// DefaultConfig returns the default configuration.
+// DefaultConfig returns the default application configuration with sensible defaults.
 func DefaultConfig() *Config {
 	return &Config{
 		General: GeneralConfig{

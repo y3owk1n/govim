@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Element represents an accessibility UI element.
+// Element represents a UI element in the macOS accessibility hierarchy.
 type Element struct {
 	ref unsafe.Pointer
 }
@@ -63,7 +63,7 @@ func GetClickableRoles() []string {
 	return roles
 }
 
-// ElementInfo contains information about a UI element.
+// ElementInfo contains metadata and positioning information for a UI element.
 type ElementInfo struct {
 	Position        image.Point
 	Size            image.Point
@@ -75,13 +75,13 @@ type ElementInfo struct {
 	PID             int
 }
 
-// CheckAccessibilityPermissions checks if the app has accessibility permissions.
+// CheckAccessibilityPermissions verifies that the application has been granted accessibility permissions.
 func CheckAccessibilityPermissions() bool {
 	result := C.checkAccessibilityPermissions()
 	return result == 1
 }
 
-// GetSystemWideElement returns the system-wide accessibility element.
+// GetSystemWideElement returns the system-wide accessibility element representing the entire screen.
 func GetSystemWideElement() *Element {
 	ref := C.getSystemWideElement()
 	if ref == nil {
@@ -90,7 +90,7 @@ func GetSystemWideElement() *Element {
 	return &Element{ref: ref}
 }
 
-// GetFocusedApplication returns the currently focused application.
+// GetFocusedApplication returns the currently focused application element.
 func GetFocusedApplication() *Element {
 	ref := C.getFocusedApplication()
 	if ref == nil {
@@ -99,7 +99,7 @@ func GetFocusedApplication() *Element {
 	return &Element{ref: ref}
 }
 
-// GetApplicationByPID returns an application element by its process ID.
+// GetApplicationByPID returns an application element identified by its process ID.
 func GetApplicationByPID(pid int) *Element {
 	ref := C.getApplicationByPID(C.int(pid))
 	if ref == nil {
@@ -108,7 +108,7 @@ func GetApplicationByPID(pid int) *Element {
 	return &Element{ref: ref}
 }
 
-// GetApplicationByBundleID returns an application element by bundle identifier.
+// GetApplicationByBundleID returns an application element identified by its bundle identifier.
 func GetApplicationByBundleID(bundleID string) *Element {
 	cBundle := C.CString(bundleID)
 	defer C.free(unsafe.Pointer(cBundle))
@@ -120,7 +120,7 @@ func GetApplicationByBundleID(bundleID string) *Element {
 	return &Element{ref: ref}
 }
 
-// GetElementAtPosition returns the element at the specified screen position.
+// GetElementAtPosition returns the UI element at the specified screen coordinates.
 func GetElementAtPosition(x, y int) *Element {
 	pos := C.CGPoint{x: C.double(x), y: C.double(y)}
 	ref := C.getElementAtPosition(pos)
@@ -130,7 +130,7 @@ func GetElementAtPosition(x, y int) *Element {
 	return &Element{ref: ref}
 }
 
-// GetInfo returns information about the element.
+// GetInfo retrieves metadata and positioning information for the element.
 func (e *Element) GetInfo() (*ElementInfo, error) {
 	if e.ref == nil {
 		return nil, errors.New("element reference is nil")
@@ -169,7 +169,7 @@ func (e *Element) GetInfo() (*ElementInfo, error) {
 	return info, nil
 }
 
-// GetChildren returns all child elements with optional occlusion checking.
+// GetChildren returns all child elements of this element.
 func (e *Element) GetChildren() ([]*Element, error) {
 	if e.ref == nil {
 		return nil, errors.New("cannot get children: element reference is nil")
