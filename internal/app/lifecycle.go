@@ -11,7 +11,6 @@ import (
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/electron"
 	"github.com/y3owk1n/neru/internal/logger"
-	"github.com/y3owk1n/neru/internal/overlay"
 	"go.uber.org/zap"
 )
 
@@ -61,8 +60,8 @@ func (a *App) handleScreenParametersChange() {
 	defer func() { a.screenChangeProcessing = false }()
 
 	a.logger.Info("Screen parameters changed; adjusting overlays")
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
+	if a.overlayManager != nil {
+		a.overlayManager.ResizeToActiveScreenSync()
 	}
 
 	// Handle grid overlay
@@ -73,8 +72,8 @@ func (a *App) handleScreenParametersChange() {
 		} else {
 			// Grid mode is active - resize the existing overlay window to match new screen bounds
 			// Resize overlay window to current active screen (where mouse is)
-			if overlay.Get() != nil {
-				overlay.Get().ResizeToActiveScreenSync()
+			if a.overlayManager != nil {
+				a.overlayManager.ResizeToActiveScreenSync()
 			}
 
 			// Regenerate the grid cells with updated screen bounds
@@ -95,8 +94,8 @@ func (a *App) handleScreenParametersChange() {
 			a.hintOverlayNeedsRefresh = true
 		} else {
 			// Hints mode is active - resize the overlay and regenerate hints
-			if overlay.Get() != nil {
-				overlay.Get().ResizeToActiveScreenSync()
+			if a.overlayManager != nil {
+				a.overlayManager.ResizeToActiveScreenSync()
 			}
 
 			// Regenerate hints for current action
@@ -117,8 +116,8 @@ func (a *App) handleScreenParametersChange() {
 	}
 
 	// Resize scroll overlay to current active screen (where mouse is)
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
+	if a.overlayManager != nil {
+		a.overlayManager.ResizeToActiveScreenSync()
 	}
 }
 
@@ -255,8 +254,8 @@ func (a *App) Cleanup() {
 	}
 
 	// Clean up centralized overlay window
-	if overlay.Get() != nil {
-		overlay.Get().Destroy()
+	if a.overlayManager != nil {
+		a.overlayManager.Destroy()
 	}
 
 	// Cleanup event tap

@@ -60,6 +60,7 @@ type App struct {
 	config           *config.Config
 	ConfigPath       string
 	logger           *zap.Logger
+	overlayManager   *overlay.Manager
 	hotkeyManager    *hotkeys.Manager
 	hintGenerator    *hints.Generator
 	hintOverlay      *hints.Overlay
@@ -161,6 +162,7 @@ func New(cfg *config.Config) (*App, error) {
 	app := &App{
 		config:            cfg,
 		logger:            log,
+		overlayManager:    overlayManager,
 		hotkeyManager:     hotkeyMgr,
 		appWatcher:        appWatcher,
 		hintGenerator:     hintGen,

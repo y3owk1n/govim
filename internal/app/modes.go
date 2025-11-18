@@ -90,10 +90,8 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 
 	// Always resize overlay to the active screen (where mouse is) before collecting elements
 	// This ensures proper positioning when switching between multiple displays
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-		a.hintOverlayNeedsRefresh = false
-	}
+	a.overlayManager.ResizeToActiveScreenSync()
+	a.hintOverlayNeedsRefresh = false
 
 	// Update roles for the current focused app
 	a.updateRolesForCurrentApp()
@@ -120,9 +118,7 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 	if a.eventTap != nil {
 		a.eventTap.Enable()
 	}
-	if overlay.Get() != nil {
-		overlay.Get().SwitchTo(overlay.ModeHints)
-	}
+	a.overlayManager.SwitchTo(overlay.ModeHints)
 }
 
 // setupHints generates hints and draws them with appropriate styling.
@@ -162,18 +158,11 @@ func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 
 	// Draw hints with mode-specific styling
 	style := hints.BuildStyle(a.config.Hints)
-	if overlay.Get() != nil {
-		err := overlay.Get().DrawHintsWithStyle(hintList, style)
-		if err != nil {
-			return fmt.Errorf("failed to draw hints: %w", err)
-		}
-		overlay.Get().Show()
-	} else {
-		err := a.hintOverlay.DrawHintsWithStyle(hintList, style)
-		if err != nil {
-			return fmt.Errorf("failed to draw hints: %w", err)
-		}
+	drawErr := a.overlayManager.DrawHintsWithStyle(hintList, style)
+	if drawErr != nil {
+		return fmt.Errorf("failed to draw hints: %w", drawErr)
 	}
+	a.overlayManager.Show()
 	var msAfter runtime.MemStats
 	runtime.ReadMemStats(&msAfter)
 	a.logger.Info("Hints setup perf",
@@ -209,10 +198,8 @@ func (a *App) activateGridMode() {
 
 	// Always resize overlay to the active screen (where mouse is) before drawing grid
 	// This ensures proper positioning when switching between multiple displays
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-		a.gridOverlayNeedsRefresh = false
-	}
+	a.overlayManager.ResizeToActiveScreenSync()
+	a.gridOverlayNeedsRefresh = false
 
 	err := a.setupGrid()
 	if err != nil {
@@ -227,9 +214,7 @@ func (a *App) activateGridMode() {
 	if a.eventTap != nil {
 		a.eventTap.Enable()
 	}
-	if overlay.Get() != nil {
-		overlay.Get().SwitchTo(overlay.ModeGrid)
-	}
+	a.overlayManager.SwitchTo(overlay.ModeGrid)
 
 	a.logger.Info("Grid mode activated", zap.String("action", actionString))
 	a.logger.Info("Type a grid label to select a location")
@@ -256,9 +241,7 @@ func (a *App) setupGrid() error {
 	(*a.gridCtx.gridOverlay).UpdateConfig(a.config.Grid)
 
 	// Ensure the overlay is properly sized for the active screen
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-	}
+	a.overlayManager.ResizeToActiveScreenSync()
 
 	// Reset the grid manager state when setting up the grid
 	if a.gridManager != nil {
@@ -283,54 +266,30 @@ func (a *App) setupGrid() error {
 
 		// special case to handle only when exiting subgrid
 		if forceRedraw {
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				err := overlay.Get().DrawGrid(gridInstance, input, gridStyle)
-				if err != nil {
-					return
-				}
-				overlay.Get().Show()
-			} else {
-				(*a.gridCtx.gridOverlay).Clear()
-				err := (*a.gridCtx.gridOverlay).Draw(gridInstance, input, gridStyle)
-				if err != nil {
-					return
-				}
+			a.overlayManager.Clear()
+			gridErr := a.overlayManager.DrawGrid(gridInstance, input, gridStyle)
+			if gridErr != nil {
+				return
 			}
+			a.overlayManager.Show()
 		}
 
 		// Set hideUnmatched based on whether we have input and the config setting
 		hideUnmatched := a.config.Grid.HideUnmatched && len(input) > 0
-		if overlay.Get() != nil {
-			overlay.Get().SetHideUnmatched(hideUnmatched)
-			overlay.Get().UpdateGridMatches(input)
-		} else {
-			(*a.gridCtx.gridOverlay).SetHideUnmatched(hideUnmatched)
-			(*a.gridCtx.gridOverlay).UpdateMatches(input)
-		}
+		a.overlayManager.SetHideUnmatched(hideUnmatched)
+		a.overlayManager.UpdateGridMatches(input)
 	}, func(cell *grid.Cell) {
 		// Draw 3x3 subgrid inside selected cell
-		if overlay.Get() != nil {
-			overlay.Get().ShowSubgrid(cell, gridStyle)
-		} else {
-			(*a.gridCtx.gridOverlay).ShowSubgrid(cell, gridStyle)
-		}
+		a.overlayManager.ShowSubgrid(cell, gridStyle)
 	}, a.logger)
 	a.gridRouter = grid.NewRouter(a.gridManager, a.logger)
 
 	// Draw initial grid
-	if overlay.Get() != nil {
-		err := overlay.Get().DrawGrid(gridInstance, "", gridStyle)
-		if err != nil {
-			return fmt.Errorf("failed to draw grid: %w", err)
-		}
-		overlay.Get().Show()
-	} else {
-		err := (*a.gridCtx.gridOverlay).Draw(gridInstance, "", gridStyle)
-		if err != nil {
-			return fmt.Errorf("failed to draw grid: %w", err)
-		}
+	initErr := a.overlayManager.DrawGrid(gridInstance, "", gridStyle)
+	if initErr != nil {
+		return fmt.Errorf("failed to draw grid: %w", initErr)
 	}
+	a.overlayManager.Show()
 
 	return nil
 }
@@ -342,10 +301,8 @@ func (a *App) handleKeyPress(key string) {
 		// Handle escape to exit standalone scroll
 		if key == "\x1b" || key == "escape" {
 			a.logger.Info("Exiting standalone scroll mode")
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				overlay.Get().Hide()
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			if a.eventTap != nil {
 				a.eventTap.Disable()
 			}
@@ -389,55 +346,39 @@ func (a *App) handleTabKey() {
 			// Re-activate hint mode while preserving action mode state
 			a.activateHintModeInternal(true)
 			a.logger.Info("Switched back to hints overlay mode")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeHints)
-			}
+			a.overlayManager.SwitchTo(overlay.ModeHints)
 		} else {
 			// Switch to action mode
 			a.hintsCtx.inActionMode = true
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				overlay.Get().Hide()
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			a.drawHintsActionHighlight()
-			overlay.Get().Show()
+			a.overlayManager.Show()
 			a.logger.Info("Switched to hints action mode")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeAction)
-			}
+			a.overlayManager.SwitchTo(overlay.ModeAction)
 		}
 	case ModeGrid:
 		if a.gridCtx.inActionMode {
 			// Switch back to overlay mode
 			a.gridCtx.inActionMode = false
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				overlay.Get().Hide()
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			// Re-setup grid to show grid again with proper refresh
 			err := a.setupGrid()
 			if err != nil {
 				a.logger.Error("Failed to re-setup grid", zap.Error(err))
 			}
 			a.logger.Info("Switched back to grid overlay mode")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeGrid)
-			}
+			a.overlayManager.SwitchTo(overlay.ModeGrid)
 		} else {
 			// Switch to action mode
 			a.gridCtx.inActionMode = true
-			if a.gridCtx.gridOverlay != nil {
-				if overlay.Get() != nil {
-					overlay.Get().Clear()
-					overlay.Get().Hide()
-				}
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			a.drawGridActionHighlight()
-			overlay.Get().Show()
+			a.overlayManager.Show()
 			a.logger.Info("Switched to grid action mode")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeAction)
-			}
+			a.overlayManager.SwitchTo(overlay.ModeAction)
 		}
 	case ModeIdle:
 		// Nothing to do in idle mode
@@ -452,15 +393,11 @@ func (a *App) handleEscapeKey() {
 		if a.hintsCtx.inActionMode {
 			// Exit action mode completely, go back to idle mode
 			a.hintsCtx.inActionMode = false
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				overlay.Get().Hide()
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			a.exitMode()
 			a.logger.Info("Exited hints action mode completely")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeIdle)
-			}
+			a.overlayManager.SwitchTo(overlay.ModeIdle)
 			return
 		}
 		// Fall through to exit mode
@@ -468,15 +405,11 @@ func (a *App) handleEscapeKey() {
 		if a.gridCtx.inActionMode {
 			// Exit action mode completely, go back to idle mode
 			a.gridCtx.inActionMode = false
-			if overlay.Get() != nil {
-				overlay.Get().Clear()
-				overlay.Get().Hide()
-			}
+			a.overlayManager.Clear()
+			a.overlayManager.Hide()
 			a.exitMode()
 			a.logger.Info("Exited grid action mode completely")
-			if overlay.Get() != nil {
-				overlay.Get().SwitchTo(overlay.ModeIdle)
-			}
+			a.overlayManager.SwitchTo(overlay.ModeIdle)
 			return
 		}
 		// Fall through to exit mode
@@ -485,9 +418,7 @@ func (a *App) handleEscapeKey() {
 		return
 	}
 	a.exitMode()
-	if overlay.Get() != nil {
-		overlay.Get().SwitchTo(overlay.ModeIdle)
-	}
+	a.overlayManager.SwitchTo(overlay.ModeIdle)
 }
 
 // handleModeSpecificKey handles mode-specific key processing.
@@ -698,16 +629,14 @@ done:
 // drawHintsActionHighlight draws a highlight border around the active screen for hints action mode.
 func (a *App) drawHintsActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-	}
+	a.overlayManager.ResizeToActiveScreenSync()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
 	// Draw action highlight using action overlay
-	a.actionOverlay.DrawActionHighlight(
+	a.overlayManager.DrawActionHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
@@ -724,16 +653,14 @@ func (a *App) drawHintsActionHighlight() {
 // drawGridActionHighlight draws a highlight border around the active screen for grid action mode.
 func (a *App) drawGridActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-	}
+	a.overlayManager.ResizeToActiveScreenSync()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
 	// Draw action highlight using action overlay
-	a.actionOverlay.DrawActionHighlight(
+	a.overlayManager.DrawActionHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
@@ -749,24 +676,20 @@ func (a *App) drawGridActionHighlight() {
 
 func (a *App) drawScrollHighlightBorder() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	if overlay.Get() != nil {
-		overlay.Get().ResizeToActiveScreenSync()
-	}
+	a.overlayManager.ResizeToActiveScreenSync()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
 	// Draw scroll highlight using scroll overlay
-	a.scrollOverlay.DrawScrollHighlight(
+	a.overlayManager.DrawScrollHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
 		localBounds.Dy(),
 	)
-	if overlay.Get() != nil {
-		overlay.Get().SwitchTo(overlay.ModeScroll)
-	}
+	a.overlayManager.SwitchTo(overlay.ModeScroll)
 }
 
 // exitMode exits the current mode.
@@ -789,10 +712,8 @@ func (a *App) exitMode() {
 		a.hintsCtx.selectedHint = nil
 
 		// Clear and hide overlay for hints
-		if overlay.Get() != nil {
-			overlay.Get().Clear()
-			overlay.Get().Hide()
-		}
+		a.overlayManager.Clear()
+		a.overlayManager.Hide()
 
 		// Also clear and hide action overlay
 		if overlay.Get() != nil {
@@ -813,18 +734,12 @@ func (a *App) exitMode() {
 			a.gridManager.Reset()
 		}
 		// Hide overlays
-		if a.gridCtx != nil && a.gridCtx.gridOverlay != nil && *a.gridCtx.gridOverlay != nil {
-			a.logger.Info("Hiding grid overlay")
-			if overlay.Get() != nil {
-				overlay.Get().Hide()
-			}
-		}
+		a.logger.Info("Hiding grid overlay")
+		a.overlayManager.Hide()
 
 		// Also clear and hide action overlay
-		if overlay.Get() != nil {
-			overlay.Get().Clear()
-			overlay.Get().Hide()
-		}
+		a.overlayManager.Clear()
+		a.overlayManager.Hide()
 	case ModeIdle:
 		// Already in idle mode, nothing to do
 		return
@@ -838,9 +753,7 @@ func (a *App) exitMode() {
 	}
 
 	// Clear scroll overlay
-	if overlay.Get() != nil {
-		overlay.Get().Clear()
-	}
+	a.overlayManager.Clear()
 
 	// Disable event tap when leaving active modes
 	if a.eventTap != nil {
@@ -851,9 +764,7 @@ func (a *App) exitMode() {
 	a.currentMode = ModeIdle
 	a.logger.Debug("Mode transition complete",
 		zap.String("to", "idle"))
-	if overlay.Get() != nil {
-		overlay.Get().SwitchTo(overlay.ModeIdle)
-	}
+	a.overlayManager.SwitchTo(overlay.ModeIdle)
 
 	// If a hotkey refresh was deferred while in an active mode, perform it now
 	if a.hotkeyRefreshPending {
