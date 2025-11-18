@@ -36,8 +36,8 @@ func NewManager(
 ) *Manager {
 	// Determine label length from first cell (if grid exists)
 	labelLength := 3 // Default
-	if grid != nil && len(grid.cells) > 0 {
-		labelLength = len(grid.cells[0].Coordinate)
+	if grid != nil && len(grid.GetCells()) > 0 {
+		labelLength = len(grid.GetCells()[0].GetCoordinate())
 	}
 
 	return &Manager{
@@ -182,9 +182,9 @@ func (m *Manager) validateInputKey(key string) bool {
 	// by checking if there's any cell that starts with currentInput + key
 	potentialInput := m.currentInput + key
 	validPrefix := false
-	for _, cell := range m.grid.cells {
-		if len(cell.Coordinate) >= len(potentialInput) &&
-			strings.HasPrefix(cell.Coordinate, potentialInput) {
+	for _, cell := range m.grid.GetCells() {
+		if len(cell.GetCoordinate()) >= len(potentialInput) &&
+			strings.HasPrefix(cell.GetCoordinate(), potentialInput) {
 			validPrefix = true
 			break
 		}

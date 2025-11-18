@@ -154,7 +154,7 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 
 	idx := make(map[string]*Cell, len(cells))
 	for _, c := range cells {
-		idx[c.Coordinate] = c
+		idx[c.GetCoordinate()] = c
 	}
 
 	return &Grid{
@@ -495,7 +495,7 @@ func (g *Grid) GetCellByCoordinate(coord string) *Cell {
 		}
 	}
 	for _, cell := range g.cells {
-		if cell.Coordinate == coord {
+		if cell.GetCoordinate() == coord {
 			return cell
 		}
 	}

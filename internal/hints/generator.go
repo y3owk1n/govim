@@ -155,10 +155,10 @@ func (g *Generator) generateAlphabetLabels(count int) []string {
 // GetBounds returns the bounding rectangle for a hint.
 func (h *Hint) GetBounds() image.Rectangle {
 	return image.Rectangle{
-		Min: h.Position,
+		Min: h.GetPosition(),
 		Max: image.Point{
-			X: h.Position.X + h.Size.X,
-			Y: h.Position.Y + h.Size.Y,
+			X: h.GetPosition().X + h.GetSize().X,
+			Y: h.GetPosition().Y + h.GetSize().Y,
 		},
 	}
 }
@@ -203,7 +203,7 @@ func NewHintCollection(hints []*Hint) *HintCollection {
 		prefix2: make(map[string][]*Hint),
 	}
 	for _, hint := range hints {
-		label := strings.ToUpper(hint.Label)
+		label := strings.ToUpper(hint.GetLabel())
 		hintCollection.byLabel[label] = hint
 		if len(label) >= 1 {
 			firstByte := label[0]
@@ -247,7 +247,7 @@ func (hc *HintCollection) FilterByPrefix(prefix string) []*Hint {
 		if bucket, ok := hc.prefix2[upperPrefix[:2]]; ok {
 			out := make([]*Hint, 0, len(bucket))
 			for _, hint := range bucket {
-				if strings.HasPrefix(hint.Label, upperPrefix) {
+				if strings.HasPrefix(hint.GetLabel(), upperPrefix) {
 					out = append(out, hint)
 				}
 			}

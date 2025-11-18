@@ -49,7 +49,7 @@ func (r *Router) RouteKey(key string, selectedHintPresent bool) KeyResult {
 
 	// Delegate label input to the hint manager
 	if hint, ok := r.manager.HandleInput(key); ok {
-		r.logger.Debug("Hints router: Exact hint match found", zap.String("label", hint.Label))
+		r.logger.Debug("Hints router: Exact hint match found", zap.String("label", hint.GetLabel()))
 		res.ExactHint = hint
 		return res
 	}

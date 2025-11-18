@@ -96,8 +96,11 @@ func (m *Manager) HandleInput(key string) (*Hint, bool) {
 	m.onHintUpdate(filtered)
 
 	// Check for exact match
-	if len(filtered) == 1 && filtered[0].Label == m.currentInput {
-		m.logger.Info("Hint manager: Exact match found", zap.String("label", filtered[0].Label))
+	if len(filtered) == 1 && filtered[0].GetLabel() == m.currentInput {
+		m.logger.Info(
+			"Hint manager: Exact match found",
+			zap.String("label", filtered[0].GetLabel()),
+		)
 		return filtered[0], true
 	}
 

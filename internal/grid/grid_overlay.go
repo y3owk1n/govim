@@ -287,10 +287,10 @@ func (o *Overlay) UpdateMatches(prefix string) {
 // ShowSubgrid draws a 3x3 subgrid inside the selected cell.
 func (o *Overlay) ShowSubgrid(cell *Cell, style Style) {
 	o.logger.Debug("Showing subgrid",
-		zap.Int("cell_x", cell.Bounds.Min.X),
-		zap.Int("cell_y", cell.Bounds.Min.Y),
-		zap.Int("cell_width", cell.Bounds.Dx()),
-		zap.Int("cell_height", cell.Bounds.Dy()))
+		zap.Int("cell_x", cell.GetBounds().Min.X),
+		zap.Int("cell_y", cell.GetBounds().Min.Y),
+		zap.Int("cell_width", cell.GetBounds().Dx()),
+		zap.Int("cell_height", cell.GetBounds().Dy()))
 
 	keys := o.cfg.SublayerKeys
 	if strings.TrimSpace(keys) == "" {
@@ -486,11 +486,11 @@ func (o *Overlay) drawGridCells(cellsGo []*Cell, currentInput string, style Styl
 
 	matchedCount := 0
 	for cellIndex, cell := range cellsGo {
-		cLabels[cellIndex] = C.CString(cell.Coordinate)
+		cLabels[cellIndex] = C.CString(cell.GetCoordinate())
 
 		isMatched := 0
 		matchedPrefixLength := 0
-		if currentInput != "" && strings.HasPrefix(cell.Coordinate, currentInput) {
+		if currentInput != "" && strings.HasPrefix(cell.GetCoordinate(), currentInput) {
 			isMatched = 1
 			matchedCount++
 			matchedPrefixLength = len(currentInput)
@@ -498,10 +498,10 @@ func (o *Overlay) drawGridCells(cellsGo []*Cell, currentInput string, style Styl
 
 		var cGridCell C.GridCell
 		cGridCell.label = cLabels[cellIndex]
-		cGridCell.bounds.origin.x = C.double(cell.Bounds.Min.X)
-		cGridCell.bounds.origin.y = C.double(cell.Bounds.Min.Y)
-		cGridCell.bounds.size.width = C.double(cell.Bounds.Dx())
-		cGridCell.bounds.size.height = C.double(cell.Bounds.Dy())
+		cGridCell.bounds.origin.x = C.double(cell.GetBounds().Min.X)
+		cGridCell.bounds.origin.y = C.double(cell.GetBounds().Min.Y)
+		cGridCell.bounds.size.width = C.double(cell.GetBounds().Dx())
+		cGridCell.bounds.size.height = C.double(cell.GetBounds().Dy())
 		cGridCell.isMatched = C.int(isMatched)
 		cGridCell.isSubgrid = C.int(0) // Mark as regular grid cell
 		cGridCell.matchedPrefixLength = C.int(matchedPrefixLength)

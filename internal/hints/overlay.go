@@ -354,21 +354,21 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 
 	matchedCount := 0
 	for i, hint := range hints {
-		cLabels[i] = C.CString(hint.Label)
+		cLabels[i] = C.CString(hint.GetLabel())
 		cHints[i] = C.HintData{
 			label: cLabels[i],
 			position: C.CGPoint{
-				x: C.double(hint.Position.X),
-				y: C.double(hint.Position.Y),
+				x: C.double(hint.GetPosition().X),
+				y: C.double(hint.GetPosition().Y),
 			},
 			size: C.CGSize{
-				width:  C.double(hint.Size.X),
-				height: C.double(hint.Size.Y),
+				width:  C.double(hint.GetSize().X),
+				height: C.double(hint.GetSize().Y),
 			},
-			matchedPrefixLength: C.int(len(hint.MatchedPrefix)),
+			matchedPrefixLength: C.int(len(hint.GetMatchedPrefix())),
 		}
 
-		if len(hint.MatchedPrefix) > 0 {
+		if len(hint.GetMatchedPrefix()) > 0 {
 			matchedCount++
 		}
 	}
