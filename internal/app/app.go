@@ -61,14 +61,14 @@ type App struct {
 	ConfigPath       string
 	logger           *zap.Logger
 	overlayManager   *overlay.Manager
-	hotkeyManager    *hotkeys.Manager
+	hotkeyManager    hotkeyService
 	hintGenerator    *hints.Generator
 	hintOverlay      *hints.Overlay
 	scrollOverlay    *scroll.Overlay
 	actionOverlay    *action.Overlay
 	scrollController *scroll.Controller
-	eventTap         *eventtap.EventTap
-	ipcServer        *ipc.Server
+	eventTap         eventTap
+	ipcServer        ipcServer
 	appWatcher       *appwatcher.Watcher
 	currentMode      Mode
 	hintsRouter      *hints.Router
@@ -93,8 +93,43 @@ type App struct {
 	skipCursorRestoreOnce bool
 }
 
+type hotkeyService interface {
+	Register(keyString string, callback hotkeys.Callback) (hotkeys.HotkeyID, error)
+	UnregisterAll()
+}
+
+type eventTap interface {
+	Enable()
+	Disable()
+	Destroy()
+	SetHotkeys(hotkeys []string)
+}
+
+type ipcServer interface {
+	Start()
+	Stop() error
+}
+
+type eventTapFactory interface {
+	New(callback func(string), logger *zap.Logger) eventTap
+}
+
+type ipcServerFactory interface {
+	New(handler func(ipc.Command) ipc.Response, logger *zap.Logger) (ipcServer, error)
+}
+
+type deps struct {
+	Hotkeys          hotkeyService
+	EventTapFactory  eventTapFactory
+	IPCServerFactory ipcServerFactory
+}
+
 // New creates a new App instance.
 func New(cfg *config.Config) (*App, error) {
+	return newWithDeps(cfg, nil)
+}
+
+func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	var err error
 	err = logger.Init(
 		cfg.Logging.LogLevel,
@@ -138,8 +173,14 @@ func New(cfg *config.Config) (*App, error) {
 
 	appWatcher := appwatcher.NewWatcher(log)
 
-	hotkeyMgr := hotkeys.NewManager(log)
-	hotkeys.SetGlobalManager(hotkeyMgr)
+	var hotkeySvc hotkeyService
+	if deps != nil && deps.Hotkeys != nil {
+		hotkeySvc = deps.Hotkeys
+	} else {
+		mgr := hotkeys.NewManager(log)
+		hotkeys.SetGlobalManager(mgr)
+		hotkeySvc = mgr
+	}
 
 	var hintGen *hints.Generator
 	if cfg.Hints.Enabled {
@@ -163,7 +204,7 @@ func New(cfg *config.Config) (*App, error) {
 		config:            cfg,
 		logger:            log,
 		overlayManager:    overlayManager,
-		hotkeyManager:     hotkeyMgr,
+		hotkeyManager:     hotkeySvc,
 		appWatcher:        appWatcher,
 		hintGenerator:     hintGen,
 		hintOverlay:       hintOverlay,
@@ -233,7 +274,11 @@ func New(cfg *config.Config) (*App, error) {
 		}
 	}
 
-	app.eventTap = eventtap.NewEventTap(app.handleKeyPress, log)
+	if deps != nil && deps.EventTapFactory != nil {
+		app.eventTap = deps.EventTapFactory.New(app.handleKeyPress, log)
+	} else {
+		app.eventTap = eventtap.NewEventTap(app.handleKeyPress, log)
+	}
 	if app.eventTap == nil {
 		log.Warn("Event tap creation failed - key capture won't work")
 	} else {
@@ -255,11 +300,19 @@ func New(cfg *config.Config) (*App, error) {
 		app.eventTap.Disable()
 	}
 
-	ipcServer, err := ipc.NewServer(app.handleIPCCommand, log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create IPC server: %w", err)
+	if deps != nil && deps.IPCServerFactory != nil {
+		srv, srvErr := deps.IPCServerFactory.New(app.handleIPCCommand, log)
+		if srvErr != nil {
+			return nil, fmt.Errorf("failed to create IPC server: %w", srvErr)
+		}
+		app.ipcServer = srv
+	} else {
+		srv, srvErr := ipc.NewServer(app.handleIPCCommand, log)
+		if srvErr != nil {
+			return nil, fmt.Errorf("failed to create IPC server: %w", srvErr)
+		}
+		app.ipcServer = srv
 	}
-	app.ipcServer = ipcServer
 
 	overlayManager.UseScrollOverlay(scrollOverlay)
 	overlayManager.UseActionOverlay(actionOverlay)
