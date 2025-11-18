@@ -219,6 +219,3 @@ func (o *Overlay) Destroy() {
 		o.window = nil
 	}
 }
-
-// CleanupCallbackMap cleans up any pending callbacks in the map
-// CleanupCallbackMap removed: centralized overlay manager controls resizes
