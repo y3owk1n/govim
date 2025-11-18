@@ -173,7 +173,7 @@ func (m *Manager) handleLabelLengthReached() (image.Point, bool) {
 // validateInputKey validates the input key.
 func (m *Manager) validateInputKey(key string) bool {
 	// Check if character is valid for grid
-	if m.grid != nil && !strings.Contains(m.grid.characters, key) {
+	if m.grid != nil && !strings.Contains(m.grid.GetCharacters(), key) {
 		m.logger.Debug("Grid manager: Character not valid for grid", zap.String("key", key))
 		return false
 	}

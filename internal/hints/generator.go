@@ -111,7 +111,7 @@ func (g *Generator) generateAlphabetLabels(count int) []string {
 	}
 
 	labels := make([]string, 0, count)
-	chars := []rune(g.characters)
+	chars := []rune(g.GetCharacters())
 	numChars := len(chars)
 
 	var length int
