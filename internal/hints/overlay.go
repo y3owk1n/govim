@@ -65,6 +65,36 @@ type StyleMode struct {
 	BorderColor      string
 }
 
+// GetFontSize returns the font size.
+func (s StyleMode) GetFontSize() int { return s.FontSize }
+
+// GetFontFamily returns the font family.
+func (s StyleMode) GetFontFamily() string { return s.FontFamily }
+
+// GetBorderRadius returns the border radius.
+func (s StyleMode) GetBorderRadius() int { return s.BorderRadius }
+
+// GetPadding returns the padding.
+func (s StyleMode) GetPadding() int { return s.Padding }
+
+// GetBorderWidth returns the border width.
+func (s StyleMode) GetBorderWidth() int { return s.BorderWidth }
+
+// GetOpacity returns the opacity.
+func (s StyleMode) GetOpacity() float64 { return s.Opacity }
+
+// GetBackgroundColor returns the background color.
+func (s StyleMode) GetBackgroundColor() string { return s.BackgroundColor }
+
+// GetTextColor returns the text color.
+func (s StyleMode) GetTextColor() string { return s.TextColor }
+
+// GetMatchedTextColor returns the matched text color.
+func (s StyleMode) GetMatchedTextColor() string { return s.MatchedTextColor }
+
+// GetBorderColor returns the border color.
+func (s StyleMode) GetBorderColor() string { return s.BorderColor }
+
 // initPools initializes the object pools once.
 func initPools() {
 	hintPoolOnce.Do(func() {
@@ -101,6 +131,17 @@ func NewOverlayWithWindow(
 		logger: logger,
 	}, nil
 }
+
+// GetWindow returns the underlying C overlay window.
+func (o *Overlay) GetWindow() C.OverlayWindow {
+	return o.window
+}
+
+// GetConfig returns the hints config.
+func (o *Overlay) GetConfig() config.HintsConfig { return o.config }
+
+// GetLogger returns the logger.
+func (o *Overlay) GetLogger() *zap.Logger { return o.logger }
 
 // Show shows the overlay.
 func (o *Overlay) Show() {
@@ -191,11 +232,6 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 // DrawHintsWithStyle draws hints on the overlay with custom style.
 func (o *Overlay) DrawHintsWithStyle(hints []*Hint, style StyleMode) error {
 	return o.drawHintsInternal(hints, style, true)
-}
-
-// GetWindow returns the underlying C overlay window.
-func (o *Overlay) GetWindow() C.OverlayWindow {
-	return o.window
 }
 
 // DrawTargetDot draws a small circular dot at the target position.

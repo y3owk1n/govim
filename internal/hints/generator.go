@@ -50,6 +50,12 @@ func NewGenerator(characters string) *Generator {
 	}
 }
 
+// GetCharacters returns the characters used for hint generation.
+func (g *Generator) GetCharacters() string { return g.characters }
+
+// GetMaxHints returns the maximum number of hints that can be generated.
+func (g *Generator) GetMaxHints() int { return g.maxHints }
+
 // Generate generates hints for the given elements.
 func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error) {
 	if len(elements) == 0 {
@@ -163,6 +169,21 @@ func (h *Hint) IsVisible(screenBounds image.Rectangle) bool {
 	return bounds.Overlaps(screenBounds)
 }
 
+// GetLabel returns the hint label.
+func (h *Hint) GetLabel() string { return h.Label }
+
+// GetElement returns the hint element.
+func (h *Hint) GetElement() *accessibility.TreeNode { return h.Element }
+
+// GetPosition returns the hint position.
+func (h *Hint) GetPosition() image.Point { return h.Position }
+
+// GetSize returns the hint size.
+func (h *Hint) GetSize() image.Point { return h.Size }
+
+// GetMatchedPrefix returns the matched prefix.
+func (h *Hint) GetMatchedPrefix() string { return h.MatchedPrefix }
+
 // HintCollection manages a collection of hints.
 type HintCollection struct {
 	hints   []*Hint
@@ -251,3 +272,12 @@ func (hc *HintCollection) Deactivate() {
 func (hc *HintCollection) Count() int {
 	return len(hc.hints)
 }
+
+// GetByLabelMap returns the hint map by label.
+func (hc *HintCollection) GetByLabelMap() map[string]*Hint { return hc.byLabel }
+
+// GetPrefix1Map returns the prefix1 map.
+func (hc *HintCollection) GetPrefix1Map() map[byte][]*Hint { return hc.prefix1 }
+
+// GetPrefix2Map returns the prefix2 map.
+func (hc *HintCollection) GetPrefix2Map() map[string][]*Hint { return hc.prefix2 }

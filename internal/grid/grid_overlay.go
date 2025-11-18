@@ -115,6 +115,15 @@ func NewOverlayWithWindow(
 	}
 }
 
+// GetWindow returns the overlay window.
+func (o *Overlay) GetWindow() C.OverlayWindow { return o.window }
+
+// GetConfig returns the grid config.
+func (o *Overlay) GetConfig() config.GridConfig { return o.cfg }
+
+// GetLogger returns the logger.
+func (o *Overlay) GetLogger() *zap.Logger { return o.logger }
+
 // UpdateConfig updates the overlay's config (e.g., after config reload).
 func (o *Overlay) UpdateConfig(cfg config.GridConfig) {
 	o.cfg = cfg

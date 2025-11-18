@@ -23,6 +23,15 @@ type Cell struct {
 	Center     image.Point     // Center point
 }
 
+// GetCoordinate returns the 3-character coordinate.
+func (c *Cell) GetCoordinate() string { return c.Coordinate }
+
+// GetBounds returns the cell bounds.
+func (c *Cell) GetBounds() image.Rectangle { return c.Bounds }
+
+// GetCenter returns the center point.
+func (c *Cell) GetCenter() image.Point { return c.Center }
+
 // NewGrid creates a grid with automatically optimized cell sizes for the screen.
 // Cell sizes are dynamically calculated based on screen dimensions, resolution, and aspect ratio.
 // to ensure optimal precision and usability across all display types.
@@ -155,6 +164,18 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 		index:      idx,
 	}
 }
+
+// GetCharacters returns the characters used for coordinates.
+func (g *Grid) GetCharacters() string { return g.characters }
+
+// GetBounds returns the screen bounds.
+func (g *Grid) GetBounds() image.Rectangle { return g.bounds }
+
+// GetCells returns all cells with 3-char coordinates.
+func (g *Grid) GetCells() []*Cell { return g.cells }
+
+// GetIndex returns the cell index map.
+func (g *Grid) GetIndex() map[string]*Cell { return g.index }
 
 // generateCellsWithRegions creates cells using spatial region logic.
 // Each region (identified by first char) fills left-to-right, top-to-bottom.

@@ -73,6 +73,15 @@ func NewOverlayWithWindow(
 	}, nil
 }
 
+// GetWindow returns the overlay window.
+func (o *Overlay) GetWindow() C.OverlayWindow { return o.window }
+
+// GetConfig returns the scroll config.
+func (o *Overlay) GetConfig() config.ScrollConfig { return o.config }
+
+// GetLogger returns the logger.
+func (o *Overlay) GetLogger() *zap.Logger { return o.logger }
+
 // Show shows the overlay.
 func (o *Overlay) Show() {
 	o.logger.Debug("Showing scroll overlay")

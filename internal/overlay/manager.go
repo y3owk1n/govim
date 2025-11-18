@@ -84,6 +84,12 @@ func Get() *Manager {
 // GetWindowPtr returns the window pointer.
 func (m *Manager) GetWindowPtr() unsafe.Pointer { return unsafe.Pointer(m.window) }
 
+// GetMode returns the current overlay mode.
+func (m *Manager) GetMode() Mode { return m.mode }
+
+// GetLogger returns the logger.
+func (m *Manager) GetLogger() *zap.Logger { return m.logger }
+
 // Show shows the overlay window.
 func (m *Manager) Show() { C.NeruShowOverlayWindow(m.window) }
 
@@ -149,6 +155,18 @@ func (m *Manager) UseActionOverlay(o *action.Overlay) { m.actionOverlay = o }
 
 // UseScrollOverlay sets the scroll overlay renderer.
 func (m *Manager) UseScrollOverlay(o *scroll.Overlay) { m.scrollOverlay = o }
+
+// GetHintOverlay returns the hint overlay renderer.
+func (m *Manager) GetHintOverlay() *hints.Overlay { return m.hintOverlay }
+
+// GetGridOverlay returns the grid overlay renderer.
+func (m *Manager) GetGridOverlay() *grid.Overlay { return m.gridOverlay }
+
+// GetActionOverlay returns the action overlay renderer.
+func (m *Manager) GetActionOverlay() *action.Overlay { return m.actionOverlay }
+
+// GetScrollOverlay returns the scroll overlay renderer.
+func (m *Manager) GetScrollOverlay() *scroll.Overlay { return m.scrollOverlay }
 
 // DrawHintsWithStyle draws hints with the specified style.
 // Centralized draw methods.
