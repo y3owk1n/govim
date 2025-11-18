@@ -162,9 +162,6 @@ func (o *Overlay) Destroy() {
 	C.NeruDestroyOverlayWindow(o.window)
 }
 
-// CleanupCallbackMap cleans up any pending callbacks in the map
-// CleanupCallbackMap removed: centralized overlay manager controls resizes
-
 // ReplaceWindow atomically replaces the underlying overlay window on the main thread.
 func (o *Overlay) ReplaceWindow() {
 	C.NeruReplaceOverlayWindow(&o.window)
