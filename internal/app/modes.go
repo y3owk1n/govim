@@ -150,8 +150,7 @@ func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 	a.hintManager.SetHints(hintCollection)
 
 	// Draw hints with mode-specific styling
-	style := hints.BuildStyle(a.config.Hints)
-	drawErr := a.overlayManager.DrawHintsWithStyle(hintList, style)
+	drawErr := a.overlayManager.DrawHintsWithStyle(hintList, a.hintStyle)
 	if drawErr != nil {
 		return fmt.Errorf("failed to draw hints: %w", drawErr)
 	}
@@ -234,8 +233,7 @@ func (a *App) setupGrid() error {
 		a.gridManager.Reset()
 	}
 
-	// Get style for current action
-	gridStyle := grid.BuildStyle(a.config.Grid)
+	// Get style for current action (cached)
 
 	// Subgrid configuration and keys (fallback to grid characters): always 3x3
 	keys := strings.TrimSpace(a.config.Grid.SublayerKeys)
@@ -253,7 +251,7 @@ func (a *App) setupGrid() error {
 		// special case to handle only when exiting subgrid
 		if forceRedraw {
 			a.overlayManager.Clear()
-			gridErr := a.overlayManager.DrawGrid(gridInstance, input, gridStyle)
+			gridErr := a.overlayManager.DrawGrid(gridInstance, input, a.gridStyle)
 			if gridErr != nil {
 				return
 			}
@@ -266,12 +264,12 @@ func (a *App) setupGrid() error {
 		a.overlayManager.UpdateGridMatches(input)
 	}, func(cell *grid.Cell) {
 		// Draw 3x3 subgrid inside selected cell
-		a.overlayManager.ShowSubgrid(cell, gridStyle)
+		a.overlayManager.ShowSubgrid(cell, a.gridStyle)
 	}, a.logger)
 	a.gridRouter = grid.NewRouter(a.gridManager, a.logger)
 
 	// Draw initial grid
-	initErr := a.overlayManager.DrawGrid(gridInstance, "", gridStyle)
+	initErr := a.overlayManager.DrawGrid(gridInstance, "", a.gridStyle)
 	if initErr != nil {
 		return fmt.Errorf("failed to draw grid: %w", initErr)
 	}

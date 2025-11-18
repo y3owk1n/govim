@@ -77,6 +77,8 @@ type App struct {
 	gridManager      *grid.Manager
 	gridRouter       *grid.Router
 	gridCtx          *GridContext
+	hintStyle        hints.StyleMode
+	gridStyle        grid.Style
 
 	enabled                 bool
 	hotkeysRegistered       bool
@@ -219,9 +221,9 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	}
 
 	if cfg.Hints.Enabled {
+		app.hintStyle = hints.BuildStyle(cfg.Hints)
 		app.hintManager = hints.NewManager(func(hs []*hints.Hint) {
-			style := hints.BuildStyle(app.config.Hints)
-			err := app.hintOverlay.DrawHintsWithStyle(hs, style)
+			err := app.hintOverlay.DrawHintsWithStyle(hs, app.hintStyle)
 			if err != nil {
 				app.logger.Error("Failed to redraw hints", zap.Error(err))
 			}
@@ -248,6 +250,7 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	app.actionOverlay = actionOverlay
 
 	if cfg.Grid.Enabled {
+		app.gridStyle = grid.BuildStyle(cfg.Grid)
 		gridOverlay := grid.NewOverlayWithWindow(cfg.Grid, log, overlayManager.GetWindowPtr())
 		var gridInstance *grid.Grid
 		keys := strings.TrimSpace(cfg.Grid.SublayerKeys)
@@ -262,8 +265,7 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 			}
 			gridOverlay.UpdateMatches(app.gridManager.GetInput())
 		}, func(cell *grid.Cell) {
-			gridStyle := grid.BuildStyle(cfg.Grid)
-			gridOverlay.ShowSubgrid(cell, gridStyle)
+			gridOverlay.ShowSubgrid(cell, app.gridStyle)
 		}, log)
 
 		app.gridCtx = &GridContext{
