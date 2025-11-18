@@ -150,11 +150,11 @@ func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 	a.hintManager.SetHints(hintCollection)
 
 	// Draw hints with mode-specific styling
-	drawErr := a.renderer.drawHints(hintList)
+	drawErr := a.renderer.DrawHints(hintList)
 	if drawErr != nil {
 		return fmt.Errorf("failed to draw hints: %w", drawErr)
 	}
-	a.renderer.show()
+	a.renderer.Show()
 	var msAfter runtime.MemStats
 	runtime.ReadMemStats(&msAfter)
 	a.logger.Info("Hints setup perf",
@@ -190,7 +190,7 @@ func (a *App) activateGridMode() {
 
 	// Always resize overlay to the active screen (where mouse is) before drawing grid
 	// This ensures proper positioning when switching between multiple displays
-	a.renderer.resizeActive()
+	a.renderer.ResizeActive()
 	a.gridOverlayNeedsRefresh = false
 
 	err := a.setupGrid()
@@ -250,30 +250,30 @@ func (a *App) setupGrid() error {
 
 		// special case to handle only when exiting subgrid
 		if forceRedraw {
-			a.renderer.clear()
-			gridErr := a.renderer.drawGrid(gridInstance, input)
+			a.renderer.Clear()
+			gridErr := a.renderer.DrawGrid(gridInstance, input)
 			if gridErr != nil {
 				return
 			}
-			a.renderer.show()
+			a.renderer.Show()
 		}
 
 		// Set hideUnmatched based on whether we have input and the config setting
 		hideUnmatched := a.config.Grid.HideUnmatched && len(input) > 0
-		a.renderer.setHideUnmatched(hideUnmatched)
-		a.renderer.updateGridMatches(input)
+		a.renderer.SetHideUnmatched(hideUnmatched)
+		a.renderer.UpdateGridMatches(input)
 	}, func(cell *grid.Cell) {
 		// Draw 3x3 subgrid inside selected cell
-		a.renderer.showSubgrid(cell)
+		a.renderer.ShowSubgrid(cell)
 	}, a.logger)
 	a.gridRouter = grid.NewRouter(a.gridManager, a.logger)
 
 	// Draw initial grid
-	initErr := a.renderer.drawGrid(gridInstance, "")
+	initErr := a.renderer.DrawGrid(gridInstance, "")
 	if initErr != nil {
 		return fmt.Errorf("failed to draw grid: %w", initErr)
 	}
-	a.renderer.show()
+	a.renderer.Show()
 
 	return nil
 }
@@ -613,14 +613,14 @@ done:
 // drawHintsActionHighlight draws a highlight border around the active screen for hints action mode.
 func (a *App) drawHintsActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	a.renderer.resizeActive()
+	a.renderer.ResizeActive()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
 	// Draw action highlight using renderer
-	a.renderer.drawActionHighlight(
+	a.renderer.DrawActionHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
@@ -637,14 +637,14 @@ func (a *App) drawHintsActionHighlight() {
 // drawGridActionHighlight draws a highlight border around the active screen for grid action mode.
 func (a *App) drawGridActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	a.renderer.resizeActive()
+	a.renderer.ResizeActive()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
 	// Draw action highlight using renderer
-	a.renderer.drawActionHighlight(
+	a.renderer.DrawActionHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),
@@ -660,14 +660,14 @@ func (a *App) drawGridActionHighlight() {
 
 func (a *App) drawScrollHighlightBorder() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
-	a.renderer.resizeActive()
+	a.renderer.ResizeActive()
 
 	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
 	// Draw scroll highlight using renderer
-	a.renderer.drawScrollHighlight(
+	a.renderer.DrawScrollHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,
 		localBounds.Dx(),

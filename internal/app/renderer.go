@@ -6,42 +6,52 @@ import (
 	"github.com/y3owk1n/neru/internal/overlay"
 )
 
-type overlayRenderer struct {
+// OverlayRenderer handles rendering operations for the application overlays.
+type OverlayRenderer struct {
 	mgr       *overlay.Manager
 	hintStyle hints.StyleMode
 	gridStyle grid.Style
 }
 
-func newOverlayRenderer(mgr *overlay.Manager, hs hints.StyleMode, gs grid.Style) *overlayRenderer {
-	return &overlayRenderer{mgr: mgr, hintStyle: hs, gridStyle: gs}
+// newOverlayRenderer creates a new overlay renderer.
+func newOverlayRenderer(mgr *overlay.Manager, hs hints.StyleMode, gs grid.Style) *OverlayRenderer {
+	return &OverlayRenderer{mgr: mgr, hintStyle: hs, gridStyle: gs}
 }
 
-func (r *overlayRenderer) drawHints(hs []*hints.Hint) error {
+// DrawHints draws hints with the configured style.
+func (r *OverlayRenderer) DrawHints(hs []*hints.Hint) error {
 	return r.mgr.DrawHintsWithStyle(hs, r.hintStyle)
 }
 
-func (r *overlayRenderer) drawGrid(g *grid.Grid, input string) error {
+// DrawGrid draws a grid with the configured style.
+func (r *OverlayRenderer) DrawGrid(g *grid.Grid, input string) error {
 	return r.mgr.DrawGrid(g, input, r.gridStyle)
 }
 
-func (r *overlayRenderer) showSubgrid(cell *grid.Cell) { r.mgr.ShowSubgrid(cell, r.gridStyle) }
+// ShowSubgrid shows a subgrid for the specified cell.
+func (r *OverlayRenderer) ShowSubgrid(cell *grid.Cell) { r.mgr.ShowSubgrid(cell, r.gridStyle) }
 
-func (r *overlayRenderer) updateGridMatches(prefix string) { r.mgr.UpdateGridMatches(prefix) }
+// UpdateGridMatches updates the grid matches with the specified prefix.
+func (r *OverlayRenderer) UpdateGridMatches(prefix string) { r.mgr.UpdateGridMatches(prefix) }
 
-func (r *overlayRenderer) setHideUnmatched(hide bool) { r.mgr.SetHideUnmatched(hide) }
+// SetHideUnmatched sets whether to hide unmatched cells.
+func (r *OverlayRenderer) SetHideUnmatched(hide bool) { r.mgr.SetHideUnmatched(hide) }
 
-func (r *overlayRenderer) show() { r.mgr.Show() }
+// Show shows the overlay.
+func (r *OverlayRenderer) Show() { r.mgr.Show() }
 
-func (r *overlayRenderer) clear() { r.mgr.Clear() }
+// Clear clears the overlay.
+func (r *OverlayRenderer) Clear() { r.mgr.Clear() }
 
-func (r *overlayRenderer) resizeActive() { r.mgr.ResizeToActiveScreenSync() }
+// ResizeActive resizes the overlay to the active screen.
+func (r *OverlayRenderer) ResizeActive() { r.mgr.ResizeToActiveScreenSync() }
 
-// drawActionHighlight draws an action highlight border around the active screen.
-func (r *overlayRenderer) drawActionHighlight(x, y, width, height int) {
+// DrawActionHighlight draws an action highlight border around the active screen.
+func (r *OverlayRenderer) DrawActionHighlight(x, y, width, height int) {
 	r.mgr.DrawActionHighlight(x, y, width, height)
 }
 
-// drawScrollHighlight draws a scroll highlight border around the active screen.
-func (r *overlayRenderer) drawScrollHighlight(x, y, width, height int) {
+// DrawScrollHighlight draws a scroll highlight border around the active screen.
+func (r *OverlayRenderer) DrawScrollHighlight(x, y, width, height int) {
 	r.mgr.DrawScrollHighlight(x, y, width, height)
 }

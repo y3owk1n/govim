@@ -79,7 +79,7 @@ type App struct {
 	gridCtx          *GridContext
 	hintStyle        hints.StyleMode
 	gridStyle        grid.Style
-	renderer         *overlayRenderer
+	renderer         *OverlayRenderer
 
 	enabled                 bool
 	hotkeysRegistered       bool
@@ -359,6 +359,76 @@ func (a *App) HintsEnabled() bool { return a.config != nil && a.config.Hints.Ena
 // GridEnabled returns true if grid is enabled.
 func (a *App) GridEnabled() bool { return a.config != nil && a.config.Grid.Enabled }
 
+// Config returns the application configuration.
+func (a *App) Config() *config.Config { return a.config }
+
+// Logger returns the application logger.
+func (a *App) Logger() *zap.Logger { return a.logger }
+
+// OverlayManager returns the overlay manager.
+func (a *App) OverlayManager() *overlay.Manager { return a.overlayManager }
+
+// HintGenerator returns the hint generator.
+func (a *App) HintGenerator() *hints.Generator { return a.hintGenerator }
+
+// HintManager returns the hint manager.
+func (a *App) HintManager() *hints.Manager { return a.hintManager }
+
+// HintsContext returns the hints context.
+func (a *App) HintsContext() *HintsContext { return a.hintsCtx }
+
+// Renderer returns the overlay renderer.
+func (a *App) Renderer() *OverlayRenderer { return a.renderer }
+
+// SetHintOverlayNeedsRefresh sets the hint overlay needs refresh flag.
+func (a *App) SetHintOverlayNeedsRefresh(value bool) { a.hintOverlayNeedsRefresh = value }
+
+// CaptureInitialCursorPosition captures the initial cursor position.
+func (a *App) CaptureInitialCursorPosition() { a.captureInitialCursorPosition() }
+
+// UpdateRolesForCurrentApp updates roles for the current app.
+func (a *App) UpdateRolesForCurrentApp() { a.updateRolesForCurrentApp() }
+
+// CollectElements collects elements.
+func (a *App) CollectElements() []*accessibility.TreeNode { return a.collectElements() }
+
+// IsFocusedAppExcluded checks if the focused app is excluded.
+func (a *App) IsFocusedAppExcluded() bool { return a.isFocusedAppExcluded() }
+
+// ExitMode exits the current mode.
+func (a *App) ExitMode() { a.exitMode() }
+
+// GridManager returns the grid manager.
+func (a *App) GridManager() *grid.Manager { return a.gridManager }
+
+// GridContext returns the grid context.
+func (a *App) GridContext() *GridContext { return a.gridCtx }
+
+// GridRouter returns the grid router.
+func (a *App) GridRouter() *grid.Router { return a.gridRouter }
+
+// HintsRouter returns the hints router.
+func (a *App) HintsRouter() *hints.Router { return a.hintsRouter }
+
+// EventTap returns the event tap.
+func (a *App) EventTap() eventTap { return a.eventTap }
+
+// ScrollController returns the scroll controller.
+func (a *App) ScrollController() *scroll.Controller { return a.scrollController }
+
+// CurrentMode returns the current mode.
+func (a *App) CurrentMode() Mode { return a.currentMode }
+
+// SetModeHints sets the mode to hints.
+func (a *App) SetModeHints() { a.setModeHints() }
+
+// SetModeGrid sets the mode to grid.
+func (a *App) SetModeGrid() { a.setModeGrid() }
+
+// SetModeIdle sets the mode to idle.
+func (a *App) SetModeIdle() { a.setModeIdle() }
+
+// overlaySwitch switches the overlay mode.
 func (a *App) overlaySwitch(m overlay.Mode) {
 	if a.overlayManager != nil {
 		a.overlayManager.SwitchTo(m)
