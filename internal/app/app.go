@@ -380,6 +380,9 @@ func (a *App) HintsContext() *HintsContext { return a.hintsCtx }
 // Renderer returns the overlay renderer.
 func (a *App) Renderer() *OverlayRenderer { return a.renderer }
 
+// GetConfigPath returns the config path.
+func (a *App) GetConfigPath() string { return a.ConfigPath }
+
 // SetHintOverlayNeedsRefresh sets the hint overlay needs refresh flag.
 func (a *App) SetHintOverlayNeedsRefresh(value bool) { a.hintOverlayNeedsRefresh = value }
 
@@ -427,6 +430,12 @@ func (a *App) SetModeGrid() { a.setModeGrid() }
 
 // SetModeIdle sets the mode to idle.
 func (a *App) SetModeIdle() { a.setModeIdle() }
+
+// EnableEventTap enables the event tap.
+func (a *App) EnableEventTap() { a.enableEventTap() }
+
+// DisableEventTap disables the event tap.
+func (a *App) DisableEventTap() { a.disableEventTap() }
 
 // overlaySwitch switches the overlay mode.
 func (a *App) overlaySwitch(m overlay.Mode) {
