@@ -110,15 +110,8 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		return
 	}
 
-	// Update mode and enable event tap
-	a.currentMode = ModeHints
 	a.hintsCtx.selectedHint = nil
-
-	// Enable event tap to capture keys (must be last to ensure proper initialization)
-	if a.eventTap != nil {
-		a.eventTap.Enable()
-	}
-	a.overlayManager.SwitchTo(overlay.ModeHints)
+	a.setModeHints()
 }
 
 // setupHints generates hints and draws them with appropriate styling.
@@ -207,14 +200,7 @@ func (a *App) activateGridMode() {
 		return
 	}
 
-	// Update mode and enable event tap
-	a.currentMode = ModeGrid
-
-	// Enable event tap to capture keys
-	if a.eventTap != nil {
-		a.eventTap.Enable()
-	}
-	a.overlayManager.SwitchTo(overlay.ModeGrid)
+	a.setModeGrid()
 
 	a.logger.Info("Grid mode activated", zap.String("action", actionString))
 	a.logger.Info("Type a grid label to select a location")
@@ -346,7 +332,7 @@ func (a *App) handleTabKey() {
 			// Re-activate hint mode while preserving action mode state
 			a.activateHintModeInternal(true)
 			a.logger.Info("Switched back to hints overlay mode")
-			a.overlayManager.SwitchTo(overlay.ModeHints)
+			a.overlaySwitch(overlay.ModeHints)
 		} else {
 			// Switch to action mode
 			a.hintsCtx.inActionMode = true
@@ -355,7 +341,7 @@ func (a *App) handleTabKey() {
 			a.drawHintsActionHighlight()
 			a.overlayManager.Show()
 			a.logger.Info("Switched to hints action mode")
-			a.overlayManager.SwitchTo(overlay.ModeAction)
+			a.overlaySwitch(overlay.ModeAction)
 		}
 	case ModeGrid:
 		if a.gridCtx.inActionMode {
@@ -369,7 +355,7 @@ func (a *App) handleTabKey() {
 				a.logger.Error("Failed to re-setup grid", zap.Error(err))
 			}
 			a.logger.Info("Switched back to grid overlay mode")
-			a.overlayManager.SwitchTo(overlay.ModeGrid)
+			a.overlaySwitch(overlay.ModeGrid)
 		} else {
 			// Switch to action mode
 			a.gridCtx.inActionMode = true
@@ -378,7 +364,7 @@ func (a *App) handleTabKey() {
 			a.drawGridActionHighlight()
 			a.overlayManager.Show()
 			a.logger.Info("Switched to grid action mode")
-			a.overlayManager.SwitchTo(overlay.ModeAction)
+			a.overlaySwitch(overlay.ModeAction)
 		}
 	case ModeIdle:
 		// Nothing to do in idle mode
@@ -397,7 +383,7 @@ func (a *App) handleEscapeKey() {
 			a.overlayManager.Hide()
 			a.exitMode()
 			a.logger.Info("Exited hints action mode completely")
-			a.overlayManager.SwitchTo(overlay.ModeIdle)
+			a.overlaySwitch(overlay.ModeIdle)
 			return
 		}
 		// Fall through to exit mode
@@ -409,7 +395,7 @@ func (a *App) handleEscapeKey() {
 			a.overlayManager.Hide()
 			a.exitMode()
 			a.logger.Info("Exited grid action mode completely")
-			a.overlayManager.SwitchTo(overlay.ModeIdle)
+			a.overlaySwitch(overlay.ModeIdle)
 			return
 		}
 		// Fall through to exit mode
@@ -418,7 +404,7 @@ func (a *App) handleEscapeKey() {
 		return
 	}
 	a.exitMode()
-	a.overlayManager.SwitchTo(overlay.ModeIdle)
+	a.setModeIdle()
 }
 
 // handleModeSpecificKey handles mode-specific key processing.

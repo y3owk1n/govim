@@ -19,31 +19,13 @@ func (a *App) handleIPCCommand(cmd ipc.Command) ipc.Response {
 		zap.String("args", strings.Join(cmd.Args, ", ")),
 	)
 
-	switch cmd.Action {
-	case "ping":
-		return a.handlePing(cmd)
-	case "start":
-		return a.handleStart(cmd)
-	case "stop":
-		return a.handleStop(cmd)
-	case modeHints:
-		return a.handleHints(cmd)
-	case modeGrid:
-		return a.handleGrid(cmd)
-	case "action":
-		return a.handleAction(cmd)
-	case "idle":
-		return a.handleIdle(cmd)
-	case "status":
-		return a.handleStatus(cmd)
-	case "config":
-		return a.handleConfig(cmd)
-	default:
-		return ipc.Response{
-			Success: false,
-			Message: "unknown command: " + cmd.Action,
-			Code:    ipc.CodeUnknownCommand,
-		}
+	if h, ok := a.cmdHandlers[cmd.Action]; ok {
+		return h(cmd)
+	}
+	return ipc.Response{
+		Success: false,
+		Message: "unknown command: " + cmd.Action,
+		Code:    ipc.CodeUnknownCommand,
 	}
 }
 

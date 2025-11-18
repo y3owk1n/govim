@@ -91,6 +91,8 @@ type App struct {
 	cursorRestoreCaptured bool
 	isScrollingActive     bool
 	skipCursorRestoreOnce bool
+
+	cmdHandlers map[string]func(ipc.Command) ipc.Response
 }
 
 type hotkeyService interface {
@@ -213,6 +215,7 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 		currentMode:       ModeIdle,
 		enabled:           true,
 		hotkeysRegistered: false,
+		cmdHandlers:       make(map[string]func(ipc.Command) ipc.Response),
 	}
 
 	if cfg.Hints.Enabled {
@@ -323,6 +326,16 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 		overlayManager.UseGridOverlay(*app.gridCtx.gridOverlay)
 	}
 
+	app.cmdHandlers["ping"] = app.handlePing
+	app.cmdHandlers["start"] = app.handleStart
+	app.cmdHandlers["stop"] = app.handleStop
+	app.cmdHandlers[modeHints] = app.handleHints
+	app.cmdHandlers[modeGrid] = app.handleGrid
+	app.cmdHandlers["action"] = app.handleAction
+	app.cmdHandlers["idle"] = app.handleIdle
+	app.cmdHandlers["status"] = app.handleStatus
+	app.cmdHandlers["config"] = app.handleConfig
+
 	return app, nil
 }
 
@@ -340,3 +353,39 @@ func (a *App) HintsEnabled() bool { return a.config != nil && a.config.Hints.Ena
 
 // GridEnabled returns true if grid is enabled.
 func (a *App) GridEnabled() bool { return a.config != nil && a.config.Grid.Enabled }
+
+func (a *App) overlaySwitch(m overlay.Mode) {
+	if a.overlayManager != nil {
+		a.overlayManager.SwitchTo(m)
+	}
+}
+
+func (a *App) enableEventTap() {
+	if a.eventTap != nil {
+		a.eventTap.Enable()
+	}
+}
+
+func (a *App) disableEventTap() {
+	if a.eventTap != nil {
+		a.eventTap.Disable()
+	}
+}
+
+func (a *App) setModeHints() {
+	a.currentMode = ModeHints
+	a.enableEventTap()
+	a.overlaySwitch(overlay.ModeHints)
+}
+
+func (a *App) setModeGrid() {
+	a.currentMode = ModeGrid
+	a.enableEventTap()
+	a.overlaySwitch(overlay.ModeGrid)
+}
+
+func (a *App) setModeIdle() {
+	a.currentMode = ModeIdle
+	a.disableEventTap()
+	a.overlaySwitch(overlay.ModeIdle)
+}
