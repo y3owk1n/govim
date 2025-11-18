@@ -144,34 +144,7 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 		var err error
 		switch param {
 		case "scroll":
-			a.skipCursorRestoreOnce = true
-			a.exitMode()
-
-			// Enable event tap and let user scroll interactively at current position
-			// Resize overlay to active screen for multi-monitor support
-			if a.overlayManager != nil {
-				a.overlayManager.ResizeToActiveScreenSync()
-			}
-
-			// Draw highlight border if enabled
-			if a.config.Scroll.HighlightScrollArea {
-				a.drawScrollHighlightBorder()
-				if a.overlayManager != nil {
-					a.overlayManager.Show()
-				}
-			}
-
-			// Enable event tap for scroll key handling
-			if a.eventTap != nil {
-				a.eventTap.Enable()
-			}
-
-			a.isScrollingActive = true
-
-			a.logger.Info("Interactive scroll activated")
-			a.logger.Info(
-				"Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom, Esc to exit",
-			)
+			a.startInteractiveScroll()
 			return ipc.Response{Success: true, Message: "scroll mode activated", Code: ipc.CodeOK}
 		default:
 			if !isKnownAction(param) {

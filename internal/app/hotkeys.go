@@ -12,11 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	modeHints = "hints"
-	modeGrid  = "grid"
-)
-
 // registerHotkeys registers all global hotkeys.
 func (a *App) registerHotkeys() {
 	// Note: Escape key for exiting modes is hardcoded in handleKeyPress, not registered as global hotkey

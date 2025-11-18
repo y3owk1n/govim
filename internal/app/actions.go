@@ -44,3 +44,28 @@ func isKnownAction(action string) bool {
 		return false
 	}
 }
+
+func (a *App) startInteractiveScroll() {
+	a.skipCursorRestoreOnce = true
+	a.exitMode()
+
+	if a.overlayManager != nil {
+		a.overlayManager.ResizeToActiveScreenSync()
+	}
+
+	if a.config.Scroll.HighlightScrollArea {
+		a.drawScrollHighlightBorder()
+		if a.overlayManager != nil {
+			a.overlayManager.Show()
+		}
+	}
+
+	if a.eventTap != nil {
+		a.eventTap.Enable()
+	}
+
+	a.isScrollingActive = true
+
+	a.logger.Info("Interactive scroll activated")
+	a.logger.Info("Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom, Esc to exit")
+}
