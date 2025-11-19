@@ -61,7 +61,8 @@ func (a *App) handleScreenParametersChange() {
 	}
 
 	// Handle grid overlay
-	if a.config.Grid.Enabled && a.gridCtx != nil && a.gridCtx.GetGridOverlay() != nil {
+	if a.config.Grid.Enabled && a.gridComponent.Context != nil &&
+		a.gridComponent.Context.GetGridOverlay() != nil {
 		// If grid mode is not active, mark for refresh on next activation
 		if a.state.CurrentMode() != ModeGrid {
 			a.state.SetGridOverlayNeedsRefresh(true)
@@ -84,7 +85,7 @@ func (a *App) handleScreenParametersChange() {
 	}
 
 	// Handle hint overlay
-	if a.config.Hints.Enabled && a.hintOverlay != nil {
+	if a.config.Hints.Enabled && a.hintsComponent.Overlay != nil {
 		// If hints mode is not active, mark for refresh on next activation
 		if a.state.CurrentMode() != ModeHints {
 			a.state.SetHintOverlayNeedsRefresh(true)
@@ -168,10 +169,10 @@ func (a *App) printStartupInfo() {
 		if parts := strings.Split(value, " "); len(parts) > 0 {
 			mode = parts[0]
 		}
-		if mode == domain.ModeHints && !a.config.Hints.Enabled {
+		if mode == string(domain.ModeHints) && !a.config.Hints.Enabled {
 			continue
 		}
-		if mode == domain.ModeGrid && !a.config.Grid.Enabled {
+		if mode == string(domain.ModeGrid) && !a.config.Grid.Enabled {
 			continue
 		}
 

@@ -51,10 +51,10 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		return
 	}
 
-	if a.scrollCtx.GetIsActive() {
+	if a.scrollComponent.Context.GetIsActive() {
 		// Reset scroll context to ensure clean transition
-		a.scrollCtx.SetIsActive(false)
-		a.scrollCtx.SetLastKey("")
+		a.scrollComponent.Context.SetIsActive(false)
+		a.scrollComponent.Context.SetLastKey("")
 		// Also reset the skip restore flag since we're transitioning from scroll to hint mode
 		a.cursor.Reset()
 	}
@@ -93,7 +93,7 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		return
 	}
 
-	a.hintsCtx.SetSelectedHint(nil)
+	a.hintsComponent.Context.SetSelectedHint(nil)
 	a.setModeHints()
 }
 
@@ -108,7 +108,7 @@ func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 	}
 
 	hintCollection := hints.NewHintCollection(hintList)
-	a.hintManager.SetHints(hintCollection)
+	a.HintManager().SetHints(hintCollection)
 
 	drawErr := a.renderer.DrawHints(hintList)
 	if drawErr != nil {
@@ -128,9 +128,17 @@ func (a *App) generateAndNormalizeHints(elements []*accessibility.TreeNode) ([]*
 	screenOffsetX := screenBounds.Min.X
 	screenOffsetY := screenBounds.Min.Y
 
-	hintList, err := a.hintGenerator.Generate(elements)
+	hintList, err := a.HintGenerator().Generate(elements)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate hints: %w", err)
+	}
+
+	// Check if we have any hints
+	if len(hintList) == 0 {
+		a.logger.Warn("No hints generated",
+			zap.Int("elements_count", len(elements)),
+			zap.String("screen_bounds", fmt.Sprintf("%+v", screenBounds)))
+		return hintList, nil
 	}
 
 	// Normalize hint positions to window-local coordinates.
@@ -148,6 +156,11 @@ func (a *App) generateAndNormalizeHints(elements []*accessibility.TreeNode) ([]*
 			filtered = append(filtered, h)
 		}
 	}
+
+	a.logger.Debug("Hints generated and normalized",
+		zap.Int("generated", len(hintList)),
+		zap.Int("visible", len(filtered)),
+		zap.Int("elements", len(elements)))
 
 	return filtered, nil
 }

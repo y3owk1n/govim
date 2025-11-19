@@ -27,10 +27,10 @@ func (a *App) registerHotkeys() {
 		if parts := strings.Split(action, " "); len(parts) > 0 {
 			mode = parts[0]
 		}
-		if mode == domain.ModeHints && !a.config.Hints.Enabled {
+		if mode == string(domain.ModeHints) && !a.config.Hints.Enabled {
 			continue
 		}
-		if mode == domain.ModeGrid && !a.config.Grid.Enabled {
+		if mode == string(domain.ModeGrid) && !a.config.Grid.Enabled {
 			continue
 		}
 

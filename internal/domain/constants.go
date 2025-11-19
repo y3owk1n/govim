@@ -1,14 +1,17 @@
 package domain
 
-// Mode string constants for IPC and hotkey bindings.
+// Mode represents the operational modes of the application.
+type Mode string
+
+// Mode constants for IPC and hotkey bindings.
 // These are used to identify modes in configuration and command handling.
 const (
-	ModeHints = "hints"
-	ModeGrid  = "grid"
-	ModeIdle  = "idle"
+	ModeHints Mode = "hints"
+	ModeGrid  Mode = "grid"
+	ModeIdle  Mode = "idle"
 )
 
-// IPC command names used for inter-process communication.
+// Command represents IPC command names used for inter-process communication.
 // These constants ensure consistency across CLI and daemon communication.
 const (
 	CommandPing   = "ping"

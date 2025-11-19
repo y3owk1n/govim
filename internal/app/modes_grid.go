@@ -27,10 +27,10 @@ func (a *App) activateGridMode() {
 		return
 	}
 
-	if a.scrollCtx.GetIsActive() {
+	if a.scrollComponent.Context.GetIsActive() {
 		// Reset scroll context to ensure clean transition
-		a.scrollCtx.SetIsActive(false)
-		a.scrollCtx.SetLastKey("")
+		a.scrollComponent.Context.SetIsActive(false)
+		a.scrollComponent.Context.SetLastKey("")
 		// Also reset the skip restore flag since we're transitioning from scroll to grid mode
 		a.cursor.Reset()
 	}
@@ -50,7 +50,10 @@ func (a *App) activateGridMode() {
 
 	err := a.setupGrid()
 	if err != nil {
-		a.logger.Error("Failed to setup grid", zap.Error(err), zap.String("action", actionString))
+		a.logger.Error("Failed to setup grid",
+			zap.Error(err),
+			zap.String("action", actionString),
+			zap.String("screen_bounds", fmt.Sprintf("%+v", bridge.GetActiveScreenBounds())))
 		return
 	}
 
@@ -72,13 +75,13 @@ func (a *App) setupGrid() error {
 	a.overlayManager.ResizeToActiveScreenSync()
 
 	// Reset the grid manager state when setting up the grid
-	if a.gridManager != nil {
-		a.gridManager.Reset()
+	if a.GridManager() != nil {
+		a.GridManager().Reset()
 	}
 
 	a.initializeGridManager(gridInstance)
 
-	a.gridRouter = grid.NewRouter(a.gridManager, a.logger)
+	a.gridComponent.Router = grid.NewRouter(a.GridManager(), a.logger)
 
 	initErr := a.renderer.DrawGrid(gridInstance, "")
 	if initErr != nil {
@@ -102,47 +105,91 @@ func (a *App) createGridInstance() *grid.Grid {
 		characters = a.config.Hints.HintCharacters
 	}
 	gridInstance := grid.NewGrid(characters, bounds, a.logger)
-	a.gridCtx.SetGridInstanceValue(gridInstance)
+	a.gridComponent.Context.SetGridInstanceValue(gridInstance)
 
 	return gridInstance
 }
 
 // updateGridOverlayConfig updates the grid overlay configuration.
 func (a *App) updateGridOverlayConfig() {
-	(*a.gridCtx.GridOverlay).UpdateConfig(a.config.Grid)
+	(*a.gridComponent.Context.GridOverlay).UpdateConfig(a.config.Grid)
 }
 
 // initializeGridManager initializes the grid manager with the new grid instance.
 func (a *App) initializeGridManager(gridInstance *grid.Grid) {
+	const defaultGridCharacters = "asdfghjkl"
+
+	// Defensive check for grid instance
+	if gridInstance == nil {
+		a.logger.Warn("Grid instance is nil, creating with default bounds")
+		screenBounds := bridge.GetActiveScreenBounds()
+		bounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
+		gridInstance = grid.NewGrid(a.config.Grid.Characters, bounds, a.logger)
+	}
+
 	// Subgrid configuration and keys (fallback to grid characters): always 3x3
 	keys := strings.TrimSpace(a.config.Grid.SublayerKeys)
 	if keys == "" {
 		keys = a.config.Grid.Characters
 	}
+
+	// Ensure we have valid keys for subgrid
+	if keys == "" {
+		a.logger.Warn("No subgrid keys configured, using grid characters as fallback")
+		keys = a.config.Grid.Characters
+	}
+
+	// Final fallback
+	if keys == "" {
+		keys = defaultGridCharacters
+		a.logger.Warn("No characters available for subgrid, using default")
+	}
+
 	const subRows = 3
 	const subCols = 3
 
-	a.gridManager = grid.NewManager(gridInstance, subRows, subCols, keys, func(forceRedraw bool) {
-		input := a.gridManager.GetInput()
-
-		// special case to handle only when exiting subgrid
-		if forceRedraw {
-			a.renderer.Clear()
-			gridErr := a.renderer.DrawGrid(gridInstance, input)
-			if gridErr != nil {
+	a.gridComponent.Manager = grid.NewManager(
+		gridInstance,
+		subRows,
+		subCols,
+		keys,
+		func(forceRedraw bool) {
+			// Defensive check for grid manager
+			if a.GridManager() == nil {
+				a.logger.Error("Grid manager is nil during update callback")
 				return
 			}
-			a.renderer.Show()
-		}
 
-		// Set hideUnmatched based on whether we have input and the config setting
-		hideUnmatched := a.config.Grid.HideUnmatched && len(input) > 0
-		a.renderer.SetHideUnmatched(hideUnmatched)
-		a.renderer.UpdateGridMatches(input)
-	}, func(cell *grid.Cell) {
-		// Draw 3x3 subgrid inside selected cell
-		a.renderer.ShowSubgrid(cell)
-	}, a.logger)
+			input := a.GridManager().GetInput()
+
+			// special case to handle only when exiting subgrid
+			if forceRedraw {
+				a.renderer.Clear()
+				gridErr := a.renderer.DrawGrid(gridInstance, input)
+				if gridErr != nil {
+					a.logger.Error("Failed to redraw grid", zap.Error(gridErr))
+					return
+				}
+				a.renderer.Show()
+			}
+
+			// Set hideUnmatched based on whether we have input and the config setting
+			hideUnmatched := a.config.Grid.HideUnmatched && len(input) > 0
+			a.renderer.SetHideUnmatched(hideUnmatched)
+			a.renderer.UpdateGridMatches(input)
+		},
+		func(cell *grid.Cell) {
+			// Defensive check for cell
+			if cell == nil {
+				a.logger.Warn("Attempted to show subgrid for nil cell")
+				return
+			}
+
+			// Draw 3x3 subgrid inside selected cell
+			a.renderer.ShowSubgrid(cell)
+		},
+		a.logger,
+	)
 }
 
 // drawGridActionHighlight draws a highlight border around the active screen for grid action mode.

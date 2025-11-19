@@ -43,32 +43,54 @@ type App struct {
 	state  *state.AppState
 	cursor *state.CursorState
 
-	overlayManager   *overlay.Manager
-	hotkeyManager    hotkeyService
-	eventTap         eventTap
-	ipcServer        ipcServer
-	appWatcher       *appwatcher.Watcher
-	scrollController *scroll.Controller
+	// Core services
+	overlayManager *overlay.Manager
+	hotkeyManager  hotkeyService
+	eventTap       eventTap
+	ipcServer      ipcServer
+	appWatcher     *appwatcher.Watcher
 
-	hintGenerator *hints.Generator
-	hintOverlay   *hints.Overlay
-	hintManager   *hints.Manager
-	hintsRouter   *hints.Router
-	hintsCtx      *hints.Context
-	hintStyle     hints.StyleMode
+	// Feature components
+	hintsComponent  *HintsComponent
+	gridComponent   *GridComponent
+	scrollComponent *ScrollComponent
+	actionComponent *ActionComponent
 
-	gridManager *grid.Manager
-	gridRouter  *grid.Router
-	gridCtx     *grid.Context
-	gridStyle   grid.Style
+	// Renderer
+	renderer *ui.OverlayRenderer
 
-	scrollOverlay *scroll.Overlay
-	actionOverlay *action.Overlay
-	renderer      *ui.OverlayRenderer
-
-	scrollCtx *scroll.Context
-
+	// Command handlers
 	cmdHandlers map[string]func(ipc.Command) ipc.Response
+}
+
+// HintsComponent encapsulates all hints-related functionality.
+type HintsComponent struct {
+	Generator *hints.Generator
+	Overlay   *hints.Overlay
+	Manager   *hints.Manager
+	Router    *hints.Router
+	Context   *hints.Context
+	Style     hints.StyleMode
+}
+
+// GridComponent encapsulates all grid-related functionality.
+type GridComponent struct {
+	Manager *grid.Manager
+	Router  *grid.Router
+	Context *grid.Context
+	Style   grid.Style
+}
+
+// ScrollComponent encapsulates all scroll-related functionality.
+type ScrollComponent struct {
+	Controller *scroll.Controller
+	Overlay    *scroll.Overlay
+	Context    *scroll.Context
+}
+
+// ActionComponent encapsulates all action-related functionality.
+type ActionComponent struct {
+	Overlay *action.Overlay
 }
 
 type hotkeyService interface {
@@ -160,11 +182,6 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 		hotkeySvc = mgr
 	}
 
-	var hintGen *hints.Generator
-	if cfg.Hints.Enabled {
-		hintGen = hints.NewGenerator(cfg.Hints.HintCharacters)
-	}
-
 	var hintOverlay *hints.Overlay
 
 	scrollCtrl := scroll.NewController(cfg.Scroll, log)
@@ -179,38 +196,55 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	}
 
 	app := &App{
-		config:           cfg,
-		logger:           log,
-		state:            state.NewAppState(),
-		cursor:           state.NewCursorState(cfg.General.RestoreCursorPosition),
-		overlayManager:   overlayManager,
-		hotkeyManager:    hotkeySvc,
-		appWatcher:       appWatcher,
-		hintGenerator:    hintGen,
-		hintOverlay:      hintOverlay,
-		scrollOverlay:    scrollOverlay,
-		scrollController: scrollCtrl,
-		scrollCtx:        &scroll.Context{},
-		cmdHandlers:      make(map[string]func(ipc.Command) ipc.Response),
+		config:         cfg,
+		logger:         log,
+		state:          state.NewAppState(),
+		cursor:         state.NewCursorState(cfg.General.RestoreCursorPosition),
+		overlayManager: overlayManager,
+		hotkeyManager:  hotkeySvc,
+		appWatcher:     appWatcher,
+		hintsComponent: &HintsComponent{},
+		gridComponent:  &GridComponent{},
+		scrollComponent: &ScrollComponent{
+			Controller: scrollCtrl,
+			Overlay:    scrollOverlay,
+			Context:    &scroll.Context{},
+		},
+		actionComponent: &ActionComponent{},
+		renderer:        &ui.OverlayRenderer{}, // This will be properly initialized later
+		cmdHandlers:     make(map[string]func(ipc.Command) ipc.Response),
 	}
 
+	// Initialize components based on configuration
+	const defaultHintCharacters = "asdfghjkl"
+
 	if cfg.Hints.Enabled {
-		app.hintStyle = hints.BuildStyle(cfg.Hints)
-		app.hintManager = hints.NewManager(func(hs []*hints.Hint) {
-			err := app.hintOverlay.DrawHintsWithStyle(hs, app.hintStyle)
+		// Ensure hint generator is always initialized
+		if cfg.Hints.HintCharacters == "" {
+			// Provide fallback characters if none configured
+			cfg.Hints.HintCharacters = defaultHintCharacters
+			log.Warn("No hint characters configured, using default: asdfghjkl")
+		}
+		app.hintsComponent.Generator = hints.NewGenerator(cfg.Hints.HintCharacters)
+		app.hintsComponent.Style = hints.BuildStyle(cfg.Hints)
+		app.hintsComponent.Manager = hints.NewManager(func(hs []*hints.Hint) {
+			err := app.hintsComponent.Overlay.DrawHintsWithStyle(hs, app.hintsComponent.Style)
 			if err != nil {
 				app.logger.Error("Failed to redraw hints", zap.Error(err))
 			}
 		}, app.logger)
-		app.hintsRouter = hints.NewRouter(app.hintManager, app.logger)
-		app.hintsCtx = &hints.Context{}
+		app.hintsComponent.Router = hints.NewRouter(app.hintsComponent.Manager, app.logger)
+		app.hintsComponent.Context = &hints.Context{}
 
 		var err error
 		hintOverlay, err = hints.NewOverlayWithWindow(cfg.Hints, log, overlayManager.GetWindowPtr())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create overlay: %w", err)
 		}
-		app.hintOverlay = hintOverlay
+		app.hintsComponent.Overlay = hintOverlay
+	} else {
+		// Even when hints are disabled, initialize a minimal generator to prevent nil pointer dereferences
+		app.hintsComponent.Generator = hints.NewGenerator(defaultHintCharacters)
 	}
 
 	actionOverlay, err := action.NewOverlayWithWindow(
@@ -221,39 +255,61 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create action overlay: %w", err)
 	}
-	app.actionOverlay = actionOverlay
+	app.actionComponent.Overlay = actionOverlay
 
 	if cfg.Grid.Enabled {
-		app.gridStyle = grid.BuildStyle(cfg.Grid)
+		// Validate grid configuration
+		if cfg.Grid.Characters == "" {
+			cfg.Grid.Characters = defaultHintCharacters
+			log.Warn("No grid characters configured, using default: asdfghjkl")
+		}
+
+		app.gridComponent.Style = grid.BuildStyle(cfg.Grid)
 		gridOverlay := grid.NewOverlayWithWindow(cfg.Grid, log, overlayManager.GetWindowPtr())
 		var gridInstance *grid.Grid
 		keys := strings.TrimSpace(cfg.Grid.SublayerKeys)
 		if keys == "" {
 			keys = cfg.Grid.Characters
 		}
+
+		// Ensure we have valid keys for subgrid
+		if keys == "" {
+			keys = cfg.Grid.Characters
+		}
+
+		// Final fallback
+		if keys == "" {
+			keys = defaultHintCharacters
+			log.Warn("No subgrid keys configured, using default: asdfghjkl")
+		}
+
 		const subRows = 3
 		const subCols = 3
-		app.gridManager = grid.NewManager(nil, subRows, subCols, keys, func(_ bool) {
+		app.gridComponent.Manager = grid.NewManager(nil, subRows, subCols, keys, func(_ bool) {
 			if gridInstance == nil {
 				return
 			}
-			gridOverlay.UpdateMatches(app.gridManager.GetInput())
+			gridOverlay.UpdateMatches(app.gridComponent.Manager.GetInput())
 		}, func(cell *grid.Cell) {
-			gridOverlay.ShowSubgrid(cell, app.gridStyle)
+			gridOverlay.ShowSubgrid(cell, app.gridComponent.Style)
 		}, log)
 
-		app.gridCtx = &grid.Context{
+		app.gridComponent.Context = &grid.Context{
 			GridInstance: &gridInstance,
 			GridOverlay:  &gridOverlay,
 		}
 	} else {
 		var gridInstance *grid.Grid
-		app.gridCtx = &grid.Context{
+		app.gridComponent.Context = &grid.Context{
 			GridInstance: &gridInstance,
 		}
 	}
 
-	app.renderer = ui.NewOverlayRenderer(overlayManager, app.hintStyle, app.gridStyle)
+	app.renderer = ui.NewOverlayRenderer(
+		overlayManager,
+		app.hintsComponent.Style,
+		app.gridComponent.Style,
+	)
 
 	if deps != nil && deps.EventTapFactory != nil {
 		app.eventTap = deps.EventTapFactory.New(app.handleKeyPress, log)
@@ -265,6 +321,12 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	} else {
 		keys := make([]string, 0, len(cfg.Hotkeys.Bindings))
 		for key, value := range cfg.Hotkeys.Bindings {
+			// Skip empty keys or values
+			if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
+				log.Warn("Skipping empty hotkey binding", zap.String("key", key), zap.String("value", value))
+				continue
+			}
+
 			mode := value
 			if parts := strings.Split(value, " "); len(parts) > 0 {
 				mode = parts[0]
@@ -277,6 +339,14 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 			}
 			keys = append(keys, key)
 		}
+
+		// Log if no hotkeys are configured
+		if len(keys) == 0 {
+			log.Warn("No hotkeys configured - application will not be activatable via hotkeys")
+		} else {
+			log.Info("Registered hotkeys", zap.Int("count", len(keys)))
+		}
+
 		app.eventTap.SetHotkeys(keys)
 		app.eventTap.Disable()
 	}
@@ -297,20 +367,20 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 
 	overlayManager.UseScrollOverlay(scrollOverlay)
 	overlayManager.UseActionOverlay(actionOverlay)
-	if app.hintOverlay != nil {
-		overlayManager.UseHintOverlay(app.hintOverlay)
+	if app.hintsComponent.Overlay != nil {
+		overlayManager.UseHintOverlay(app.hintsComponent.Overlay)
 	}
-	if app.gridCtx != nil && app.gridCtx.GetGridOverlay() != nil {
-		overlayManager.UseGridOverlay(*app.gridCtx.GetGridOverlay())
+	if app.gridComponent.Context != nil && app.gridComponent.Context.GetGridOverlay() != nil {
+		overlayManager.UseGridOverlay(*app.gridComponent.Context.GetGridOverlay())
 	}
 
 	app.cmdHandlers[domain.CommandPing] = app.handlePing
 	app.cmdHandlers[domain.CommandStart] = app.handleStart
 	app.cmdHandlers[domain.CommandStop] = app.handleStop
-	app.cmdHandlers[domain.ModeHints] = app.handleHints
-	app.cmdHandlers[domain.ModeGrid] = app.handleGrid
+	app.cmdHandlers[string(domain.ModeHints)] = app.handleHints
+	app.cmdHandlers[string(domain.ModeGrid)] = app.handleGrid
 	app.cmdHandlers[domain.CommandAction] = app.handleAction
-	app.cmdHandlers[domain.ModeIdle] = app.handleIdle
+	app.cmdHandlers[string(domain.ModeIdle)] = app.handleIdle
 	app.cmdHandlers[domain.CommandStatus] = app.handleStatus
 	app.cmdHandlers[domain.CommandConfig] = app.handleConfig
 
@@ -342,13 +412,13 @@ func (a *App) Logger() *zap.Logger { return a.logger }
 func (a *App) OverlayManager() *overlay.Manager { return a.overlayManager }
 
 // HintGenerator returns the hint generator.
-func (a *App) HintGenerator() *hints.Generator { return a.hintGenerator }
+func (a *App) HintGenerator() *hints.Generator { return a.hintsComponent.Generator }
 
 // HintManager returns the hint manager.
-func (a *App) HintManager() *hints.Manager { return a.hintManager }
+func (a *App) HintManager() *hints.Manager { return a.hintsComponent.Manager }
 
 // HintsContext returns the hints context.
-func (a *App) HintsContext() *hints.Context { return a.hintsCtx }
+func (a *App) HintsContext() *hints.Context { return a.hintsComponent.Context }
 
 // Renderer returns the overlay renderer.
 func (a *App) Renderer() *ui.OverlayRenderer { return a.renderer }
@@ -375,25 +445,25 @@ func (a *App) IsFocusedAppExcluded() bool { return a.isFocusedAppExcluded() }
 func (a *App) ExitMode() { a.exitMode() }
 
 // GridManager returns the grid manager.
-func (a *App) GridManager() *grid.Manager { return a.gridManager }
+func (a *App) GridManager() *grid.Manager { return a.gridComponent.Manager }
 
 // GridContext returns the grid context.
-func (a *App) GridContext() *grid.Context { return a.gridCtx }
+func (a *App) GridContext() *grid.Context { return a.gridComponent.Context }
 
 // GridRouter returns the grid router.
-func (a *App) GridRouter() *grid.Router { return a.gridRouter }
+func (a *App) GridRouter() *grid.Router { return a.gridComponent.Router }
 
 // ScrollContext returns the scroll context.
-func (a *App) ScrollContext() *scroll.Context { return a.scrollCtx }
+func (a *App) ScrollContext() *scroll.Context { return a.scrollComponent.Context }
 
 // HintsRouter returns the hints router.
-func (a *App) HintsRouter() *hints.Router { return a.hintsRouter }
+func (a *App) HintsRouter() *hints.Router { return a.hintsComponent.Router }
 
 // EventTap returns the event tap.
 func (a *App) EventTap() eventTap { return a.eventTap }
 
 // ScrollController returns the scroll controller.
-func (a *App) ScrollController() *scroll.Controller { return a.scrollController }
+func (a *App) ScrollController() *scroll.Controller { return a.scrollComponent.Controller }
 
 // CurrentMode returns the current mode.
 func (a *App) CurrentMode() Mode { return a.state.CurrentMode() }

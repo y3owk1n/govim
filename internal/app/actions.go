@@ -36,8 +36,8 @@ func isKnownAction(action string) bool {
 func (a *App) startInteractiveScroll() {
 	a.cursor.SkipNextRestore()
 	// Reset scroll context before exiting current mode to ensure clean state transition
-	a.scrollCtx.SetIsActive(false)
-	a.scrollCtx.SetLastKey("")
+	a.scrollComponent.Context.SetIsActive(false)
+	a.scrollComponent.Context.SetLastKey("")
 	a.exitMode()
 
 	if a.overlayManager != nil {
@@ -55,7 +55,7 @@ func (a *App) startInteractiveScroll() {
 		a.eventTap.Enable()
 	}
 
-	a.scrollCtx.SetIsActive(true)
+	a.scrollComponent.Context.SetIsActive(true)
 
 	a.logger.Info("Interactive scroll activated")
 	a.logger.Info("Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom, Esc to exit")

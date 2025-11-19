@@ -3,7 +3,6 @@ package app
 import (
 	"image"
 	"math"
-	"runtime"
 
 	"github.com/y3owk1n/neru/internal/domain"
 	"github.com/y3owk1n/neru/internal/infra/accessibility"
@@ -24,15 +23,15 @@ func (a *App) handleKeyPress(key string) {
 			if a.eventTap != nil {
 				a.eventTap.Disable()
 			}
-			a.scrollCtx.SetIsActive(false)
-			a.scrollCtx.SetLastKey("")
+			a.scrollComponent.Context.SetIsActive(false)
+			a.scrollComponent.Context.SetLastKey("")
 			return
 		}
 		// Try to handle scroll keys with generic handler using persistent state.
 		// If it's not a scroll key, it will just be ignored.
-		lastKey := a.scrollCtx.LastKey
+		lastKey := a.scrollComponent.Context.LastKey
 		a.handleGenericScrollKey(key, &lastKey)
-		a.scrollCtx.SetLastKey(lastKey)
+		a.scrollComponent.Context.SetLastKey(lastKey)
 		return
 	}
 
@@ -53,8 +52,8 @@ func (a *App) handleKeyPress(key string) {
 func (a *App) handleTabKey() {
 	switch a.state.CurrentMode() {
 	case ModeHints:
-		if a.hintsCtx.InActionMode {
-			a.hintsCtx.SetInActionMode(false)
+		if a.hintsComponent.Context.InActionMode {
+			a.hintsComponent.Context.SetInActionMode(false)
 			if overlay.Get() != nil {
 				overlay.Get().Clear()
 				overlay.Get().Hide()
@@ -64,7 +63,7 @@ func (a *App) handleTabKey() {
 			a.logger.Info("Switched back to hints overlay mode")
 			a.overlaySwitch(overlay.ModeHints)
 		} else {
-			a.hintsCtx.SetInActionMode(true)
+			a.hintsComponent.Context.SetInActionMode(true)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.drawHintsActionHighlight()
@@ -73,8 +72,8 @@ func (a *App) handleTabKey() {
 			a.overlaySwitch(overlay.ModeAction)
 		}
 	case ModeGrid:
-		if a.gridCtx.InActionMode {
-			a.gridCtx.SetInActionMode(false)
+		if a.gridComponent.Context.InActionMode {
+			a.gridComponent.Context.SetInActionMode(false)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			// Re-setup grid to show grid again with proper refresh
@@ -85,7 +84,7 @@ func (a *App) handleTabKey() {
 			a.logger.Info("Switched back to grid overlay mode")
 			a.overlaySwitch(overlay.ModeGrid)
 		} else {
-			a.gridCtx.SetInActionMode(true)
+			a.gridComponent.Context.SetInActionMode(true)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.drawGridActionHighlight()
@@ -102,8 +101,8 @@ func (a *App) handleTabKey() {
 func (a *App) handleEscapeKey() {
 	switch a.state.CurrentMode() {
 	case ModeHints:
-		if a.hintsCtx.InActionMode {
-			a.hintsCtx.SetInActionMode(false)
+		if a.hintsComponent.Context.InActionMode {
+			a.hintsComponent.Context.SetInActionMode(false)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.exitMode()
@@ -112,8 +111,8 @@ func (a *App) handleEscapeKey() {
 			return
 		}
 	case ModeGrid:
-		if a.gridCtx.InActionMode {
-			a.gridCtx.SetInActionMode(false)
+		if a.gridComponent.Context.InActionMode {
+			a.gridComponent.Context.SetInActionMode(false)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.exitMode()
@@ -132,7 +131,7 @@ func (a *App) handleEscapeKey() {
 func (a *App) handleModeSpecificKey(key string) {
 	switch a.state.CurrentMode() {
 	case ModeHints:
-		if a.hintsCtx.InActionMode {
+		if a.hintsComponent.Context.InActionMode {
 			a.handleHintsActionKey(key)
 			// After handling the action, we stay in action mode.
 			// The user can press Tab to go back to overlay mode or perform more actions.
@@ -140,7 +139,7 @@ func (a *App) handleModeSpecificKey(key string) {
 		}
 
 		// Route hint-specific keys via hints router
-		res := a.hintsRouter.RouteKey(key, a.hintsCtx.SelectedHint != nil)
+		res := a.hintsComponent.Router.RouteKey(key, a.hintsComponent.Context.SelectedHint != nil)
 		if res.Exit {
 			a.exitMode()
 			return
@@ -160,27 +159,27 @@ func (a *App) handleModeSpecificKey(key string) {
 				Y: info.Position.Y + info.Size.Y/2,
 			}
 
-			a.logger.Info("Found element", zap.String("label", a.hintManager.GetInput()))
+			a.logger.Info("Found element", zap.String("label", a.HintManager().GetInput()))
 			accessibility.MoveMouseToPoint(center)
 
-			if a.hintManager != nil {
-				a.hintManager.Reset()
+			if a.HintManager() != nil {
+				a.HintManager().Reset()
 			}
-			a.hintsCtx.SetSelectedHint(nil)
+			a.hintsComponent.Context.SetSelectedHint(nil)
 
 			a.activateHintMode()
 
 			return
 		}
 	case ModeGrid:
-		if a.gridCtx.InActionMode {
+		if a.gridComponent.Context.InActionMode {
 			a.handleGridActionKey(key)
 			// After handling the action, we stay in action mode.
 			// The user can press Tab to go back to overlay mode or perform more actions.
 			return
 		}
 
-		res := a.gridRouter.RouteKey(key)
+		res := a.gridComponent.Router.RouteKey(key)
 		if res.Exit {
 			a.exitMode()
 			return
@@ -240,26 +239,15 @@ func (a *App) performModeSpecificCleanup() {
 
 // cleanupHintsMode handles cleanup for hints mode.
 func (a *App) cleanupHintsMode() {
-	a.hintsCtx.SetInActionMode(false)
+	a.hintsComponent.Context.SetInActionMode(false)
 
-	if a.hintManager != nil {
-		a.hintManager.Reset()
+	if a.HintManager() != nil {
+		a.HintManager().Reset()
 	}
-	a.hintsCtx.SetSelectedHint(nil)
+	a.hintsComponent.Context.SetSelectedHint(nil)
 
 	a.overlayManager.Clear()
 	a.overlayManager.Hide()
-
-	if overlay.Get() != nil {
-		overlay.Get().Clear()
-		overlay.Get().Hide()
-	}
-
-	var ms runtime.MemStats
-	runtime.ReadMemStats(&ms)
-	a.logger.Info("Hints cleanup mem",
-		zap.Uint64("alloc_bytes", ms.Alloc),
-		zap.Uint64("sys_bytes", ms.Sys))
 }
 
 // cleanupDefaultMode handles cleanup for default/unknown modes.
@@ -274,14 +262,12 @@ func (a *App) cleanupDefaultMode() {
 
 // cleanupGridMode handles cleanup for grid mode.
 func (a *App) cleanupGridMode() {
-	a.gridCtx.SetInActionMode(false)
+	a.gridComponent.Context.SetInActionMode(false)
 
-	if a.gridManager != nil {
-		a.gridManager.Reset()
+	if a.GridManager() != nil {
+		a.GridManager().Reset()
 	}
 
-	a.logger.Info("Hiding grid overlay")
-	a.overlayManager.Hide()
 	a.overlayManager.Clear()
 	a.overlayManager.Hide()
 }
@@ -321,8 +307,8 @@ func (a *App) handleCursorRestoration() {
 	a.cursor.Reset()
 	// Always reset scroll context regardless of whether we performed cursor restoration.
 	// This ensures proper state cleanup when switching between modes.
-	a.scrollCtx.SetIsActive(false)
-	a.scrollCtx.SetLastKey("")
+	a.scrollComponent.Context.SetIsActive(false)
+	a.scrollComponent.Context.SetLastKey("")
 }
 
 func getModeString(mode Mode) string {
@@ -383,7 +369,7 @@ func (a *App) shouldRestoreCursorOnExit() bool {
 	if !a.cursor.IsCaptured() {
 		return false
 	}
-	if a.scrollCtx.GetIsActive() {
+	if a.scrollComponent.Context.GetIsActive() {
 		return false
 	}
 	return a.cursor.ShouldRestore()

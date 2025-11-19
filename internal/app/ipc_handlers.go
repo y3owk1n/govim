@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -138,6 +139,10 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 		}
 
 		if err != nil {
+			a.logger.Error("Action failed",
+				zap.Error(err),
+				zap.String("action", param),
+				zap.String("point", fmt.Sprintf("%+v", cursorPos)))
 			return ipc.Response{
 				Success: false,
 				Message: "action failed: " + err.Error(),
