@@ -7,26 +7,21 @@ import (
 
 // updateRolesForCurrentApp updates the accessibility roles based on the currently focused application.
 func (a *App) updateRolesForCurrentApp() {
-	// Get the focused application
 	focusedApp := accessibility.GetFocusedApplication()
 	if focusedApp == nil {
 		a.logger.Debug("No focused application, using global roles only")
-		// Use global roles
 		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles)
 		return
 	}
 	defer focusedApp.Release()
 
-	// Get bundle ID
 	bundleID := focusedApp.GetBundleIdentifier()
 	if bundleID == "" {
 		a.logger.Debug("Could not get bundle ID, using global roles only")
-		// Use global roles
 		accessibility.SetClickableRoles(a.config.Hints.ClickableRoles)
 		return
 	}
 
-	// Get merged roles for this app
 	clickableRoles := a.config.GetClickableRolesForApp(bundleID)
 
 	a.logger.Debug("Updating roles for current app",
@@ -34,7 +29,6 @@ func (a *App) updateRolesForCurrentApp() {
 		zap.Int("clickable_count", len(clickableRoles)),
 	)
 
-	// Apply the merged roles
 	accessibility.SetClickableRoles(clickableRoles)
 }
 
@@ -101,14 +95,12 @@ func (a *App) addSupplementaryElements(
 	elements []*accessibility.TreeNode,
 	missionControlActive bool,
 ) []*accessibility.TreeNode {
-	// Menubar elements
 	if !missionControlActive {
 		elements = a.addMenubarElements(elements)
 	} else {
 		a.logger.Info("Mission Control is active, skipping menubar elements")
 	}
 
-	// Dock elements
 	elements = a.addDockElements(elements)
 
 	// Notification Center elements (only when Mission Control is active)
@@ -127,7 +119,6 @@ func (a *App) addMenubarElements(elements []*accessibility.TreeNode) []*accessib
 
 	a.logger.Info("Adding menubar elements")
 
-	// Add standard menubar elements
 	var mbElems []*accessibility.TreeNode
 	var err error
 	mbElems, err = accessibility.GetMenuBarClickableElements()
@@ -137,8 +128,6 @@ func (a *App) addMenubarElements(elements []*accessibility.TreeNode) []*accessib
 	} else {
 		a.logger.Warn("Failed to get menubar elements", zap.Error(err))
 	}
-
-	// Add additional menubar elements from specific bundle IDs
 	for _, bundleID := range a.config.Hints.AdditionalMenubarHintsTargets {
 		var additionalElems []*accessibility.TreeNode
 		var err error

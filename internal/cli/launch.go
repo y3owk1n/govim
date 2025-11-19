@@ -6,8 +6,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// launchCmd represents the command to launch the Neru daemon process.
-// This starts the main application in the background, making it ready to receive commands.
 var launchCmd = &cobra.Command{
 	Use:   "launch",
 	Short: "Launch the neru program",

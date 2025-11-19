@@ -19,25 +19,20 @@ import (
 func (a *App) Run() error {
 	a.logger.Info("Starting Neru")
 
-	// Start IPC server
 	a.ipcServer.Start()
 	a.logger.Info("IPC server started")
 
-	// Start app watcher
 	a.appWatcher.Start()
 	a.logger.Info("App watcher started")
 
-	// Initialize hotkeys based on current focused app and exclusion
 	a.refreshHotkeysForAppOrCurrent("")
 	a.logger.Info("Hotkeys initialized")
 
-	// setup watcher callbacks
 	a.setupAppWatcherCallbacks()
 
 	a.logger.Info("Neru is running")
 	a.printStartupInfo()
 
-	// Wait for interrupt signal with force-quit support
 	return a.waitForShutdown()
 }
 
@@ -126,7 +121,6 @@ func (a *App) handleScreenParametersChange() {
 func (a *App) handleAppActivation(bundleID string) {
 	a.logger.Debug("App activated", zap.String("bundle_id", bundleID))
 
-	// refresh hotkeys for app
 	if a.state.CurrentMode() == ModeIdle {
 		go a.refreshHotkeysForAppOrCurrent(bundleID)
 		a.logger.Debug("Handled hotkey refresh")
@@ -149,19 +143,16 @@ func (a *App) handleAppActivation(bundleID string) {
 func (a *App) handleAdditionalAccessibility(bundleID string) {
 	cfg := a.config.Hints.AdditionalAXSupport
 
-	// handle electrons
 	if electron.ShouldEnableElectronSupport(bundleID, cfg.AdditionalElectronBundles) {
 		electron.EnsureElectronAccessibility(bundleID)
 		a.logger.Debug("Handled electron accessibility")
 	}
 
-	// handle chromium
 	if electron.ShouldEnableChromiumSupport(bundleID, cfg.AdditionalChromiumBundles) {
 		electron.EnsureChromiumAccessibility(bundleID)
 		a.logger.Debug("Handled chromium accessibility")
 	}
 
-	// handle firefox
 	if electron.ShouldEnableFirefoxSupport(bundleID, cfg.AdditionalFirefoxBundles) {
 		electron.EnsureFirefoxAccessibility(bundleID)
 		a.logger.Debug("Handled firefox accessibility")
@@ -173,7 +164,6 @@ func (a *App) printStartupInfo() {
 	a.logger.Info("✓ Neru is running")
 
 	for key, value := range a.config.Hotkeys.Bindings {
-		// Skip showing bindings for disabled modes
 		mode := value
 		if parts := strings.Split(value, " "); len(parts) > 0 {
 			mode = parts[0]
@@ -201,31 +191,25 @@ func (a *App) waitForShutdown() error {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	// First signal: graceful shutdown
 	<-sigChan
 	a.logger.Info("Received shutdown signal, starting graceful shutdown...")
 	a.logger.Info("\n⚠️  Shutting down gracefully... (press Ctrl+C again to force quit)")
 
-	// Start cleanup in goroutine
 	done := make(chan struct{})
 	go func() {
-		// Quit systray to exit the event loop
 		systray.Quit()
 		close(done)
 	}()
 
-	// Wait for cleanup or second signal
 	select {
 	case <-done:
 		a.logger.Info("Graceful shutdown completed")
 		return nil
 	case <-sigChan:
-		// Second signal: force quit
 		a.logger.Warn("Received second signal, forcing shutdown")
 		a.logger.Info("⚠️  Force quitting...")
 		os.Exit(1)
 	case <-time.After(10 * time.Second):
-		// Timeout: force quit
 		a.logger.Error("Shutdown timeout exceeded, forcing shutdown")
 		a.logger.Info("⚠️  Shutdown timeout, force quitting...")
 		os.Exit(1)
@@ -238,7 +222,6 @@ func (a *App) waitForShutdown() error {
 func (a *App) Cleanup() {
 	a.logger.Info("Cleaning up")
 
-	// Exit any active mode first
 	a.exitMode()
 
 	// Stop IPC server first to prevent new requests
@@ -249,22 +232,19 @@ func (a *App) Cleanup() {
 		}
 	}
 
-	// Unregister all hotkeys
 	if a.hotkeyManager != nil {
 		a.hotkeyManager.UnregisterAll()
 	}
 
-	// Clean up centralized overlay window
 	if a.overlayManager != nil {
 		a.overlayManager.Destroy()
 	}
 
-	// Cleanup event tap
 	if a.eventTap != nil {
 		a.eventTap.Destroy()
 	}
 
-	// Sync and close logger at the end
+	// Sync and close logger
 	err := logger.Sync()
 	if err != nil {
 		// Ignore "inappropriate ioctl for device" error which occurs when syncing stdout/stderr
@@ -273,10 +253,8 @@ func (a *App) Cleanup() {
 		}
 	}
 
-	// Stop app watcher
 	a.appWatcher.Stop()
 
-	// Close logger (syncs and closes log file)
 	err2 := logger.Close()
 	if err2 != nil {
 		// Can't log this since logger is being closed

@@ -246,7 +246,6 @@ func (m *Manager) handleSubgridSelection(key string) (image.Point, bool) {
 	return image.Point{X: xCoordinate, Y: yCoordinate}, true
 }
 
-// handleBackspace handles the backspace key input.
 func (m *Manager) handleBackspace() (image.Point, bool) {
 	if len(m.currentInput) > 0 {
 		m.currentInput = m.currentInput[:len(m.currentInput)-1]
@@ -277,7 +276,6 @@ func (m *Manager) handleBackspace() (image.Point, bool) {
 	return image.Point{}, false
 }
 
-// handleResetKey handles the reset key input.
 func (m *Manager) handleResetKey(redraw bool) {
 	m.Reset()
 	if m.onUpdate != nil {

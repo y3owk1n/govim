@@ -18,7 +18,6 @@ type ActionConfig struct {
 	HighlightColor string `toml:"highlight_color"`
 	HighlightWidth int    `toml:"highlight_width"`
 
-	// Action key mappings
 	LeftClickKey   string `toml:"left_click_key"`
 	RightClickKey  string `toml:"right_click_key"`
 	MiddleClickKey string `toml:"middle_click_key"`
@@ -74,7 +73,6 @@ type ScrollConfig struct {
 
 // HintsConfig defines the visual and behavioral settings for hints mode.
 type HintsConfig struct {
-	// General configurations
 	Enabled        bool    `toml:"enabled"`
 	HintCharacters string  `toml:"hint_characters"`
 	FontSize       int     `toml:"font_size"`
@@ -89,34 +87,27 @@ type HintsConfig struct {
 	MatchedTextColor string `toml:"matched_text_color"`
 	BorderColor      string `toml:"border_color"`
 
-	// Additional hints
 	IncludeMenubarHints           bool     `toml:"include_menubar_hints"`
 	AdditionalMenubarHintsTargets []string `toml:"additional_menubar_hints_targets"`
 	IncludeDockHints              bool     `toml:"include_dock_hints"`
 	IncludeNCHints                bool     `toml:"include_nc_hints"`
 
-	// Roles and clicks
 	ClickableRoles       []string `toml:"clickable_roles"`
 	IgnoreClickableCheck bool     `toml:"ignore_clickable_check"`
 
-	// App specific configs for roles and clicks
 	AppConfigs []AppConfig `toml:"app_configs"`
 
-	// AX support
 	AdditionalAXSupport AdditionalAXSupport `toml:"additional_ax_support"`
 }
 
 // GridConfig defines the visual and behavioral settings for grid mode.
 type GridConfig struct {
-	// General configurations
 	Enabled        bool `toml:"enabled"`
 	SubgridEnabled bool `toml:"subgrid_enabled"`
 
-	// Keys and characters
 	Characters   string `toml:"characters"`
 	SublayerKeys string `toml:"sublayer_keys"`
 
-	// Appearance
 	FontSize    int     `toml:"font_size"`
 	FontFamily  string  `toml:"font_family"`
 	Opacity     float64 `toml:"opacity"`
@@ -129,7 +120,6 @@ type GridConfig struct {
 	MatchedBorderColor     string `toml:"matched_border_color"`
 	BorderColor            string `toml:"border_color"`
 
-	// Behavior
 	LiveMatchUpdate bool `toml:"live_match_update"`
 	HideUnmatched   bool `toml:"hide_unmatched"`
 }
@@ -292,37 +282,32 @@ func DefaultConfig() *Config {
 func Load(path string) (*Config, error) {
 	cfg := DefaultConfig()
 
-	// If path is empty, try default locations
 	if path == "" {
 		path = FindConfigFile()
 	}
 
 	logger.Info("Loading config from", zap.String("path", path))
 
-	// If config file doesn't exist, return default config
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		logger.Info("Config file not found, using default configuration")
 		return cfg, nil
 	}
 
-	// Parse TOML file into the typed config
 	_, err = toml.DecodeFile(path, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
-	// Decode the hotkeys table into a generic map and populate cfg.Hotkeys.Bindings.
 	var raw map[string]map[string]any
 	_, err = toml.DecodeFile(path, &raw)
 	if err == nil {
 		if hot, ok := raw["hotkeys"]; ok {
-			// Clear default bindings and initialize with empty map when user provides hotkeys config
 			if len(hot) > 0 {
+				// Clear default bindings when user provides hotkeys config
 				cfg.Hotkeys.Bindings = map[string]string{}
 			}
 			for key, value := range hot {
-				// Only accept string values for actions
 				str, ok := value.(string)
 				if !ok {
 					return nil, fmt.Errorf("hotkeys.%s must be a string action", key)
@@ -331,7 +316,6 @@ func Load(path string) (*Config, error) {
 			}
 		}
 	}
-	// Validate configuration.
 	err = cfg.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
@@ -483,9 +467,7 @@ func (c *Config) IsAppExcluded(bundleID string) bool {
 }
 
 // GetClickableRolesForApp returns the merged clickable roles for a specific app.
-// It combines global clickable roles with app-specific additional roles.
 func (c *Config) GetClickableRolesForApp(bundleID string) []string {
-	// Start with global roles
 	rolesMap := make(map[string]struct{})
 	for _, role := range c.Hints.ClickableRoles {
 		trimmed := strings.TrimSpace(role)
@@ -494,7 +476,6 @@ func (c *Config) GetClickableRolesForApp(bundleID string) []string {
 		}
 	}
 
-	// Add app-specific roles
 	for _, appConfig := range c.Hints.AppConfigs {
 		if appConfig.BundleID == bundleID {
 			for _, role := range appConfig.AdditionalClickable {
@@ -507,17 +488,14 @@ func (c *Config) GetClickableRolesForApp(bundleID string) []string {
 		}
 	}
 
-	// Add menubar roles if enabled
 	if c.Hints.IncludeMenubarHints {
 		rolesMap["AXMenuBarItem"] = struct{}{}
 	}
 
-	// Add dock roles if enabled
 	if c.Hints.IncludeDockHints {
 		rolesMap["AXDockItem"] = struct{}{}
 	}
 
-	// Convert map to slice
 	roles := make([]string, 0, len(rolesMap))
 	for role := range rolesMap {
 		roles = append(roles, role)
@@ -525,10 +503,8 @@ func (c *Config) GetClickableRolesForApp(bundleID string) []string {
 	return roles
 }
 
-// validateHints validates the hints configuration.
 func (c *Config) validateHints() error {
 	var err error
-	// Validate hint characters
 	if strings.TrimSpace(c.Hints.HintCharacters) == "" {
 		return errors.New("hint_characters cannot be empty")
 	}
@@ -536,12 +512,10 @@ func (c *Config) validateHints() error {
 		return errors.New("hint_characters must contain at least 2 characters")
 	}
 
-	// Validate opacity values
 	if c.Hints.Opacity < 0 || c.Hints.Opacity > 1 {
 		return errors.New("hints.opacity must be between 0 and 1")
 	}
 
-	// Validate colors
 	err = validateColor(c.Hints.BackgroundColor, "hints.background_color")
 	if err != nil {
 		return err
@@ -559,7 +533,6 @@ func (c *Config) validateHints() error {
 		return err
 	}
 
-	// Validate hints settings
 	if c.Hints.FontSize < 6 || c.Hints.FontSize > 72 {
 		return errors.New("hints.font_size must be between 6 and 72")
 	}

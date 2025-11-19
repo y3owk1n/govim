@@ -5,8 +5,6 @@ import (
 	"github.com/y3owk1n/neru/internal/infra/logger"
 )
 
-// stopCmd represents the command to pause the Neru daemon.
-// This temporarily disables Neru functionality while keeping the daemon running in the background.
 var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Pause the neru program (does not quit)",

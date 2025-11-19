@@ -15,7 +15,6 @@ import (
 // activateMode activates a mode with a given action (for hints mode).
 func (a *App) activateMode(mode Mode) {
 	if mode == ModeIdle {
-		// Explicit idle transition
 		a.exitMode()
 		return
 	}
@@ -27,7 +26,6 @@ func (a *App) activateMode(mode Mode) {
 		a.activateGridMode()
 		return
 	}
-	// Unknown or unsupported mode
 	a.logger.Warn("Unknown mode", zap.String("mode", getModeString(mode)))
 }
 
@@ -42,7 +40,7 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		a.logger.Debug("Neru is disabled, ignoring hint mode activation")
 		return
 	}
-	// Respect mode enable flag
+
 	if !a.config.Hints.Enabled {
 		a.logger.Debug("Hints mode disabled by config, ignoring activation")
 		return
@@ -53,7 +51,6 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		return
 	}
 
-	// Handle scroll context if active
 	if a.scrollCtx.GetIsActive() {
 		// Reset scroll context to ensure clean transition
 		a.scrollCtx.SetIsActive(false)
@@ -68,7 +65,6 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 	actionString := getActionString(action)
 	a.logger.Info("Activating hint mode", zap.String("action", actionString))
 
-	// Only exit mode if not preserving action mode state
 	if !preserveActionMode {
 		a.exitMode()
 	}
@@ -78,22 +74,19 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		return
 	}
 
-	// Always resize overlay to the active screen (where mouse is) before collecting elements
-	// This ensures proper positioning when switching between multiple displays
+	// Always resize overlay to the active screen (where mouse is) before collecting elements.
+	// This ensures proper positioning when switching between multiple displays.
 	a.overlayManager.ResizeToActiveScreenSync()
 	a.state.SetHintOverlayNeedsRefresh(false)
 
-	// Update roles for the current focused app
 	a.updateRolesForCurrentApp()
 
-	// Collect elements based on mode
 	elements := a.collectElements()
 	if len(elements) == 0 {
 		a.logger.Warn("No elements found for action", zap.String("action", actionString))
 		return
 	}
 
-	// Generate and setup hints
 	err := a.setupHints(elements)
 	if err != nil {
 		a.logger.Error("Failed to setup hints", zap.Error(err), zap.String("action", actionString))
@@ -109,24 +102,20 @@ func (a *App) setupHints(elements []*accessibility.TreeNode) error {
 	var msBefore runtime.MemStats
 	runtime.ReadMemStats(&msBefore)
 
-	// Generate and normalize hints
 	hintList, err := a.generateAndNormalizeHints(elements)
 	if err != nil {
 		return err
 	}
 
-	// Set up hints in the hint manager
 	hintCollection := hints.NewHintCollection(hintList)
 	a.hintManager.SetHints(hintCollection)
 
-	// Draw hints with mode-specific styling
 	drawErr := a.renderer.DrawHints(hintList)
 	if drawErr != nil {
 		return fmt.Errorf("failed to draw hints: %w", drawErr)
 	}
 	a.renderer.Show()
 
-	// Log performance metrics
 	a.logHintsSetupPerformance(hintList, msBefore)
 
 	return nil
@@ -139,14 +128,13 @@ func (a *App) generateAndNormalizeHints(elements []*accessibility.TreeNode) ([]*
 	screenOffsetX := screenBounds.Min.X
 	screenOffsetY := screenBounds.Min.Y
 
-	// Generate hints
 	hintList, err := a.hintGenerator.Generate(elements)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate hints: %w", err)
 	}
 
-	// Normalize hint positions to window-local coordinates
-	// The overlay window is positioned at the screen origin, but the view uses local coordinates
+	// Normalize hint positions to window-local coordinates.
+	// The overlay window is positioned at the screen origin, but the view uses local coordinates.
 	for _, hint := range hintList {
 		pos := hint.GetPosition()
 		hint.Position.X = pos.X - screenOffsetX
@@ -179,11 +167,9 @@ func (a *App) drawHintsActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
 	a.renderer.ResizeActive()
 
-	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
-	// Draw action highlight using renderer
 	a.renderer.DrawActionHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,

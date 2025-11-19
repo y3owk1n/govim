@@ -13,37 +13,30 @@ func onReady() {
 	systray.SetTitle("⌨️")
 	systray.SetTooltip("Neru - Keyboard Navigation")
 
-	// Status submenu for version
 	mVersion := systray.AddMenuItem("Version "+cli.Version, "Show version")
 	mVersion.Disable()
 	mVersionCopy := systray.AddMenuItem("Copy version", "Copy version to clipboard")
 
-	// Status toggle
 	systray.AddSeparator()
 	mStatus := systray.AddMenuItem("Status: Running", "Show current status")
 	mStatus.Disable()
 	mToggle := systray.AddMenuItem("Disable", "Disable/Enable Neru without quitting")
 
-	// Control actions
 	systray.AddSeparator()
 
-	// Hints submenu
 	mHints := systray.AddMenuItem("Hints", "Hint mode actions")
 	if globalApp != nil && !globalApp.HintsEnabled() {
 		mHints.Hide()
 	}
 
-	// Grid submenu
 	mGrid := systray.AddMenuItem("Grid", "Grid mode actions")
 	if globalApp != nil && !globalApp.GridEnabled() {
 		mGrid.Hide()
 	}
 
-	// Quit option
 	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit Neru", "Exit the application")
 
-	// Handle clicks in a separate goroutine
 	go handleSystrayEvents(
 		mVersionCopy, mStatus, mToggle,
 		mHints, mGrid,
