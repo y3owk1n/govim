@@ -9,8 +9,9 @@ import (
 	"time"
 
 	"github.com/getlantern/systray"
-	"github.com/y3owk1n/neru/internal/electron"
-	"github.com/y3owk1n/neru/internal/logger"
+	"github.com/y3owk1n/neru/internal/domain"
+	"github.com/y3owk1n/neru/internal/infra/electron"
+	"github.com/y3owk1n/neru/internal/infra/logger"
 	"go.uber.org/zap"
 )
 
@@ -53,11 +54,11 @@ func (a *App) setupAppWatcherCallbacks() {
 
 // handleScreenParametersChange responds to display configuration changes by updating overlays.
 func (a *App) handleScreenParametersChange() {
-	if a.screenChangeProcessing {
+	if a.state.ScreenChangeProcessing() {
 		return
 	}
-	a.screenChangeProcessing = true
-	defer func() { a.screenChangeProcessing = false }()
+	a.state.SetScreenChangeProcessing(true)
+	defer func() { a.state.SetScreenChangeProcessing(false) }()
 
 	a.logger.Info("Screen parameters changed; adjusting overlays")
 	if a.overlayManager != nil {
@@ -67,8 +68,8 @@ func (a *App) handleScreenParametersChange() {
 	// Handle grid overlay
 	if a.config.Grid.Enabled && a.gridCtx != nil && a.gridCtx.gridOverlay != nil {
 		// If grid mode is not active, mark for refresh on next activation
-		if a.currentMode != ModeGrid {
-			a.gridOverlayNeedsRefresh = true
+		if a.state.CurrentMode() != ModeGrid {
+			a.state.SetGridOverlayNeedsRefresh(true)
 		} else {
 			// Grid mode is active - resize the existing overlay window to match new screen bounds
 			// Resize overlay window to current active screen (where mouse is)
@@ -90,8 +91,8 @@ func (a *App) handleScreenParametersChange() {
 	// Handle hint overlay
 	if a.config.Hints.Enabled && a.hintOverlay != nil {
 		// If hints mode is not active, mark for refresh on next activation
-		if a.currentMode != ModeHints {
-			a.hintOverlayNeedsRefresh = true
+		if a.state.CurrentMode() != ModeHints {
+			a.state.SetHintOverlayNeedsRefresh(true)
 		} else {
 			// Hints mode is active - resize the overlay and regenerate hints
 			if a.overlayManager != nil {
@@ -126,12 +127,12 @@ func (a *App) handleAppActivation(bundleID string) {
 	a.logger.Debug("App activated", zap.String("bundle_id", bundleID))
 
 	// refresh hotkeys for app
-	if a.currentMode == ModeIdle {
+	if a.state.CurrentMode() == ModeIdle {
 		go a.refreshHotkeysForAppOrCurrent(bundleID)
 		a.logger.Debug("Handled hotkey refresh")
 	} else {
 		// Defer hotkey refresh to avoid re-entry during active modes
-		a.hotkeyRefreshPending = true
+		a.state.SetHotkeyRefreshPending(true)
 		a.logger.Debug("Deferred hotkey refresh due to active mode")
 	}
 
@@ -177,10 +178,10 @@ func (a *App) printStartupInfo() {
 		if parts := strings.Split(value, " "); len(parts) > 0 {
 			mode = parts[0]
 		}
-		if mode == modeHints && !a.config.Hints.Enabled {
+		if mode == domain.ModeHints && !a.config.Hints.Enabled {
 			continue
 		}
-		if mode == modeGrid && !a.config.Grid.Enabled {
+		if mode == domain.ModeGrid && !a.config.Grid.Enabled {
 			continue
 		}
 

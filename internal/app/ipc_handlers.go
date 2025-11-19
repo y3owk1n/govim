@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/y3owk1n/neru/internal/accessibility"
+	"github.com/y3owk1n/neru/internal/infra/accessibility"
 	"github.com/y3owk1n/neru/internal/config"
-	"github.com/y3owk1n/neru/internal/ipc"
+	"github.com/y3owk1n/neru/internal/infra/ipc"
 	"go.uber.org/zap"
 )
 
@@ -34,32 +34,32 @@ func (a *App) handlePing(_ ipc.Command) ipc.Response {
 }
 
 func (a *App) handleStart(_ ipc.Command) ipc.Response {
-	if a.enabled {
+	if a.state.IsEnabled() {
 		return ipc.Response{
 			Success: false,
 			Message: "neru is already running",
 			Code:    ipc.CodeAlreadyRunning,
 		}
 	}
-	a.enabled = true
+	a.state.SetEnabled(true)
 	return ipc.Response{Success: true, Message: "neru started", Code: ipc.CodeOK}
 }
 
 func (a *App) handleStop(_ ipc.Command) ipc.Response {
-	if !a.enabled {
+	if !a.state.IsEnabled() {
 		return ipc.Response{
 			Success: false,
 			Message: "neru is already stopped",
 			Code:    ipc.CodeNotRunning,
 		}
 	}
-	a.enabled = false
+	a.state.SetEnabled(false)
 	a.exitMode()
 	return ipc.Response{Success: true, Message: "neru stopped", Code: ipc.CodeOK}
 }
 
 func (a *App) handleHints(_ ipc.Command) ipc.Response {
-	if !a.enabled {
+	if !a.state.IsEnabled() {
 		return ipc.Response{
 			Success: false,
 			Message: "neru is not running",
@@ -80,7 +80,7 @@ func (a *App) handleHints(_ ipc.Command) ipc.Response {
 }
 
 func (a *App) handleGrid(_ ipc.Command) ipc.Response {
-	if !a.enabled {
+	if !a.state.IsEnabled() {
 		return ipc.Response{
 			Success: false,
 			Message: "neru is not running",
@@ -101,7 +101,7 @@ func (a *App) handleGrid(_ ipc.Command) ipc.Response {
 }
 
 func (a *App) handleAction(cmd ipc.Command) ipc.Response {
-	if !a.enabled {
+	if !a.state.IsEnabled() {
 		return ipc.Response{
 			Success: false,
 			Message: "neru is not running",
@@ -152,7 +152,7 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 }
 
 func (a *App) handleIdle(_ ipc.Command) ipc.Response {
-	if !a.enabled {
+	if !a.state.IsEnabled() {
 		return ipc.Response{
 			Success: false,
 			Message: "neru is not running",
@@ -166,7 +166,7 @@ func (a *App) handleIdle(_ ipc.Command) ipc.Response {
 func (a *App) handleStatus(_ ipc.Command) ipc.Response {
 	cfgPath := a.resolveConfigPath()
 	statusData := ipc.StatusData{
-		Enabled: a.enabled,
+		Enabled: a.state.IsEnabled(),
 		Mode:    a.getCurrModeString(),
 		Config:  cfgPath,
 	}

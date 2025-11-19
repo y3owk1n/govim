@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/y3owk1n/neru/internal/ipc"
-	"github.com/y3owk1n/neru/internal/logger"
+	"github.com/y3owk1n/neru/internal/infra/ipc"
+	"github.com/y3owk1n/neru/internal/infra/logger"
 	"go.uber.org/zap"
 )
 

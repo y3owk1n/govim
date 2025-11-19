@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/y3owk1n/neru/internal/accessibility"
+	"github.com/y3owk1n/neru/internal/infra/accessibility"
 	"go.uber.org/zap"
 )
 

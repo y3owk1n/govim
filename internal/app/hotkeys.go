@@ -8,7 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/y3owk1n/neru/internal/ipc"
+	"github.com/y3owk1n/neru/internal/domain"
+	"github.com/y3owk1n/neru/internal/infra/ipc"
 	"go.uber.org/zap"
 )
 
@@ -30,10 +31,10 @@ func (a *App) registerHotkeys() {
 		if parts := strings.Split(action, " "); len(parts) > 0 {
 			mode = parts[0]
 		}
-		if mode == modeHints && !a.config.Hints.Enabled {
+		if mode == domain.ModeHints && !a.config.Hints.Enabled {
 			continue
 		}
-		if mode == modeGrid && !a.config.Grid.Enabled {
+		if mode == domain.ModeGrid && !a.config.Grid.Enabled {
 			continue
 		}
 
@@ -85,7 +86,7 @@ func (a *App) registerHotkeys() {
 // executeHotkeyAction executes a hotkey action, which can be either a shell command or an IPC command.
 func (a *App) executeHotkeyAction(key, action string) error {
 	// Exec mode: run arbitrary bash command
-	if strings.HasPrefix(action, "exec ") {
+	if strings.HasPrefix(action, domain.ActionPrefixExec) {
 		return a.executeShellCommand(key, action)
 	}
 
@@ -146,11 +147,11 @@ func (a *App) executeShellCommand(key, action string) error {
 // and whether the currently focused application is excluded.
 func (a *App) refreshHotkeysForAppOrCurrent(bundleID string) {
 	// If disabled, ensure no hotkeys are registered
-	if !a.enabled {
-		if a.hotkeysRegistered {
+	if !a.state.IsEnabled() {
+		if a.state.HotkeysRegistered() {
 			a.logger.Debug("Neru disabled; unregistering hotkeys")
 			a.hotkeyManager.UnregisterAll()
-			a.hotkeysRegistered = false
+			a.state.SetHotkeysRegistered(false)
 		}
 		return
 	}
@@ -161,18 +162,18 @@ func (a *App) refreshHotkeysForAppOrCurrent(bundleID string) {
 
 	// If app is excluded, unregister; otherwise ensure registered
 	if a.config.IsAppExcluded(bundleID) {
-		if a.hotkeysRegistered {
+		if a.state.HotkeysRegistered() {
 			a.logger.Info("Focused app excluded; unregistering global hotkeys",
 				zap.String("bundle_id", bundleID))
 			a.hotkeyManager.UnregisterAll()
-			a.hotkeysRegistered = false
+			a.state.SetHotkeysRegistered(false)
 		}
 		return
 	}
 
-	if !a.hotkeysRegistered {
+	if !a.state.HotkeysRegistered() {
 		a.registerHotkeys()
-		a.hotkeysRegistered = true
+		a.state.SetHotkeysRegistered(true)
 		a.logger.Debug("Hotkeys registered")
 	}
 }

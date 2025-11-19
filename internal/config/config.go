@@ -1,4 +1,3 @@
-// Package config provides configuration functionality for the Neru application.
 package config
 
 import (
@@ -10,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/y3owk1n/neru/internal/logger"
+	"github.com/y3owk1n/neru/internal/infra/logger"
 	"go.uber.org/zap"
 )
 

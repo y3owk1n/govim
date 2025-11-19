@@ -2,7 +2,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/y3owk1n/neru/internal/logger"
+	"github.com/y3owk1n/neru/internal/infra/logger"
 )
 
 // actionCmd represents the parent command for immediate cursor actions.
