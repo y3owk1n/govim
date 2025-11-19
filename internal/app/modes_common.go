@@ -26,15 +26,17 @@ func (a *App) handleKeyPress(key string) {
 			if a.eventTap != nil {
 				a.eventTap.Disable()
 			}
-			a.state.SetScrollingActive(false)
-			a.state.SetIdleScrollLastKey("") // Reset scroll state
+			a.scrollCtx.SetIsActive(
+				false,
+			) // Use scroll context setter instead of direct field access
+			a.scrollCtx.SetLastKey("") // Reset scroll state
 			return
 		}
 		// Try to handle scroll keys with generic handler using persistent state
 		// If it's not a scroll key, it will just be ignored
-		lastKey := a.state.IdleScrollLastKey()
+		lastKey := a.scrollCtx.LastKey
 		a.handleGenericScrollKey(key, &lastKey)
-		a.state.SetIdleScrollLastKey(lastKey)
+		a.scrollCtx.SetLastKey(lastKey) // Use scroll context setter instead of direct field access
 		return
 	}
 
@@ -60,7 +62,7 @@ func (a *App) handleTabKey() {
 	case ModeHints:
 		if a.hintsCtx.InActionMode {
 			// Switch back to overlay mode
-			a.hintsCtx.InActionMode = false
+			a.hintsCtx.SetInActionMode(false)
 			if overlay.Get() != nil {
 				overlay.Get().Clear()
 				overlay.Get().Hide()
@@ -71,7 +73,7 @@ func (a *App) handleTabKey() {
 			a.overlaySwitch(overlay.ModeHints)
 		} else {
 			// Switch to action mode
-			a.hintsCtx.InActionMode = true
+			a.hintsCtx.SetInActionMode(true)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.drawHintsActionHighlight()
@@ -82,7 +84,7 @@ func (a *App) handleTabKey() {
 	case ModeGrid:
 		if a.gridCtx.InActionMode {
 			// Switch back to overlay mode
-			a.gridCtx.InActionMode = false
+			a.gridCtx.SetInActionMode(false)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			// Re-setup grid to show grid again with proper refresh
@@ -94,7 +96,7 @@ func (a *App) handleTabKey() {
 			a.overlaySwitch(overlay.ModeGrid)
 		} else {
 			// Switch to action mode
-			a.gridCtx.InActionMode = true
+			a.gridCtx.SetInActionMode(true)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.drawGridActionHighlight()
@@ -114,7 +116,7 @@ func (a *App) handleEscapeKey() {
 	case ModeHints:
 		if a.hintsCtx.InActionMode {
 			// Exit action mode completely, go back to idle mode
-			a.hintsCtx.InActionMode = false
+			a.hintsCtx.SetInActionMode(false)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.exitMode()
@@ -126,7 +128,7 @@ func (a *App) handleEscapeKey() {
 	case ModeGrid:
 		if a.gridCtx.InActionMode {
 			// Exit action mode completely, go back to idle mode
-			a.gridCtx.InActionMode = false
+			a.gridCtx.SetInActionMode(false)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.exitMode()
@@ -182,7 +184,7 @@ func (a *App) handleModeSpecificKey(key string) {
 			if a.hintManager != nil {
 				a.hintManager.Reset()
 			}
-			a.hintsCtx.SelectedHint = nil
+			a.hintsCtx.SetSelectedHint(nil)
 
 			a.activateHintMode()
 
@@ -266,12 +268,12 @@ func (a *App) performModeSpecificCleanup() {
 // cleanupHintsMode handles cleanup for hints mode.
 func (a *App) cleanupHintsMode() {
 	// Reset action mode state
-	a.hintsCtx.InActionMode = false
+	a.hintsCtx.SetInActionMode(false)
 
 	if a.hintManager != nil {
 		a.hintManager.Reset()
 	}
-	a.hintsCtx.SelectedHint = nil
+	a.hintsCtx.SetSelectedHint(nil)
 
 	// Clear and hide overlay for hints
 	a.overlayManager.Clear()
@@ -303,7 +305,7 @@ func (a *App) cleanupDefaultMode() {
 // cleanupGridMode handles cleanup for grid mode.
 func (a *App) cleanupGridMode() {
 	// Reset action mode state
-	a.gridCtx.InActionMode = false
+	a.gridCtx.SetInActionMode(false)
 
 	if a.gridManager != nil {
 		a.gridManager.Reset()
@@ -353,7 +355,8 @@ func (a *App) handleCursorRestoration() {
 		accessibility.MoveMouseToPoint(target)
 	}
 	a.cursor.Reset()
-	a.state.SetScrollingActive(false)
+	a.scrollCtx.SetIsActive(false) // Use scroll context setter instead of direct field access
+	a.scrollCtx.SetLastKey("")     // Reset scroll context last key
 }
 
 func getModeString(mode Mode) string {
@@ -414,7 +417,7 @@ func (a *App) shouldRestoreCursorOnExit() bool {
 	if !a.cursor.IsCaptured() {
 		return false
 	}
-	if a.state.IsScrollingActive() {
+	if a.scrollCtx.IsActive { // Use scroll context instead of AppState
 		return false
 	}
 	return a.cursor.ShouldRestore()

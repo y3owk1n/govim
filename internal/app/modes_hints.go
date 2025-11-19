@@ -91,7 +91,7 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		return
 	}
 
-	a.hintsCtx.SelectedHint = nil
+	a.hintsCtx.SetSelectedHint(nil)
 	a.setModeHints()
 }
 

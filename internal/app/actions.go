@@ -52,7 +52,7 @@ func (a *App) startInteractiveScroll() {
 		a.eventTap.Enable()
 	}
 
-	a.state.SetScrollingActive(true)
+	a.scrollCtx.SetIsActive(true) // Use scroll context setter instead of direct field access
 
 	a.logger.Info("Interactive scroll activated")
 	a.logger.Info("Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom, Esc to exit")

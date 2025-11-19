@@ -72,6 +72,9 @@ type App struct {
 	actionOverlay *action.Overlay
 	renderer      *ui.OverlayRenderer
 
+	// Scroll mode
+	scrollCtx *scroll.Context
+
 	// IPC handlers
 	cmdHandlers map[string]func(ipc.Command) ipc.Response
 }
@@ -195,6 +198,7 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 		hintOverlay:      hintOverlay,
 		scrollOverlay:    scrollOverlay,
 		scrollController: scrollCtrl,
+		scrollCtx:        &scroll.Context{},
 		cmdHandlers:      make(map[string]func(ipc.Command) ipc.Response),
 	}
 
@@ -386,6 +390,9 @@ func (a *App) GridContext() *grid.Context { return a.gridCtx }
 
 // GridRouter returns the grid router.
 func (a *App) GridRouter() *grid.Router { return a.gridRouter }
+
+// ScrollContext returns the scroll context.
+func (a *App) ScrollContext() *scroll.Context { return a.scrollCtx }
 
 // HintsRouter returns the hints router.
 func (a *App) HintsRouter() *hints.Router { return a.hintsRouter }

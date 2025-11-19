@@ -45,10 +45,6 @@ type AppState struct {
 	gridOverlayNeedsRefresh bool
 	hintOverlayNeedsRefresh bool
 	hotkeyRefreshPending    bool
-
-	// Scroll state
-	idleScrollLastKey string
-	isScrollingActive bool
 }
 
 // NewAppState creates a new AppState with default values.
@@ -165,32 +161,4 @@ func (s *AppState) SetHotkeyRefreshPending(pending bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.hotkeyRefreshPending = pending
-}
-
-// IdleScrollLastKey returns the last key pressed during idle scroll.
-func (s *AppState) IdleScrollLastKey() string {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.idleScrollLastKey
-}
-
-// SetIdleScrollLastKey sets the last key pressed during idle scroll.
-func (s *AppState) SetIdleScrollLastKey(key string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.idleScrollLastKey = key
-}
-
-// IsScrollingActive returns whether scrolling is currently active.
-func (s *AppState) IsScrollingActive() bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.isScrollingActive
-}
-
-// SetScrollingActive sets the scrolling active flag.
-func (s *AppState) SetScrollingActive(active bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.isScrollingActive = active
 }
