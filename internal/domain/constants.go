@@ -1,29 +1,31 @@
 package domain
 
-// Mode represents the operational modes of the application.
-type Mode string
+import "time"
 
-// Mode constants for IPC and hotkey bindings.
-// These are used to identify modes in configuration and command handling.
+// Mode-related constants.
 const (
-	ModeHints Mode = "hints"
-	ModeGrid  Mode = "grid"
-	ModeIdle  Mode = "idle"
+	UnknownAction = "unknown"
+	UnknownMode   = "unknown"
 )
 
-// Command represents IPC command names used for inter-process communication.
-// These constants ensure consistency across CLI and daemon communication.
+// Bundle ID constants for macOS system applications.
 const (
-	CommandPing   = "ping"
-	CommandStart  = "start"
-	CommandStop   = "stop"
-	CommandAction = "action"
-	CommandStatus = "status"
-	CommandConfig = "config"
+	BundleIDDock               = "com.apple.dock"
+	BundleIDNotificationCenter = "com.apple.notificationcenterui"
 )
 
-// Special action prefix for shell command execution.
-// Hotkeys with actions starting with this prefix will execute shell commands.
+// Timeout constants.
 const (
-	ActionPrefixExec = "exec "
+	ShellCommandTimeout = 30 * time.Second
+)
+
+// Default values.
+const (
+	DefaultHintCharacters = "asdfghjkl"
+)
+
+// Grid subgrid dimensions.
+const (
+	SubgridRows = 3
+	SubgridCols = 3
 )

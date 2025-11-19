@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"github.com/y3owk1n/neru/internal/config"
-	"github.com/y3owk1n/neru/internal/infra/accessibility"
+	"github.com/y3owk1n/neru/internal/domain"
+	infra "github.com/y3owk1n/neru/internal/infra/accessibility"
 	"github.com/y3owk1n/neru/internal/infra/ipc"
 	"go.uber.org/zap"
 )
@@ -55,7 +56,7 @@ func (a *App) handleStop(_ ipc.Command) ipc.Response {
 		}
 	}
 	a.state.SetEnabled(false)
-	a.exitMode()
+	a.ExitMode()
 	return ipc.Response{Success: true, Message: "neru stopped", Code: ipc.CodeOK}
 }
 
@@ -75,7 +76,7 @@ func (a *App) handleHints(_ ipc.Command) ipc.Response {
 		}
 	}
 
-	a.activateMode(ModeHints)
+	a.ActivateMode(domain.ModeHints)
 
 	return ipc.Response{Success: true, Message: "hint mode activated", Code: ipc.CodeOK}
 }
@@ -96,7 +97,7 @@ func (a *App) handleGrid(_ ipc.Command) ipc.Response {
 		}
 	}
 
-	a.activateMode(ModeGrid)
+	a.ActivateMode(domain.ModeGrid)
 
 	return ipc.Response{Success: true, Message: "grid mode activated", Code: ipc.CodeOK}
 }
@@ -119,23 +120,23 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 		}
 	}
 
-	cursorPos := accessibility.GetCurrentCursorPosition()
+	cursorPos := infra.GetCurrentCursorPosition()
 
 	for _, param := range params {
 		var err error
 		switch param {
 		case "scroll":
-			a.startInteractiveScroll()
+			a.modes.StartInteractiveScroll()
 			return ipc.Response{Success: true, Message: "scroll mode activated", Code: ipc.CodeOK}
 		default:
-			if !isKnownAction(param) {
+			if !domain.IsKnownActionName(domain.ActionName(param)) {
 				return ipc.Response{
 					Success: false,
 					Message: "unknown action: " + param,
 					Code:    ipc.CodeInvalidInput,
 				}
 			}
-			err = performActionAtPoint(param, cursorPos)
+			err = a.accessibility.PerformActionAtPoint(param, cursorPos)
 		}
 
 		if err != nil {
@@ -162,7 +163,7 @@ func (a *App) handleIdle(_ ipc.Command) ipc.Response {
 			Code:    ipc.CodeNotRunning,
 		}
 	}
-	a.exitMode()
+	a.ExitMode()
 	return ipc.Response{Success: true, Message: "mode set to idle", Code: ipc.CodeOK}
 }
 
@@ -170,7 +171,7 @@ func (a *App) handleStatus(_ ipc.Command) ipc.Response {
 	cfgPath := a.resolveConfigPath()
 	statusData := ipc.StatusData{
 		Enabled: a.state.IsEnabled(),
-		Mode:    a.getCurrModeString(),
+		Mode:    domain.GetModeString(a.CurrentMode()),
 		Config:  cfgPath,
 	}
 	return ipc.Response{Success: true, Data: statusData, Code: ipc.CodeOK}

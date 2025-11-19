@@ -2,33 +2,9 @@ package state
 
 import (
 	"sync"
+
+	"github.com/y3owk1n/neru/internal/domain"
 )
-
-// Mode represents the current application mode.
-type Mode int
-
-const (
-	// ModeIdle is the default mode when no operation is active.
-	ModeIdle Mode = iota
-	// ModeHints is active during hint-based navigation.
-	ModeHints
-	// ModeGrid is active during grid-based navigation.
-	ModeGrid
-)
-
-// String returns the string representation of the mode.
-func (m Mode) String() string {
-	switch m {
-	case ModeIdle:
-		return "idle"
-	case ModeHints:
-		return "hints"
-	case ModeGrid:
-		return "grid"
-	default:
-		return "unknown"
-	}
-}
 
 // AppState manages the core application state including enabled status,
 // current mode, and various operational flags.
@@ -37,7 +13,7 @@ type AppState struct {
 
 	// Core state
 	enabled     bool
-	currentMode Mode
+	currentMode domain.Mode
 
 	// Operational flags
 	hotkeysRegistered       bool
@@ -51,7 +27,7 @@ type AppState struct {
 func NewAppState() *AppState {
 	return &AppState{
 		enabled:     true,
-		currentMode: ModeIdle,
+		currentMode: domain.ModeIdle,
 	}
 }
 
@@ -80,14 +56,14 @@ func (s *AppState) Disable() {
 }
 
 // CurrentMode returns the current application mode.
-func (s *AppState) CurrentMode() Mode {
+func (s *AppState) CurrentMode() domain.Mode {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.currentMode
 }
 
 // SetMode sets the current application mode.
-func (s *AppState) SetMode(mode Mode) {
+func (s *AppState) SetMode(mode domain.Mode) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.currentMode = mode

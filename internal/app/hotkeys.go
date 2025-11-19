@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/y3owk1n/neru/internal/domain"
 	"github.com/y3owk1n/neru/internal/infra/ipc"
@@ -27,10 +26,10 @@ func (a *App) registerHotkeys() {
 		if parts := strings.Split(action, " "); len(parts) > 0 {
 			mode = parts[0]
 		}
-		if mode == string(domain.ModeHints) && !a.config.Hints.Enabled {
+		if mode == domain.GetModeString(domain.ModeHints) && !a.config.Hints.Enabled {
 			continue
 		}
-		if mode == string(domain.ModeGrid) && !a.config.Grid.Enabled {
+		if mode == domain.GetModeString(domain.ModeGrid) && !a.config.Grid.Enabled {
 			continue
 		}
 
@@ -110,7 +109,7 @@ func (a *App) executeShellCommand(key, action string) error {
 		zap.String("key", key),
 		zap.String("cmd", cmdStr),
 	)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), domain.ShellCommandTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "/bin/bash", "-lc", cmdStr) //nolint:gosec
 	out, err := cmd.CombinedOutput()
@@ -147,7 +146,7 @@ func (a *App) refreshHotkeysForAppOrCurrent(bundleID string) {
 	}
 
 	if bundleID == "" {
-		bundleID = a.getFocusedBundleID()
+		bundleID = a.accessibility.GetFocusedBundleID()
 	}
 
 	if a.config.IsAppExcluded(bundleID) {

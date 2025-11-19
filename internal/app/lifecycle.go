@@ -64,7 +64,7 @@ func (a *App) handleScreenParametersChange() {
 	if a.config.Grid.Enabled && a.gridComponent.Context != nil &&
 		a.gridComponent.Context.GetGridOverlay() != nil {
 		// If grid mode is not active, mark for refresh on next activation
-		if a.state.CurrentMode() != ModeGrid {
+		if a.state.CurrentMode() != domain.ModeGrid {
 			a.state.SetGridOverlayNeedsRefresh(true)
 		} else {
 			// Grid mode is active - resize the existing overlay window to match new screen bounds
@@ -74,7 +74,7 @@ func (a *App) handleScreenParametersChange() {
 			}
 
 			// Regenerate the grid cells with updated screen bounds
-			err := a.setupGrid()
+			err := a.modes.SetupGrid()
 			if err != nil {
 				a.logger.Error("Failed to refresh grid after screen change", zap.Error(err))
 				return
@@ -87,7 +87,7 @@ func (a *App) handleScreenParametersChange() {
 	// Handle hint overlay
 	if a.config.Hints.Enabled && a.hintsComponent.Overlay != nil {
 		// If hints mode is not active, mark for refresh on next activation
-		if a.state.CurrentMode() != ModeHints {
+		if a.state.CurrentMode() != domain.ModeHints {
 			a.state.SetHintOverlayNeedsRefresh(true)
 		} else {
 			// Hints mode is active - resize the overlay and regenerate hints
@@ -96,10 +96,10 @@ func (a *App) handleScreenParametersChange() {
 			}
 
 			// Regenerate hints for current action
-			a.updateRolesForCurrentApp()
-			elements := a.collectElements()
+			a.UpdateRolesForCurrentApp()
+			elements := a.CollectElements()
 			if len(elements) > 0 {
-				err := a.setupHints(elements)
+				err := a.modes.SetupHints(elements)
 				if err != nil {
 					a.logger.Error("Failed to refresh hints after screen change", zap.Error(err))
 					return
@@ -107,7 +107,7 @@ func (a *App) handleScreenParametersChange() {
 				a.logger.Info("Hint overlay resized and regenerated for new screen bounds")
 			} else {
 				a.logger.Warn("No elements found after screen change")
-				a.exitMode()
+				a.ExitMode()
 			}
 		}
 	}
@@ -122,7 +122,7 @@ func (a *App) handleScreenParametersChange() {
 func (a *App) handleAppActivation(bundleID string) {
 	a.logger.Debug("App activated", zap.String("bundle_id", bundleID))
 
-	if a.state.CurrentMode() == ModeIdle {
+	if a.state.CurrentMode() == domain.ModeIdle {
 		go a.refreshHotkeysForAppOrCurrent(bundleID)
 		a.logger.Debug("Handled hotkey refresh")
 	} else {
@@ -169,10 +169,10 @@ func (a *App) printStartupInfo() {
 		if parts := strings.Split(value, " "); len(parts) > 0 {
 			mode = parts[0]
 		}
-		if mode == string(domain.ModeHints) && !a.config.Hints.Enabled {
+		if mode == domain.GetModeString(domain.ModeHints) && !a.config.Hints.Enabled {
 			continue
 		}
-		if mode == string(domain.ModeGrid) && !a.config.Grid.Enabled {
+		if mode == domain.GetModeString(domain.ModeGrid) && !a.config.Grid.Enabled {
 			continue
 		}
 
@@ -223,7 +223,7 @@ func (a *App) waitForShutdown() error {
 func (a *App) Cleanup() {
 	a.logger.Info("Cleaning up")
 
-	a.exitMode()
+	a.ExitMode()
 
 	// Stop IPC server first to prevent new requests
 	if a.ipcServer != nil {

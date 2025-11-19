@@ -16,6 +16,9 @@ const (
 	ActionNameMouseUp ActionName = "mouse_up"
 	// ActionNameScroll represents the scroll action.
 	ActionNameScroll ActionName = "scroll"
+
+	// ActionPrefixExec is the prefix for shell command actions.
+	ActionPrefixExec = "exec:"
 )
 
 // KnownActionNames returns a slice containing all supported action names.
