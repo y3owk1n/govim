@@ -417,11 +417,7 @@ func (a *App) shouldRestoreCursorOnExit() bool {
 	if a.state.IsScrollingActive() {
 		return false
 	}
-	if a.cursor.ShouldRestore() {
-		// Will skip this restoration
-		return false
-	}
-	return true
+	return a.cursor.ShouldRestore()
 }
 
 func computeRestoredPosition(initPos image.Point, from, to image.Rectangle) image.Point {
