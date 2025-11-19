@@ -1,100 +1,81 @@
-// Package app contains the main application logic.
 package app
 
 import (
 	"errors"
 	"fmt"
-	"image"
 	"strings"
 
-	"github.com/y3owk1n/neru/internal/accessibility"
-	"github.com/y3owk1n/neru/internal/action"
-	"github.com/y3owk1n/neru/internal/appwatcher"
-	"github.com/y3owk1n/neru/internal/bridge"
 	"github.com/y3owk1n/neru/internal/config"
-	"github.com/y3owk1n/neru/internal/eventtap"
-	"github.com/y3owk1n/neru/internal/grid"
-	"github.com/y3owk1n/neru/internal/hints"
-	"github.com/y3owk1n/neru/internal/hotkeys"
-	"github.com/y3owk1n/neru/internal/ipc"
-	"github.com/y3owk1n/neru/internal/logger"
-	"github.com/y3owk1n/neru/internal/overlay"
-	"github.com/y3owk1n/neru/internal/scroll"
+	"github.com/y3owk1n/neru/internal/domain"
+	"github.com/y3owk1n/neru/internal/domain/state"
+	"github.com/y3owk1n/neru/internal/features/action"
+	"github.com/y3owk1n/neru/internal/features/grid"
+	"github.com/y3owk1n/neru/internal/features/hints"
+	"github.com/y3owk1n/neru/internal/features/scroll"
+	"github.com/y3owk1n/neru/internal/infra/accessibility"
+	"github.com/y3owk1n/neru/internal/infra/appwatcher"
+	"github.com/y3owk1n/neru/internal/infra/bridge"
+	"github.com/y3owk1n/neru/internal/infra/eventtap"
+	"github.com/y3owk1n/neru/internal/infra/hotkeys"
+	"github.com/y3owk1n/neru/internal/infra/ipc"
+	"github.com/y3owk1n/neru/internal/infra/logger"
+	"github.com/y3owk1n/neru/internal/ui"
+	"github.com/y3owk1n/neru/internal/ui/overlay"
 	"go.uber.org/zap"
 )
 
 // Mode is the current mode of the application.
-type Mode int
+type Mode = state.Mode
 
+// Mode constants from state package.
 const (
-	// ModeIdle is the default mode of the application.
-	ModeIdle Mode = iota
-	// ModeHints is used when the user is in hints mode.
-	ModeHints
-	// ModeGrid is used when the user is in grid mode.
-	ModeGrid
-)
-
-// Action is the current action of the application.
-type Action int
-
-const (
-	// ActionLeftClick is the action for left click.
-	ActionLeftClick Action = iota
-	// ActionRightClick is the action for right click.
-	ActionRightClick
-	// ActionMouseUp is the action for mouse up.
-	ActionMouseUp
-	// ActionMouseDown is the action for mouse down.
-	ActionMouseDown
-	// ActionMiddleClick is the action for middle click.
-	ActionMiddleClick
-	// ActionMoveMouse is the action for moving the mouse.
-	ActionMoveMouse
-	// ActionScroll is the action for scrolling.
-	ActionScroll
+	ModeIdle  = state.ModeIdle
+	ModeHints = state.ModeHints
+	ModeGrid  = state.ModeGrid
 )
 
 // App represents the main application instance containing all state and dependencies.
 type App struct {
-	config           *config.Config
-	ConfigPath       string
-	logger           *zap.Logger
+	// Configuration
+	config     *config.Config
+	ConfigPath string
+	logger     *zap.Logger
+
+	// State management
+	state  *state.AppState
+	cursor *state.CursorState
+
+	// Core services
 	overlayManager   *overlay.Manager
 	hotkeyManager    hotkeyService
-	hintGenerator    *hints.Generator
-	hintOverlay      *hints.Overlay
-	scrollOverlay    *scroll.Overlay
-	actionOverlay    *action.Overlay
-	scrollController *scroll.Controller
 	eventTap         eventTap
 	ipcServer        ipcServer
 	appWatcher       *appwatcher.Watcher
-	currentMode      Mode
-	hintsRouter      *hints.Router
-	hintManager      *hints.Manager
-	hintsCtx         *HintsContext
-	gridManager      *grid.Manager
-	gridRouter       *grid.Router
-	gridCtx          *GridContext
-	hintStyle        hints.StyleMode
-	gridStyle        grid.Style
-	renderer         *OverlayRenderer
+	scrollController *scroll.Controller
 
-	enabled                 bool
-	hotkeysRegistered       bool
-	screenChangeProcessing  bool
-	gridOverlayNeedsRefresh bool
-	hintOverlayNeedsRefresh bool
-	hotkeyRefreshPending    bool
-	idleScrollLastKey       string
+	// Hints mode
+	hintGenerator *hints.Generator
+	hintOverlay   *hints.Overlay
+	hintManager   *hints.Manager
+	hintsRouter   *hints.Router
+	hintsCtx      *hints.Context
+	hintStyle     hints.StyleMode
 
-	initialCursorPos      image.Point
-	initialScreenBounds   image.Rectangle
-	cursorRestoreCaptured bool
-	isScrollingActive     bool
-	skipCursorRestoreOnce bool
+	// Grid mode
+	gridManager *grid.Manager
+	gridRouter  *grid.Router
+	gridCtx     *grid.Context
+	gridStyle   grid.Style
 
+	// Overlays
+	scrollOverlay *scroll.Overlay
+	actionOverlay *action.Overlay
+	renderer      *ui.OverlayRenderer
+
+	// Scroll mode
+	scrollCtx *scroll.Context
+
+	// IPC handlers
 	cmdHandlers map[string]func(ipc.Command) ipc.Response
 }
 
@@ -206,19 +187,19 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	}
 
 	app := &App{
-		config:            cfg,
-		logger:            log,
-		overlayManager:    overlayManager,
-		hotkeyManager:     hotkeySvc,
-		appWatcher:        appWatcher,
-		hintGenerator:     hintGen,
-		hintOverlay:       hintOverlay,
-		scrollOverlay:     scrollOverlay,
-		scrollController:  scrollCtrl,
-		currentMode:       ModeIdle,
-		enabled:           true,
-		hotkeysRegistered: false,
-		cmdHandlers:       make(map[string]func(ipc.Command) ipc.Response),
+		config:           cfg,
+		logger:           log,
+		state:            state.NewAppState(),
+		cursor:           state.NewCursorState(cfg.General.RestoreCursorPosition),
+		overlayManager:   overlayManager,
+		hotkeyManager:    hotkeySvc,
+		appWatcher:       appWatcher,
+		hintGenerator:    hintGen,
+		hintOverlay:      hintOverlay,
+		scrollOverlay:    scrollOverlay,
+		scrollController: scrollCtrl,
+		scrollCtx:        &scroll.Context{},
+		cmdHandlers:      make(map[string]func(ipc.Command) ipc.Response),
 	}
 
 	if cfg.Hints.Enabled {
@@ -230,7 +211,7 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 			}
 		}, app.logger)
 		app.hintsRouter = hints.NewRouter(app.hintManager, app.logger)
-		app.hintsCtx = &HintsContext{}
+		app.hintsCtx = &hints.Context{}
 
 		var err error
 		hintOverlay, err = hints.NewOverlayWithWindow(cfg.Hints, log, overlayManager.GetWindowPtr())
@@ -269,18 +250,18 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 			gridOverlay.ShowSubgrid(cell, app.gridStyle)
 		}, log)
 
-		app.gridCtx = &GridContext{
-			gridInstance: &gridInstance,
-			gridOverlay:  &gridOverlay,
+		app.gridCtx = &grid.Context{
+			GridInstance: &gridInstance,
+			GridOverlay:  &gridOverlay,
 		}
 	} else {
 		var gridInstance *grid.Grid
-		app.gridCtx = &GridContext{
-			gridInstance: &gridInstance,
+		app.gridCtx = &grid.Context{
+			GridInstance: &gridInstance,
 		}
 	}
 
-	app.renderer = newOverlayRenderer(overlayManager, app.hintStyle, app.gridStyle)
+	app.renderer = ui.NewOverlayRenderer(overlayManager, app.hintStyle, app.gridStyle)
 
 	if deps != nil && deps.EventTapFactory != nil {
 		app.eventTap = deps.EventTapFactory.New(app.handleKeyPress, log)
@@ -327,19 +308,19 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	if app.hintOverlay != nil {
 		overlayManager.UseHintOverlay(app.hintOverlay)
 	}
-	if app.gridCtx != nil && app.gridCtx.gridOverlay != nil {
-		overlayManager.UseGridOverlay(*app.gridCtx.gridOverlay)
+	if app.gridCtx != nil && app.gridCtx.GetGridOverlay() != nil {
+		overlayManager.UseGridOverlay(*app.gridCtx.GetGridOverlay())
 	}
 
-	app.cmdHandlers["ping"] = app.handlePing
-	app.cmdHandlers["start"] = app.handleStart
-	app.cmdHandlers["stop"] = app.handleStop
-	app.cmdHandlers[modeHints] = app.handleHints
-	app.cmdHandlers[modeGrid] = app.handleGrid
-	app.cmdHandlers["action"] = app.handleAction
-	app.cmdHandlers["idle"] = app.handleIdle
-	app.cmdHandlers["status"] = app.handleStatus
-	app.cmdHandlers["config"] = app.handleConfig
+	app.cmdHandlers[domain.CommandPing] = app.handlePing
+	app.cmdHandlers[domain.CommandStart] = app.handleStart
+	app.cmdHandlers[domain.CommandStop] = app.handleStop
+	app.cmdHandlers[domain.ModeHints] = app.handleHints
+	app.cmdHandlers[domain.ModeGrid] = app.handleGrid
+	app.cmdHandlers[domain.CommandAction] = app.handleAction
+	app.cmdHandlers[domain.ModeIdle] = app.handleIdle
+	app.cmdHandlers[domain.CommandStatus] = app.handleStatus
+	app.cmdHandlers[domain.CommandConfig] = app.handleConfig
 
 	return app, nil
 }
@@ -348,10 +329,10 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 func (a *App) ActivateMode(mode Mode) { a.activateMode(mode) }
 
 // SetEnabled sets the enabled state of the application.
-func (a *App) SetEnabled(v bool) { a.enabled = v }
+func (a *App) SetEnabled(v bool) { a.state.SetEnabled(v) }
 
 // IsEnabled returns the enabled state of the application.
-func (a *App) IsEnabled() bool { return a.enabled }
+func (a *App) IsEnabled() bool { return a.state.IsEnabled() }
 
 // HintsEnabled returns true if hints are enabled.
 func (a *App) HintsEnabled() bool { return a.config != nil && a.config.Hints.Enabled }
@@ -375,16 +356,16 @@ func (a *App) HintGenerator() *hints.Generator { return a.hintGenerator }
 func (a *App) HintManager() *hints.Manager { return a.hintManager }
 
 // HintsContext returns the hints context.
-func (a *App) HintsContext() *HintsContext { return a.hintsCtx }
+func (a *App) HintsContext() *hints.Context { return a.hintsCtx }
 
 // Renderer returns the overlay renderer.
-func (a *App) Renderer() *OverlayRenderer { return a.renderer }
+func (a *App) Renderer() *ui.OverlayRenderer { return a.renderer }
 
 // GetConfigPath returns the config path.
 func (a *App) GetConfigPath() string { return a.ConfigPath }
 
 // SetHintOverlayNeedsRefresh sets the hint overlay needs refresh flag.
-func (a *App) SetHintOverlayNeedsRefresh(value bool) { a.hintOverlayNeedsRefresh = value }
+func (a *App) SetHintOverlayNeedsRefresh(value bool) { a.state.SetHintOverlayNeedsRefresh(value) }
 
 // CaptureInitialCursorPosition captures the initial cursor position.
 func (a *App) CaptureInitialCursorPosition() { a.captureInitialCursorPosition() }
@@ -405,10 +386,13 @@ func (a *App) ExitMode() { a.exitMode() }
 func (a *App) GridManager() *grid.Manager { return a.gridManager }
 
 // GridContext returns the grid context.
-func (a *App) GridContext() *GridContext { return a.gridCtx }
+func (a *App) GridContext() *grid.Context { return a.gridCtx }
 
 // GridRouter returns the grid router.
 func (a *App) GridRouter() *grid.Router { return a.gridRouter }
+
+// ScrollContext returns the scroll context.
+func (a *App) ScrollContext() *scroll.Context { return a.scrollCtx }
 
 // HintsRouter returns the hints router.
 func (a *App) HintsRouter() *hints.Router { return a.hintsRouter }
@@ -420,7 +404,7 @@ func (a *App) EventTap() eventTap { return a.eventTap }
 func (a *App) ScrollController() *scroll.Controller { return a.scrollController }
 
 // CurrentMode returns the current mode.
-func (a *App) CurrentMode() Mode { return a.currentMode }
+func (a *App) CurrentMode() Mode { return a.state.CurrentMode() }
 
 // SetModeHints sets the mode to hints.
 func (a *App) SetModeHints() { a.setModeHints() }
@@ -457,19 +441,19 @@ func (a *App) disableEventTap() {
 }
 
 func (a *App) setModeHints() {
-	a.currentMode = ModeHints
+	a.state.SetMode(ModeHints)
 	a.enableEventTap()
 	a.overlaySwitch(overlay.ModeHints)
 }
 
 func (a *App) setModeGrid() {
-	a.currentMode = ModeGrid
+	a.state.SetMode(ModeGrid)
 	a.enableEventTap()
 	a.overlaySwitch(overlay.ModeGrid)
 }
 
 func (a *App) setModeIdle() {
-	a.currentMode = ModeIdle
+	a.state.SetMode(ModeIdle)
 	a.disableEventTap()
 	a.overlaySwitch(overlay.ModeIdle)
 }

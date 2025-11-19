@@ -2,7 +2,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/y3owk1n/neru/internal/logger"
+	"github.com/y3owk1n/neru/internal/infra/logger"
 )
 
 // hintsCmd represents the command to activate hint mode for direct clicking on UI elements.

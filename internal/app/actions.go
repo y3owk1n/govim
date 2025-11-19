@@ -4,22 +4,23 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/y3owk1n/neru/internal/accessibility"
+	"github.com/y3owk1n/neru/internal/domain"
+	"github.com/y3owk1n/neru/internal/infra/accessibility"
 )
 
 // performActionAtPoint executes the specified action at the given point.
 func performActionAtPoint(action string, pt image.Point) error {
-	actionName := ActionName(action)
+	actionName := domain.ActionName(action)
 	switch actionName {
-	case ActionNameLeftClick:
+	case domain.ActionNameLeftClick:
 		return accessibility.LeftClickAtPoint(pt, false)
-	case ActionNameRightClick:
+	case domain.ActionNameRightClick:
 		return accessibility.RightClickAtPoint(pt, false)
-	case ActionNameMiddleClick:
+	case domain.ActionNameMiddleClick:
 		return accessibility.MiddleClickAtPoint(pt, false)
-	case ActionNameMouseDown:
+	case domain.ActionNameMouseDown:
 		return accessibility.LeftMouseDownAtPoint(pt)
-	case ActionNameMouseUp:
+	case domain.ActionNameMouseUp:
 		return accessibility.LeftMouseUpAtPoint(pt)
 	default:
 		return fmt.Errorf("unknown action: %s", action)
@@ -28,12 +29,12 @@ func performActionAtPoint(action string, pt image.Point) error {
 
 // isKnownAction checks if the specified action is a known action type.
 func isKnownAction(action string) bool {
-	return IsKnownActionName(ActionName(action))
+	return domain.IsKnownActionName(domain.ActionName(action))
 }
 
 // startInteractiveScroll initiates interactive scrolling mode with visual feedback.
 func (a *App) startInteractiveScroll() {
-	a.skipCursorRestoreOnce = true
+	a.cursor.SkipNextRestore()
 	a.exitMode()
 
 	if a.overlayManager != nil {
@@ -51,7 +52,7 @@ func (a *App) startInteractiveScroll() {
 		a.eventTap.Enable()
 	}
 
-	a.isScrollingActive = true
+	a.scrollCtx.SetIsActive(true) // Use scroll context setter instead of direct field access
 
 	a.logger.Info("Interactive scroll activated")
 	a.logger.Info("Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom, Esc to exit")

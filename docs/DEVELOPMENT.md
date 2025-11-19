@@ -169,23 +169,36 @@ just build && ./bin/neru launch --config test-config.toml
 
 ```
 neru/
-├── cmd/neru/           # Main entry point
+├── cmd/neru/              # Main entry point
 │   └── main.go
-├── internal/           # Internal packages
-│   ├── accessibility/  # Accessibility API wrappers
-│   ├── appwatcher/     # App watcher with callbacks
-│   ├── cli/            # CLI commands (Cobra-based)
-│   ├── config/         # TOML configuration parsing
-│   ├── electron/       # Electron/Chromium/Firefox manager
-│   ├── hints/          # Hint generation and display
-│   ├── hotkeys/        # Global hotkey management
-│   ├── ipc/            # IPC server/client for daemon control
-│   ├── scroll/         # Scroll mode implementation
-│   └── bridge/         # CGo/Objective-C bridges
-├── configs/            # Default configuration files
-├── scripts/            # Build and packaging scripts
-├── docs/               # Documentation
-└── justfile            # Build commands
+├── internal/              # Internal packages
+│   ├── app/               # Main application orchestration
+│   ├── cli/               # CLI commands (Cobra-based)
+│   ├── config/            # TOML configuration parsing
+│   ├── domain/            # Core domain models and constants
+│   ├── errors/            # Error definitions
+│   ├── features/          # Feature implementations
+│   │   ├── action/        # Action mode implementation
+│   │   ├── grid/          # Grid mode implementation
+│   │   ├── hints/         # Hints mode implementation
+│   │   └── scroll/        # Scroll mode implementation
+│   ├── infra/             # Infrastructure components
+│   │   ├── accessibility/ # Accessibility API wrappers
+│   │   ├── appwatcher/    # App watcher with callbacks
+│   │   ├── bridge/        # CGo/Objective-C bridges
+│   │   ├── electron/      # Electron/Chromium/Firefox manager
+│   │   ├── eventtap/      # Event tap management
+│   │   ├── hotkeys/       # Global hotkey management
+│   │   ├── ipc/           # IPC server/client for daemon control
+│   │   └── logger/        # Logging infrastructure
+│   └── ui/                # UI components
+│       └── overlay/       # Overlay manager
+├── configs/               # Default configuration files
+├── demos/                 # Demonstration files
+├── docs/                  # Documentation
+├── resources/             # Resource files
+├── scripts/               # Build and packaging scripts
+└── justfile               # Build commands
 ```
 
 ### Key Technologies
@@ -198,7 +211,7 @@ neru/
 
 ### Key Packages
 
-#### `internal/hints`
+#### `internal/features/hints`
 
 Grid-based or Accessibility hint generation and overlay rendering. This is the core of Neru's navigation system.
 
@@ -220,7 +233,7 @@ Grid-based or Accessibility hint generation and overlay rendering. This is the c
 - Fast and reliable
 - Simple to maintain
 
-#### `internal/accessibility`
+#### `internal/infra/accessibility`
 
 CGo wrappers around macOS Accessibility APIs.
 
@@ -231,7 +244,7 @@ CGo wrappers around macOS Accessibility APIs.
 - Perform clicks and scrolls
 - Enable AX support for Electron/Chromium
 
-#### `internal/hotkeys`
+#### `internal/infra/hotkeys`
 
 Global hotkey registration and management.
 
@@ -241,7 +254,7 @@ Global hotkey registration and management.
 - Dispatch hotkey events to hint/scroll modes
 - Handle modifier key combinations
 
-#### `internal/ipc`
+#### `internal/infra/ipc`
 
 Unix socket-based IPC for CLI ↔ daemon communication.
 
@@ -265,6 +278,37 @@ TOML configuration parsing and validation.
 - Validate configuration
 - Provide defaults
 
+#### `internal/features/grid`
+
+Grid-based navigation implementation.
+
+**Responsibilities:**
+
+- Generate coordinate-based grid overlay
+- Handle grid cell selection
+- Manage subgrid precision layer
+- Dispatch click actions
+
+#### `internal/features/scroll`
+
+Scroll mode implementation.
+
+**Responsibilities:**
+
+- Handle Vim-style scrolling keys (j/k, gg/G, Ctrl+D/U)
+- Provide visual scroll feedback
+- Manage scroll state
+
+#### `internal/features/action`
+
+Action mode implementation.
+
+**Responsibilities:**
+
+- Handle different click types (left, right, middle, etc.)
+- Provide visual action feedback
+- Manage action state
+
 #### Cursor Position Restoration
 
 **Overview:**
@@ -274,8 +318,8 @@ TOML configuration parsing and validation.
 
 **Key points:**
 - Config flag: `general.restore_cursor_position` (default `true`).
-- Entry points: `activateHintModeInternal`, `activateGridMode` capture once per activation.
-- Exit path: `exitMode` restores and clears state.
+- Entry points: Mode activation functions capture once per activation.
+- Exit path: Mode exit functions restore and clear state.
 
 **Usage example (config API):**
 ```go
