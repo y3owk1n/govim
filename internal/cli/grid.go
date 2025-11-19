@@ -5,8 +5,6 @@ import (
 	"github.com/y3owk1n/neru/internal/infra/logger"
 )
 
-// gridCmd represents the command to activate grid mode for mouseless navigation.
-// Grid mode divides the screen into cells for precise cursor positioning.
 var gridCmd = &cobra.Command{
 	Use:   "grid",
 	Short: "Launch grid mode",

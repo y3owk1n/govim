@@ -17,16 +17,12 @@ import (
 func (a *App) registerHotkeys() {
 	// Note: Escape key for exiting modes is hardcoded in handleKeyPress, not registered as global hotkey
 
-	// Register arbitrary bindings from config.Hotkeys.Bindings
-	// We intentionally don't fail the entire registration process if one binding fails;
-	// instead we log the error and continue so the daemon remains running.
 	for k, v := range a.config.Hotkeys.Bindings {
 		key := strings.TrimSpace(k)
 		action := strings.TrimSpace(v)
 		if key == "" || action == "" {
 			continue
 		}
-		// Skip registering bindings for disabled modes
 		mode := action
 		if parts := strings.Split(action, " "); len(parts) > 0 {
 			mode = parts[0]
@@ -43,7 +39,7 @@ func (a *App) registerHotkeys() {
 			zap.String("key", key),
 			zap.String("action", action),
 		)
-		// Capture values for closure
+
 		bindKey := key
 		bindAction := action
 
@@ -77,7 +73,6 @@ func (a *App) registerHotkeys() {
 				zap.String("action", action),
 				zap.Error(err),
 			)
-			// continue registering other bindings
 			continue
 		}
 	}
@@ -85,17 +80,14 @@ func (a *App) registerHotkeys() {
 
 // executeHotkeyAction executes a hotkey action, which can be either a shell command or an IPC command.
 func (a *App) executeHotkeyAction(key, action string) error {
-	// Exec mode: run arbitrary bash command
 	if strings.HasPrefix(action, domain.ActionPrefixExec) {
 		return a.executeShellCommand(key, action)
 	}
 
-	// Split action into action and params
 	actionParts := strings.Split(action, " ")
 	action = actionParts[0]
 	params := actionParts[1:]
 
-	// Otherwise treat the action as an internal neru command and dispatch it
 	resp := a.handleIPCCommand(ipc.Command{Action: action, Args: params})
 	if !resp.Success {
 		return errors.New(resp.Message)
@@ -118,7 +110,6 @@ func (a *App) executeShellCommand(key, action string) error {
 		zap.String("key", key),
 		zap.String("cmd", cmdStr),
 	)
-	// Create a context with a reasonable timeout for shell commands
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "/bin/bash", "-lc", cmdStr) //nolint:gosec
@@ -146,7 +137,6 @@ func (a *App) executeShellCommand(key, action string) error {
 // refreshHotkeysForAppOrCurrent manages hotkey registration based on Neru's enabled state
 // and whether the currently focused application is excluded.
 func (a *App) refreshHotkeysForAppOrCurrent(bundleID string) {
-	// If disabled, ensure no hotkeys are registered
 	if !a.state.IsEnabled() {
 		if a.state.HotkeysRegistered() {
 			a.logger.Debug("Neru disabled; unregistering hotkeys")
@@ -160,7 +150,6 @@ func (a *App) refreshHotkeysForAppOrCurrent(bundleID string) {
 		bundleID = a.getFocusedBundleID()
 	}
 
-	// If app is excluded, unregister; otherwise ensure registered
 	if a.config.IsAppExcluded(bundleID) {
 		if a.state.HotkeysRegistered() {
 			a.logger.Info("Focused app excluded; unregistering global hotkeys",

@@ -16,7 +16,7 @@ func (a *App) activateGridMode() {
 		a.logger.Debug("Neru is disabled, ignoring grid mode activation")
 		return
 	}
-	// Respect mode enable flag
+
 	if !a.config.Grid.Enabled {
 		a.logger.Debug("Grid mode disabled by config, ignoring activation")
 		return
@@ -27,7 +27,6 @@ func (a *App) activateGridMode() {
 		return
 	}
 
-	// Handle scroll context if active
 	if a.scrollCtx.GetIsActive() {
 		// Reset scroll context to ensure clean transition
 		a.scrollCtx.SetIsActive(false)
@@ -42,10 +41,10 @@ func (a *App) activateGridMode() {
 	actionString := getActionString(action)
 	a.logger.Info("Activating grid mode", zap.String("action", actionString))
 
-	a.exitMode() // Exit current mode first
+	a.exitMode()
 
-	// Always resize overlay to the active screen (where mouse is) before drawing grid
-	// This ensures proper positioning when switching between multiple displays
+	// Always resize overlay to the active screen (where mouse is) before drawing grid.
+	// This ensures proper positioning when switching between multiple displays.
 	a.renderer.ResizeActive()
 	a.state.SetGridOverlayNeedsRefresh(false)
 
@@ -63,11 +62,10 @@ func (a *App) activateGridMode() {
 
 // setupGrid generates grid and draws it.
 func (a *App) setupGrid() error {
-	// Create grid with active screen bounds (screen containing mouse cursor)
-	// This ensures proper multi-monitor support
+	// Create grid with active screen bounds (screen containing mouse cursor).
+	// This ensures proper multi-monitor support.
 	gridInstance := a.createGridInstance()
 
-	// Update grid overlay configuration
 	a.updateGridOverlayConfig()
 
 	// Ensure the overlay is properly sized for the active screen
@@ -78,12 +76,10 @@ func (a *App) setupGrid() error {
 		a.gridManager.Reset()
 	}
 
-	// Initialize manager with the new grid
 	a.initializeGridManager(gridInstance)
 
 	a.gridRouter = grid.NewRouter(a.gridManager, a.logger)
 
-	// Draw initial grid
 	initErr := a.renderer.DrawGrid(gridInstance, "")
 	if initErr != nil {
 		return fmt.Errorf("failed to draw grid: %w", initErr)
@@ -97,8 +93,8 @@ func (a *App) setupGrid() error {
 func (a *App) createGridInstance() *grid.Grid {
 	screenBounds := bridge.GetActiveScreenBounds()
 
-	// Normalize bounds to window-local coordinates (0,0 origin)
-	// The overlay window is positioned at the screen origin, but the view uses local coordinates
+	// Normalize bounds to window-local coordinates (0,0 origin).
+	// The overlay window is positioned at the screen origin, but the view uses local coordinates.
 	bounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
 	characters := a.config.Grid.Characters
@@ -113,7 +109,6 @@ func (a *App) createGridInstance() *grid.Grid {
 
 // updateGridOverlayConfig updates the grid overlay configuration.
 func (a *App) updateGridOverlayConfig() {
-	// Grid overlay already created in NewApp - update its config and use it
 	(*a.gridCtx.GridOverlay).UpdateConfig(a.config.Grid)
 }
 
@@ -127,9 +122,7 @@ func (a *App) initializeGridManager(gridInstance *grid.Grid) {
 	const subRows = 3
 	const subCols = 3
 
-	// Initialize manager with the new grid
 	a.gridManager = grid.NewManager(gridInstance, subRows, subCols, keys, func(forceRedraw bool) {
-		// Update matches only (no full redraw)
 		input := a.gridManager.GetInput()
 
 		// special case to handle only when exiting subgrid
@@ -157,11 +150,9 @@ func (a *App) drawGridActionHighlight() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
 	a.renderer.ResizeActive()
 
-	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
-	// Draw action highlight using renderer
 	a.renderer.DrawActionHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,

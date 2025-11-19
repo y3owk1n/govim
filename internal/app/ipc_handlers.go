@@ -109,7 +109,6 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 		}
 	}
 
-	// Parse params
 	params := cmd.Args
 	if len(params) == 0 {
 		return ipc.Response{
@@ -119,7 +118,6 @@ func (a *App) handleAction(cmd ipc.Command) ipc.Response {
 		}
 	}
 
-	// Get the current cursor position
 	cursorPos := accessibility.GetCurrentCursorPosition()
 
 	for _, param := range params {
@@ -185,19 +183,16 @@ func (a *App) resolveConfigPath() string {
 	cfgPath := a.ConfigPath
 
 	if cfgPath == "" {
-		// Fallback to the standard config path if daemon wasn't started
-		// with an explicit --config
+		// Fallback to the standard config path if daemon wasn't started with an explicit --config
 		cfgPath = config.FindConfigFile()
 	}
 
-	// If config file doesn't exist, return default config
 	var err error
 	_, err = os.Stat(cfgPath)
 	if os.IsNotExist(err) {
 		return "No config file found, using default config without config file"
 	}
 
-	// Expand ~ to home dir and resolve relative paths to absolute
 	if strings.HasPrefix(cfgPath, "~") {
 		var home string
 		var err error

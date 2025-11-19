@@ -104,25 +104,25 @@ func (c *Controller) ScrollRight() error {
 	return c.Scroll(DirectionRight, AmountChar)
 }
 
-// ScrollUpHalfPage performs a half-page upward scroll (equivalent to Ctrl+U in Vim).
+// ScrollUpHalfPage performs a half-page upward scroll.
 func (c *Controller) ScrollUpHalfPage() error {
 	c.logger.Debug("ScrollUpHalfPage called")
 	return c.Scroll(DirectionUp, AmountHalfPage)
 }
 
-// ScrollDownHalfPage performs a half-page downward scroll (equivalent to Ctrl+D in Vim).
+// ScrollDownHalfPage performs a half-page downward scroll.
 func (c *Controller) ScrollDownHalfPage() error {
 	c.logger.Debug("ScrollDownHalfPage called")
 	return c.Scroll(DirectionDown, AmountHalfPage)
 }
 
-// ScrollToTop scrolls to the top of the document (equivalent to gg in Vim).
+// ScrollToTop scrolls to the top of the document.
 func (c *Controller) ScrollToTop() error {
 	c.logger.Debug("ScrollToTop called")
 	return c.Scroll(DirectionUp, AmountEnd)
 }
 
-// ScrollToBottom scrolls to the bottom of the document (equivalent to G in Vim).
+// ScrollToBottom scrolls to the bottom of the document.
 func (c *Controller) ScrollToBottom() error {
 	c.logger.Debug("ScrollToBottom called")
 	return c.Scroll(DirectionDown, AmountEnd)

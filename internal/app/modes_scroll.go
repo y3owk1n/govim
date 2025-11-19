@@ -12,13 +12,11 @@ import (
 
 // handleGenericScrollKey handles scroll keys in a generic way.
 func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
-	// Local storage for scroll state if not provided
 	var localLastKey string
 	if lastScrollKey == nil {
 		lastScrollKey = &localLastKey
 	}
 
-	// Log every byte for debugging
 	bytes := []byte(key)
 	a.logger.Info("Scroll key pressed",
 		zap.String("key", key),
@@ -28,14 +26,12 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
 
 	var err error
 
-	// Check for control characters
 	if len(key) == 1 {
 		if a.handleControlScrollKey(key, *lastScrollKey, lastScrollKey) {
 			return
 		}
 	}
 
-	// Regular keys
 	a.logger.Debug(
 		"Entering switch statement",
 		zap.String("key", key),
@@ -44,7 +40,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
 	switch key {
 	case "j", "k", "h", "l":
 		err = a.handleDirectionalScrollKey(key, *lastScrollKey)
-	case "g": // gg for top (need to press twice)
+	case "g":
 		operation, newLast, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if !ok {
 			a.logger.Info("First g pressed, press again for top")
@@ -57,7 +53,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
 			*lastScrollKey = ""
 			goto done
 		}
-	case "G": // Shift+G for bottom
+	case "G":
 		operation, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if ok && operation == "bottom" {
 			a.logger.Info("G key detected - scroll to bottom")
@@ -70,7 +66,6 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
 		return
 	}
 
-	// Reset last key for most commands
 	*lastScrollKey = ""
 
 done:
@@ -133,11 +128,9 @@ func (a *App) drawScrollHighlightBorder() {
 	// Resize overlay to active screen (where mouse cursor is) for multi-monitor support
 	a.renderer.ResizeActive()
 
-	// Get active screen bounds
 	screenBounds := bridge.GetActiveScreenBounds()
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
 
-	// Draw scroll highlight using renderer
 	a.renderer.DrawScrollHighlight(
 		localBounds.Min.X,
 		localBounds.Min.Y,

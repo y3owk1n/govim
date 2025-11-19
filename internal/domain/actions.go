@@ -4,17 +4,17 @@ package domain
 type ActionName string
 
 const (
-	// ActionNameLeftClick is the action name for left click.
+	// ActionNameLeftClick represents the left click action.
 	ActionNameLeftClick ActionName = "left_click"
-	// ActionNameRightClick is the action name for right click.
+	// ActionNameRightClick represents the right click action.
 	ActionNameRightClick ActionName = "right_click"
-	// ActionNameMiddleClick is the action name for middle click.
+	// ActionNameMiddleClick represents the middle click action.
 	ActionNameMiddleClick ActionName = "middle_click"
-	// ActionNameMouseDown is the action name for mouse down.
+	// ActionNameMouseDown represents the mouse down action.
 	ActionNameMouseDown ActionName = "mouse_down"
-	// ActionNameMouseUp is the action name for mouse up.
+	// ActionNameMouseUp represents the mouse up action.
 	ActionNameMouseUp ActionName = "mouse_up"
-	// ActionNameScroll is the action name for scrolling.
+	// ActionNameScroll represents the scroll action.
 	ActionNameScroll ActionName = "scroll"
 )
 
@@ -49,18 +49,18 @@ func IsKnownActionName(action ActionName) bool {
 type Action int
 
 const (
-	// ActionLeftClick is the action for left click.
+	// ActionLeftClick represents the left click action.
 	ActionLeftClick Action = iota
-	// ActionRightClick is the action for right click.
+	// ActionRightClick represents the right click action.
 	ActionRightClick
-	// ActionMouseUp is the action for mouse up.
+	// ActionMouseUp represents the mouse up action.
 	ActionMouseUp
-	// ActionMouseDown is the action for mouse down.
+	// ActionMouseDown represents the mouse down action.
 	ActionMouseDown
-	// ActionMiddleClick is the action for middle click.
+	// ActionMiddleClick represents the middle click action.
 	ActionMiddleClick
-	// ActionMoveMouse is the action for moving the mouse.
+	// ActionMoveMouse represents the mouse move action.
 	ActionMoveMouse
-	// ActionScroll is the action for scrolling.
+	// ActionScroll represents the scroll action.
 	ActionScroll
 )

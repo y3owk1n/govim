@@ -16,9 +16,7 @@ const unknownAction = "unknown"
 
 // handleActiveKey dispatches key events by current mode.
 func (a *App) handleKeyPress(key string) {
-	// If in idle mode, check if we should handle scroll keys
 	if a.state.CurrentMode() == ModeIdle {
-		// Handle escape to exit standalone scroll
 		if key == "\x1b" || key == "escape" {
 			a.logger.Info("Exiting standalone scroll mode")
 			a.overlayManager.Clear()
@@ -26,33 +24,28 @@ func (a *App) handleKeyPress(key string) {
 			if a.eventTap != nil {
 				a.eventTap.Disable()
 			}
-			a.scrollCtx.SetIsActive(
-				false,
-			)
-			a.scrollCtx.SetLastKey("") // Reset scroll state
+			a.scrollCtx.SetIsActive(false)
+			a.scrollCtx.SetLastKey("")
 			return
 		}
-		// Try to handle scroll keys with generic handler using persistent state
-		// If it's not a scroll key, it will just be ignored
+		// Try to handle scroll keys with generic handler using persistent state.
+		// If it's not a scroll key, it will just be ignored.
 		lastKey := a.scrollCtx.LastKey
 		a.handleGenericScrollKey(key, &lastKey)
 		a.scrollCtx.SetLastKey(lastKey)
 		return
 	}
 
-	// Handle Tab key to toggle between overlay mode and action mode
-	if key == "\t" { // Tab key
+	if key == "\t" {
 		a.handleTabKey()
 		return
 	}
 
-	// Handle Escape key to exit action mode or current mode
 	if key == "\x1b" || key == "escape" {
 		a.handleEscapeKey()
 		return
 	}
 
-	// Explicitly dispatch by current mode
 	a.handleModeSpecificKey(key)
 }
 
@@ -61,7 +54,6 @@ func (a *App) handleTabKey() {
 	switch a.state.CurrentMode() {
 	case ModeHints:
 		if a.hintsCtx.InActionMode {
-			// Switch back to overlay mode
 			a.hintsCtx.SetInActionMode(false)
 			if overlay.Get() != nil {
 				overlay.Get().Clear()
@@ -72,7 +64,6 @@ func (a *App) handleTabKey() {
 			a.logger.Info("Switched back to hints overlay mode")
 			a.overlaySwitch(overlay.ModeHints)
 		} else {
-			// Switch to action mode
 			a.hintsCtx.SetInActionMode(true)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
@@ -83,7 +74,6 @@ func (a *App) handleTabKey() {
 		}
 	case ModeGrid:
 		if a.gridCtx.InActionMode {
-			// Switch back to overlay mode
 			a.gridCtx.SetInActionMode(false)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
@@ -95,7 +85,6 @@ func (a *App) handleTabKey() {
 			a.logger.Info("Switched back to grid overlay mode")
 			a.overlaySwitch(overlay.ModeGrid)
 		} else {
-			// Switch to action mode
 			a.gridCtx.SetInActionMode(true)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
@@ -105,7 +94,6 @@ func (a *App) handleTabKey() {
 			a.overlaySwitch(overlay.ModeAction)
 		}
 	case ModeIdle:
-		// Nothing to do in idle mode
 		return
 	}
 }
@@ -115,7 +103,6 @@ func (a *App) handleEscapeKey() {
 	switch a.state.CurrentMode() {
 	case ModeHints:
 		if a.hintsCtx.InActionMode {
-			// Exit action mode completely, go back to idle mode
 			a.hintsCtx.SetInActionMode(false)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
@@ -124,10 +111,8 @@ func (a *App) handleEscapeKey() {
 			a.overlaySwitch(overlay.ModeIdle)
 			return
 		}
-		// Fall through to exit mode
 	case ModeGrid:
 		if a.gridCtx.InActionMode {
-			// Exit action mode completely, go back to idle mode
 			a.gridCtx.SetInActionMode(false)
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
@@ -136,9 +121,7 @@ func (a *App) handleEscapeKey() {
 			a.overlaySwitch(overlay.ModeIdle)
 			return
 		}
-		// Fall through to exit mode
 	case ModeIdle:
-		// Nothing to do in idle mode
 		return
 	}
 	a.exitMode()
@@ -149,11 +132,10 @@ func (a *App) handleEscapeKey() {
 func (a *App) handleModeSpecificKey(key string) {
 	switch a.state.CurrentMode() {
 	case ModeHints:
-		// If in action mode, handle action keys
 		if a.hintsCtx.InActionMode {
 			a.handleHintsActionKey(key)
-			// After handling the action, we stay in action mode
-			// The user can press Tab to go back to overlay mode or perform more actions
+			// After handling the action, we stay in action mode.
+			// The user can press Tab to go back to overlay mode or perform more actions.
 			return
 		}
 
@@ -191,11 +173,10 @@ func (a *App) handleModeSpecificKey(key string) {
 			return
 		}
 	case ModeGrid:
-		// If in action mode, handle action keys
 		if a.gridCtx.InActionMode {
 			a.handleGridActionKey(key)
-			// After handling the action, we stay in action mode
-			// The user can press Tab to go back to overlay mode or perform more actions
+			// After handling the action, we stay in action mode.
+			// The user can press Tab to go back to overlay mode or perform more actions.
 			return
 		}
 
@@ -205,7 +186,6 @@ func (a *App) handleModeSpecificKey(key string) {
 			return
 		}
 
-		// Complete coordinate entered - perform action
 		if res.Complete {
 			targetPoint := res.TargetPoint
 
@@ -225,12 +205,10 @@ func (a *App) handleModeSpecificKey(key string) {
 			accessibility.MoveMouseToPoint(absolutePoint)
 
 			// No need to exit grid mode, just let it going
-			// a.exitMode()
 
 			return
 		}
 	case ModeIdle:
-		// Nothing to do in idle mode
 		return
 	}
 }
@@ -243,13 +221,8 @@ func (a *App) exitMode() {
 
 	a.logger.Info("Exiting current mode", zap.String("mode", a.getCurrModeString()))
 
-	// Mode-specific cleanup
 	a.performModeSpecificCleanup()
-
-	// Common cleanup
 	a.performCommonCleanup()
-
-	// Cursor restoration
 	a.handleCursorRestoration()
 }
 
@@ -267,7 +240,6 @@ func (a *App) performModeSpecificCleanup() {
 
 // cleanupHintsMode handles cleanup for hints mode.
 func (a *App) cleanupHintsMode() {
-	// Reset action mode state
 	a.hintsCtx.SetInActionMode(false)
 
 	if a.hintManager != nil {
@@ -275,11 +247,9 @@ func (a *App) cleanupHintsMode() {
 	}
 	a.hintsCtx.SetSelectedHint(nil)
 
-	// Clear and hide overlay for hints
 	a.overlayManager.Clear()
 	a.overlayManager.Hide()
 
-	// Also clear and hide action overlay
 	if overlay.Get() != nil {
 		overlay.Get().Clear()
 		overlay.Get().Hide()
@@ -294,8 +264,8 @@ func (a *App) cleanupHintsMode() {
 
 // cleanupDefaultMode handles cleanup for default/unknown modes.
 func (a *App) cleanupDefaultMode() {
-	// No domain-specific cleanup for other modes yet
-	// But still clear and hide action overlay
+	// No domain-specific cleanup for other modes yet.
+	// But still clear and hide action overlay.
 	if overlay.Get() != nil {
 		overlay.Get().Clear()
 		overlay.Get().Hide()
@@ -304,32 +274,26 @@ func (a *App) cleanupDefaultMode() {
 
 // cleanupGridMode handles cleanup for grid mode.
 func (a *App) cleanupGridMode() {
-	// Reset action mode state
 	a.gridCtx.SetInActionMode(false)
 
 	if a.gridManager != nil {
 		a.gridManager.Reset()
 	}
-	// Hide overlays
+
 	a.logger.Info("Hiding grid overlay")
 	a.overlayManager.Hide()
-
-	// Also clear and hide action overlay
 	a.overlayManager.Clear()
 	a.overlayManager.Hide()
 }
 
 // performCommonCleanup handles common cleanup logic for all modes.
 func (a *App) performCommonCleanup() {
-	// Clear scroll overlay
 	a.overlayManager.Clear()
 
-	// Disable event tap when leaving active modes
 	if a.eventTap != nil {
 		a.eventTap.Disable()
 	}
 
-	// Update mode after all cleanup is done
 	a.state.SetMode(ModeIdle)
 	a.logger.Debug("Mode transition complete",
 		zap.String("to", "idle"))
@@ -355,8 +319,8 @@ func (a *App) handleCursorRestoration() {
 		accessibility.MoveMouseToPoint(target)
 	}
 	a.cursor.Reset()
-	// Always reset scroll context regardless of whether we performed cursor restoration
-	// This ensures proper state cleanup when switching between modes
+	// Always reset scroll context regardless of whether we performed cursor restoration.
+	// This ensures proper state cleanup when switching between modes.
 	a.scrollCtx.SetIsActive(false)
 	a.scrollCtx.SetLastKey("")
 }
@@ -419,7 +383,7 @@ func (a *App) shouldRestoreCursorOnExit() bool {
 	if !a.cursor.IsCaptured() {
 		return false
 	}
-	if a.scrollCtx.GetIsActive() { // Use scroll context instead of AppState
+	if a.scrollCtx.GetIsActive() {
 		return false
 	}
 	return a.cursor.ShouldRestore()
@@ -469,10 +433,8 @@ func computeRestoredPosition(initPos image.Point, from, to image.Rectangle) imag
 
 // handleActionKey handles action keys for both hints and grid modes.
 func (a *App) handleActionKey(key string, mode string) {
-	// Get the current cursor position
 	cursorPos := accessibility.GetCurrentCursorPosition()
 
-	// Map action keys to actions using configurable keys
 	var act string
 	switch key {
 	case a.config.Action.LeftClickKey:

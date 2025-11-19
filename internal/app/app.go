@@ -36,16 +36,13 @@ const (
 
 // App represents the main application instance containing all state and dependencies.
 type App struct {
-	// Configuration
 	config     *config.Config
 	ConfigPath string
 	logger     *zap.Logger
 
-	// State management
 	state  *state.AppState
 	cursor *state.CursorState
 
-	// Core services
 	overlayManager   *overlay.Manager
 	hotkeyManager    hotkeyService
 	eventTap         eventTap
@@ -53,7 +50,6 @@ type App struct {
 	appWatcher       *appwatcher.Watcher
 	scrollController *scroll.Controller
 
-	// Hints mode
 	hintGenerator *hints.Generator
 	hintOverlay   *hints.Overlay
 	hintManager   *hints.Manager
@@ -61,21 +57,17 @@ type App struct {
 	hintsCtx      *hints.Context
 	hintStyle     hints.StyleMode
 
-	// Grid mode
 	gridManager *grid.Manager
 	gridRouter  *grid.Router
 	gridCtx     *grid.Context
 	gridStyle   grid.Style
 
-	// Overlays
 	scrollOverlay *scroll.Overlay
 	actionOverlay *action.Overlay
 	renderer      *ui.OverlayRenderer
 
-	// Scroll mode
 	scrollCtx *scroll.Context
 
-	// IPC handlers
 	cmdHandlers map[string]func(ipc.Command) ipc.Response
 }
 

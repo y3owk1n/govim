@@ -5,8 +5,6 @@ import (
 	"github.com/y3owk1n/neru/internal/infra/logger"
 )
 
-// idleCmd represents the command to set the application mode to idle.
-// This exits any active mode and returns the application to its default state.
 var idleCmd = &cobra.Command{
 	Use:   "idle",
 	Short: "Set mode to idle",

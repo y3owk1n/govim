@@ -10,8 +10,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// configCmd represents the command to display the current Neru configuration.
-// It retrieves and displays the active configuration as formatted JSON.
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Dump effective config",
