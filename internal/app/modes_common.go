@@ -4,10 +4,10 @@ import (
 	"image"
 	"math"
 
-	"github.com/y3owk1n/neru/internal/infra/accessibility"
 	"github.com/y3owk1n/neru/internal/domain"
 	"github.com/y3owk1n/neru/internal/features/grid"
 	"github.com/y3owk1n/neru/internal/features/hints"
+	"github.com/y3owk1n/neru/internal/infra/accessibility"
 	"github.com/y3owk1n/neru/internal/infra/bridge"
 	"github.com/y3owk1n/neru/internal/ui/overlay"
 	"go.uber.org/zap"

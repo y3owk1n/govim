@@ -475,7 +475,7 @@ Use native drag with trackpad/mouse for Finder operations.
 **Solution:**
 
 ```toml
-[accessibility.additional_ax_support]
+[hints.additional_ax_support]
 enable = true
 # VS Code is auto-detected
 ```
@@ -487,7 +487,7 @@ enable = true
 **Solution:**
 
 ```toml
-[[accessibility.app_configs]]
+[[hints.app_configs]]
 bundle_id = "com.adobe.illustrator"
 additional_clickable_roles = ["AXStaticText", "AXImage"]
 ignore_clickable_check = true
@@ -529,7 +529,7 @@ Enabling `AXEnhancedUserInterface` for Chromium/Firefox conflicts with tiling wi
 Disable additional AX support:
 
 ```toml
-[accessibility.additional_ax_support]
+[hints.additional_ax_support]
 enable = false  # Keep this off if using tiling WM
 ```
 

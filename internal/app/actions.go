@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/y3owk1n/neru/internal/infra/accessibility"
 	"github.com/y3owk1n/neru/internal/domain"
+	"github.com/y3owk1n/neru/internal/infra/accessibility"
 )
 
 // performActionAtPoint executes the specified action at the given point.
