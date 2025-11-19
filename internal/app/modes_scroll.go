@@ -49,7 +49,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
 		}
 		if operation == "top" {
 			a.logger.Info("gg detected - scroll to top")
-			err = a.scrollController.ScrollToTop()
+			err = a.ScrollController().ScrollToTop()
 			*lastScrollKey = ""
 			goto done
 		}
@@ -57,7 +57,7 @@ func (a *App) handleGenericScrollKey(key string, lastScrollKey *string) {
 		operation, _, ok := scroll.ParseKey(key, *lastScrollKey, a.logger)
 		if ok && operation == "bottom" {
 			a.logger.Info("G key detected - scroll to bottom")
-			err = a.scrollController.ScrollToBottom()
+			err = a.ScrollController().ScrollToBottom()
 			*lastScrollKey = ""
 		}
 	default:
@@ -86,10 +86,10 @@ func (a *App) handleControlScrollKey(key string, lastKey string, lastScrollKey *
 			switch op {
 			case "half_down":
 				a.logger.Info("Ctrl+D detected - half page down")
-				return a.scrollController.ScrollDownHalfPage() != nil
+				return a.ScrollController().ScrollDownHalfPage() != nil
 			case "half_up":
 				a.logger.Info("Ctrl+U detected - half page up")
-				return a.scrollController.ScrollUpHalfPage() != nil
+				return a.ScrollController().ScrollUpHalfPage() != nil
 			}
 		}
 	}
@@ -106,19 +106,19 @@ func (a *App) handleDirectionalScrollKey(key string, lastKey string) error {
 	switch key {
 	case "j":
 		if op == "down" {
-			return a.scrollController.ScrollDown()
+			return a.ScrollController().ScrollDown()
 		}
 	case "k":
 		if op == "up" {
-			return a.scrollController.ScrollUp()
+			return a.ScrollController().ScrollUp()
 		}
 	case "h":
 		if op == "left" {
-			return a.scrollController.ScrollLeft()
+			return a.ScrollController().ScrollLeft()
 		}
 	case "l":
 		if op == "right" {
-			return a.scrollController.ScrollRight()
+			return a.ScrollController().ScrollRight()
 		}
 	}
 	return nil

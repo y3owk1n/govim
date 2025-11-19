@@ -45,7 +45,7 @@ func IsKnownActionName(action ActionName) bool {
 	}
 }
 
-// Action is the current action of the application.
+// Action represents the current action of the application.
 type Action int
 
 const (
