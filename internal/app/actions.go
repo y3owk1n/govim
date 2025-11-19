@@ -35,6 +35,9 @@ func isKnownAction(action string) bool {
 // startInteractiveScroll initiates interactive scrolling mode with visual feedback.
 func (a *App) startInteractiveScroll() {
 	a.cursor.SkipNextRestore()
+	// Reset scroll context before exiting current mode to ensure clean state transition
+	a.scrollCtx.SetIsActive(false)
+	a.scrollCtx.SetLastKey("")
 	a.exitMode()
 
 	if a.overlayManager != nil {
@@ -52,7 +55,7 @@ func (a *App) startInteractiveScroll() {
 		a.eventTap.Enable()
 	}
 
-	a.scrollCtx.SetIsActive(true) // Use scroll context setter instead of direct field access
+	a.scrollCtx.SetIsActive(true)
 
 	a.logger.Info("Interactive scroll activated")
 	a.logger.Info("Use j/k to scroll, Ctrl+D/U for half-page, g/G for top/bottom, Esc to exit")

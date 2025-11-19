@@ -28,7 +28,7 @@ func (a *App) handleKeyPress(key string) {
 			}
 			a.scrollCtx.SetIsActive(
 				false,
-			) // Use scroll context setter instead of direct field access
+			)
 			a.scrollCtx.SetLastKey("") // Reset scroll state
 			return
 		}
@@ -36,7 +36,7 @@ func (a *App) handleKeyPress(key string) {
 		// If it's not a scroll key, it will just be ignored
 		lastKey := a.scrollCtx.LastKey
 		a.handleGenericScrollKey(key, &lastKey)
-		a.scrollCtx.SetLastKey(lastKey) // Use scroll context setter instead of direct field access
+		a.scrollCtx.SetLastKey(lastKey)
 		return
 	}
 
@@ -355,8 +355,10 @@ func (a *App) handleCursorRestoration() {
 		accessibility.MoveMouseToPoint(target)
 	}
 	a.cursor.Reset()
-	a.scrollCtx.SetIsActive(false) // Use scroll context setter instead of direct field access
-	a.scrollCtx.SetLastKey("")     // Reset scroll context last key
+	// Always reset scroll context regardless of whether we performed cursor restoration
+	// This ensures proper state cleanup when switching between modes
+	a.scrollCtx.SetIsActive(false)
+	a.scrollCtx.SetLastKey("")
 }
 
 func getModeString(mode Mode) string {
@@ -417,7 +419,7 @@ func (a *App) shouldRestoreCursorOnExit() bool {
 	if !a.cursor.IsCaptured() {
 		return false
 	}
-	if a.scrollCtx.IsActive { // Use scroll context instead of AppState
+	if a.scrollCtx.GetIsActive() { // Use scroll context instead of AppState
 		return false
 	}
 	return a.cursor.ShouldRestore()

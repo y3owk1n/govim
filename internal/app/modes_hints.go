@@ -53,6 +53,15 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		return
 	}
 
+	// Handle scroll context if active
+	if a.scrollCtx.GetIsActive() {
+		// Reset scroll context to ensure clean transition
+		a.scrollCtx.SetIsActive(false)
+		a.scrollCtx.SetLastKey("")
+		// Also reset the skip restore flag since we're transitioning from scroll to hint mode
+		a.cursor.Reset()
+	}
+
 	a.captureInitialCursorPosition()
 
 	action := domain.ActionMoveMouse
