@@ -308,8 +308,8 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	if app.hintOverlay != nil {
 		overlayManager.UseHintOverlay(app.hintOverlay)
 	}
-	if app.gridCtx != nil && app.gridCtx.GridOverlay != nil {
-		overlayManager.UseGridOverlay(*app.gridCtx.GridOverlay)
+	if app.gridCtx != nil && app.gridCtx.GetGridOverlay() != nil {
+		overlayManager.UseGridOverlay(*app.gridCtx.GetGridOverlay())
 	}
 
 	app.cmdHandlers[domain.CommandPing] = app.handlePing

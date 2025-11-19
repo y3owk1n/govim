@@ -97,7 +97,7 @@ func (a *App) createGridInstance() *grid.Grid {
 		characters = a.config.Hints.HintCharacters
 	}
 	gridInstance := grid.NewGrid(characters, bounds, a.logger)
-	*a.gridCtx.GridInstance = gridInstance
+	a.gridCtx.SetGridInstanceValue(gridInstance)
 
 	return gridInstance
 }

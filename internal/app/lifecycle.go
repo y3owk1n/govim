@@ -66,7 +66,7 @@ func (a *App) handleScreenParametersChange() {
 	}
 
 	// Handle grid overlay
-	if a.config.Grid.Enabled && a.gridCtx != nil && a.gridCtx.GridOverlay != nil {
+	if a.config.Grid.Enabled && a.gridCtx != nil && a.gridCtx.GetGridOverlay() != nil {
 		// If grid mode is not active, mark for refresh on next activation
 		if a.state.CurrentMode() != ModeGrid {
 			a.state.SetGridOverlayNeedsRefresh(true)
