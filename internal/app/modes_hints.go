@@ -9,7 +9,6 @@ import (
 	"github.com/y3owk1n/neru/internal/features/hints"
 	"github.com/y3owk1n/neru/internal/infra/accessibility"
 	"github.com/y3owk1n/neru/internal/infra/bridge"
-	"github.com/y3owk1n/neru/internal/ui/overlay"
 	"go.uber.org/zap"
 )
 
@@ -92,7 +91,7 @@ func (a *App) activateHintModeInternal(preserveActionMode bool) {
 		return
 	}
 
-	a.hintsCtx.selectedHint = nil
+	a.hintsCtx.SelectedHint = nil
 	a.setModeHints()
 }
 
@@ -188,33 +187,6 @@ func (a *App) drawHintsActionHighlight() {
 		zap.Int("y", localBounds.Min.Y),
 		zap.Int("width", localBounds.Dx()),
 		zap.Int("height", localBounds.Dy()))
-}
-
-// cleanupHintsMode handles cleanup for hints mode.
-func (a *App) cleanupHintsMode() {
-	// Reset action mode state
-	a.hintsCtx.inActionMode = false
-
-	if a.hintManager != nil {
-		a.hintManager.Reset()
-	}
-	a.hintsCtx.selectedHint = nil
-
-	// Clear and hide overlay for hints
-	a.overlayManager.Clear()
-	a.overlayManager.Hide()
-
-	// Also clear and hide action overlay
-	if overlay.Get() != nil {
-		overlay.Get().Clear()
-		overlay.Get().Hide()
-	}
-
-	var ms runtime.MemStats
-	runtime.ReadMemStats(&ms)
-	a.logger.Info("Hints cleanup mem",
-		zap.Uint64("alloc_bytes", ms.Alloc),
-		zap.Uint64("sys_bytes", ms.Sys))
 }
 
 // handleHintsActionKey handles action keys when in hints action mode.

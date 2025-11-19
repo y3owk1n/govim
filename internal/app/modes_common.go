@@ -3,10 +3,9 @@ package app
 import (
 	"image"
 	"math"
+	"runtime"
 
 	"github.com/y3owk1n/neru/internal/domain"
-	"github.com/y3owk1n/neru/internal/features/grid"
-	"github.com/y3owk1n/neru/internal/features/hints"
 	"github.com/y3owk1n/neru/internal/infra/accessibility"
 	"github.com/y3owk1n/neru/internal/infra/bridge"
 	"github.com/y3owk1n/neru/internal/ui/overlay"
@@ -14,19 +13,6 @@ import (
 )
 
 const unknownAction = "unknown"
-
-// HintsContext holds the state and context for hint mode operations.
-type HintsContext struct {
-	selectedHint *hints.Hint
-	inActionMode bool
-}
-
-// GridContext holds the state and context for grid mode operations.
-type GridContext struct {
-	gridInstance **grid.Grid
-	gridOverlay  **grid.Overlay
-	inActionMode bool
-}
 
 // handleActiveKey dispatches key events by current mode.
 func (a *App) handleKeyPress(key string) {
@@ -72,9 +58,9 @@ func (a *App) handleKeyPress(key string) {
 func (a *App) handleTabKey() {
 	switch a.state.CurrentMode() {
 	case ModeHints:
-		if a.hintsCtx.inActionMode {
+		if a.hintsCtx.InActionMode {
 			// Switch back to overlay mode
-			a.hintsCtx.inActionMode = false
+			a.hintsCtx.InActionMode = false
 			if overlay.Get() != nil {
 				overlay.Get().Clear()
 				overlay.Get().Hide()
@@ -85,7 +71,7 @@ func (a *App) handleTabKey() {
 			a.overlaySwitch(overlay.ModeHints)
 		} else {
 			// Switch to action mode
-			a.hintsCtx.inActionMode = true
+			a.hintsCtx.InActionMode = true
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.drawHintsActionHighlight()
@@ -94,9 +80,9 @@ func (a *App) handleTabKey() {
 			a.overlaySwitch(overlay.ModeAction)
 		}
 	case ModeGrid:
-		if a.gridCtx.inActionMode {
+		if a.gridCtx.InActionMode {
 			// Switch back to overlay mode
-			a.gridCtx.inActionMode = false
+			a.gridCtx.InActionMode = false
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			// Re-setup grid to show grid again with proper refresh
@@ -108,7 +94,7 @@ func (a *App) handleTabKey() {
 			a.overlaySwitch(overlay.ModeGrid)
 		} else {
 			// Switch to action mode
-			a.gridCtx.inActionMode = true
+			a.gridCtx.InActionMode = true
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.drawGridActionHighlight()
@@ -126,9 +112,9 @@ func (a *App) handleTabKey() {
 func (a *App) handleEscapeKey() {
 	switch a.state.CurrentMode() {
 	case ModeHints:
-		if a.hintsCtx.inActionMode {
+		if a.hintsCtx.InActionMode {
 			// Exit action mode completely, go back to idle mode
-			a.hintsCtx.inActionMode = false
+			a.hintsCtx.InActionMode = false
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.exitMode()
@@ -138,9 +124,9 @@ func (a *App) handleEscapeKey() {
 		}
 		// Fall through to exit mode
 	case ModeGrid:
-		if a.gridCtx.inActionMode {
+		if a.gridCtx.InActionMode {
 			// Exit action mode completely, go back to idle mode
-			a.gridCtx.inActionMode = false
+			a.gridCtx.InActionMode = false
 			a.overlayManager.Clear()
 			a.overlayManager.Hide()
 			a.exitMode()
@@ -162,7 +148,7 @@ func (a *App) handleModeSpecificKey(key string) {
 	switch a.state.CurrentMode() {
 	case ModeHints:
 		// If in action mode, handle action keys
-		if a.hintsCtx.inActionMode {
+		if a.hintsCtx.InActionMode {
 			a.handleHintsActionKey(key)
 			// After handling the action, we stay in action mode
 			// The user can press Tab to go back to overlay mode or perform more actions
@@ -170,7 +156,7 @@ func (a *App) handleModeSpecificKey(key string) {
 		}
 
 		// Route hint-specific keys via hints router
-		res := a.hintsRouter.RouteKey(key, a.hintsCtx.selectedHint != nil)
+		res := a.hintsRouter.RouteKey(key, a.hintsCtx.SelectedHint != nil)
 		if res.Exit {
 			a.exitMode()
 			return
@@ -196,7 +182,7 @@ func (a *App) handleModeSpecificKey(key string) {
 			if a.hintManager != nil {
 				a.hintManager.Reset()
 			}
-			a.hintsCtx.selectedHint = nil
+			a.hintsCtx.SelectedHint = nil
 
 			a.activateHintMode()
 
@@ -204,7 +190,7 @@ func (a *App) handleModeSpecificKey(key string) {
 		}
 	case ModeGrid:
 		// If in action mode, handle action keys
-		if a.gridCtx.inActionMode {
+		if a.gridCtx.InActionMode {
 			a.handleGridActionKey(key)
 			// After handling the action, we stay in action mode
 			// The user can press Tab to go back to overlay mode or perform more actions
@@ -277,6 +263,33 @@ func (a *App) performModeSpecificCleanup() {
 	}
 }
 
+// cleanupHintsMode handles cleanup for hints mode.
+func (a *App) cleanupHintsMode() {
+	// Reset action mode state
+	a.hintsCtx.InActionMode = false
+
+	if a.hintManager != nil {
+		a.hintManager.Reset()
+	}
+	a.hintsCtx.SelectedHint = nil
+
+	// Clear and hide overlay for hints
+	a.overlayManager.Clear()
+	a.overlayManager.Hide()
+
+	// Also clear and hide action overlay
+	if overlay.Get() != nil {
+		overlay.Get().Clear()
+		overlay.Get().Hide()
+	}
+
+	var ms runtime.MemStats
+	runtime.ReadMemStats(&ms)
+	a.logger.Info("Hints cleanup mem",
+		zap.Uint64("alloc_bytes", ms.Alloc),
+		zap.Uint64("sys_bytes", ms.Sys))
+}
+
 // cleanupDefaultMode handles cleanup for default/unknown modes.
 func (a *App) cleanupDefaultMode() {
 	// No domain-specific cleanup for other modes yet
@@ -285,6 +298,23 @@ func (a *App) cleanupDefaultMode() {
 		overlay.Get().Clear()
 		overlay.Get().Hide()
 	}
+}
+
+// cleanupGridMode handles cleanup for grid mode.
+func (a *App) cleanupGridMode() {
+	// Reset action mode state
+	a.gridCtx.InActionMode = false
+
+	if a.gridManager != nil {
+		a.gridManager.Reset()
+	}
+	// Hide overlays
+	a.logger.Info("Hiding grid overlay")
+	a.overlayManager.Hide()
+
+	// Also clear and hide action overlay
+	a.overlayManager.Clear()
+	a.overlayManager.Hide()
 }
 
 // performCommonCleanup handles common cleanup logic for all modes.

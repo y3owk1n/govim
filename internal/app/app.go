@@ -58,13 +58,13 @@ type App struct {
 	hintOverlay   *hints.Overlay
 	hintManager   *hints.Manager
 	hintsRouter   *hints.Router
-	hintsCtx      *HintsContext
+	hintsCtx      *hints.Context
 	hintStyle     hints.StyleMode
 
 	// Grid mode
 	gridManager *grid.Manager
 	gridRouter  *grid.Router
-	gridCtx     *GridContext
+	gridCtx     *grid.Context
 	gridStyle   grid.Style
 
 	// Overlays
@@ -207,7 +207,7 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 			}
 		}, app.logger)
 		app.hintsRouter = hints.NewRouter(app.hintManager, app.logger)
-		app.hintsCtx = &HintsContext{}
+		app.hintsCtx = &hints.Context{}
 
 		var err error
 		hintOverlay, err = hints.NewOverlayWithWindow(cfg.Hints, log, overlayManager.GetWindowPtr())
@@ -246,14 +246,14 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 			gridOverlay.ShowSubgrid(cell, app.gridStyle)
 		}, log)
 
-		app.gridCtx = &GridContext{
-			gridInstance: &gridInstance,
-			gridOverlay:  &gridOverlay,
+		app.gridCtx = &grid.Context{
+			GridInstance: &gridInstance,
+			GridOverlay:  &gridOverlay,
 		}
 	} else {
 		var gridInstance *grid.Grid
-		app.gridCtx = &GridContext{
-			gridInstance: &gridInstance,
+		app.gridCtx = &grid.Context{
+			GridInstance: &gridInstance,
 		}
 	}
 
@@ -304,8 +304,8 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	if app.hintOverlay != nil {
 		overlayManager.UseHintOverlay(app.hintOverlay)
 	}
-	if app.gridCtx != nil && app.gridCtx.gridOverlay != nil {
-		overlayManager.UseGridOverlay(*app.gridCtx.gridOverlay)
+	if app.gridCtx != nil && app.gridCtx.GridOverlay != nil {
+		overlayManager.UseGridOverlay(*app.gridCtx.GridOverlay)
 	}
 
 	app.cmdHandlers[domain.CommandPing] = app.handlePing
@@ -352,7 +352,7 @@ func (a *App) HintGenerator() *hints.Generator { return a.hintGenerator }
 func (a *App) HintManager() *hints.Manager { return a.hintManager }
 
 // HintsContext returns the hints context.
-func (a *App) HintsContext() *HintsContext { return a.hintsCtx }
+func (a *App) HintsContext() *hints.Context { return a.hintsCtx }
 
 // Renderer returns the overlay renderer.
 func (a *App) Renderer() *ui.OverlayRenderer { return a.renderer }
@@ -382,7 +382,7 @@ func (a *App) ExitMode() { a.exitMode() }
 func (a *App) GridManager() *grid.Manager { return a.gridManager }
 
 // GridContext returns the grid context.
-func (a *App) GridContext() *GridContext { return a.gridCtx }
+func (a *App) GridContext() *grid.Context { return a.gridCtx }
 
 // GridRouter returns the grid router.
 func (a *App) GridRouter() *grid.Router { return a.gridRouter }

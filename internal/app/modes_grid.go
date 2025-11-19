@@ -97,7 +97,7 @@ func (a *App) createGridInstance() *grid.Grid {
 		characters = a.config.Hints.HintCharacters
 	}
 	gridInstance := grid.NewGrid(characters, bounds, a.logger)
-	*a.gridCtx.gridInstance = gridInstance
+	*a.gridCtx.GridInstance = gridInstance
 
 	return gridInstance
 }
@@ -105,7 +105,7 @@ func (a *App) createGridInstance() *grid.Grid {
 // updateGridOverlayConfig updates the grid overlay configuration.
 func (a *App) updateGridOverlayConfig() {
 	// Grid overlay already created in NewApp - update its config and use it
-	(*a.gridCtx.gridOverlay).UpdateConfig(a.config.Grid)
+	(*a.gridCtx.GridOverlay).UpdateConfig(a.config.Grid)
 }
 
 // initializeGridManager initializes the grid manager with the new grid instance.
@@ -165,23 +165,6 @@ func (a *App) drawGridActionHighlight() {
 		zap.Int("y", localBounds.Min.Y),
 		zap.Int("width", localBounds.Dx()),
 		zap.Int("height", localBounds.Dy()))
-}
-
-// cleanupGridMode handles cleanup for grid mode.
-func (a *App) cleanupGridMode() {
-	// Reset action mode state
-	a.gridCtx.inActionMode = false
-
-	if a.gridManager != nil {
-		a.gridManager.Reset()
-	}
-	// Hide overlays
-	a.logger.Info("Hiding grid overlay")
-	a.overlayManager.Hide()
-
-	// Also clear and hide action overlay
-	a.overlayManager.Clear()
-	a.overlayManager.Hide()
 }
 
 // handleGridActionKey handles action keys when in grid action mode.
