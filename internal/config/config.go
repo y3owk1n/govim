@@ -101,8 +101,7 @@ type HintsConfig struct {
 
 // GridConfig defines the visual and behavioral settings for grid mode.
 type GridConfig struct {
-	Enabled        bool `toml:"enabled"`
-	SubgridEnabled bool `toml:"subgrid_enabled"`
+	Enabled bool `toml:"enabled"`
 
 	Characters   string `toml:"characters"`
 	SublayerKeys string `toml:"sublayer_keys"`
@@ -286,8 +285,7 @@ func DefaultConfig() *Config {
 			},
 		},
 		Grid: GridConfig{
-			Enabled:        true,
-			SubgridEnabled: true,
+			Enabled: true,
 
 			Characters:   "abcdefghijklmnpqrstuvwxyz",
 			SublayerKeys: "abcdefghijklmnpqrstuvwxyz",

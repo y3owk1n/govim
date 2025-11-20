@@ -162,20 +162,18 @@ func (c *Config) validateGrid() error {
 		return err
 	}
 
-	if c.Grid.SubgridEnabled {
-		// Validate sublayer keys length (fallback to grid.characters) for 3x3 subgrid
-		keys := strings.TrimSpace(c.Grid.SublayerKeys)
-		if keys == "" {
-			keys = c.Grid.Characters
-		}
-		// Subgrid is always 3x3, requiring at least 9 characters
-		const required = 9
-		if len([]rune(keys)) < required {
-			return fmt.Errorf(
-				"grid.sublayer_keys must contain at least %d characters for 3x3 subgrid selection",
-				required,
-			)
-		}
+	// Validate sublayer keys length (fallback to grid.characters) for 3x3 subgrid
+	keys := strings.TrimSpace(c.Grid.SublayerKeys)
+	if keys == "" {
+		keys = c.Grid.Characters
+	}
+	// Subgrid is always 3x3, requiring at least 9 characters
+	const required = 9
+	if len([]rune(keys)) < required {
+		return fmt.Errorf(
+			"grid.sublayer_keys must contain at least %d characters for 3x3 subgrid selection",
+			required,
+		)
 	}
 	return nil
 }
