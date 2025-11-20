@@ -7,6 +7,7 @@ import (
 
 	"github.com/y3owk1n/neru/internal/domain"
 	"github.com/y3owk1n/neru/internal/features/grid"
+	infra "github.com/y3owk1n/neru/internal/infra/accessibility"
 	"github.com/y3owk1n/neru/internal/infra/bridge"
 	"github.com/y3owk1n/neru/internal/ui/coordinates"
 	"go.uber.org/zap"
@@ -176,6 +177,9 @@ func (h *Handler) initializeGridManager(gridInstance *grid.Grid) {
 				h.Logger.Warn("Attempted to show subgrid for nil cell")
 				return
 			}
+
+			// Move mouse to center of cell before showing subgrid
+			infra.MoveMouseToPoint(cell.Center)
 
 			// Draw 3x3 subgrid inside selected cell
 			h.Renderer.ShowSubgrid(cell)
