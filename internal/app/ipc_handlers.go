@@ -196,6 +196,36 @@ func (a *App) handleConfig(_ ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Data: a.config, Code: ipc.CodeOK}
 }
 
+func (a *App) handleReloadConfig(_ ipc.Command) ipc.Response {
+	if !a.state.IsEnabled() {
+		return ipc.Response{
+			Success: false,
+			Message: "neru is not running",
+			Code:    ipc.CodeNotRunning,
+		}
+	}
+
+	configPath := a.ConfigPath
+	if configPath == "" {
+		configPath = config.FindConfigFile()
+	}
+
+	err := a.ReloadConfig(configPath)
+	if err != nil {
+		return ipc.Response{
+			Success: false,
+			Message: fmt.Sprintf("failed to reload config: %v", err),
+			Code:    ipc.CodeActionFailed,
+		}
+	}
+
+	return ipc.Response{
+		Success: true,
+		Message: "configuration reloaded successfully",
+		Code:    ipc.CodeOK,
+	}
+}
+
 // resolveConfigPath determines the configuration file path for status reporting.
 func (a *App) resolveConfigPath() string {
 	cfgPath := a.ConfigPath

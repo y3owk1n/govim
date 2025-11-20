@@ -55,6 +55,19 @@ func (g *Generator) GetCharacters() string { return g.characters }
 // GetMaxHints returns the maximum number of hints that can be generated.
 func (g *Generator) GetMaxHints() int { return g.maxHints }
 
+// UpdateCharacters updates the character set used for hint generation.
+func (g *Generator) UpdateCharacters(characters string) {
+	if characters == "" {
+		characters = "asdfghjkl" // fallback to default
+	}
+	g.characters = characters
+	charCount := len(characters)
+	g.maxHints = charCount * charCount * charCount
+	logger.Debug("Updated hint characters",
+		zap.String("characters", characters),
+		zap.Int("maxHints", g.maxHints))
+}
+
 // Generate creates hints for the given UI elements, sorted by position and limited by maximum count.
 func (g *Generator) Generate(elements []*accessibility.TreeNode) ([]*Hint, error) {
 	if len(elements) == 0 {

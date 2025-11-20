@@ -2,10 +2,11 @@ package domain
 
 // IPC Commands.
 const (
-	CommandPing   = "ping"
-	CommandStart  = "start"
-	CommandStop   = "stop"
-	CommandAction = "action"
-	CommandStatus = "status"
-	CommandConfig = "config"
+	CommandPing         = "ping"
+	CommandStart        = "start"
+	CommandStop         = "stop"
+	CommandAction       = "action"
+	CommandStatus       = "status"
+	CommandConfig       = "config"
+	CommandReloadConfig = "reload"
 )

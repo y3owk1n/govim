@@ -4,11 +4,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/getlantern/systray"
 	"github.com/y3owk1n/neru/internal/app"
 	"github.com/y3owk1n/neru/internal/cli"
 	"github.com/y3owk1n/neru/internal/config"
+	"github.com/y3owk1n/neru/internal/infra/bridge"
 )
 
 var globalApp *app.App
@@ -20,19 +22,30 @@ func main() {
 
 // LaunchDaemon is called by the CLI to launch the daemon.
 func LaunchDaemon(configPath string) {
-	cfg, err := config.Load(configPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading configuration: %v\n", err)
-		os.Exit(1)
+	result := config.LoadWithValidation(configPath)
+
+	// If there's a validation error, show alert and continue with default config
+	if result.ValidationError != nil {
+		fmt.Fprintf(os.Stderr, "⚠️  Configuration validation failed: %v\n", result.ValidationError)
+		fmt.Fprintf(os.Stderr, "Config file: %s\n", result.ConfigPath)
+		fmt.Fprintf(os.Stderr, "Continuing with default configuration...\n\n")
+
+		// Show native macOS alert dialog asynchronously
+		// We use a goroutine and delay to ensure the main run loop has started
+		// otherwise the alert might hang or not show up
+		go func() {
+			absPath, _ := filepath.Abs(result.ConfigPath)
+			showConfigErrorAlert(result.ValidationError.Error(), absPath)
+		}()
 	}
 
-	a, err := app.New(cfg)
+	a, err := app.New(result.Config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating app: %v\n", err)
 		os.Exit(1)
 	}
 
-	a.ConfigPath = configPath
+	a.ConfigPath = result.ConfigPath
 	globalApp = a
 
 	go func() {
@@ -43,4 +56,9 @@ func LaunchDaemon(configPath string) {
 	}()
 
 	systray.Run(onReady, onExit)
+}
+
+// showConfigErrorAlert displays a native macOS alert for config validation errors.
+func showConfigErrorAlert(errorMessage, configPath string) {
+	bridge.ShowConfigValidationError(errorMessage, configPath)
 }

@@ -138,6 +138,22 @@ func (m *Manager) GetGrid() *Grid {
 	return m.grid
 }
 
+// UpdateGrid updates the grid used by the manager.
+func (m *Manager) UpdateGrid(g *Grid) {
+	m.grid = g
+	// Update label length based on new grid
+	if g != nil && len(g.GetCells()) > 0 {
+		m.labelLength = len(g.GetCells()[0].GetCoordinate())
+	}
+	m.logger.Debug("Updated manager grid")
+}
+
+// UpdateSubKeys updates the subgrid keys used for subgrid selection.
+func (m *Manager) UpdateSubKeys(subKeys string) {
+	m.subKeys = strings.ToUpper(strings.TrimSpace(subKeys))
+	m.logger.Debug("Updated subgrid keys", zap.String("subKeys", m.subKeys))
+}
+
 // handleLabelLengthReached handles the case when label length is reached.
 func (m *Manager) handleLabelLengthReached() (image.Point, bool) {
 	coord := m.currentInput[:m.labelLength]

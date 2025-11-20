@@ -212,6 +212,11 @@ func (o *Overlay) DrawScrollHighlight(xCoordinate, yCoordinate, width, height in
 	C.NeruDrawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(borderWidth), C.double(1.0))
 }
 
+// UpdateConfig updates the overlay configuration.
+func (o *Overlay) UpdateConfig(cfg config.ScrollConfig) {
+	o.config = cfg
+}
+
 // Destroy releases the overlay window resources.
 func (o *Overlay) Destroy() {
 	if o.window != nil {

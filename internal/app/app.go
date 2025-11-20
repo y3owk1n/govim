@@ -14,6 +14,7 @@ import (
 	"github.com/y3owk1n/neru/internal/features/scroll"
 	infra "github.com/y3owk1n/neru/internal/infra/accessibility"
 	"github.com/y3owk1n/neru/internal/infra/appwatcher"
+	"github.com/y3owk1n/neru/internal/infra/bridge"
 	"github.com/y3owk1n/neru/internal/infra/eventtap"
 	"github.com/y3owk1n/neru/internal/infra/ipc"
 	"github.com/y3owk1n/neru/internal/ui"
@@ -174,6 +175,72 @@ func newWithDeps(cfg *config.Config, deps *deps) (*App, error) {
 	app.registerCommandHandlers()
 
 	return app, nil
+}
+
+// ReloadConfig reloads the configuration from the specified path.
+// If validation fails, shows an alert and keeps the current config.
+// Preserves the current app state (enabled/disabled, current mode).
+func (a *App) ReloadConfig(configPath string) error {
+	// Load new config with validation
+	result := config.LoadWithValidation(configPath)
+
+	// If there's a validation error, show alert and keep current config
+	if result.ValidationError != nil {
+		a.logger.Warn("Config validation failed during reload",
+			zap.Error(result.ValidationError),
+			zap.String("config_path", result.ConfigPath))
+
+		// Show alert dialog
+		bridge.ShowConfigValidationError(result.ValidationError.Error(), result.ConfigPath)
+
+		return fmt.Errorf("config validation failed: %w", result.ValidationError)
+	}
+
+	// Exit current mode before updating config
+	if a.state.CurrentMode() != ModeIdle {
+		a.ExitMode()
+	}
+
+	// Unregister all current hotkeys before updating config
+	if a.state.HotkeysRegistered() {
+		a.logger.Info("Unregistering current hotkeys before reload")
+		a.hotkeyManager.UnregisterAll()
+		a.state.SetHotkeysRegistered(false)
+	}
+
+	// Update config
+	a.config = result.Config
+	a.ConfigPath = result.ConfigPath
+
+	// Update global config for accessibility package
+	config.SetGlobal(result.Config)
+
+	// Update accessibility roles if hints config changed
+	if result.Config.Hints.Enabled {
+		a.logger.Info("Updating clickable roles",
+			zap.Int("count", len(result.Config.Hints.ClickableRoles)))
+		infra.SetClickableRoles(result.Config.Hints.ClickableRoles)
+	}
+
+	// Reconfigure event tap hotkeys with new config
+	a.configureEventTapHotkeys(result.Config, a.logger)
+
+	// Update all components with new config
+	a.hintsComponent.UpdateConfig(result.Config, a.logger)
+	a.gridComponent.UpdateConfig(result.Config, a.logger)
+	a.scrollComponent.UpdateConfig(result.Config, a.logger)
+	a.actionComponent.UpdateConfig(result.Config, a.logger)
+
+	// Update modes handler with new config
+	if a.modes != nil {
+		a.modes.UpdateConfig(result.Config)
+	}
+
+	// Re-register global hotkeys with new config
+	a.refreshHotkeysForAppOrCurrent("")
+
+	a.logger.Info("Configuration reloaded successfully")
+	return nil
 }
 
 // ActivateMode activates the specified mode.

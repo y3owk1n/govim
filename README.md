@@ -157,7 +157,7 @@ Neru uses TOML for configuration. Default locations (in order of preference):
 
 **No config file?** Neru uses sensible defaults.
 
-See [configs/default-config.toml](configs/default-config.toml) for all options, or check [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for examples. To inspect what the daemon is actually using, run `neru config`.
+See [configs/default-config.toml](configs/default-config.toml) for all options, or check [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for examples. To apply changes, run `neru config reload`. To inspect what the daemon is actually using, run `neru config`.
 
 ---
 
