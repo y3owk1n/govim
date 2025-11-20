@@ -272,7 +272,6 @@ border_color = "#abe9b3"
 ```toml
 [grid]
 live_match_update = true    # Highlight matches as you type
-subgrid_enabled = true      # Show 3x3 precision layer after selection
 hide_unmatched = true       # Hide non-matching cells while typing
 
 # Subgrid keys (requires at least 9 characters)

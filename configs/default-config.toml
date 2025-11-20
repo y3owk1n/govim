@@ -103,9 +103,6 @@ additional_firefox_bundles = []
 # Whether to enable grid mode
 enabled = true
 
-# Whether to enable subgrid precision mode
-subgrid_enabled = true
-
 # Characters to use for grid labels
 characters = "abcdefghijklmnpqrstuvwxyz"
 

@@ -29,7 +29,7 @@
 //   - characters: Customizable character set for main grid labels
 //   - sublayer_keys: Character set for subgrid labels
 //   - Visual appearance: Colors, fonts, border styles, opacity
-//   - Behavior settings: subgrid_enabled, live_match_update, hide_unmatched
+//   - Behavior settings: live_match_update, hide_unmatched
 //
 // Advantages:
 // The grid approach is more reliable than accessibility-based hints because it doesn't
