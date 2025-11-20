@@ -55,7 +55,14 @@ func (h *Handler) activateHintModeInternal(preserveActionMode bool, action *stri
 	h.Logger.Info("Activating hint mode", zap.String("action", actionString))
 
 	if !preserveActionMode {
-		h.ExitMode()
+		// Skip cursor restoration when transitioning within hint mode
+		if h.State.CurrentMode() == domain.ModeHints {
+			h.performModeSpecificCleanup()
+			h.performCommonCleanup()
+			// Skip cursor restoration
+		} else {
+			h.ExitMode()
+		}
 	}
 
 	if actionString == domain.UnknownAction {
