@@ -23,6 +23,10 @@ restore_cursor_position = false
 "Cmd+Shift+G" = "grid"
 "Cmd+Shift+S" = "action scroll"
 
+# To get direct action after label selection, see `docs/CLI.md` for details
+# "Cmd+Shift+Space" = "hints --action left_click"
+# "Cmd+Shift+G" = "grid --action left_click"
+
 # There are more that can be added, see `docs/CLI.md` for details
 # "Cmd+Shift+L" = "action left_click"
 # "Cmd+Shift+R" = "action right_click"

@@ -60,7 +60,7 @@ func (a *App) handleStop(_ ipc.Command) ipc.Response {
 	return ipc.Response{Success: true, Message: "neru stopped", Code: ipc.CodeOK}
 }
 
-func (a *App) handleHints(_ ipc.Command) ipc.Response {
+func (a *App) handleHints(cmd ipc.Command) ipc.Response {
 	if !a.state.IsEnabled() {
 		return ipc.Response{
 			Success: false,
@@ -76,12 +76,18 @@ func (a *App) handleHints(_ ipc.Command) ipc.Response {
 		}
 	}
 
-	a.ActivateMode(domain.ModeHints)
+	// Extract action parameter if provided
+	var action *string
+	if len(cmd.Args) > 1 {
+		action = &cmd.Args[1]
+	}
+
+	a.modes.ActivateModeWithAction(domain.ModeHints, action)
 
 	return ipc.Response{Success: true, Message: "hint mode activated", Code: ipc.CodeOK}
 }
 
-func (a *App) handleGrid(_ ipc.Command) ipc.Response {
+func (a *App) handleGrid(cmd ipc.Command) ipc.Response {
 	if !a.state.IsEnabled() {
 		return ipc.Response{
 			Success: false,
@@ -97,7 +103,13 @@ func (a *App) handleGrid(_ ipc.Command) ipc.Response {
 		}
 	}
 
-	a.ActivateMode(domain.ModeGrid)
+	// Extract action parameter if provided
+	var action *string
+	if len(cmd.Args) > 1 {
+		action = &cmd.Args[1]
+	}
+
+	a.modes.ActivateModeWithAction(domain.ModeGrid, action)
 
 	return ipc.Response{Success: true, Message: "grid mode activated", Code: ipc.CodeOK}
 }

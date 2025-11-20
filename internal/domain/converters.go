@@ -35,3 +35,25 @@ func GetActionString(action Action) string {
 		return UnknownAction
 	}
 }
+
+// GetActionFromString converts a string to its Action representation.
+func GetActionFromString(actionStr string) (Action, bool) {
+	switch actionStr {
+	case "left_click":
+		return ActionLeftClick, true
+	case "right_click":
+		return ActionRightClick, true
+	case "mouse_up":
+		return ActionMouseUp, true
+	case "mouse_down":
+		return ActionMouseDown, true
+	case "middle_click":
+		return ActionMiddleClick, true
+	case "move_mouse":
+		return ActionMoveMouse, true
+	case "scroll":
+		return ActionScroll, true
+	default:
+		return ActionMoveMouse, false
+	}
+}

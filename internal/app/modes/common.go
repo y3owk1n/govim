@@ -50,6 +50,12 @@ func (h *Handler) HandleKeyPress(key string) {
 func (h *Handler) handleTabKey() {
 	switch h.State.CurrentMode() {
 	case domain.ModeHints:
+		// Skip tab handling if pending action is set
+		if h.Hints.Context.GetPendingAction() != nil {
+			h.Logger.Debug("Tab key disabled when action is pending")
+			return
+		}
+
 		if h.Hints.Context.InActionMode {
 			h.Hints.Context.SetInActionMode(false)
 			if overlay.Get() != nil {
@@ -57,7 +63,7 @@ func (h *Handler) handleTabKey() {
 				overlay.Get().Hide()
 			}
 			// Re-activate hint mode while preserving action mode state
-			h.activateHintModeInternal(true)
+			h.activateHintModeInternal(true, nil)
 			h.Logger.Info("Switched back to hints overlay mode")
 			h.overlaySwitch(overlay.ModeHints)
 		} else {
@@ -70,6 +76,12 @@ func (h *Handler) handleTabKey() {
 			h.overlaySwitch(overlay.ModeAction)
 		}
 	case domain.ModeGrid:
+		// Skip tab handling if pending action is set
+		if h.Grid.Context.GetPendingAction() != nil {
+			h.Logger.Debug("Tab key disabled when action is pending")
+			return
+		}
+
 		if h.Grid.Context.InActionMode {
 			h.Grid.Context.SetInActionMode(false)
 			h.OverlayManager.Clear()
@@ -160,12 +172,25 @@ func (h *Handler) handleModeSpecificKey(key string) {
 			h.Logger.Info("Found element", zap.String("label", h.Hints.Manager.GetInput()))
 			infra.MoveMouseToPoint(center)
 
+			// Check if there's a pending action to execute
+			pendingAction := h.Hints.Context.GetPendingAction()
+			if pendingAction != nil {
+				h.Logger.Info("Executing pending action", zap.String("action", *pendingAction))
+				err := h.Accessibility.PerformActionAtPoint(*pendingAction, center)
+				if err != nil {
+					h.Logger.Error("Failed to perform pending action", zap.Error(err))
+				}
+				// Exit mode after executing action
+				h.ExitMode()
+				return
+			}
+
 			if h.Hints.Manager != nil {
 				h.Hints.Manager.Reset()
 			}
 			h.Hints.Context.SetSelectedHint(nil)
 
-			h.activateHintMode()
+			h.activateHintModeWithAction(nil)
 
 			return
 		}
@@ -196,6 +221,19 @@ func (h *Handler) handleModeSpecificKey(key string) {
 				zap.Int("y", absolutePoint.Y),
 			)
 			infra.MoveMouseToPoint(absolutePoint)
+
+			// Check if there's a pending action to execute
+			pendingAction := h.Grid.Context.GetPendingAction()
+			if pendingAction != nil {
+				h.Logger.Info("Executing pending action", zap.String("action", *pendingAction))
+				err := h.Accessibility.PerformActionAtPoint(*pendingAction, absolutePoint)
+				if err != nil {
+					h.Logger.Error("Failed to perform pending action", zap.Error(err))
+				}
+				// Exit mode after executing action
+				h.ExitMode()
+				return
+			}
 
 			// No need to exit grid mode, just let it going
 

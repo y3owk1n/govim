@@ -12,7 +12,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func (h *Handler) activateGridMode() {
+// activateGridModeWithAction activates grid mode with optional action parameter.
+func (h *Handler) activateGridModeWithAction(action *string) {
 	// Validate mode activation
 	err := h.validateModeActivation("grid", h.Config.Grid.Enabled)
 	if err != nil {
@@ -23,8 +24,8 @@ func (h *Handler) activateGridMode() {
 	// Prepare for mode activation (reset scroll, capture cursor)
 	h.prepareForModeActivation()
 
-	action := domain.ActionMoveMouse
-	actionString := domain.GetActionString(action)
+	actionEnum := domain.ActionMoveMouse
+	actionString := domain.GetActionString(actionEnum)
 	h.Logger.Info("Activating grid mode", zap.String("action", actionString))
 
 	h.ExitMode()
@@ -41,6 +42,12 @@ func (h *Handler) activateGridMode() {
 			zap.String("action", actionString),
 			zap.String("screen_bounds", fmt.Sprintf("%+v", bridge.GetActiveScreenBounds())))
 		return
+	}
+
+	// Store pending action if provided
+	h.Grid.Context.SetPendingAction(action)
+	if action != nil {
+		h.Logger.Info("Grid mode activated with pending action", zap.String("action", *action))
 	}
 
 	h.SetModeGrid()

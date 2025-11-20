@@ -14,28 +14,33 @@ import (
 
 // ActivateMode activates a mode with a given action (for hints mode).
 func (h *Handler) ActivateMode(mode domain.Mode) {
+	h.ActivateModeWithAction(mode, nil)
+}
+
+// ActivateModeWithAction activates a mode with an optional action parameter.
+func (h *Handler) ActivateModeWithAction(mode domain.Mode, action *string) {
 	if mode == domain.ModeIdle {
 		h.ExitMode()
 		return
 	}
 	if mode == domain.ModeHints {
-		h.activateHintMode()
+		h.activateHintModeWithAction(action)
 		return
 	}
 	if mode == domain.ModeGrid {
-		h.activateGridMode()
+		h.activateGridModeWithAction(action)
 		return
 	}
 	h.Logger.Warn("Unknown mode", zap.String("mode", domain.GetModeString(mode)))
 }
 
-// activateHintMode activates hint mode, with an option to preserve action mode state.
-func (h *Handler) activateHintMode() {
-	h.activateHintModeInternal(false)
+// activateHintModeWithAction activates hint mode with optional action parameter.
+func (h *Handler) activateHintModeWithAction(action *string) {
+	h.activateHintModeInternal(false, action)
 }
 
-// activateHintModeInternal activates hint mode with option to preserve action mode state.
-func (h *Handler) activateHintModeInternal(preserveActionMode bool) {
+// activateHintModeInternal activates hint mode with option to preserve action mode state and optional action.
+func (h *Handler) activateHintModeInternal(preserveActionMode bool, action *string) {
 	// Validate mode activation
 	err := h.validateModeActivation("hints", h.Config.Hints.Enabled)
 	if err != nil {
@@ -45,8 +50,8 @@ func (h *Handler) activateHintModeInternal(preserveActionMode bool) {
 	// Prepare for mode activation (reset scroll, capture cursor)
 	h.prepareForModeActivation()
 
-	action := domain.ActionMoveMouse
-	actionString := domain.GetActionString(action)
+	actionEnum := domain.ActionMoveMouse
+	actionString := domain.GetActionString(actionEnum)
 	h.Logger.Info("Activating hint mode", zap.String("action", actionString))
 
 	if !preserveActionMode {
@@ -78,6 +83,13 @@ func (h *Handler) activateHintModeInternal(preserveActionMode bool) {
 	}
 
 	h.Hints.Context.SetSelectedHint(nil)
+
+	// Store pending action if provided
+	h.Hints.Context.SetPendingAction(action)
+	if action != nil {
+		h.Logger.Info("Hints mode activated with pending action", zap.String("action", *action))
+	}
+
 	h.SetModeHints()
 }
 

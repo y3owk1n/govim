@@ -2,8 +2,9 @@ package hints
 
 // Context holds the state and context for hint mode operations.
 type Context struct {
-	SelectedHint *Hint
-	InActionMode bool
+	SelectedHint  *Hint
+	InActionMode  bool
+	PendingAction *string
 }
 
 // SetSelectedHint sets the currently selected hint.
@@ -26,8 +27,19 @@ func (c *Context) GetInActionMode() bool {
 	return c.InActionMode
 }
 
+// SetPendingAction sets the action to execute when a hint is selected.
+func (c *Context) SetPendingAction(action *string) {
+	c.PendingAction = action
+}
+
+// GetPendingAction returns the pending action to execute.
+func (c *Context) GetPendingAction() *string {
+	return c.PendingAction
+}
+
 // Reset resets the hints context to its initial state.
 func (c *Context) Reset() {
 	c.SelectedHint = nil
 	c.InActionMode = false
+	c.PendingAction = nil
 }
