@@ -18,7 +18,7 @@ const (
 	ActionNameScroll ActionName = "scroll"
 
 	// ActionPrefixExec is the prefix for shell command actions.
-	ActionPrefixExec = "exec:"
+	ActionPrefixExec = "exec"
 )
 
 // KnownActionNames returns a slice containing all supported action names.
