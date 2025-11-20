@@ -564,7 +564,7 @@ neru launch  # Restart to apply
 **Test changes:**
 
 1. Edit `~/.config/neru/config.toml`
-2. Restart: `pkill neru && neru launch`
+2. Reload: `neru config reload` (or use "Reload Config" from systray menu)
 3. Test your changes
 
 ---

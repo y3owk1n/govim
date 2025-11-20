@@ -151,6 +151,72 @@ type AdditionalAXSupport struct {
 	AdditionalFirefoxBundles  []string `toml:"additional_firefox_bundles"`
 }
 
+// LoadResult contains the result of loading a configuration file.
+type LoadResult struct {
+	Config          *Config
+	ValidationError error
+	ConfigPath      string
+}
+
+// LoadWithValidation loads configuration from the specified path and returns both
+// the config and any validation error separately. This allows callers to decide
+// how to handle validation failures (e.g., show alert and use default config).
+func LoadWithValidation(path string) *LoadResult {
+	result := &LoadResult{
+		Config:     DefaultConfig(),
+		ConfigPath: path,
+	}
+
+	if path == "" {
+		result.ConfigPath = FindConfigFile()
+	}
+
+	logger.Info("Loading config from", zap.String("path", result.ConfigPath))
+
+	_, err := os.Stat(result.ConfigPath)
+	if os.IsNotExist(err) {
+		logger.Info("Config file not found, using default configuration")
+		return result
+	}
+
+	_, err = toml.DecodeFile(result.ConfigPath, result.Config)
+	if err != nil {
+		result.ValidationError = fmt.Errorf("failed to parse config file: %w", err)
+		result.Config = DefaultConfig()
+		return result
+	}
+
+	var raw map[string]map[string]any
+	_, err = toml.DecodeFile(result.ConfigPath, &raw)
+	if err == nil {
+		if hot, ok := raw["hotkeys"]; ok {
+			if len(hot) > 0 {
+				// Clear default bindings when user provides hotkeys config
+				result.Config.Hotkeys.Bindings = map[string]string{}
+			}
+			for key, value := range hot {
+				str, ok := value.(string)
+				if !ok {
+					result.ValidationError = fmt.Errorf("hotkeys.%s must be a string action", key)
+					result.Config = DefaultConfig()
+					return result
+				}
+				result.Config.Hotkeys.Bindings[key] = str
+			}
+		}
+	}
+
+	err = result.Config.Validate()
+	if err != nil {
+		result.ValidationError = fmt.Errorf("invalid configuration: %w", err)
+		result.Config = DefaultConfig()
+		return result
+	}
+
+	logger.Info("Configuration loaded successfully")
+	return result
+}
+
 // DefaultConfig returns the default application configuration with sensible defaults.
 func DefaultConfig() *Config {
 	return &Config{
@@ -278,50 +344,14 @@ func DefaultConfig() *Config {
 }
 
 // Load loads configuration from the specified path.
+// For backward compatibility, this returns an error if validation fails.
+// Use LoadWithValidation for graceful error handling.
 func Load(path string) (*Config, error) {
-	cfg := DefaultConfig()
-
-	if path == "" {
-		path = FindConfigFile()
+	result := LoadWithValidation(path)
+	if result.ValidationError != nil {
+		return nil, result.ValidationError
 	}
-
-	logger.Info("Loading config from", zap.String("path", path))
-
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		logger.Info("Config file not found, using default configuration")
-		return cfg, nil
-	}
-
-	_, err = toml.DecodeFile(path, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config file: %w", err)
-	}
-
-	var raw map[string]map[string]any
-	_, err = toml.DecodeFile(path, &raw)
-	if err == nil {
-		if hot, ok := raw["hotkeys"]; ok {
-			if len(hot) > 0 {
-				// Clear default bindings when user provides hotkeys config
-				cfg.Hotkeys.Bindings = map[string]string{}
-			}
-			for key, value := range hot {
-				str, ok := value.(string)
-				if !ok {
-					return nil, fmt.Errorf("hotkeys.%s must be a string action", key)
-				}
-				cfg.Hotkeys.Bindings[key] = str
-			}
-		}
-	}
-	err = cfg.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("invalid configuration: %w", err)
-	}
-
-	logger.Info("Configuration loaded successfully")
-	return cfg, nil
+	return result.Config, nil
 }
 
 // FindConfigFile searches for config file in default locations.

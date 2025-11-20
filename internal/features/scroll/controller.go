@@ -128,6 +128,11 @@ func (c *Controller) ScrollToBottom() error {
 	return c.Scroll(DirectionDown, AmountEnd)
 }
 
+// UpdateConfig updates the controller configuration.
+func (c *Controller) UpdateConfig(cfg config.ScrollConfig) {
+	c.config = &cfg
+}
+
 // calculateDelta computes the scroll delta values based on direction and magnitude.
 func (c *Controller) calculateDelta(dir Direction, amount Amount) (int, int) {
 	var deltaX, deltaY int

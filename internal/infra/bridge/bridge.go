@@ -8,6 +8,7 @@ package bridge
 #include "hotkeys.h"
 #include "eventtap.h"
 #include "appwatcher.h"
+#include "alert.h"
 #include <stdlib.h>
 
 CGRect getActiveScreenBounds();
@@ -242,4 +243,30 @@ func GetActiveScreenBounds() image.Rectangle {
 	}
 
 	return result
+}
+
+// ShowConfigValidationError displays a native macOS alert for config validation errors.
+// Returns true if the user clicked the "Copy Config Path" button.
+func ShowConfigValidationError(errorMessage, configPath string) bool {
+	if bridgeLogger != nil {
+		bridgeLogger.Debug("Bridge: Showing config validation error alert",
+			zap.String("error", errorMessage),
+			zap.String("config_path", configPath))
+	}
+
+	cError := C.CString(errorMessage)
+	defer C.free(unsafe.Pointer(cError))
+
+	cPath := C.CString(configPath)
+	defer C.free(unsafe.Pointer(cPath))
+
+	result := C.showConfigValidationErrorAlert(cError, cPath)
+
+	if bridgeLogger != nil {
+		bridgeLogger.Debug("Bridge: Alert result",
+			zap.Int("result", int(result)))
+	}
+
+	// Return true if user clicked "Copy" button (result == 2)
+	return result == 2
 }

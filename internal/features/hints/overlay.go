@@ -310,6 +310,11 @@ func BuildStyle(cfg config.HintsConfig) StyleMode {
 	return style
 }
 
+// UpdateConfig updates the overlay configuration.
+func (o *Overlay) UpdateConfig(cfg config.HintsConfig) {
+	o.config = cfg
+}
+
 // Destroy destroys the overlay.
 func (o *Overlay) Destroy() {
 	if o.window != nil {

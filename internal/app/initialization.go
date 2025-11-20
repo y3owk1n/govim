@@ -152,4 +152,5 @@ func (a *App) registerCommandHandlers() {
 	a.cmdHandlers[domain.GetModeString(domain.ModeIdle)] = a.handleIdle
 	a.cmdHandlers[domain.CommandStatus] = a.handleStatus
 	a.cmdHandlers[domain.CommandConfig] = a.handleConfig
+	a.cmdHandlers[domain.CommandReloadConfig] = a.handleReloadConfig
 }

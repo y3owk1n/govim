@@ -215,6 +215,11 @@ func (o *Overlay) DrawActionHighlight(xCoordinate, yCoordinate, width, height in
 	C.NeruDrawGridLines(o.window, &lines[0], C.int(4), cColor, C.int(highlightWidth), C.double(1.0))
 }
 
+// UpdateConfig updates the overlay configuration.
+func (o *Overlay) UpdateConfig(cfg config.ActionConfig) {
+	o.config = cfg
+}
+
 // Destroy releases the overlay window resources.
 func (o *Overlay) Destroy() {
 	if o.window != nil {

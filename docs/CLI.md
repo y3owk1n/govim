@@ -189,12 +189,12 @@ neru grid --action left_click
 It will scroll with the movement keys based on the current cursor position.
 
 2. Use Vim-style keys to scroll:
-   - `j` / `k` - Scroll down/up
-   - `h` / `l` - Scroll left/right
-   - `Ctrl+d` / `Ctrl+u` - Half-page down/up
-   - `gg` - Jump to top
-   - `G` - Jump to bottom
-   - `Esc` - Exit scroll mode
+    - `j` / `k` - Scroll down/up
+    - `h` / `l` - Scroll left/right
+    - `Ctrl+d` / `Ctrl+u` - Half-page down/up
+    - `gg` - Jump to top
+    - `G` - Jump to bottom
+    - `Esc` - Exit scroll mode
 
 **Workflow example:**
 
@@ -243,7 +243,13 @@ Neru Status:
 Print the effective configuration currently loaded by the daemon:
 
 ```bash
-neru config
+neru config dump
+```
+
+Reload configuration from file without restarting:
+
+```bash
+neru config reload
 ```
 
 This dumps the full config as pretty JSON. Use this to verify what the daemon is using without opening files.
@@ -390,9 +396,9 @@ The CLI and daemon communicate via JSON messages over the Unix socket.
 
 ```json
 {
-  "action": "hints",
-  "params": {"key": "value"},
-  "args": ["optional", "args"]
+ "action": "hints",
+ "params": { "key": "value" },
+ "args": ["optional", "args"]
 }
 ```
 
@@ -400,10 +406,10 @@ The CLI and daemon communicate via JSON messages over the Unix socket.
 
 ```json
 {
-  "success": true,
-  "message": "Hints activated",
-  "code": "OK",
-  "data": {"optional": "payload"}
+ "success": true,
+ "message": "Hints activated",
+ "code": "OK",
+ "data": { "optional": "payload" }
 }
 ```
 

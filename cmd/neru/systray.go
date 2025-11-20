@@ -35,18 +35,21 @@ func onReady() {
 	}
 
 	systray.AddSeparator()
+	mReloadConfig := systray.AddMenuItem("Reload Config", "Reload configuration from disk")
+
+	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit Neru", "Exit the application")
 
 	go handleSystrayEvents(
 		mVersionCopy, mStatus, mToggle,
-		mHints, mGrid,
+		mHints, mGrid, mReloadConfig,
 		mQuit,
 	)
 }
 
 func handleSystrayEvents(
 	mVersionCopy, mStatus, mToggle *systray.MenuItem,
-	mHints, mGrid *systray.MenuItem,
+	mHints, mGrid, mReloadConfig *systray.MenuItem,
 	mQuit *systray.MenuItem,
 ) {
 	for {
@@ -59,6 +62,8 @@ func handleSystrayEvents(
 			activateModeFromSystray(app.ModeHints)
 		case <-mGrid.ClickedCh:
 			activateModeFromSystray(app.ModeGrid)
+		case <-mReloadConfig.ClickedCh:
+			handleReloadConfig()
 		case <-mQuit.ClickedCh:
 			systray.Quit()
 			return
@@ -92,6 +97,20 @@ func handleToggleEnable(mStatus, mToggle *systray.MenuItem) {
 func activateModeFromSystray(mode app.Mode) {
 	if globalApp != nil {
 		globalApp.ActivateMode(mode)
+	}
+}
+
+func handleReloadConfig() {
+	if globalApp == nil {
+		return
+	}
+
+	configPath := globalApp.GetConfigPath()
+	err := globalApp.ReloadConfig(configPath)
+	if err != nil {
+		logger.Error("Failed to reload config from systray", zap.Error(err))
+	} else {
+		logger.Info("Configuration reloaded successfully from systray")
 	}
 }
 

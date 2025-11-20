@@ -65,3 +65,8 @@ func NewHandler(
 		RefreshHotkeys:  refreshHotkeys,
 	}
 }
+
+// UpdateConfig updates the handler with new configuration.
+func (h *Handler) UpdateConfig(cfg *config.Config) {
+	h.Config = cfg
+}
