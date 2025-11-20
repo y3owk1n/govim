@@ -29,6 +29,15 @@ type Element struct {
 var (
 	clickableRoles   = make(map[string]struct{})
 	clickableRolesMu sync.RWMutex
+
+	// Pre-allocated common errors.
+	errElementNil      = errors.New("element reference is nil")
+	errGetChildrenNil  = errors.New("cannot get children: element reference is nil")
+	errSetFocusNil     = errors.New("cannot set focus: element reference is nil")
+	errSetFocusFailed  = errors.New("failed to set focus on element")
+	errGetAttributeNil = errors.New("cannot get attribute: element reference is nil")
+	errGetInfoNil      = errors.New("element reference is nil")
+	errGetInfoFailed   = errors.New("failed to retrieve element info from accessibility API")
 )
 
 // SetClickableRoles configures which accessibility roles are treated as clickable.
@@ -55,6 +64,7 @@ func GetClickableRoles() []string {
 	clickableRolesMu.RLock()
 	defer clickableRolesMu.RUnlock()
 
+	// Pre-allocate with exact capacity
 	roles := make([]string, 0, len(clickableRoles))
 	for role := range clickableRoles {
 		roles = append(roles, role)
@@ -133,12 +143,12 @@ func GetElementAtPosition(x, y int) *Element {
 // GetInfo retrieves metadata and positioning information for the element.
 func (e *Element) GetInfo() (*ElementInfo, error) {
 	if e.ref == nil {
-		return nil, errors.New("element reference is nil")
+		return nil, errGetInfoNil
 	}
 
 	cInfo := C.getElementInfo(e.ref)
 	if cInfo == nil {
-		return nil, errors.New("failed to retrieve element info from accessibility API")
+		return nil, errGetInfoFailed
 	}
 	defer C.freeElementInfo(cInfo)
 
@@ -172,7 +182,7 @@ func (e *Element) GetInfo() (*ElementInfo, error) {
 // GetChildren returns all child elements of this element.
 func (e *Element) GetChildren() ([]*Element, error) {
 	if e.ref == nil {
-		return nil, errors.New("cannot get children: element reference is nil")
+		return nil, errGetChildrenNil
 	}
 
 	var count C.int
@@ -208,8 +218,9 @@ func (e *Element) GetChildren() ([]*Element, error) {
 	defer C.free(rawChildren)
 
 	childSlice := (*[1 << 30]unsafe.Pointer)(rawChildren)[:count:count]
-	children := make([]*Element, count)
-	for i := range children {
+	// Pre-allocate and directly create elements
+	children := make([]*Element, int(count))
+	for i := range int(count) {
 		children[i] = &Element{ref: childSlice[i]}
 	}
 
@@ -219,12 +230,12 @@ func (e *Element) GetChildren() ([]*Element, error) {
 // SetFocus sets focus to the element.
 func (e *Element) SetFocus() error {
 	if e.ref == nil {
-		return errors.New("cannot set focus: element reference is nil")
+		return errSetFocusNil
 	}
 
 	result := C.setFocus(e.ref)
 	if result == 0 {
-		return errors.New("failed to set focus on element")
+		return errSetFocusFailed
 	}
 	return nil
 }
@@ -232,7 +243,7 @@ func (e *Element) SetFocus() error {
 // GetAttribute gets a custom attribute value.
 func (e *Element) GetAttribute(name string) (string, error) {
 	if e.ref == nil {
-		return "", errors.New("cannot get attribute: element reference is nil")
+		return "", errGetAttributeNil
 	}
 
 	cName := C.CString(name)

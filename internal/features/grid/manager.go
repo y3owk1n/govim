@@ -78,25 +78,26 @@ func (m *Manager) HandleInput(key string) (image.Point, bool) {
 		return image.Point{}, false
 	}
 
-	key = strings.ToUpper(key)
+	// Cache uppercase conversion once
+	upperKey := strings.ToUpper(key)
 
 	// If we're in subgrid selection, next key chooses a subcell
 	if m.inSubgrid && m.selectedCell != nil {
-		return m.handleSubgridSelection(key)
+		return m.handleSubgridSelection(upperKey)
 	}
 
 	// Allow < to reset grid
-	if key == resetKey {
+	if upperKey == resetKey {
 		m.handleResetKey(true)
 		return image.Point{}, false
 	}
 
 	// Validate the input key
-	if !m.validateInputKey(key) {
+	if !m.validateInputKey(upperKey) {
 		return image.Point{}, false
 	}
 
-	m.currentInput += key
+	m.currentInput += upperKey
 	m.logger.Debug("Grid manager: Input accumulated", zap.String("current_input", m.currentInput))
 
 	// After reaching label length, show subgrid inside the selected cell

@@ -57,9 +57,9 @@
 - (instancetype)initWithFrame:(NSRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        _hints = [NSMutableArray array];
-        _gridCells = [NSMutableArray array];
-        _gridLines = [NSMutableArray array];
+        _hints = [NSMutableArray arrayWithCapacity:100];     // Pre-size for typical hint count
+        _gridCells = [NSMutableArray arrayWithCapacity:100]; // Pre-size for typical grid size
+        _gridLines = [NSMutableArray arrayWithCapacity:50];  // Pre-size for typical line count
         _showScrollHighlight = NO;
         _showTargetDot = NO;
         _targetDotRadius = 4.0;

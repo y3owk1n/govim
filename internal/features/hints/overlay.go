@@ -12,7 +12,6 @@ import "C"
 
 import (
 	"errors"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,11 +23,14 @@ import (
 
 var (
 	hintCallbackID   uint64
-	hintCallbackMap  = make(map[uint64]chan struct{})
+	hintCallbackMap  = make(map[uint64]chan struct{}, 8) // Pre-size for typical usage
 	hintCallbackLock sync.Mutex
 	hintDataPool     sync.Pool
 	cLabelSlicePool  sync.Pool
 	hintPoolOnce     sync.Once
+
+	// Pre-allocated common errors.
+	errCreateOverlayWindow = errors.New("failed to create overlay window")
 )
 
 //export resizeHintCompletionCallback
@@ -107,7 +109,7 @@ func initPools() {
 func NewOverlay(cfg config.HintsConfig, logger *zap.Logger) (*Overlay, error) {
 	window := C.createOverlayWindow()
 	if window == nil {
-		return nil, errors.New("failed to create overlay window")
+		return nil, errCreateOverlayWindow
 	}
 	initPools()
 
@@ -206,8 +208,13 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 			)
 		}
 
+		// Use timer instead of time.After to prevent memory leaks
+		timer := time.NewTimer(2 * time.Second)
+		defer timer.Stop()
+
 		select {
 		case <-done:
+			timer.Stop() // Stop timer immediately on success
 			// Callback received, normal cleanup already handled in callback
 			if o.logger != nil {
 				o.logger.Debug(
@@ -215,7 +222,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 					zap.Uint64("callback_id", callbackID),
 				)
 			}
-		case <-time.After(2 * time.Second):
+		case <-timer.C:
 			// Long timeout for cleanup only - callback likely failed
 			hintCallbackLock.Lock()
 			delete(hintCallbackMap, callbackID)
@@ -336,8 +343,6 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 	}
 
 	start := time.Now()
-	var msBefore runtime.MemStats
-	runtime.ReadMemStats(&msBefore)
 	tmpHints := hintDataPool.Get()
 	cHintsPtr, _ := tmpHints.(*[]C.HintData)
 	if cap(*cHintsPtr) < len(hints) {
@@ -425,13 +430,7 @@ func (o *Overlay) drawHintsInternal(hints []*Hint, style StyleMode, showArrow bo
 	C.free(unsafe.Pointer(cMatchedTextColor))
 	C.free(unsafe.Pointer(cBorderColor))
 
-	o.logger.Debug("Hints drawn successfully")
-	var msAfter runtime.MemStats
-	runtime.ReadMemStats(&msAfter)
-	o.logger.Info("Hints draw perf",
-		zap.Int("hint_count", len(hints)),
-		zap.Duration("duration", time.Since(start)),
-		zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
-		zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
+	o.logger.Debug("Hints drawn successfully",
+		zap.Duration("duration", time.Since(start)))
 	return nil
 }

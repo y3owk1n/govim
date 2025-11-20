@@ -41,7 +41,7 @@ func (h *Handler) activateGridModeWithAction(action *string) {
 		h.Logger.Error("Failed to setup grid",
 			zap.Error(err),
 			zap.String("action", actionString),
-			zap.String("screen_bounds", fmt.Sprintf("%+v", bridge.GetActiveScreenBounds())))
+			zap.Any("screen_bounds", bridge.GetActiveScreenBounds()))
 		return
 	}
 
