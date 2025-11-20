@@ -120,12 +120,69 @@ neru action scroll
 
 ## Hint / Grid Commands
 
-Calling `neru hints` or `neru grid` will move the mousue cursor to the selection location, and you can perform actions anytime later.
+### Basic Usage
+
+Move the mouse cursor to a selection location:
 
 ```bash
-neru hints # activate hint mode
-neru grid # activate grid mode
+neru hints  # activate hint mode
+neru grid   # activate grid mode
 ```
+
+After selecting a location, you can perform actions later using the action mode (press `Tab` to toggle).
+
+### Direct Action Execution
+
+Execute an action immediately upon selection without using action mode:
+
+```bash
+# Hints with action
+neru hints --action left_click
+neru hints --action right_click
+neru hints -a middle_click  # short form
+
+# Grid with action
+neru grid --action left_click
+neru grid --action right_click
+neru grid -a middle_click  # short form
+```
+
+**Available actions:**
+
+- `left_click` - Left click at selected position
+- `right_click` - Right click at selected position
+- `middle_click` - Middle click at selected position
+- `mouse_up` - Mouse up at selected position
+- `mouse_down` - Mouse down at selected position
+
+**Behavior with `--action` flag:**
+
+- Tab key is disabled (no action mode toggle)
+- Action executes automatically when you select a hint/grid location
+- Mode exits immediately after action execution
+- For grid mode, action executes after final subgrid selection
+
+**Workflow example:**
+
+```bash
+# Right-click workflow
+neru hints --action right_click
+# 1. Hints overlay appears
+# 2. Type hint label (e.g., "aa")
+# 3. Mouse moves to position
+# 4. Right click executes automatically
+# 5. Mode exits
+
+# Grid workflow
+neru grid --action left_click
+# 1. Grid overlay appears
+# 2. Select main grid cell
+# 3. Select subgrid position
+# 4. Left click executes automatically
+# 5. Mode exits
+```
+
+---
 
 ## Scroll Actions
 
@@ -272,11 +329,15 @@ Instead of Neru's built-in hotkeys, use external hotkey managers:
 ```bash
 # ~/.config/skhd/skhdrc
 
-# Neru hotkeys
+# Neru hotkeys - basic
 ctrl - f : neru hints
 ctrl - g : neru grid
 ctrl - s : neru action scroll
-ctrl - r : neru action right_click
+
+# Neru hotkeys - with actions
+ctrl - r : neru hints --action right_click
+ctrl - m : neru hints --action middle_click
+ctrl + shift - r : neru grid --action right_click
 
 # Toggle Neru
 ctrl + alt - n : ~/scripts/toggle-neru.sh

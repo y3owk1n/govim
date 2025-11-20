@@ -2,7 +2,8 @@
 restore_cursor_position = true
 
 [hotkeys]
-"Ctrl+F" = "grid"
+"Ctrl+F" = "grid -a left_click"
+"Ctrl+G" = "grid"
 "Ctrl+S" = "action scroll"
 
 [hints]

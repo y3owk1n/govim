@@ -160,7 +160,8 @@ func (m *Manager) handleLabelLengthReached() (image.Point, bool) {
 					m.onShowSub(cell)
 				}
 
-				return image.Point{X: center.X, Y: center.Y}, true
+				// Return false for completion since we're entering subgrid, not completing selection
+				return image.Point{X: center.X, Y: center.Y}, false
 			}
 		}
 	}

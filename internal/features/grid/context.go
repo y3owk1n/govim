@@ -2,9 +2,10 @@ package grid
 
 // Context holds the state and context for grid mode operations.
 type Context struct {
-	GridInstance **Grid
-	GridOverlay  **Overlay
-	InActionMode bool
+	GridInstance  **Grid
+	GridOverlay   **Overlay
+	InActionMode  bool
+	PendingAction *string
 }
 
 // SetGridInstance sets the grid instance.
@@ -47,9 +48,20 @@ func (c *Context) GetInActionMode() bool {
 	return c.InActionMode
 }
 
+// SetPendingAction sets the action to execute when grid selection is complete.
+func (c *Context) SetPendingAction(action *string) {
+	c.PendingAction = action
+}
+
+// GetPendingAction returns the pending action to execute.
+func (c *Context) GetPendingAction() *string {
+	return c.PendingAction
+}
+
 // Reset resets the grid context to its initial state.
 func (c *Context) Reset() {
 	c.GridInstance = nil
 	c.GridOverlay = nil
 	c.InActionMode = false
+	c.PendingAction = nil
 }
