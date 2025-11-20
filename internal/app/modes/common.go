@@ -23,6 +23,9 @@ func (h *Handler) HandleKeyPress(key string) {
 			}
 			h.Scroll.Context.SetIsActive(false)
 			h.Scroll.Context.SetLastKey("")
+			// Reset cursor state when exiting scroll mode to ensure proper cursor restoration
+			// in subsequent modes
+			h.Cursor.Reset()
 			return
 		}
 		// Try to handle scroll keys with generic handler using persistent state.
