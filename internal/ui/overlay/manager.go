@@ -70,7 +70,7 @@ func Init(logger *zap.Logger) *Manager {
 			window: w,
 			logger: logger,
 			mode:   ModeIdle,
-			subs:   make(map[uint64]func(StateChange)),
+			subs:   make(map[uint64]func(StateChange), 4), // Pre-size for typical subscriber count
 		}
 	})
 	return mgr
@@ -235,9 +235,12 @@ func (m *Manager) SetHideUnmatched(hide bool) {
 // publish publishes a state change to all subscribers.
 func (m *Manager) publish(event StateChange) {
 	m.mu.Lock()
-	subs := make([]func(StateChange), 0, len(m.subs))
+	// Pre-allocate with exact capacity
+	subs := make([]func(StateChange), len(m.subs))
+	i := 0
 	for _, sub := range m.subs {
-		subs = append(subs, sub)
+		subs[i] = sub
+		i++
 	}
 	m.mu.Unlock()
 	for _, sub := range subs {

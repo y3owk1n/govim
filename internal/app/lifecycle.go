@@ -202,15 +202,20 @@ func (a *App) waitForShutdown() error {
 		close(done)
 	}()
 
+	// Use timer instead of time.After to prevent memory leaks
+	timer := time.NewTimer(10 * time.Second)
+
 	select {
 	case <-done:
+		timer.Stop() // Stop timer immediately on success
 		a.logger.Info("Graceful shutdown completed")
 		return nil
 	case <-sigChan:
+		timer.Stop() // Stop timer on second signal
 		a.logger.Warn("Received second signal, forcing shutdown")
 		a.logger.Info("⚠️  Force quitting...")
 		os.Exit(1)
-	case <-time.After(10 * time.Second):
+	case <-timer.C:
 		a.logger.Error("Shutdown timeout exceeded, forcing shutdown")
 		a.logger.Info("⚠️  Shutdown timeout, force quitting...")
 		os.Exit(1)

@@ -18,6 +18,13 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	treeLogger = logger.Get()
+
+	// Pre-allocated common errors.
+	errRootElementNil = errors.New("root element is nil")
+)
+
 // TreeNode represents a node in the accessibility element hierarchy.
 type TreeNode struct {
 	Element  *Element
@@ -50,7 +57,7 @@ func DefaultTreeOptions() TreeOptions {
 func BuildTree(root *Element, opts TreeOptions) (*TreeNode, error) {
 	if root == nil {
 		logger.Debug("BuildTree called with nil root element")
-		return nil, errors.New("root element is nil")
+		return nil, errRootElementNil
 	}
 
 	// Try to get from cache first
@@ -173,9 +180,13 @@ func buildChildrenSequential(
 	opts TreeOptions,
 	windowBounds image.Rectangle,
 ) {
-	parent.Children = make([]*TreeNode, 0, len(children))
+	// First pass: count valid children and collect their info
+	type childData struct {
+		element *Element
+		info    *ElementInfo
+	}
+	validChildren := make([]childData, 0, len(children))
 
-	validCount := 0
 	for _, child := range children {
 		// Try cache first
 		info := opts.Cache.Get(child)
@@ -196,21 +207,28 @@ func buildChildrenSequential(
 			continue
 		}
 
+		validChildren = append(validChildren, childData{element: child, info: info})
+	}
+
+	// Pre-allocate with exact capacity
+	parent.Children = make([]*TreeNode, 0, len(validChildren))
+
+	// Second pass: create nodes and recurse
+	for _, data := range validChildren {
 		childNode := &TreeNode{
-			Element:  child,
-			Info:     info,
+			Element:  data.element,
+			Info:     data.info,
 			Parent:   parent,
 			Children: []*TreeNode{},
 		}
 
 		parent.Children = append(parent.Children, childNode)
-		validCount++
 		buildTreeRecursive(childNode, depth+1, opts, windowBounds)
 	}
 
 	logger.Debug("Sequential child processing completed",
 		zap.String("parent_role", parent.Info.Role),
-		zap.Int("processed_children", validCount),
+		zap.Int("processed_children", len(validChildren)),
 		zap.Int("total_children", len(children)))
 }
 
@@ -226,12 +244,13 @@ func buildChildrenParallel(
 		zap.Int("child_count", len(children)),
 		zap.Int("depth", depth))
 
-	// Pre-allocate result slice
+	// Pre-allocate result slice with exact capacity
 	type childResult struct {
 		node  *TreeNode
 		index int
 	}
 
+	// Use buffered channel sized to number of children
 	results := make(chan childResult, len(children))
 	var waitGroup sync.WaitGroup
 
@@ -283,7 +302,7 @@ func buildChildrenParallel(
 		close(results)
 	}()
 
-	// Collect results while maintaining order
+	// Pre-allocate collection slice with exact capacity
 	collected := make([]*TreeNode, len(children))
 	validCount := 0
 
@@ -292,7 +311,7 @@ func buildChildrenParallel(
 		validCount++
 	}
 
-	// Build final children slice in original order, skipping nils
+	// Pre-allocate final children slice with exact valid count
 	parent.Children = make([]*TreeNode, 0, validCount)
 	for _, node := range collected {
 		if node != nil {
@@ -305,6 +324,8 @@ func buildChildrenParallel(
 		zap.Int("processed_children", validCount),
 		zap.Int("total_children", len(children)))
 }
+
+// shouldIncludeElement combines all filtering logic into one function.
 
 // shouldIncludeElement combines all filtering logic into one function.
 func shouldIncludeElement(info *ElementInfo, opts TreeOptions, windowBounds image.Rectangle) bool {

@@ -145,10 +145,16 @@ func (s *Server) Stop() error {
 		s.wg.Wait()
 		close(done)
 	}()
+
+	// Use timer instead of time.After to prevent memory leaks
+	timer := time.NewTimer(1 * time.Second)
+	defer timer.Stop()
+
 	select {
 	case <-done:
+		timer.Stop() // Stop timer immediately on success
 		// All connections closed successfully
-	case <-time.After(1 * time.Second):
+	case <-timer.C:
 		// Timeout waiting for connections to close
 		s.logger.Warn("IPC server: timeout waiting for connections to close")
 	}

@@ -26,8 +26,8 @@ static dispatch_queue_t hotkeyQueue = nil;
 static void initializeStorage(void) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        hotkeyRefs = [NSMutableDictionary dictionary];
-        hotkeyCallbacks = [NSMutableDictionary dictionary];
+        hotkeyRefs = [NSMutableDictionary dictionaryWithCapacity:20]; // Pre-size for typical hotkey count
+        hotkeyCallbacks = [NSMutableDictionary dictionaryWithCapacity:20];
         hotkeyQueue = dispatch_queue_create("com.neru.hotkeys", DISPATCH_QUEUE_SERIAL);
 
         // Install event handler only once

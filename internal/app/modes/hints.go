@@ -3,7 +3,6 @@ package modes
 import (
 	"fmt"
 	"image"
-	"runtime"
 
 	"github.com/y3owk1n/neru/internal/domain"
 	"github.com/y3owk1n/neru/internal/features/hints"
@@ -102,9 +101,6 @@ func (h *Handler) activateHintModeInternal(preserveActionMode bool, action *stri
 
 // SetupHints generates hints and draws them with appropriate styling.
 func (h *Handler) SetupHints(elements []*infra.TreeNode) error {
-	var msBefore runtime.MemStats
-	runtime.ReadMemStats(&msBefore)
-
 	hintList, err := h.generateAndNormalizeHints(elements)
 	if err != nil {
 		return err
@@ -118,8 +114,6 @@ func (h *Handler) SetupHints(elements []*infra.TreeNode) error {
 		return fmt.Errorf("failed to draw hints: %w", drawErr)
 	}
 	h.Renderer.Show()
-
-	h.logHintsSetupPerformance(hintList, msBefore)
 
 	return nil
 }
@@ -140,7 +134,7 @@ func (h *Handler) generateAndNormalizeHints(elements []*infra.TreeNode) ([]*hint
 	if len(hintList) == 0 {
 		h.Logger.Warn("No hints generated",
 			zap.Int("elements_count", len(elements)),
-			zap.String("screen_bounds", fmt.Sprintf("%+v", screenBounds)))
+			zap.Any("screen_bounds", screenBounds))
 		return hintList, nil
 	}
 
@@ -153,7 +147,8 @@ func (h *Handler) generateAndNormalizeHints(elements []*infra.TreeNode) ([]*hint
 	}
 
 	localBounds := image.Rect(0, 0, screenBounds.Dx(), screenBounds.Dy())
-	filtered := make([]*hints.Hint, 0, len(hintList))
+	// Pre-allocate with estimated capacity (typically 70-90% of hints are visible)
+	filtered := make([]*hints.Hint, 0, len(hintList)*9/10)
 	for _, h := range hintList {
 		if h.IsVisible(localBounds) {
 			filtered = append(filtered, h)
@@ -166,16 +161,6 @@ func (h *Handler) generateAndNormalizeHints(elements []*infra.TreeNode) ([]*hint
 		zap.Int("elements", len(elements)))
 
 	return filtered, nil
-}
-
-// logHintsSetupPerformance logs performance metrics for hint setup.
-func (h *Handler) logHintsSetupPerformance(hintList []*hints.Hint, msBefore runtime.MemStats) {
-	var msAfter runtime.MemStats
-	runtime.ReadMemStats(&msAfter)
-	h.Logger.Info("Hints setup perf",
-		zap.Int("hints", len(hintList)),
-		zap.Uint64("alloc_bytes_delta", msAfter.Alloc-msBefore.Alloc),
-		zap.Uint64("sys_bytes_delta", msAfter.Sys-msBefore.Sys))
 }
 
 // handleHintsActionKey handles action keys when in hints action mode.

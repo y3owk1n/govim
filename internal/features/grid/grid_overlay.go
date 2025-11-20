@@ -25,7 +25,7 @@ import (
 
 var (
 	gridCallbackID        uint64
-	gridCallbackMap       = make(map[uint64]chan struct{})
+	gridCallbackMap       = make(map[uint64]chan struct{}, 8) // Pre-size for typical usage
 	gridCallbackLock      sync.Mutex
 	gridCellSlicePool     sync.Pool
 	gridLabelSlicePool    sync.Pool
@@ -214,8 +214,13 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 			)
 		}
 
+		// Use timer instead of time.After to prevent memory leaks
+		timer := time.NewTimer(2 * time.Second)
+		defer timer.Stop()
+
 		select {
 		case <-done:
+			timer.Stop() // Stop timer immediately on success
 			// Callback received, normal cleanup already handled in callback
 			if o.logger != nil {
 				o.logger.Debug(
@@ -223,7 +228,7 @@ func (o *Overlay) ResizeToActiveScreenSync() {
 					zap.Uint64("callback_id", callbackID),
 				)
 			}
-		case <-time.After(2 * time.Second):
+		case <-timer.C:
 			// Long timeout for cleanup only - callback likely failed
 			gridCallbackLock.Lock()
 			delete(gridCallbackMap, callbackID)

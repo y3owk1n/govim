@@ -125,17 +125,23 @@ func (c *InfoCache) cleanup() {
 	defer c.mu.Unlock()
 
 	now := time.Now()
-	removedCount := 0
+	// Pre-allocate slice for keys to delete
+	toDelete := make([]uintptr, 0, len(c.data)/4) // Estimate 25% might be expired
+
 	for key, cached := range c.data {
 		if now.After(cached.ExpiresAt) {
-			delete(c.data, key)
-			removedCount++
+			toDelete = append(toDelete, key)
 		}
 	}
 
-	if removedCount > 0 {
+	// Batch delete
+	for _, key := range toDelete {
+		delete(c.data, key)
+	}
+
+	if len(toDelete) > 0 {
 		logger.Debug("Cache cleanup completed",
-			zap.Int("removed_entries", removedCount),
+			zap.Int("removed_entries", len(toDelete)),
 			zap.Int("remaining_entries", len(c.data)))
 	}
 }

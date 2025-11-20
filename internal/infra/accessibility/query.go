@@ -15,6 +15,9 @@ import (
 var (
 	globalCache *InfoCache
 	cacheOnce   sync.Once
+
+	// Pre-allocated common errors.
+	errNoFrontmostWindow = errors.New("no frontmost window found")
 )
 
 func rectFromInfo(info *ElementInfo) image.Rectangle {
@@ -54,7 +57,7 @@ func GetClickableElements() ([]*TreeNode, error) {
 	window := GetFrontmostWindow()
 	if window == nil {
 		logger.Warn("No frontmost window found")
-		return nil, errors.New("no frontmost window found")
+		return nil, errNoFrontmostWindow
 	}
 	defer window.Release()
 

@@ -76,12 +76,16 @@ func (s *Service) IsFocusedAppExcluded() bool {
 
 // CollectElements collects UI elements based on the current mode.
 func (s *Service) CollectElements() []*infra.TreeNode {
-	var elements []*infra.TreeNode
+	// Pre-allocate with estimated capacity (typical screen has 50-200 elements)
+	elements := make([]*infra.TreeNode, 0, 128)
 
 	// Check if Mission Control is active - affects what we can scan
 	missionControlActive := infra.IsMissionControlActive()
 
-	elements = s.collectClickableElements(missionControlActive)
+	clickableElements := s.collectClickableElements(missionControlActive)
+	if len(clickableElements) > 0 {
+		elements = append(elements, clickableElements...)
+	}
 
 	elements = s.addSupplementaryElements(elements, missionControlActive)
 

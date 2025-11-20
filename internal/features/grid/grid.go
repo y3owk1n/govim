@@ -58,14 +58,15 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 	if characters == "" {
 		characters = "abcdefghijklmnopqrstuvwxyz"
 	}
-	characters = strings.ToUpper(characters)
-	chars := []rune(characters)
+	// Cache uppercase conversion once at the start
+	uppercaseChars := strings.ToUpper(characters)
+	chars := []rune(uppercaseChars)
 	numChars := len(chars)
 
 	// Ensure we have valid characters
 	if numChars < 2 {
-		characters = "abcdefghijklmnopqrstuvwxyz"
-		chars = []rune(characters)
+		uppercaseChars = strings.ToUpper("abcdefghijklmnopqrstuvwxyz")
+		chars = []rune(uppercaseChars)
 		numChars = len(chars)
 	}
 
@@ -77,10 +78,10 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 		zap.Int("height", height))
 
 	if gridCacheEnabled {
-		if cells, ok := gridCache.get(characters, bounds); ok {
+		if cells, ok := gridCache.get(uppercaseChars, bounds); ok {
 			logger.Debug("Grid cache hit",
 				zap.Int("cell_count", len(cells)))
-			return &Grid{characters: characters, bounds: bounds, cells: cells}
+			return &Grid{characters: uppercaseChars, bounds: bounds, cells: cells}
 		}
 		logger.Debug("Grid cache miss")
 	}
@@ -90,7 +91,7 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 			zap.Int("width", width),
 			zap.Int("height", height))
 		return &Grid{
-			characters: characters,
+			characters: uppercaseChars,
 			bounds:     bounds,
 			cells:      []*Cell{},
 		}
@@ -147,18 +148,19 @@ func NewGrid(characters string, bounds image.Rectangle, logger *zap.Logger) *Gri
 		zap.Int("label_length", labelLength))
 
 	if gridCacheEnabled {
-		gridCache.put(characters, bounds, cells)
+		gridCache.put(uppercaseChars, bounds, cells)
 		logger.Debug("Grid cache store",
 			zap.Int("cell_count", len(cells)))
 	}
 
+	// Pre-allocate index map with exact capacity
 	idx := make(map[string]*Cell, len(cells))
 	for _, c := range cells {
 		idx[c.GetCoordinate()] = c
 	}
 
 	return &Grid{
-		characters: characters,
+		characters: uppercaseChars,
 		bounds:     bounds,
 		cells:      cells,
 		index:      idx,
@@ -190,7 +192,8 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 		zap.Int("grid_rows", gridRows),
 		zap.Int("label_length", labelLength))
 
-	cells := make([]*Cell, 0, gridCols*gridRows)
+	cells := make([]*Cell, gridCols*gridRows)
+	cellIndex := 0
 
 	// Calculate region dimensions (how many cols/rows per region)
 	// Each region is a sub-grid of size numChars x numChars
@@ -277,25 +280,33 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 				var coord string
 				switch labelLength {
 				case 2:
-					coord = string(regionChar1) + string(chars[colIndex])
+					// Use strings.Builder for efficient string concatenation
+					var b strings.Builder
+					b.Grow(2)
+					b.WriteRune(regionChar1)
+					b.WriteRune(chars[colIndex])
+					coord = b.String()
 				case 3:
 					// First char = region, second char = column, third char = row
 					char2 := chars[colIndex%numChars] // column
 					char3 := chars[rowIndex%numChars] // row
-					coord = string(regionChar1) + string(char2) + string(char3)
+					var b strings.Builder
+					b.Grow(3)
+					b.WriteRune(regionChar1)
+					b.WriteRune(char2)
+					b.WriteRune(char3)
+					coord = b.String()
 				default: // 4 chars
 					// First 2 chars = region, third char = column, fourth char = row
 					char3 := chars[colIndex%numChars] // column
 					char4 := chars[rowIndex%numChars] // row
-					coord = string(
-						regionChar1,
-					) + string(
-						regionChar2,
-					) + string(
-						char3,
-					) + string(
-						char4,
-					)
+					var b strings.Builder
+					b.Grow(4)
+					b.WriteRune(regionChar1)
+					b.WriteRune(regionChar2)
+					b.WriteRune(char3)
+					b.WriteRune(char4)
+					coord = b.String()
 				}
 
 				// Calculate cell dimensions with remainder distribution
@@ -322,7 +333,8 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 						Y: yCoordinate + cellHeight/2,
 					},
 				}
-				cells = append(cells, cell)
+				cells[cellIndex] = cell
+				cellIndex++
 			}
 		}
 
@@ -338,12 +350,13 @@ func generateCellsWithRegions(chars []rune, numChars, gridCols, gridRows, labelL
 		regionIndex++
 
 		// Stop if we've filled the entire screen
-		if len(cells) >= gridCols*gridRows {
+		if cellIndex >= gridCols*gridRows {
 			break
 		}
 	}
 
-	return cells
+	// Return only the filled portion of the slice
+	return cells[:cellIndex]
 }
 
 // candidate represents a valid grid configuration.
